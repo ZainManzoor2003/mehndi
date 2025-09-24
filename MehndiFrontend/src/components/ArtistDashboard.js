@@ -139,8 +139,9 @@ const ArtistDashboard = () => {
     try {
       setApplyLoading(true);
       await applicationsAPI.applyToBooking(applyBookingId);
-      alert('Applied successfully');
       closeApplyModal();
+      // Refresh pending bookings list after applying
+      await fetchPendingBookings();
     } catch (e) {
       alert(e.message || 'Failed to apply');
     } finally {
