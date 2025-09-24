@@ -441,6 +441,10 @@ export const applicationsAPI = {
   },
   getMyAppliedBookings: async () => {
     return apiRequest('/applications/my-applied');
+  },
+  getMyApplicationsByStatus: async (status) => {
+    const qs = new URLSearchParams({ status }).toString();
+    return apiRequest(`/applications/my-applied?${qs}`);
   }
 };
 

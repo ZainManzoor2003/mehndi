@@ -79,6 +79,30 @@ const ArtistDashboard = () => {
     }
   }, [isAuthenticated, user]);
 
+  const fetchApplicationsByStatus = useCallback(async (status) => {
+    if (!isAuthenticated || !user || user.userType !== 'artist') return;
+    try {
+      setAppsLoading(true);
+      setAppsError('');
+      const resp = await applicationsAPI.getMyApplicationsByStatus(status);
+      const list = (resp.data || []).map((b) => ({
+        id: b._id,
+        title: `${(b.eventType || []).join(', ') || 'Mehndi'} – ${new Date(b.eventDate).toLocaleDateString('en-GB')}`,
+        client: `${b.firstName} ${b.lastName} · ${b.city || b.location || ''}`.trim(),
+        budget: `£${b.minimumBudget ?? 0}${b.maximumBudget ? ` - £${b.maximumBudget}` : ''}`,
+        appliedOn: new Date(b.createdAt).toLocaleDateString('en-GB'),
+        status: status,
+        assignedCount: Array.isArray(b.assignedArtist) ? b.assignedArtist.length : (b.assignedArtist ? 1 : 0)
+      }));
+      setApplications(list);
+    } catch (e) {
+      setAppsError(e.message || `Failed to load ${status} bookings`);
+      setApplications([]);
+    } finally {
+      setAppsLoading(false);
+    }
+  }, [isAuthenticated, user]);
+
   const fetchPendingBookings = useCallback(async () => {
     if (!isAuthenticated || !user || user.userType !== 'artist') return;
     try {
@@ -1108,6 +1132,8 @@ const ArtistDashboard = () => {
                             fetchAppliedBookings();
                           } else if (f === 'all') {
                             fetchPendingBookings();
+                          } else if (['accepted','declined','withdrawn','expired'].includes(f)) {
+                            fetchApplicationsByStatus(f);
                           }
                         }}
                       >

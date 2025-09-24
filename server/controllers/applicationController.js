@@ -59,7 +59,7 @@ exports.getMyAppliedBookings = async (req, res) => {
   try {
     const artistId = req.user.id;
     const status = (req.query.status || 'applied').toString();
-    const allowedStatuses = ['applied', 'pending', 'accepted', 'declined', 'withdrawn'];
+    const allowedStatuses = ['applied', 'pending', 'accepted', 'declined', 'withdrawn', 'expired'];
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({ success: false, message: `Invalid status. Allowed: ${allowedStatuses.join(', ')}` });
     }
