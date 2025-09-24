@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express')
 const cors = require('cors')
 const app = express();
@@ -24,7 +25,7 @@ app.use('/', router)
 db().then(() => {
 
   app.listen(5001, () => {
-    console.log('Server Connected');
+    console.log('Server Connected: http://localhost:5001');
   })
 })
 
