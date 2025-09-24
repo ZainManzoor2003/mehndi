@@ -431,11 +431,22 @@ export const proposalsAPI = {
   },
 };
 
+// Applications API
+export const applicationsAPI = {
+  applyToBooking: async (bookingId) => {
+    return apiRequest('/applications/apply', {
+      method: 'POST',
+      body: JSON.stringify({ bookingId })
+    });
+  },
+};
+
 const apiExports = {
   authAPI,
   jobsAPI,
   bookingsAPI,
   proposalsAPI,
+  applicationsAPI,
   messagesAPI,
   reviewsAPI,
   usersAPI,

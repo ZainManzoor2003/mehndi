@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import ArtistSidebar from './ArtistSidebar';
 import apiService from '../services/api';
 
-const { jobsAPI, proposalsAPI, authAPI, bookingsAPI } = apiService;
+const { jobsAPI, proposalsAPI, authAPI, bookingsAPI, applicationsAPI } = apiService;
 
 const ArtistDashboard = () => {
   const navigate = useNavigate();
@@ -49,6 +49,12 @@ const ArtistDashboard = () => {
   const [applications, setApplications] = useState([]);
   const [appsLoading, setAppsLoading] = useState(false);
   const [appsError, setAppsError] = useState('');
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewLoading, setViewLoading] = useState(false);
+  const [viewForm, setViewForm] = useState(null);
+  const [applyOpen, setApplyOpen] = useState(false);
+  const [applyBookingId, setApplyBookingId] = useState(null);
+  const [applyLoading, setApplyLoading] = useState(false);
 
   const fetchPendingBookings = useCallback(async () => {
     if (!isAuthenticated || !user || user.userType !== 'artist') return;
@@ -73,6 +79,74 @@ const ArtistDashboard = () => {
       setAppsLoading(false);
     }
   }, [isAuthenticated, user]);
+
+  const openViewBooking = async (bookingId) => {
+    try {
+      setViewLoading(true);
+      const resp = await bookingsAPI.getBooking(bookingId);
+      const b = resp.data || {};
+      setViewForm({
+        firstName: b.firstName || '',
+        lastName: b.lastName || '',
+        email: b.email || '',
+        phoneNumber: b.phoneNumber || '',
+        eventType: b.eventType || [],
+        otherEventType: b.otherEventType || '',
+        eventDate: b.eventDate ? new Date(b.eventDate).toISOString().substring(0,10) : '',
+        preferredTimeSlot: b.preferredTimeSlot || [],
+        location: b.location || '',
+        artistTravelsToClient: b.artistTravelsToClient === true,
+        fullAddress: b.fullAddress || '',
+        city: b.city || '',
+        postalCode: b.postalCode || '',
+        venueName: b.venueName || '',
+        minimumBudget: b.minimumBudget ?? '',
+        maximumBudget: b.maximumBudget ?? '',
+        duration: b.duration ?? '',
+        numberOfPeople: b.numberOfPeople ?? '',
+        designStyle: b.designStyle || '',
+        designComplexity: b.designComplexity || '',
+        bodyPartsToDecorate: b.bodyPartsToDecorate || [],
+        designInspiration: b.designInspiration || '',
+        coveragePreference: b.coveragePreference || '',
+        additionalRequests: b.additionalRequests || ''
+      });
+      setViewOpen(true);
+    } catch (e) {
+      alert(e.message || 'Failed to load booking');
+    } finally {
+      setViewLoading(false);
+    }
+  };
+
+  const closeViewBooking = () => {
+    setViewOpen(false);
+    setViewForm(null);
+  };
+
+  const openApplyModal = (bookingId) => {
+    setApplyBookingId(bookingId);
+    setApplyOpen(true);
+  };
+
+  const closeApplyModal = () => {
+    setApplyOpen(false);
+    setApplyBookingId(null);
+  };
+
+  const confirmApply = async () => {
+    if (!applyBookingId) return;
+    try {
+      setApplyLoading(true);
+      await applicationsAPI.applyToBooking(applyBookingId);
+      alert('Applied successfully');
+      closeApplyModal();
+    } catch (e) {
+      alert(e.message || 'Failed to apply');
+    } finally {
+      setApplyLoading(false);
+    }
+  };
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState(null);
 
@@ -1006,7 +1080,7 @@ const ArtistDashboard = () => {
                         className={`apps-pill ${applicationsFilter === f ? 'active' : ''}`}
                         onClick={() => setApplicationsFilter(f)}
                       >
-                        {f.charAt(0).toUpperCase() + f.slice(1)}
+                        {f === 'all' ? 'Active' : (f.charAt(0).toUpperCase() + f.slice(1))}
                       </button>
                     ))}
                   </div>
@@ -1025,10 +1099,15 @@ const ArtistDashboard = () => {
                             <div>Budget: {a.budget}</div>
                             <div>Posted on: {a.appliedOn}</div>
                           </div>
-                          <span className={`app-badge ${a.status}`}>{a.status.charAt(0).toUpperCase() + a.status.slice(1)}</span>
+                          <span className={`app-badge ${applicationsFilter === 'all' ? 'active' : a.status}`}
+                            style={applicationsFilter === 'all' ? { background: '#16a34a', borderColor: '#16a34a', color: '#ffffff' } : undefined}
+                          >
+                            {applicationsFilter === 'all' ? 'Active' : (a.status.charAt(0).toUpperCase() + a.status.slice(1))}
+                          </span>
                           <p className="app-note">Assigned artists: {a.assignedCount ?? 0}</p>
                           <div className="app-actions">
-                            <button className="app-btn">View Details</button>
+                            <button className="app-btn" onClick={() => openViewBooking(a.id)} disabled={viewLoading}>View Details</button>
+                            <button className="app-btn" style={{ marginLeft: '8px' }} onClick={() => openApplyModal(a.id)}>Apply Now</button>
                           </div>
                         </div>
                       ))}
@@ -1406,6 +1485,167 @@ const ArtistDashboard = () => {
               </div>
             )}
 
+            {viewOpen && viewForm && (
+              <div className="modal-overlay" onClick={closeViewBooking}>
+                <div className="modal" onClick={(e) => e.stopPropagation()}>
+                  <div className="modal-header">
+                    <h3 className="modal-title">Booking Details</h3>
+                    <button className="modal-close" onClick={closeViewBooking}>×</button>
+                  </div>
+                  <div className="modal-body">
+                    <div className="modal-grid">
+                      <div className="form-group">
+                        <label>First name</label>
+                        <input name="firstName" value={viewForm.firstName} disabled />
+                      </div>
+                      <div className="form-group">
+                        <label>Last name</label>
+                        <input name="lastName" value={viewForm.lastName} disabled />
+                      </div>
+                      <div className="form-group">
+                        <label>Email</label>
+                        <input name="email" type="email" value={viewForm.email} disabled />
+                      </div>
+                      <div className="form-group">
+                        <label>Phone</label>
+                        <input name="phoneNumber" value={viewForm.phoneNumber} disabled />
+                      </div>
+                      <div className="form-group">
+                        <label>Event date</label>
+                        <input name="eventDate" type="date" value={viewForm.eventDate} disabled />
+                      </div>
+                      <div className="form-group full">
+                        <label>Event type</label>
+                        <div className="checkbox-grid">
+                          {['Wedding','Eid','Party','Festival'].map(opt => (
+                            <label key={opt} className="checkbox-label">
+                              <input type="checkbox" checked={(viewForm.eventType || []).includes(opt)} readOnly disabled />
+                              <span>{opt}</span>
+                            </label>
+                          ))}
+                        </div>
+                        <input
+                          name="otherEventType"
+                          placeholder="Other event type"
+                          value={viewForm.otherEventType}
+                          disabled
+                        />
+                      </div>
+                      <div className="form-group full">
+                        <label>Preferred time slot</label>
+                        <div className="checkbox-grid">
+                          {['Morning','Afternoon','Evening','Flexible'].map(opt => (
+                            <label key={opt} className="checkbox-label">
+                              <input type="checkbox" checked={(viewForm.preferredTimeSlot || []).includes(opt)} readOnly disabled />
+                              <span>{opt}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="form-group full">
+                        <label>Artist travel preference</label>
+                        <div className="radio-group">
+                          <label className="radio-label">
+                            <input type="radio" checked={viewForm.artistTravelsToClient === true} readOnly disabled />
+                            <span>Artist travels to client</span>
+                          </label>
+                          <label className="radio-label">
+                            <input type="radio" checked={viewForm.artistTravelsToClient === false} readOnly disabled />
+                            <span>Client travels to artist</span>
+                          </label>
+                        </div>
+                      </div>
+                      <div className="form-group">
+                        <label>Location</label>
+                        <input name="location" value={viewForm.location} disabled />
+                      </div>
+                      <div className="form-group">
+                        <label>Address</label>
+                        <input name="fullAddress" value={viewForm.fullAddress} disabled />
+                      </div>
+                      <div className="form-group">
+                        <label>City</label>
+                        <input name="city" value={viewForm.city} disabled />
+                      </div>
+                      <div className="form-group">
+                        <label>Postal code</label>
+                        <input name="postalCode" value={viewForm.postalCode} disabled />
+                      </div>
+                      <div className="form-group">
+                        <label>Budget min</label>
+                        <input name="minimumBudget" type="number" value={viewForm.minimumBudget} disabled />
+                      </div>
+                      <div className="form-group">
+                        <label>Budget max</label>
+                        <input name="maximumBudget" type="number" value={viewForm.maximumBudget} disabled />
+                      </div>
+                      <div className="form-group">
+                        <label>Duration (hours)</label>
+                        <input name="duration" type="number" value={viewForm.duration} disabled />
+                      </div>
+                      <div className="form-group">
+                        <label>People</label>
+                        <input name="numberOfPeople" type="number" value={viewForm.numberOfPeople} disabled />
+                      </div>
+                      <div className="form-group">
+                        <label>Design style</label>
+                        <select name="designStyle" value={viewForm.designStyle} disabled>
+                          <option value="">Select style</option>
+                          {['Traditional','Modern','Arabic','Indian','Moroccan','Minimalist','Bridal'].map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label>Complexity</label>
+                        <select name="designComplexity" value={viewForm.designComplexity} disabled>
+                          <option value="">Select complexity</option>
+                          {['Simple','Medium','Complex','Very Complex'].map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="form-group full">
+                        <label>Body parts to decorate</label>
+                        <div className="checkbox-grid">
+                          {['Hands','Feet','Arms','Back'].map(opt => (
+                            <label key={opt} className="checkbox-label">
+                              <input type="checkbox" checked={(viewForm.bodyPartsToDecorate || []).includes(opt)} readOnly disabled />
+                              <span>{opt}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="form-group">
+                        <label>Coverage preference</label>
+                        <select name="coveragePreference" value={viewForm.coveragePreference} disabled>
+                          <option value="">Select coverage</option>
+                          {['Light','Medium','Full','Bridal Package'].map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label>Venue name</label>
+                        <input name="venueName" value={viewForm.venueName} disabled />
+                      </div>
+                      <div className="form-group full">
+                        <label>Design inspiration</label>
+                        <textarea name="designInspiration" rows="3" value={viewForm.designInspiration} disabled />
+                      </div>
+                      <div className="form-group full">
+                        <label>Additional requests</label>
+                        <textarea name="additionalRequests" rows="3" value={viewForm.additionalRequests} disabled />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button className="btn-primary" onClick={closeViewBooking}>Close</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {cancelModalOpen && (
               <div className="modal-overlay">
                 <div className="confirmation-modal">
@@ -1563,6 +1803,19 @@ const ArtistDashboard = () => {
                       </div>
                     </div>
                   )}
+                </div>
+              </div>
+            )}
+
+            {applyOpen && (
+              <div className="modal-overlay" onClick={closeApplyModal}>
+                <div className="confirmation-modal" onClick={(e) => e.stopPropagation()}>
+                  <h3 className="modal-title">Apply to this booking?</h3>
+                  <p className="modal-text">This will submit your application to the client for this booking.</p>
+                  <div className="modal-actions">
+                    <button className="cancel-btn" onClick={closeApplyModal} disabled={applyLoading}>Cancel</button>
+                    <button className="confirm-btn" onClick={confirmApply} disabled={applyLoading}>{applyLoading ? 'Applying...' : 'Apply'}</button>
+                  </div>
                 </div>
               </div>
             )}

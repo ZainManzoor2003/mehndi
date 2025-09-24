@@ -196,6 +196,14 @@ const BookingSchema = new mongoose.Schema({
     }
   ],
 
+  // Artists who applied to this booking
+  appliedArtists: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }
+  ],
+
   // Timestamps
   createdAt: {
     type: Date,
@@ -217,6 +225,7 @@ BookingSchema.pre('save', function(next) {
 BookingSchema.index({ clientId: 1, status: 1 });
 BookingSchema.index({ eventDate: 1 });
 BookingSchema.index({ assignedArtist: 1 });
+BookingSchema.index({ appliedArtists: 1 });
 
 module.exports = mongoose.model('Booking', BookingSchema);
 

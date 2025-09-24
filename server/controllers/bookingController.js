@@ -227,7 +227,14 @@ const getAllBookings = async (req, res) => {
 // @access  Private (Artist/Admin only)
 const getPendingBookings = async (req, res) => {
   try {
-    const bookings = await Booking.find({ status: 'pending' })
+    const artistId = req.user && req.user.id ? req.user.id : null;
+    const query = { status: 'pending' };
+    if (artistId) {
+      // exclude bookings the current artist has already applied to
+      query.appliedArtists = { $nin: [artistId] };
+    }
+
+    const bookings = await Booking.find(query)
       .populate('clientId', 'firstName lastName email')
       .populate('assignedArtist', 'firstName lastName email')
       .sort({ createdAt: -1 });

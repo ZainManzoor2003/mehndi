@@ -7,9 +7,14 @@ const BookingRefSchema = new mongoose.Schema(
       ref: 'Booking',
       required: true,
     },
+    artist_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
     status: {
       type: String,
-      default: 'pending',
+      default: 'applied',
       trim: true,
     },
   },
