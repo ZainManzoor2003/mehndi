@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const ArtistSidebar = ({ activeTab, onTabChange, isOpen, onClose }) => {
   const sidebarItems = [
@@ -73,6 +74,9 @@ const ArtistSidebar = ({ activeTab, onTabChange, isOpen, onClose }) => {
     }
   ];
 
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
   const handleItemClick = (itemId) => {
     if (onTabChange) {
       onTabChange(itemId);
@@ -80,6 +84,38 @@ const ArtistSidebar = ({ activeTab, onTabChange, isOpen, onClose }) => {
     if (onClose) {
       onClose();
     }
+  };
+
+  const handleLogoutClick = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    try {
+      try { await logout(); } catch {}
+      localStorage.clear();
+      const deleteCookieEverywhere = (name) => {
+        try {
+          const hostname = window.location.hostname;
+          const parts = hostname.split('.');
+          const domains = [];
+          for (let i = 0; i < parts.length - 1; i++) { domains.push(parts.slice(i).join('.')); }
+          const paths = ['/', window.location.pathname];
+          paths.forEach((p) => { document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=${p}`; });
+          domains.forEach((d) => { paths.forEach((p) => { document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=${p};domain=.${d}`; }); });
+        } catch {}
+      };
+      const clearAllCookies = () => {
+        try {
+          const cookies = document.cookie.split(';');
+          for (const cookie of cookies) {
+            const eqPos = cookie.indexOf('=');
+            const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+            deleteCookieEverywhere(name);
+          }
+        } catch {}
+      };
+      ['token','jwt','accessToken','authToken'].forEach(deleteCookieEverywhere);
+      clearAllCookies();
+      navigate('/login', { replace: true });
+    } catch {}
   };
 
   return (
@@ -136,6 +172,9 @@ const ArtistSidebar = ({ activeTab, onTabChange, isOpen, onClose }) => {
               <span className="user-name">Artist</span>
               <span className="user-role">Dashboard</span>
             </div>
+          </div>
+          <div className="sidebar-logout">
+            <Link to="/login" className="sidebar-logout-btn" onClick={handleLogoutClick}>Logout</Link>
           </div>
         </div>
       </div>

@@ -218,3 +218,4 @@ BookingSchema.index({ eventDate: 1 });
 BookingSchema.index({ assignedArtist: 1 });
 
 module.exports = mongoose.model('Booking', BookingSchema);
+

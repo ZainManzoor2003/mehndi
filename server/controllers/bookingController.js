@@ -260,6 +260,87 @@ const getBookingById = async (req, res) => {
   }
 };
 
+// @desc    Update a booking (client can update own booking when not completed/cancelled)
+// @route   PUT /api/bookings/:id
+// @access  Private (Client only for own booking)
+const updateBooking = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    // Only the owner client can update
+    if (req.user.userType !== 'client' || booking.clientId.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Not authorized to update this booking' });
+    }
+
+    // Prevent updates when completed or cancelled
+    if (['completed', 'cancelled'].includes(booking.status)) {
+      return res.status(400).json({ success: false, message: `Cannot edit a ${booking.status} booking` });
+    }
+
+    const updatableFields = [
+      'firstName','lastName','email','phoneNumber',
+      'eventType','otherEventType','eventDate','preferredTimeSlot',
+      'location','artistTravelsToClient','fullAddress','city','postalCode','venueName',
+      'minimumBudget','maximumBudget','duration','numberOfPeople',
+      'designStyle','designComplexity','bodyPartsToDecorate','designInspiration','coveragePreference',
+      'additionalRequests'
+    ];
+
+    updatableFields.forEach((field) => {
+      if (typeof req.body[field] !== 'undefined') {
+        booking[field] = req.body[field];
+      }
+    });
+
+    // Validate budget
+    if (typeof booking.minimumBudget === 'number' && typeof booking.maximumBudget === 'number' && booking.maximumBudget < booking.minimumBudget) {
+      return res.status(400).json({ success: false, message: 'Maximum budget must be >= minimum budget' });
+    }
+
+    // Normalize eventDate
+    if (req.body.eventDate) {
+      const eventDateObj = new Date(req.body.eventDate);
+      booking.eventDate = eventDateObj;
+    }
+
+    await booking.save();
+
+    res.status(200).json({ success: true, message: 'Booking updated successfully', data: booking });
+  } catch (error) {
+    console.error('Update booking error:', error);
+    res.status(500).json({ success: false, message: 'Server error while updating booking', error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' });
+  }
+};
+
+// @desc    Delete a booking (client can delete own booking when not completed)
+// @route   DELETE /api/bookings/:id
+// @access  Private (Client only for own booking)
+const deleteBooking = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    if (req.user.userType !== 'client' || booking.clientId.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Not authorized to delete this booking' });
+    }
+
+    if (booking.status === 'completed') {
+      return res.status(400).json({ success: false, message: 'Cannot delete a completed booking' });
+    }
+
+    await booking.deleteOne();
+    res.status(200).json({ success: true, message: 'Booking deleted successfully' });
+  } catch (error) {
+    console.error('Delete booking error:', error);
+    res.status(500).json({ success: false, message: 'Server error while deleting booking', error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' });
+  }
+};
+
 // @desc    Update booking status
 // @route   PUT /api/bookings/:id/status
 // @access  Private (Artist/Admin only)
@@ -311,5 +392,8 @@ module.exports = {
   getClientBookings,
   getAllBookings,
   getBookingById,
-  updateBookingStatus
+  updateBookingStatus,
+  updateBooking,
+  deleteBooking
 };
+

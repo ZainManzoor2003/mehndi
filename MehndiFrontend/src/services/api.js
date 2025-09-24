@@ -344,6 +344,21 @@ export const bookingsAPI = {
       body: JSON.stringify({ status }),
     });
   },
+  
+  // Update booking (client edits)
+  updateBooking: async (bookingId, bookingData) => {
+    return apiRequest(`/bookings/${bookingId}`, {
+      method: 'PUT',
+      body: JSON.stringify(bookingData),
+    });
+  },
+
+  // Delete booking (client deletes)
+  deleteBooking: async (bookingId) => {
+    return apiRequest(`/bookings/${bookingId}`, {
+      method: 'DELETE',
+    });
+  },
 };
 
 // Proposals API

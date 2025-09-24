@@ -246,6 +246,39 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
+/* Card quick actions */
+.card-actions { display: flex; align-items: center; gap: 8px; }
+.icon-btn { border: 1px solid var(--ad-border); background: #fff; color: var(--ad-text); padding: 6px 8px; border-radius: 8px; cursor: pointer; }
+.icon-btn:hover { border-color: var(--ad-accent); }
+.icon-btn.delete { color: #b22c2c; border-color: #f2c7c7; }
+.icon-btn.edit { color: var(--ad-primary-600); }
+
+/* Modal styles */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 1000; }
+.modal { background: #fff; width: 100%; max-width: 560px; border-radius: 12px; border: 1px solid var(--ad-border); box-shadow: 0 10px 30px rgba(0,0,0,0.15); overflow: hidden; max-height: 86vh; display: flex; flex-direction: column; }
+.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--ad-border); }
+.modal-title { margin: 0; font-size: 1rem; color: var(--ad-text); }
+.modal-close { background: transparent; border: none; font-size: 20px; cursor: pointer; color: var(--ad-muted); }
+.modal-body { padding: 12px 14px; overflow-y: auto; }
+.modal-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+.modal-grid .form-group { display: flex; flex-direction: column; gap: 4px; }
+.modal-grid .form-group.full { grid-column: 1 / -1; }
+.modal-grid label { font-size: 11px; color: var(--ad-muted); font-weight: 600; }
+.modal-grid input, .modal-grid textarea { border: 1px solid var(--ad-border); border-radius: 8px; padding: 7px 10px; font-size: 13px; color: var(--ad-text); background: #fff; }
+.modal-footer { padding: 10px 14px; border-top: 1px solid var(--ad-border); display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+
+/* Form control variants inside modal */
+.modal-grid select { border: 1px solid var(--ad-border); border-radius: 8px; padding: 7px 10px; font-size: 13px; color: var(--ad-text); background: #fff; }
+.checkbox-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+.checkbox-label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ad-text); }
+.radio-group { display: flex; gap: 12px; flex-wrap: wrap; }
+.radio-label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ad-text); }
+
+@media (max-width: 640px) {
+  .modal { max-width: 94vw; }
+  .modal-grid { grid-template-columns: 1fr; }
+}
+
 .booking-card.completed {
   background: linear-gradient(135deg, #f0f9f0, #e8f5e8);
   border-color: #c8e6c8;
@@ -759,6 +792,11 @@
   }
 }
 
+/* Sidebar footer and logout */
+.sidebar-footer { margin-top: auto; padding: 12px; border-top: 1px solid var(--ad-border); }
+.sidebar-logout { margin-top: 10px; }
+.sidebar-logout-btn { display: inline-block; width: 100%; text-align: center; background: var(--ad-danger-bg); color: var(--ad-danger); border: 1px solid #f2c7c7; padding: 8px 12px; border-radius: 8px; text-decoration: none; font-weight: 600; }
+.sidebar-logout-btn:hover { background: #ffe8e8; }
 /* Responsive Design */
 @media (max-width: 768px) {
   .bookings-container {
@@ -1557,7 +1595,6 @@
   position: relative;
   z-index: 2;
 }
-
 .booking-form-container .step-number {
   width: 40px;
   height: 40px;
@@ -2358,7 +2395,6 @@
   border-radius: 6px;
   transition: background-color 0.3s ease;
 }
-
 .expand-btn:hover, .edit-btn:hover, .close-btn:hover {
   background: var(--light-beige);
 }
@@ -3154,13 +3190,11 @@
   font-weight: var(--font-semi-bold);
   color: var(--accent-orange);
 }
-
 .amount-percentage {
   font-size: var(--normal-font-size);
   font-weight: var(--font-medium);
   color: var(--text-color);
 }
-
 .payment-due-date {
   display: flex;
   justify-content: space-between;
@@ -3953,17 +3987,14 @@ body {
   background-color: var(--body-color);
   color: var(--text-color);
 }
-
 h1, h2, h3 {
   color: var(--title-color);
   font-weight: var(--font-semi-bold);
   font-family: var(--title-font);
 }
-
 ul {
   list-style: none;
 }
-
 a {
   text-decoration: none;
 }
@@ -4750,19 +4781,16 @@ input {
   transform: translateY(-4px);
   box-shadow: 0 8px 25px rgba(139, 115, 85, 0.15);
 }
-
 .booking-card.completed {
   opacity: 0.8;
   background: linear-gradient(135deg, var(--cream) 0%, var(--warm-beige) 100%);
 }
-
 .booking-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 1rem;
 }
-
 .booking-title {
   font-size: 1.25rem;
   font-weight: var(--font-semi-bold);
@@ -5551,7 +5579,6 @@ input {
   gap: 1rem;
   margin-top: 1rem;
 }
-
 .footer__social-link {
   width: 40px;
   height: 40px;
@@ -6262,7 +6289,6 @@ body.dark-theme .scroll-header .henna-line {
 .scroll-header .henna-burger:hover .henna-line {
   background: var(--first-color);
 }
-
 /* Mobile Responsiveness */
 @media screen and (max-width: 767px) {
   .henna-burger {
@@ -7060,12 +7086,10 @@ body.dark-theme .scroll-header .henna-line {
   font-weight: var(--font-medium);
   transition: all 0.3s ease;
 }
-
 .back-btn:hover {
   border-color: var(--accent-gold);
   background: rgba(205, 133, 63, 0.05);
 }
-
 .proposals-title {
   color: var(--title-color);
   font-size: var(--h2-font-size);
@@ -7855,7 +7879,6 @@ body.dark-theme .scroll-header .henna-line {
   border-radius: 50%;
   object-fit: cover;
 }
-
 .status-indicator {
   position: absolute;
   bottom: 2px;
@@ -7865,11 +7888,9 @@ body.dark-theme .scroll-header .henna-line {
   border-radius: 50%;
   border: 2px solid var(--white-color);
 }
-
 .status-indicator.online {
   background: #28a745;
 }
-
 .status-indicator.away {
   background: #ffc107;
 }
@@ -8588,11 +8609,11 @@ body.dark-theme .scroll-header .henna-line {
   background: var(--white-color);
   border-radius: 16px;
   padding: 0;
-  max-width: 600px;
+  max-width: 560px;
   width: 90%;
   margin: 0 auto;
   margin-top: 5vh;
-  max-height: 90vh;
+  max-height: 86vh;
   overflow-y: auto;
 }
 
@@ -8653,13 +8674,11 @@ body.dark-theme .scroll-header .henna-line {
 .submit-proposal-btn:hover:not(:disabled) {
   background: var(--accent-gold);
 }
-
 .submit-proposal-btn:disabled {
   background: var(--light-beige);
   color: var(--text-color);
   cursor: not-allowed;
 }
-
 /*========== Artist Dashboard Responsive ==========*/
 @media screen and (max-width: 968px) {
   .artist-dashboard {
@@ -9369,7 +9388,7 @@ body.dark-theme .scroll-header .henna-line {
 .review-text { color:#374151; }
 
 .payout-card { background:#fff; border:1px solid #eef0f3; border-radius:14px; padding:1rem; margin-top:.5rem; }
-.payout-item { display:flex; align-items:center; justify-content:space-between; background:#fbfbfb; border:1px solid #f0f2f5; padding:.75rem; border-radius:10px; }
+.payout-item { display:flex; align-items:center; justify-content:space-between; background:#fbfbff; border:1px solid #f0f2f5; padding:.75rem; border-radius:10px; }
 .payout-title { font-weight:700; color:#0f172a; }
 .payout-sub { color:#6b7280; }
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const DashboardSidebar = ({ activeTab, onTabChange, isOpen, onClose, bookingCount = 0 }) => {
   const sidebarItems = [
@@ -89,6 +90,44 @@ const DashboardSidebar = ({ activeTab, onTabChange, isOpen, onClose, bookingCoun
     }
   };
 
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  const handleLogoutClick = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    try {
+      // context logout (in-memory)
+      try { await logout(); } catch {}
+      // replicate LogoutButton logic
+      localStorage.clear();
+      // clear common auth cookies
+      const deleteCookieEverywhere = (name) => {
+        try {
+          const hostname = window.location.hostname;
+          const parts = hostname.split('.');
+          const domains = [];
+          for (let i = 0; i < parts.length - 1; i++) { domains.push(parts.slice(i).join('.')); }
+          const paths = ['/', window.location.pathname];
+          paths.forEach((p) => { document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=${p}`; });
+          domains.forEach((d) => { paths.forEach((p) => { document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=${p};domain=.${d}`; }); });
+        } catch {}
+      };
+      const clearAllCookies = () => {
+        try {
+          const cookies = document.cookie.split(';');
+          for (const cookie of cookies) {
+            const eqPos = cookie.indexOf('=');
+            const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+            deleteCookieEverywhere(name);
+          }
+        } catch {}
+      };
+      ['token','jwt','accessToken','authToken'].forEach(deleteCookieEverywhere);
+      clearAllCookies();
+      navigate('/login', { replace: true });
+    } catch {}
+  };
+
   return (
     <>
       {/* Mobile Overlay */}
@@ -146,6 +185,9 @@ const DashboardSidebar = ({ activeTab, onTabChange, isOpen, onClose, bookingCoun
               <span className="user-name">Client</span>
               <span className="user-role">Dashboard</span>
             </div>
+          </div>
+          <div className="sidebar-logout">
+            <Link to="/login" className="sidebar-logout-btn" onClick={handleLogoutClick}>Logout</Link>
           </div>
         </div>
       </div>

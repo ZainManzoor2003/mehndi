@@ -43,7 +43,7 @@ function App() {
     <AuthProvider>
       <Router>
         <div className="App">
-          <LogoutButton />
+          {/* Logout button moved into sidebar */}
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/choose-path" element={<ChoosePathForm />} />
