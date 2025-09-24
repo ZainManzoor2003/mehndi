@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import ArtistSidebar from './ArtistSidebar';
 import apiService from '../services/api';
 
-const { jobsAPI, proposalsAPI, authAPI, bookingsAPI, applicationsAPI } = apiService;
+  const { jobsAPI, proposalsAPI, authAPI, bookingsAPI, applicationsAPI } = apiService;
 
 const ArtistDashboard = () => {
   const navigate = useNavigate();
@@ -55,6 +55,29 @@ const ArtistDashboard = () => {
   const [applyOpen, setApplyOpen] = useState(false);
   const [applyBookingId, setApplyBookingId] = useState(null);
   const [applyLoading, setApplyLoading] = useState(false);
+  const fetchAppliedBookings = useCallback(async () => {
+    if (!isAuthenticated || !user || user.userType !== 'artist') return;
+    try {
+      setAppsLoading(true);
+      setAppsError('');
+      const resp = await applicationsAPI.getMyAppliedBookings();
+      const list = (resp.data || []).map((b) => ({
+        id: b._id,
+        title: `${(b.eventType || []).join(', ') || 'Mehndi'} – ${new Date(b.eventDate).toLocaleDateString('en-GB')}`,
+        client: `${b.firstName} ${b.lastName} · ${b.city || b.location || ''}`.trim(),
+        budget: `£${b.minimumBudget ?? 0}${b.maximumBudget ? ` - £${b.maximumBudget}` : ''}`,
+        appliedOn: new Date(b.createdAt).toLocaleDateString('en-GB'),
+        status: 'applied',
+        assignedCount: Array.isArray(b.assignedArtist) ? b.assignedArtist.length : (b.assignedArtist ? 1 : 0)
+      }));
+      setApplications(list);
+    } catch (e) {
+      setAppsError(e.message || 'Failed to load applied bookings');
+      setApplications([]);
+    } finally {
+      setAppsLoading(false);
+    }
+  }, [isAuthenticated, user]);
 
   const fetchPendingBookings = useCallback(async () => {
     if (!isAuthenticated || !user || user.userType !== 'artist') return;
@@ -1079,7 +1102,14 @@ const ArtistDashboard = () => {
                       <button
                         key={f}
                         className={`apps-pill ${applicationsFilter === f ? 'active' : ''}`}
-                        onClick={() => setApplicationsFilter(f)}
+                        onClick={() => {
+                          setApplicationsFilter(f);
+                          if (f === 'applied') {
+                            fetchAppliedBookings();
+                          } else if (f === 'all') {
+                            fetchPendingBookings();
+                          }
+                        }}
                       >
                         {f === 'all' ? 'Active' : (f.charAt(0).toUpperCase() + f.slice(1))}
                       </button>
@@ -1101,14 +1131,22 @@ const ArtistDashboard = () => {
                             <div>Posted on: {a.appliedOn}</div>
                           </div>
                           <span className={`app-badge ${applicationsFilter === 'all' ? 'active' : a.status}`}
-                            style={applicationsFilter === 'all' ? { background: '#16a34a', borderColor: '#16a34a', color: '#ffffff' } : undefined}
+                            style={
+                              applicationsFilter === 'all'
+                                ? { background: '#16a34a', borderColor: '#16a34a', color: '#ffffff' }
+                                : (applicationsFilter === 'applied'
+                                    ? { background: '#d4af37', borderColor: '#d4af37', color: '#1f2937' }
+                                    : undefined)
+                            }
                           >
                             {applicationsFilter === 'all' ? 'Active' : (a.status.charAt(0).toUpperCase() + a.status.slice(1))}
                           </span>
                           <p className="app-note">Assigned artists: {a.assignedCount ?? 0}</p>
                           <div className="app-actions">
                             <button className="app-btn" onClick={() => openViewBooking(a.id)} disabled={viewLoading}>View Details</button>
-                            <button className="app-btn" style={{ marginLeft: '8px' }} onClick={() => openApplyModal(a.id)}>Apply Now</button>
+                            {applicationsFilter !== 'applied' && (
+                              <button className="app-btn" style={{ marginLeft: '8px' }} onClick={() => openApplyModal(a.id)}>Apply Now</button>
+                            )}
                           </div>
                         </div>
                       ))}

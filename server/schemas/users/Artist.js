@@ -13,7 +13,8 @@ const ArtistSchema = new mongoose.Schema(
     availableLocations: { type: [String], default: [] },
     travelsToClient: { type: Boolean, default: true },
     ratingsAverage: { type: Number, min: 0, max: 5, default: 0 },
-    ratingsCount: { type: Number, min: 0, default: 0 }
+    ratingsCount: { type: Number, min: 0, default: 0 },
+    appliedApplications: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Application' }]
   },
   { _id: false }
 );

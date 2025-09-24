@@ -439,6 +439,9 @@ export const applicationsAPI = {
       body: JSON.stringify({ bookingId })
     });
   },
+  getMyAppliedBookings: async () => {
+    return apiRequest('/applications/my-applied');
+  }
 };
 
 const apiExports = {
