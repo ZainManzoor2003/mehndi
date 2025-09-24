@@ -19,7 +19,6 @@
 .bookings-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #f6e9d0 0%, #fff8ee 100%);
-  padding: 20px 0;
 }
 
 .bookings-container {
@@ -4556,6 +4555,7 @@ input {
     width: 280px;
     height: auto;
     min-height: 100vh;
+    position: sticky;
   }
   
   .sidebar-overlay {
@@ -4665,7 +4665,6 @@ input {
 .bookings-page {
   min-height: 100vh;
   background: var(--body-color);
-  padding-top: 80px;
 }
 
 .bookings-container {

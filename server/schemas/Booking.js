@@ -188,12 +188,13 @@ const BookingSchema = new mongoose.Schema({
     default: 'pending'
   },
 
-  // Artist Assignment
-  assignedArtist: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    default: null
-  },
+  // Artist Assignment (can be multiple)
+  assignedArtist: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }
+  ],
 
   // Timestamps
   createdAt: {

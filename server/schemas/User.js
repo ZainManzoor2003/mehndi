@@ -2,44 +2,51 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-const UserSchema = new mongoose.Schema({
-  firstName: {
-    type: String,
-    required: [true, 'First name is required'],
-    trim: true,
-    maxlength: 100
+// Base user schema
+const UserSchema = new mongoose.Schema(
+  {
+    firstName: {
+      type: String,
+      required: [true, 'First name is required'],
+      trim: true,
+      maxlength: 100
+    },
+    lastName: {
+      type: String,
+      required: [true, 'Last name is required'],
+      trim: true,
+      maxlength: 100
+    },
+    email: {
+      type: String,
+      required: [true, 'Email address is required'],
+      unique: true,
+      lowercase: true,
+      trim: true,
+      match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email']
+    },
+    password: {
+      type: String,
+      required: [true, 'Password is required'],
+      minlength: [6, 'Password must be at least 6 characters'],
+      select: false
+    },
+    userType: {
+      type: String,
+      enum: ['client', 'artist', 'admin'],
+      required: [true, 'User type is required'],
+      default: 'client'
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
   },
-  lastName: {
-    type: String,
-    required: [true, 'Last name is required'],
-    trim: true,
-    maxlength: 100
-  },
-  email: {
-    type: String,
-    required: [true, 'Email address is required'],
-    unique: true,
-    lowercase: true,
-    trim: true,
-    match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email']
-  },
-  password: {
-    type: String,
-    required: [true, 'Password is required'],
-    minlength: [6, 'Password must be at least 6 characters'],
-    select: false
-  },
-  userType: {
-    type: String,
-    enum: ['client', 'artist'],
-    required: [true, 'User type is required'],
-    default: 'client'
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
+  {
+    discriminatorKey: 'userType', // use the same field as enum to drive discriminators
+    timestamps: false
   }
-});
+);
 
 // Hash password before save
 UserSchema.pre('save', async function (next) {
@@ -61,7 +68,15 @@ UserSchema.methods.generateToken = function () {
   return jwt.sign({ id: this._id, userType: this.userType }, secret, { expiresIn });
 };
 
-module.exports = mongoose.model('User', UserSchema);
+// Create base model first
+const User = mongoose.model('User', UserSchema);
+
+// Register discriminators in separate files to keep concerns isolated
+require('./users/Client');
+require('./users/Artist');
+require('./users/Admin');
+
+module.exports = User;
 
 
 
