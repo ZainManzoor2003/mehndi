@@ -791,7 +791,6 @@
     display: block;
   }
 }
-
 /* Sidebar footer and logout */
 .sidebar-footer { margin-top: auto; padding: 12px; border-top: 1px solid var(--ad-border); }
 .sidebar-logout { margin-top: 10px; }
@@ -1586,7 +1585,6 @@
   flex: 1;
   position: relative;
 }
-
 .booking-form-container .progress-step {
   display: flex;
   flex-direction: column;
@@ -2385,7 +2383,6 @@
   color: var(--text-color);
   font-size: var(--small-font-size);
 }
-
 .expand-btn, .edit-btn, .close-btn {
   background: none;
   border: none;
@@ -3184,7 +3181,6 @@
   color: var(--text-color);
   font-weight: var(--font-medium);
 }
-
 .amount-value {
   font-size: var(--h3-font-size);
   font-weight: var(--font-semi-bold);
@@ -3979,7 +3975,6 @@ html {
     scroll-padding-top: 5rem;
   }
 }
-
 body {
   margin: 0;
   font-family: var(--body-font);
@@ -4581,9 +4576,10 @@ input {
   flex-direction: column;
   margin-left: 0;
   transition: margin-left 0.3s ease;
-  height: 100vh;
-  overflow-y: auto;
+  height: auto;
+  overflow-y: visible;
   overflow-x: hidden;
+  margin-top: 20px !important;
 }
 
 .sidebar-toggle-btn {
@@ -4610,8 +4606,28 @@ input {
 
 .dashboard-container {
   flex: 1;
-  padding: 2rem;
+  padding: 0.5rem 2rem 2rem;
   min-height: 100vh;
+  margin-top: 0 !important;
+  padding-top: 0.5rem !important;
+}
+
+/* Remove any top gap within dashboard pages */
+.dashboard-main-content,
+.dashboard-main-content .dashboard-container,
+.dashboard-main-content .dashboard-content,
+.dashboard-main-content .welcome-section {
+  padding-top: 0 !important;
+}
+
+.dashboard-main-content .dashboard-container > *:first-child {
+  margin-top: 0 !important;
+}
+
+.dashboard-main-content .dashboard-container h1:first-child,
+.dashboard-main-content .dashboard-container h2:first-child,
+.dashboard-main-content .dashboard-container h3:first-child {
+  margin-top: 0 !important;
 }
 
 /* Mobile Layout */
@@ -4622,18 +4638,22 @@ input {
   
   .dashboard-main-content {
     margin-left: 0;
+    padding-top: 0 !important;
+    margin-top: 0 !important;
   }
   
   .dashboard-container {
-    padding: 1rem;
+    padding: 0.5rem 1rem 1rem;
+    margin-top: 0 !important;
+    padding-top: 0.5rem !important;
   }
 }
 
 /* Desktop Layout */
 @media screen and (min-width: 769px) {
   .dashboard-main-content {
-    height: 100vh;
-    overflow-y: auto;
+    height: auto;
+    overflow-y: visible;
   }
   
   .sidebar-toggle-btn {
@@ -4753,7 +4773,6 @@ input {
 .bookings-section {
   margin-bottom: 3rem;
 }
-
 .section-title {
   font-size: 1.5rem;
   font-weight: var(--font-semi-bold);
@@ -4767,7 +4786,6 @@ input {
   grid-template-columns: 1fr;
   gap: 1.5rem;
 }
-
 .booking-card {
   background: var(--white-color);
   border-radius: 16px;
@@ -5553,7 +5571,6 @@ input {
   margin-bottom: 1.5rem;
   font-family: var(--title-font);
 }
-
 .footer__list {
   list-style: none;
 }
@@ -5568,7 +5585,6 @@ input {
   transition: color 0.3s ease;
   font-size: var(--normal-font-size);
 }
-
 .footer__link:hover {
   color: var(--white-color);
   transform: translateX(5px);
@@ -7891,10 +7907,6 @@ body.dark-theme .scroll-header .henna-line {
 .status-indicator.online {
   background: #28a745;
 }
-.status-indicator.away {
-  background: #ffc107;
-}
-
 .status-indicator.offline {
   background: #6c757d;
 }
