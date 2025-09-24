@@ -332,6 +332,11 @@ export const bookingsAPI = {
     return apiRequest('/bookings/all');
   },
 
+  // Get pending bookings (for artists/admin)
+  getPendingBookings: async () => {
+    return apiRequest('/bookings/pending');
+  },
+
   // Get single booking
   getBooking: async (bookingId) => {
     return apiRequest(`/bookings/${bookingId}`);

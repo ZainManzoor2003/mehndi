@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import ArtistSidebar from './ArtistSidebar';
 import apiService from '../services/api';
 
-const { jobsAPI, proposalsAPI, authAPI } = apiService;
+const { jobsAPI, proposalsAPI, authAPI, bookingsAPI } = apiService;
 
 const ArtistDashboard = () => {
   const navigate = useNavigate();
@@ -46,26 +46,33 @@ const ArtistDashboard = () => {
 
   // Applications (mock data to match screenshot)
   const [applicationsFilter, setApplicationsFilter] = useState('all');
-  const [applications, setApplications] = useState([
-    {
-      id: 'app-1',
-      title: 'Bridal Mehndi – Oct 20, 2025',
-      client: 'Aisha Khan · London',
-      budget: '£500',
-      appliedOn: '2025-08-01',
-      status: 'expired',
-      note: 'This request expired without client response. Keep applying — your next client is waiting! ✨'
-    },
-    {
-      id: 'app-2',
-      title: 'Henna Night – Sep 25, 2025',
-      client: 'Layla Noor · Manchester',
-      budget: '£300',
-      appliedOn: '2025-08-05',
-      status: 'applied',
-      note: "This request has been open for 3 weeks. You may want to withdraw if you're no longer available.\n3 other artists have applied. Client viewed your profile 1 times."
+  const [applications, setApplications] = useState([]);
+  const [appsLoading, setAppsLoading] = useState(false);
+  const [appsError, setAppsError] = useState('');
+
+  const fetchPendingBookings = useCallback(async () => {
+    if (!isAuthenticated || !user || user.userType !== 'artist') return;
+    try {
+      setAppsLoading(true);
+      setAppsError('');
+      const resp = await bookingsAPI.getPendingBookings();
+      const items = (resp.data || []).map((b) => ({
+        id: b._id,
+        title: `${(b.eventType || []).join(', ') || 'Mehndi'} – ${new Date(b.eventDate).toLocaleDateString('en-GB')}`,
+        client: `${b.firstName} ${b.lastName} · ${b.city || b.location || ''}`.trim(),
+        budget: `£${b.minimumBudget ?? 0}${b.maximumBudget ? ` - £${b.maximumBudget}` : ''}`,
+        appliedOn: new Date(b.createdAt).toLocaleDateString('en-GB'),
+        status: 'pending',
+        assignedCount: Array.isArray(b.assignedArtist) ? b.assignedArtist.length : (b.assignedArtist ? 1 : 0)
+      }));
+      setApplications(items);
+    } catch (e) {
+      setAppsError(e.message || 'Failed to load pending bookings');
+      setApplications([]);
+    } finally {
+      setAppsLoading(false);
     }
-  ]);
+  }, [isAuthenticated, user]);
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState(null);
 
@@ -325,7 +332,7 @@ const ArtistDashboard = () => {
       setActiveTab(tab);
     }
 
-    // In mock mode, preload static data matching the screenshot and skip API calls
+    // In mock mode, keep other mock sections but fetch real pending bookings for applications tab
     if (useMockData) {
       setLoading(false);
 
@@ -400,8 +407,9 @@ const ArtistDashboard = () => {
           responseDate: null
         }
       ]);
-
-      return; // stop here, do not fetch
+      // Also get pending bookings for Applications tab
+      fetchPendingBookings();
+      return;
     }
 
     console.log('Artist Dashboard useEffect:', {
@@ -414,12 +422,13 @@ const ArtistDashboard = () => {
       setTimeout(() => {
         fetchAvailableJobs();
         fetchSentProposals();
+        fetchPendingBookings();
       }, 100);
     } else {
       console.log('User not authenticated');
       setLoading(false);
     }
-  }, [isAuthenticated, user, fetchAvailableJobs, fetchSentProposals]);
+  }, [isAuthenticated, user, fetchAvailableJobs, fetchSentProposals, fetchPendingBookings]);
 
   // Derive overview data when proposals change
   useEffect(() => {
@@ -1002,9 +1011,11 @@ const ArtistDashboard = () => {
                     ))}
                   </div>
 
-                  {/* List */}
+                  {/* List - show pending bookings as applications */}
                   <div className="apps-list">
-                    {applications
+                    {appsLoading && (<div className="app-card"><div>Loading pending bookings...</div></div>)}
+                    {appsError && (<div className="app-card"><div style={{color:'#c33'}}>{appsError}</div></div>)}
+                    {!appsLoading && !appsError && applications
                       .filter(a => applicationsFilter === 'all' ? true : a.status === applicationsFilter)
                       .map(a => (
                         <div key={a.id} className="app-card">
@@ -1012,19 +1023,18 @@ const ArtistDashboard = () => {
                           <div className="app-meta">
                             <div>Client: {a.client}</div>
                             <div>Budget: {a.budget}</div>
-                            <div>Applied on: {a.appliedOn}</div>
+                            <div>Posted on: {a.appliedOn}</div>
                           </div>
                           <span className={`app-badge ${a.status}`}>{a.status.charAt(0).toUpperCase() + a.status.slice(1)}</span>
-                          <p className="app-note">{a.note}</p>
-                          {a.status === 'applied' && (
-                            <div className="app-actions">
-                              <button className="app-btn secondary">Message</button>
-                              <button className="app-btn">Update Application</button>
-                              <button className="app-btn danger" onClick={() => openWithdrawModal(a)}>Withdraw</button>
-                            </div>
-                          )}
+                          <p className="app-note">Assigned artists: {a.assignedCount ?? 0}</p>
+                          <div className="app-actions">
+                            <button className="app-btn">View Details</button>
+                          </div>
                         </div>
                       ))}
+                    {!appsLoading && !appsError && applications.length === 0 && (
+                      <div className="app-card"><div>No pending bookings right now.</div></div>
+                    )}
                   </div>
                 </div>
               )}

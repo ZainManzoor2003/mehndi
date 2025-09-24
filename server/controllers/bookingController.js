@@ -222,6 +222,31 @@ const getAllBookings = async (req, res) => {
   }
 };
 
+// @desc    Get all pending bookings (for artists/admin)
+// @route   GET /api/bookings/pending
+// @access  Private (Artist/Admin only)
+const getPendingBookings = async (req, res) => {
+  try {
+    const bookings = await Booking.find({ status: 'pending' })
+      .populate('clientId', 'firstName lastName email')
+      .populate('assignedArtist', 'firstName lastName email')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: bookings.length,
+      data: bookings
+    });
+  } catch (error) {
+    console.error('Get pending bookings error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching pending bookings',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+};
+
 // @desc    Get single booking by ID
 // @route   GET /api/bookings/:id
 // @access  Private
@@ -394,6 +419,7 @@ module.exports = {
   getBookingById,
   updateBookingStatus,
   updateBooking,
-  deleteBooking
+  deleteBooking,
+  getPendingBookings
 };
 
