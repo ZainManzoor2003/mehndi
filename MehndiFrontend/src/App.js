@@ -63,7 +63,11 @@ function App() {
                 <ClientDashboard />
               </RoleProtectedRoute>
             } />
-            <Route path="/bookings" element={<AllBookings />} />
+            <Route path="/dashboard/bookings" element={
+              <RoleProtectedRoute allowedRoles={["client"]}>
+                <AllBookings />
+              </RoleProtectedRoute>
+            } />
             <Route path="/proposals" element={<ProposalsPage />} />
             <Route path="/proposal" element={<ProposalsPage />} />
             <Route path="/artist-dashboard/:tab?" element={

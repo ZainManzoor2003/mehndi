@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-const DashboardSidebar = ({ activeTab, onTabChange, isOpen, onClose }) => {
+const DashboardSidebar = ({ activeTab, onTabChange, isOpen, onClose, bookingCount = 0 }) => {
   const sidebarItems = [
     {
       id: 'dashboard',
@@ -21,8 +21,7 @@ const DashboardSidebar = ({ activeTab, onTabChange, isOpen, onClose }) => {
           <line x1="8" y1="21" x2="16" y2="21"/>
           <line x1="12" y1="17" x2="12" y2="21"/>
         </svg>
-      ),
-      path: '/bookings'
+      )
     },
     {
       id: 'proposals',
@@ -125,8 +124,8 @@ const DashboardSidebar = ({ activeTab, onTabChange, isOpen, onClose }) => {
                 >
                   <span className="sidebar-icon">{item.icon}</span>
                   <span className="sidebar-text">{item.title}</span>
-                  {item.id === 'bookings' && (
-                    <span className="sidebar-badge">New</span>
+                  {item.id === 'bookings' && bookingCount > 0 && (
+                    <span className="sidebar-badge">{bookingCount}</span>
                   )}
                 </button>
               </li>

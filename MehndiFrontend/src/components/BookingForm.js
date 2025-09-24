@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import Header from './Header';
 import apiService from '../services/api';
 
-const { jobsAPI } = apiService;
+const { bookingsAPI } = apiService;
 
 const BookingForm = () => {
   const navigate = useNavigate();
@@ -19,33 +19,33 @@ const BookingForm = () => {
     firstName: '',
     lastName: '',
     email: '',
-    phone: '',
+    phoneNumber: '',
     
     // Event Details
     eventType: [],
-    otherEvent: '',
+    otherEventType: '',
     eventDate: '',
-    preferredTime: [],
+    preferredTimeSlot: [],
     location: '',
-    artistTravel: '',
+    artistTravelsToClient: '',
     duration: '',
-    guestCount: '',
+    numberOfPeople: '',
     
     // Style Details
     designStyle: '',
-    complexity: '',
-    bodyParts: [],
-    inspiration: '',
+    designComplexity: '',
+    bodyPartsToDecorate: [],
+    designInspiration: '',
     
     // Budget
-    budgetMin: '',
-    budgetMax: '',
+    minimumBudget: '',
+    maximumBudget: '',
     
     // Additional Info
     additionalRequests: '',
     venueName: '',
     coveragePreference: '',
-    address: '',
+    fullAddress: '',
     city: '',
     postalCode: ''
   });
@@ -62,7 +62,7 @@ const BookingForm = () => {
     const { name, value, type, checked } = e.target;
     
     if (type === 'checkbox') {
-      if (name === 'eventType' || name === 'preferredTime' || name === 'bodyParts') {
+      if (name === 'eventType' || name === 'preferredTimeSlot' || name === 'bodyPartsToDecorate') {
         setFormData(prev => ({
           ...prev,
           [name]: checked 
@@ -75,6 +75,11 @@ const BookingForm = () => {
           [name]: checked
         }));
       }
+    } else if (type === 'radio') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value === 'yes'
+      }));
     } else {
       setFormData(prev => ({
         ...prev,
@@ -112,8 +117,8 @@ const BookingForm = () => {
 
     // Validate required fields - more flexible validation
     const requiredFields = [
-      'firstName', 'lastName', 'email', 'phone',
-      'eventType', 'eventDate', 'budgetMin', 'budgetMax'
+      'firstName', 'lastName', 'email', 'phoneNumber',
+      'eventType', 'eventDate', 'minimumBudget', 'maximumBudget'
     ];
 
     // Check which fields are missing
@@ -128,13 +133,13 @@ const BookingForm = () => {
       console.log('Missing required fields:', missingFields);
       
       // Navigate to the step with missing fields
-      if (missingFields.some(field => ['firstName', 'lastName', 'email', 'phone'].includes(field))) {
+      if (missingFields.some(field => ['firstName', 'lastName', 'email', 'phoneNumber'].includes(field))) {
         setCurrentStep(1);
         setError('Please complete the Contact Details in Step 1');
       } else if (missingFields.some(field => ['eventType', 'eventDate'].includes(field))) {
         setCurrentStep(2);
         setError('Please complete the Event Details in Step 2');
-      } else if (missingFields.some(field => ['budgetMin', 'budgetMax'].includes(field))) {
+      } else if (missingFields.some(field => ['minimumBudget', 'maximumBudget'].includes(field))) {
         setCurrentStep(4);
         setError('Please complete the Budget information in Step 4');
       } else {
@@ -143,7 +148,7 @@ const BookingForm = () => {
       return;
     }
 
-    if (parseInt(formData.budgetMax) <= parseInt(formData.budgetMin)) {
+    if (parseInt(formData.maximumBudget) <= parseInt(formData.minimumBudget)) {
       setError('Maximum budget must be greater than minimum budget');
       return;
     }
@@ -162,70 +167,50 @@ const BookingForm = () => {
     setIsLoading(true);
 
     try {
-      // Transform form data to match backend schema
-      const baseDescription = `${formData.inspiration || 'Beautiful henna design requested'} ${formData.additionalRequests ? `. Additional requirements: ${formData.additionalRequests}` : ''}`;
-      
-      // Ensure description is at least 50 characters (backend requirement)
-      const description = baseDescription.length < 50 
-        ? baseDescription + '. Looking forward to beautiful traditional henna designs for this special event.'
-        : baseDescription;
-      
-      const jobData = {
-        title: `${formData.eventType.join(', ')} - ${formData.designStyle || 'Henna Design'}`,
-        description,
-        category: getJobCategory(formData.designStyle),
-        
-        eventDetails: {
-          eventType: getEventType(formData.eventType[0]),
-          eventDate: new Date(formData.eventDate + 'T12:00:00'),
-          eventTime: formatEventTime(formData.preferredTime[0]) || '10:00',
-          duration: {
-            estimated: parseInt(formData.duration) || 3
-          },
-          guestCount: parseInt(formData.guestCount) || 1
-        },
-        
-        location: {
-          address: formData.address || 'To be confirmed',
-          city: formData.city || 'London',
-          postalCode: formData.postalCode || 'SW1A 1AA',
-          country: 'UK'
-        },
-        
-        budget: {
-          min: parseInt(formData.budgetMin),
-          max: parseInt(formData.budgetMax),
-          currency: 'GBP',
-          negotiable: true
-        },
-        
-        requirements: {
-          designStyle: formData.designStyle ? [formData.designStyle.toLowerCase()] : ['traditional'],
-          designComplexity: (formData.complexity || 'medium').toLowerCase(),
-          specialInstructions: formData.additionalRequests || ''
-        },
-        
-        status: 'open',
-        priority: 'medium',
-        visibility: 'public'
+      // Transform form data to match booking schema
+      const bookingData = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phoneNumber: formData.phoneNumber,
+        eventType: formData.eventType,
+        otherEventType: formData.otherEventType || undefined,
+        eventDate: formData.eventDate,
+        preferredTimeSlot: formData.preferredTimeSlot,
+        location: formData.location,
+        artistTravelsToClient: formData.artistTravelsToClient,
+        fullAddress: formData.fullAddress,
+        city: formData.city,
+        postalCode: formData.postalCode,
+        venueName: formData.venueName || undefined,
+        minimumBudget: parseInt(formData.minimumBudget),
+        maximumBudget: parseInt(formData.maximumBudget),
+        duration: parseInt(formData.duration) || 3,
+        numberOfPeople: parseInt(formData.numberOfPeople) || 1,
+        designStyle: formData.designStyle,
+        designComplexity: formData.designComplexity,
+        bodyPartsToDecorate: formData.bodyPartsToDecorate,
+        designInspiration: formData.designInspiration || undefined,
+        coveragePreference: formData.coveragePreference || undefined,
+        additionalRequests: formData.additionalRequests || undefined
       };
 
-      console.log('Submitting job data:', jobData);
-      console.log('Job data JSON:', JSON.stringify(jobData, null, 2));
+      console.log('Submitting booking data:', bookingData);
+      console.log('Booking data JSON:', JSON.stringify(bookingData, null, 2));
 
-      const response = await jobsAPI.createJob(jobData);
+      const response = await bookingsAPI.createBooking(bookingData);
       
-      console.log('Job created successfully:', response);
-      setSuccess('Your booking request has been posted successfully! Artists will start sending you proposals soon.');
+      console.log('Booking created successfully:', response);
+      setSuccess('Your booking request has been submitted successfully! Artists will be able to view and respond to your request.');
       
       // Clear form
       setFormData({
-        firstName: '', lastName: '', email: '', phone: '',
-        eventType: [], otherEvent: '', eventDate: '', preferredTime: [],
-        location: '', artistTravel: '', duration: '', guestCount: '',
-        designStyle: '', complexity: '', bodyParts: [], inspiration: '',
-        budgetMin: '', budgetMax: '', additionalRequests: '', venueName: '',
-        coveragePreference: '', address: '', city: '', postalCode: ''
+        firstName: '', lastName: '', email: '', phoneNumber: '',
+        eventType: [], otherEventType: '', eventDate: '', preferredTimeSlot: [],
+        location: '', artistTravelsToClient: '', duration: '', numberOfPeople: '',
+        designStyle: '', designComplexity: '', bodyPartsToDecorate: [], designInspiration: '',
+        minimumBudget: '', maximumBudget: '', additionalRequests: '', venueName: '',
+        coveragePreference: '', fullAddress: '', city: '', postalCode: ''
       });
       
       // Reset to first step
@@ -237,7 +222,7 @@ const BookingForm = () => {
       }, 3000);
 
     } catch (error) {
-      console.error('Job creation error:', error);
+      console.error('Booking creation error:', error);
       
       // If it's a validation error, show more specific information
       if (error.message.includes('Validation errors')) {
@@ -250,48 +235,6 @@ const BookingForm = () => {
     }
   };
 
-  // Helper functions to map form data to backend enums
-  const getJobCategory = (designStyle) => {
-    const categoryMap = {
-      'traditional': 'traditional',
-      'modern': 'modern',
-      'arabic': 'arabic',
-      'indian': 'indian',
-      'bridal': 'bridal'
-    };
-    return categoryMap[designStyle?.toLowerCase()] || 'other';
-  };
-
-  const getEventType = (eventType) => {
-    const eventMap = {
-      'wedding': 'wedding',
-      'engagement': 'engagement',
-      'birthday': 'birthday',
-      'festival': 'festival',
-      'corporate': 'corporate',
-      'baby shower': 'baby_shower'
-    };
-    return eventMap[eventType?.toLowerCase()] || 'other';
-  };
-
-  const formatEventTime = (timeString) => {
-    if (!timeString) return '10:00';
-    
-    // If it's already in HH:MM format, return as is
-    if (/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(timeString)) {
-      return timeString;
-    }
-    
-    // Convert common time formats to HH:MM
-    const timeMap = {
-      'morning': '10:00',
-      'afternoon': '14:00',
-      'evening': '18:00',
-      'night': '20:00'
-    };
-    
-    return timeMap[timeString?.toLowerCase()] || '10:00';
-  };
 
   return (
     <>
@@ -376,9 +319,9 @@ const BookingForm = () => {
                     <label className="form-label">Phone Number *</label>
                     <input
                       type="tel"
-                      name="phone"
+                      name="phoneNumber"
                       className="form-input"
-                      value={formData.phone}
+                      value={formData.phoneNumber}
                       onChange={handleInputChange}
                       required
                     />
@@ -445,10 +388,10 @@ const BookingForm = () => {
                   </div>
                   <input
                     type="text"
-                    name="otherEvent"
+                    name="otherEventType"
                     className="form-input"
                     placeholder="Other:"
-                    value={formData.otherEvent}
+                    value={formData.otherEventType}
                     onChange={handleInputChange}
                   />
                 </div>
@@ -471,9 +414,9 @@ const BookingForm = () => {
                     <label className="checkbox-label">
                       <input
                         type="checkbox"
-                        name="preferredTime"
+                        name="preferredTimeSlot"
                         value="Morning"
-                        checked={formData.preferredTime.includes('Morning')}
+                        checked={formData.preferredTimeSlot.includes('Morning')}
                         onChange={handleInputChange}
                         className="checkbox-input"
                       />
@@ -482,9 +425,9 @@ const BookingForm = () => {
                     <label className="checkbox-label">
                       <input
                         type="checkbox"
-                        name="preferredTime"
+                        name="preferredTimeSlot"
                         value="Afternoon"
-                        checked={formData.preferredTime.includes('Afternoon')}
+                        checked={formData.preferredTimeSlot.includes('Afternoon')}
                         onChange={handleInputChange}
                         className="checkbox-input"
                       />
@@ -493,9 +436,9 @@ const BookingForm = () => {
                     <label className="checkbox-label">
                       <input
                         type="checkbox"
-                        name="preferredTime"
+                        name="preferredTimeSlot"
                         value="Evening"
-                        checked={formData.preferredTime.includes('Evening')}
+                        checked={formData.preferredTimeSlot.includes('Evening')}
                         onChange={handleInputChange}
                         className="checkbox-input"
                       />
@@ -504,9 +447,9 @@ const BookingForm = () => {
                     <label className="checkbox-label">
                       <input
                         type="checkbox"
-                        name="preferredTime"
+                        name="preferredTimeSlot"
                         value="Flexible"
-                        checked={formData.preferredTime.includes('Flexible')}
+                        checked={formData.preferredTimeSlot.includes('Flexible')}
                         onChange={handleInputChange}
                         className="checkbox-input"
                       />
@@ -534,9 +477,9 @@ const BookingForm = () => {
                     <label className="radio-label">
                       <input
                         type="radio"
-                        name="artistTravel"
+                        name="artistTravelsToClient"
                         value="yes"
-                        checked={formData.artistTravel === 'yes'}
+                        checked={formData.artistTravelsToClient === true}
                         onChange={handleInputChange}
                         className="radio-input"
                       />
@@ -545,9 +488,9 @@ const BookingForm = () => {
                     <label className="radio-label">
                       <input
                         type="radio"
-                        name="artistTravel"
+                        name="artistTravelsToClient"
                         value="no"
-                        checked={formData.artistTravel === 'no'}
+                        checked={formData.artistTravelsToClient === false}
                         onChange={handleInputChange}
                         className="radio-input"
                       />
@@ -589,9 +532,9 @@ const BookingForm = () => {
                 <div className="form-group">
                   <label className="form-label">Design Complexity *</label>
                   <select
-                    name="complexity"
+                    name="designComplexity"
                     className="form-input"
-                    value={formData.complexity}
+                    value={formData.designComplexity}
                     onChange={handleInputChange}
                     required
                   >
@@ -609,9 +552,9 @@ const BookingForm = () => {
                     <label className="checkbox-label">
                       <input
                         type="checkbox"
-                        name="bodyParts"
+                        name="bodyPartsToDecorate"
                         value="Hands"
-                        checked={formData.bodyParts.includes('Hands')}
+                        checked={formData.bodyPartsToDecorate.includes('Hands')}
                         onChange={handleInputChange}
                         className="checkbox-input"
                       />
@@ -620,9 +563,9 @@ const BookingForm = () => {
                     <label className="checkbox-label">
                       <input
                         type="checkbox"
-                        name="bodyParts"
+                        name="bodyPartsToDecorate"
                         value="Feet"
-                        checked={formData.bodyParts.includes('Feet')}
+                        checked={formData.bodyPartsToDecorate.includes('Feet')}
                         onChange={handleInputChange}
                         className="checkbox-input"
                       />
@@ -631,9 +574,9 @@ const BookingForm = () => {
                     <label className="checkbox-label">
                       <input
                         type="checkbox"
-                        name="bodyParts"
+                        name="bodyPartsToDecorate"
                         value="Arms"
-                        checked={formData.bodyParts.includes('Arms')}
+                        checked={formData.bodyPartsToDecorate.includes('Arms')}
                         onChange={handleInputChange}
                         className="checkbox-input"
                       />
@@ -642,9 +585,9 @@ const BookingForm = () => {
                     <label className="checkbox-label">
                       <input
                         type="checkbox"
-                        name="bodyParts"
+                        name="bodyPartsToDecorate"
                         value="Back"
-                        checked={formData.bodyParts.includes('Back')}
+                        checked={formData.bodyPartsToDecorate.includes('Back')}
                         onChange={handleInputChange}
                         className="checkbox-input"
                       />
@@ -656,10 +599,10 @@ const BookingForm = () => {
                 <div className="form-group">
                   <label className="form-label">Design Inspiration</label>
                   <textarea
-                    name="inspiration"
+                    name="designInspiration"
                     className="form-textarea"
                     placeholder="Describe your vision or any specific design elements you'd like..."
-                    value={formData.inspiration}
+                    value={formData.designInspiration}
                     onChange={handleInputChange}
                     rows="4"
                   />
@@ -680,10 +623,10 @@ const BookingForm = () => {
                     <label className="form-label">Minimum Budget (£) *</label>
                     <input
                       type="number"
-                      name="budgetMin"
+                      name="minimumBudget"
                       className="form-input"
                       placeholder="50"
-                      value={formData.budgetMin}
+                      value={formData.minimumBudget}
                       onChange={handleInputChange}
                       min="50"
                       required
@@ -693,10 +636,10 @@ const BookingForm = () => {
                     <label className="form-label">Maximum Budget (£) *</label>
                     <input
                       type="number"
-                      name="budgetMax"
+                      name="maximumBudget"
                       className="form-input"
                       placeholder="500"
-                      value={formData.budgetMax}
+                      value={formData.maximumBudget}
                       onChange={handleInputChange}
                       min="50"
                       required
@@ -723,10 +666,10 @@ const BookingForm = () => {
                     <label className="form-label">Number of People *</label>
                     <input
                       type="number"
-                      name="guestCount"
+                      name="numberOfPeople"
                       className="form-input"
                       placeholder="5"
-                      value={formData.guestCount}
+                      value={formData.numberOfPeople}
                       onChange={handleInputChange}
                       min="1"
                       max="50"
@@ -739,10 +682,10 @@ const BookingForm = () => {
                   <label className="form-label">Full Address *</label>
                   <input
                     type="text"
-                    name="address"
+                    name="fullAddress"
                     className="form-input"
                     placeholder="123 Main Street"
-                    value={formData.address}
+                    value={formData.fullAddress}
                     onChange={handleInputChange}
                     required
                   />
@@ -829,32 +772,32 @@ const BookingForm = () => {
                   <h3>Contact Information</h3>
                   <p><strong>Name:</strong> {formData.firstName} {formData.lastName}</p>
                   <p><strong>Email:</strong> {formData.email}</p>
-                  <p><strong>Phone:</strong> {formData.phone}</p>
+                  <p><strong>Phone:</strong> {formData.phoneNumber}</p>
                 </div>
 
                 <div className="review-section">
                   <h3>Event Details</h3>
-                  <p><strong>Event Type:</strong> {formData.eventType.join(', ')} {formData.otherEvent}</p>
+                  <p><strong>Event Type:</strong> {formData.eventType.join(', ')} {formData.otherEventType}</p>
                   <p><strong>Date:</strong> {formData.eventDate}</p>
-                  <p><strong>Time:</strong> {formData.preferredTime.join(', ')}</p>
+                  <p><strong>Time:</strong> {formData.preferredTimeSlot.join(', ')}</p>
                   <p><strong>Location:</strong> {formData.location}</p>
-                  <p><strong>Artist Travel:</strong> {formData.artistTravel === 'yes' ? 'Yes' : 'No'}</p>
+                  <p><strong>Artist Travel:</strong> {formData.artistTravelsToClient ? 'Yes' : 'No'}</p>
                 </div>
 
                 <div className="review-section">
                   <h3>Style Preferences</h3>
                   <p><strong>Style:</strong> {formData.designStyle}</p>
-                  <p><strong>Complexity:</strong> {formData.complexity}</p>
-                  <p><strong>Body Parts:</strong> {formData.bodyParts.join(', ')}</p>
-                  {formData.inspiration && <p><strong>Inspiration:</strong> {formData.inspiration}</p>}
+                  <p><strong>Complexity:</strong> {formData.designComplexity}</p>
+                  <p><strong>Body Parts:</strong> {formData.bodyPartsToDecorate.join(', ')}</p>
+                  {formData.designInspiration && <p><strong>Inspiration:</strong> {formData.designInspiration}</p>}
                 </div>
 
                 <div className="review-section">
                   <h3>Budget & Additional Info</h3>
-                  <p><strong>Budget:</strong> £{formData.budgetMin || 0} - £{formData.budgetMax || 0}</p>
+                  <p><strong>Budget:</strong> £{formData.minimumBudget || 0} - £{formData.maximumBudget || 0}</p>
                   <p><strong>Duration:</strong> {formData.duration || 3} hours</p>
-                  <p><strong>Number of People:</strong> {formData.guestCount || 1}</p>
-                  {formData.address && <p><strong>Address:</strong> {formData.address}</p>}
+                  <p><strong>Number of People:</strong> {formData.numberOfPeople || 1}</p>
+                  {formData.fullAddress && <p><strong>Address:</strong> {formData.fullAddress}</p>}
                   {formData.city && <p><strong>City:</strong> {formData.city}</p>}
                   {formData.postalCode && <p><strong>Postal Code:</strong> {formData.postalCode}</p>}
                   {formData.additionalRequests && <p><strong>Additional Requests:</strong> {formData.additionalRequests}</p>}

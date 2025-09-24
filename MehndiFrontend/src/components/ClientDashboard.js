@@ -5,7 +5,7 @@ import DashboardSidebar from './DashboardSidebar';
 import apiService from '../services/api';
 import ProposalsPage from './ProposalsPage';
 
-const { jobsAPI, proposalsAPI } = apiService;
+const { jobsAPI, proposalsAPI, bookingsAPI } = apiService;
 
 const ClientDashboard = () => {
   const { user, isAuthenticated } = useAuth();
@@ -14,7 +14,7 @@ const ClientDashboard = () => {
   const userName = user ? user.firstName : 'Client';
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('visa-1234');
-  const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, proposals, wallet, reviews, messages
+  const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, proposals, wallet, reviews, messages, bookings
   const [showProposalsView, setShowProposalsView] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [proposalsFilter, setProposalsFilter] = useState('active'); // all, active, completed
@@ -36,6 +36,11 @@ const ClientDashboard = () => {
   const [jobsLoading, setJobsLoading] = useState(false);
   const [proposalsLoading, setProposalsLoading] = useState(false);
   const [proposalsError, setProposalsError] = useState('');
+  
+  // Real bookings data from backend
+  const [allBookings, setAllBookings] = useState([]);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
+  const [bookingsError, setBookingsError] = useState('');
   
   // Mock data - this would come from API calls
   const [nextEvent] = useState({
@@ -298,6 +303,39 @@ const ClientDashboard = () => {
     }
   }, []);
 
+  // Fetch client's bookings
+  const fetchBookings = useCallback(async () => {
+    if (!isAuthenticated || !user || user.userType !== 'client') {
+      console.log('Skipping bookings fetch - user not authenticated or not a client:', { isAuthenticated, userType: user?.userType });
+      return;
+    }
+
+    try {
+      setBookingsLoading(true);
+      console.log('=== FETCHING CLIENT BOOKINGS ===');
+      console.log('User:', { id: user._id, userType: user.userType, name: `${user.firstName} ${user.lastName}` });
+      
+      const response = await bookingsAPI.getMyBookings();
+      console.log('getMyBookings API response:', response);
+      
+      if (response.success && response.data) {
+        console.log('Setting client bookings:', response.data.length, 'bookings found');
+        setAllBookings(response.data);
+        setBookingsError('');
+      } else {
+        console.log('No bookings data in response or unsuccessful response');
+        setAllBookings([]);
+        setBookingsError('No bookings found');
+      }
+    } catch (error) {
+      console.error('Error fetching client bookings:', error);
+      setBookingsError(error.message || 'Failed to fetch bookings');
+      setAllBookings([]);
+    } finally {
+      setBookingsLoading(false);
+    }
+  }, [isAuthenticated, user]);
+
   // Fetch all proposals for all client jobs
   const fetchAllProposals = useCallback(async () => {
     if (!clientJobs.length) {
@@ -382,8 +420,9 @@ const ClientDashboard = () => {
     if (tab) setActiveTab(tab);
     if (isAuthenticated && user && user.userType === 'client') {
       fetchClientJobs();
+      fetchBookings();
     }
-  }, [isAuthenticated, user, fetchClientJobs, tab]);
+  }, [isAuthenticated, user, fetchClientJobs, fetchBookings, tab]);
 
   // Refresh data when the page becomes visible (user returns from job creation)
   useEffect(() => {
@@ -547,6 +586,7 @@ const ClientDashboard = () => {
           onTabChange={handleTabChange}
           isOpen={sidebarOpen}
           onClose={handleSidebarClose}
+          bookingCount={allBookings.length}
         />
         
         {/* Main Content */}
@@ -564,12 +604,6 @@ const ClientDashboard = () => {
           </button>
           
           <div className="dashboard-container">
-        <div className="dashboard-header">
-          <h1 className="dashboard-title">Client dashboard</h1>
-          <p className="dashboard-subtitle">Dashboard landing page</p>
-          
-          {/* Traffic Light System */}
-        </div>
 
         <div className="dashboard-content">
           {/* Dashboard View */}
@@ -617,7 +651,15 @@ const ClientDashboard = () => {
               <div className="dashboard-main">
                 {/* Left Column - Bookings */}
                 <div className="bookings-section">
-                  <h3 className="section-title">📅 Upcoming & Confirmed Bookings</h3>
+                  <div className="section-header">
+                    <h3 className="section-title">📅 Upcoming & Confirmed Bookings</h3>
+                    <Link to="/dashboard/bookings" className="view-all-btn">
+                      View All Bookings
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M9 18L15 12L9 6"/>
+                      </svg>
+                    </Link>
+                  </div>
                   
                   {upcomingBookings.map(booking => (
                     <div key={booking.id} className="booking-card">
@@ -1533,6 +1575,113 @@ const ClientDashboard = () => {
                   )}
                 </div>
               </div>
+            </div>
+          )}
+
+          {activeTab === 'bookings' && (
+            <div className="bookings-tab-section">
+              <div className="bookings-tab-header">
+                <h2 className="bookings-tab-title">All Bookings</h2>
+                <div className="bookings-summary">
+                  <div className="summary-stat">
+                    <span className="stat-number">{allBookings.length}</span>
+                    <span className="stat-label">Total</span>
+                  </div>
+                  <div className="summary-stat">
+                    <span className="stat-number">{allBookings.filter(b => b.status === 'confirmed' || b.status === 'pending' || b.status === 'in_progress').length}</span>
+                    <span className="stat-label">Upcoming</span>
+                  </div>
+                  <div className="summary-stat">
+                    <span className="stat-number">{allBookings.filter(b => b.status === 'completed').length}</span>
+                    <span className="stat-label">Completed</span>
+                  </div>
+                </div>
+              </div>
+
+              {bookingsLoading ? (
+                <div className="loading-state">
+                  <div className="loading-spinner">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeDasharray="31.416" strokeDashoffset="31.416">
+                        <animate attributeName="stroke-dasharray" dur="2s" values="0 31.416;15.708 15.708;0 31.416" repeatCount="indefinite"/>
+                        <animate attributeName="stroke-dashoffset" dur="2s" values="0;-15.708;-31.416" repeatCount="indefinite"/>
+                      </circle>
+                    </svg>
+                  </div>
+                  <p>Loading your bookings...</p>
+                </div>
+              ) : bookingsError ? (
+                <div className="error-state">
+                  <div className="error-icon">⚠️</div>
+                  <p>{bookingsError}</p>
+                  <button onClick={fetchBookings} className="retry-btn">Try Again</button>
+                </div>
+              ) : allBookings.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-icon">📅</div>
+                  <h3>No Bookings Yet</h3>
+                  <p>You haven't made any bookings yet. Start by creating your first mehndi appointment!</p>
+                  <Link to="/booking" className="btn-primary">Book Your First Appointment</Link>
+                </div>
+              ) : (
+                <div className="bookings-list">
+                  {allBookings.map(booking => {
+                    const getEventTitle = (eventType, otherEventType) => {
+                      if (eventType && eventType.length > 0) {
+                        const types = eventType.join(', ');
+                        return otherEventType ? `${types} - ${otherEventType}` : types;
+                      }
+                      return otherEventType || 'Mehndi Booking';
+                    };
+
+                    const getArtistName = (assignedArtist) => {
+                      if (assignedArtist && assignedArtist.firstName) {
+                        return `${assignedArtist.firstName} ${assignedArtist.lastName}`;
+                      }
+                      return 'TBD - No artist assigned yet';
+                    };
+
+                    const formatDate = (dateString) => {
+                      const date = new Date(dateString);
+                      return date.toLocaleDateString('en-GB', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric'
+                      });
+                    };
+
+                    const getStatusBadge = (status) => {
+                      const statusConfig = {
+                        pending: { class: 'pending', text: 'Pending' },
+                        confirmed: { class: 'confirmed', text: 'Confirmed' },
+                        in_progress: { class: 'in-progress', text: 'In Progress' },
+                        completed: { class: 'completed', text: 'Completed' },
+                        cancelled: { class: 'cancelled', text: 'Cancelled' }
+                      };
+                      const config = statusConfig[status] || statusConfig.pending;
+                      return <span className={`status-badge ${config.class}`}>{config.text}</span>;
+                    };
+
+                    return (
+                      <div key={booking._id} className="booking-item">
+                        <div className="booking-item-header">
+                          <h4 className="booking-item-title">{getEventTitle(booking.eventType, booking.otherEventType)}</h4>
+                          {getStatusBadge(booking.status)}
+                        </div>
+                        <div className="booking-item-details">
+                          <p><strong>Artist:</strong> {getArtistName(booking.assignedArtist)}</p>
+                          <p><strong>Date:</strong> {formatDate(booking.eventDate)}</p>
+                          <p><strong>Location:</strong> {booking.location}</p>
+                          <p><strong>Budget:</strong> £{booking.minimumBudget} - £{booking.maximumBudget}</p>
+                        </div>
+                        <div className="booking-item-actions">
+                          <Link to="/dashboard/bookings" className="view-details-btn">View Details</Link>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>

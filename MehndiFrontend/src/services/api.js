@@ -312,6 +312,40 @@ export const notificationsAPI = {
   },
 };
 
+// Bookings API functions
+export const bookingsAPI = {
+  // Create new booking
+  createBooking: async (bookingData) => {
+    return apiRequest('/bookings', {
+      method: 'POST',
+      body: JSON.stringify(bookingData),
+    });
+  },
+
+  // Get client's bookings
+  getMyBookings: async () => {
+    return apiRequest('/bookings');
+  },
+
+  // Get all bookings (for artists/admin)
+  getAllBookings: async () => {
+    return apiRequest('/bookings/all');
+  },
+
+  // Get single booking
+  getBooking: async (bookingId) => {
+    return apiRequest(`/bookings/${bookingId}`);
+  },
+
+  // Update booking status
+  updateBookingStatus: async (bookingId, status) => {
+    return apiRequest(`/bookings/${bookingId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    });
+  },
+};
+
 // Proposals API
 export const proposalsAPI = {
   // Create new proposal
@@ -380,6 +414,7 @@ export const proposalsAPI = {
 const apiExports = {
   authAPI,
   jobsAPI,
+  bookingsAPI,
   proposalsAPI,
   messagesAPI,
   reviewsAPI,
