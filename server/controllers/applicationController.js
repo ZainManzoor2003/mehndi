@@ -335,19 +335,11 @@ exports.updateApplicationStatus = async (req, res) => {
       const artistId = bookingEntry && bookingEntry.artist_id;
 
       if (artistId) {
-        // Assign artist to booking and set status to confirmed
+        // Do not confirm here; confirmation will happen after payment success
         if (!Array.isArray(booking.assignedArtist) || !booking.assignedArtist.map(a => a.toString()).includes(artistId.toString())) {
           booking.assignedArtist = [...(booking.assignedArtist || []), artistId];
         }
-        booking.status = 'confirmed';
         await booking.save();
-
-        // Decline all other applications for this booking
-        await Application.updateMany(
-          { 'Booking.booking_id': bookingId, _id: { $ne: applicationId } },
-          { $set: { 'Booking.$[elem].status': 'declined' } },
-          { arrayFilters: [ { 'elem.booking_id': bookingId } ] }
-        );
       }
     }
 

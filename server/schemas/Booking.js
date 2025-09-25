@@ -188,6 +188,20 @@ const BookingSchema = new mongoose.Schema({
     default: 'pending'
   },
 
+  // Payment
+  paymentPaid: {
+    type: String,
+    default: '0',
+    trim: true
+  },
+
+  // Remaining amount to be paid in GBP (pounds)
+  remainingPayment: {
+    type: String,
+    default: '0',
+    trim: true
+  },
+
   // Artist Assignment (can be multiple)
   assignedArtist: [
     {

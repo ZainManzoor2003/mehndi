@@ -15,6 +15,7 @@ const corsOptions = {
 
 app.use(cookieParser());
 app.use(cors(corsOptions));
+// Stripe webhook removed
 app.use(express.json())
 
 // Serve static files from uploads directory

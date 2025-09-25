@@ -31,4 +31,6 @@ router.get('/api/applications/my-applied', protect, getMyAppliedBookings);
 router.get('/api/applications/booking/:bookingId', protect, getApplicationsForBooking);
 router.put('/api/applications/:applicationId/status', protect, updateApplicationStatus);
 
+// Payments (removed)
+
 module.exports = router;

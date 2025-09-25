@@ -463,6 +463,9 @@ export const applicationsAPI = {
   }
 };
 
+// Payments API
+// Payments API removed
+
 const apiExports = {
   authAPI,
   jobsAPI,

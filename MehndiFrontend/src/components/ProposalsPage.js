@@ -55,6 +55,8 @@ const ProposalsPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
 
+  // No Stripe success handling (Stripe removed)
+
   const handleFilterChange = (filter) => {
     setActiveFilter(filter);
   };
@@ -82,12 +84,8 @@ const ProposalsPage = () => {
     if (!selectedRow) return;
     try {
       await applicationsAPI.updateApplicationStatus(selectedRow.applicationId, selectedRow.bookingId, 'accepted');
-      // server returns refreshed list; refetch this booking
-      const refreshed = await applicationsAPI.getApplicationsForBooking(selectedRow.bookingId);
-      setApplicationsByBooking(prev => ({ ...prev, [selectedRow.bookingId]: refreshed.data || [] }));
-    } catch (e) {
-      // optimistic update fallback
       updateRowStatus(selectedRow.bookingId, selectedRow.applicationId, 'accepted');
+    } catch (e) {
     } finally {
       setShowAcceptModal(false);
       setSelectedRow(null);

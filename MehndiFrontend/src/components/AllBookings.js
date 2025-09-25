@@ -205,8 +205,8 @@ const AllBookings = () => {
 
   // Get artist name
   const getArtistName = (assignedArtist) => {
-    if (assignedArtist && assignedArtist.firstName) {
-      return `${assignedArtist.firstName} ${assignedArtist.lastName}`;
+    if (assignedArtist && assignedArtist.length) {
+      return `${assignedArtist.length}`;
     }
     return 'TBD - No artist assigned yet';
   };
@@ -544,7 +544,7 @@ const AllBookings = () => {
                         <div className="card-content">
                           <div className="info-row">
                             <div className="info-item">
-                              <span className="info-label">Artist</span>
+                              <span className="info-label">Artists Assigned</span>
                               <span className="info-value">{getArtistName(booking.assignedArtist)}</span>
                       </div>
                             <div className="info-item">
