@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './messages.css';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import DashboardSidebar from './DashboardSidebar';
 import apiService, { chatAPI } from '../services/api';
@@ -13,6 +13,7 @@ const ClientDashboard = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { tab } = useParams();
+  const location = useLocation();
   const userName = user ? user.firstName : 'Client';
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('visa-1234');
@@ -313,6 +314,31 @@ const ClientDashboard = () => {
       fetchBookings();
     }
   }, [isAuthenticated, user, fetchClientJobs, fetchBookings, tab]);
+
+  // If chatId is provided in query, open messages tab and select that chat
+  useEffect(() => {
+    if (!user) return;
+    const params = new URLSearchParams(location.search);
+    const chatId = params.get('chatId');
+    if (chatId) {
+      setActiveTab('messages');
+      // Load that chat and set selection
+      chatAPI.getChat(chatId).then(res => {
+        if (res.success && res.data) {
+          const chat = res.data;
+          setSelectedConversation(chat);
+          setCurrentChat(chat);
+          setChatMessages(chat.messages || []);
+          const otherId = chat.artist?._id || chat.artistId;
+          if (otherId) {
+            const roomId = buildDirectRoomId(user?._id, otherId);
+            joinRoom(roomId, { userId: user?._id, userType: user?.userType || 'client' });
+          }
+          chatAPI.markRead(chat._id).catch(() => {});
+        }
+      }).catch(() => {});
+    }
+  }, [location.search, user]);
 
   // Refresh data when the page becomes visible (user returns from job creation)
   useEffect(() => {

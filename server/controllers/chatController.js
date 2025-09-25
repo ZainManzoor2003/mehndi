@@ -10,8 +10,9 @@ exports.ensureChat = async (req, res) => {
     let chat = await Chat.findOne({ client: clientId, artist: artistId });
     if (!chat) {
       chat = await Chat.create({ client: clientId, artist: artistId, messages: [] });
+      // Link chat to client immediately
       await User.findByIdAndUpdate(clientId, { $addToSet: { chatIds: chat._id } });
-      await User.findByIdAndUpdate(artistId, { $addToSet: { chatIds: chat._id } });
+      // Do NOT add to artist yet; only after first message is sent
     }
 
     const populated = await Chat.findById(chat._id).populate('client', 'firstName lastName userType').populate('artist', 'firstName lastName userType');
@@ -64,6 +65,13 @@ exports.sendMessage = async (req, res) => {
       { new: true }
     ).populate('client', 'firstName lastName userType').populate('artist', 'firstName lastName userType');
     if (!chat) return res.status(404).json({ success: false, message: 'Chat not found' });
+    // After first message, ensure artist has the chat linked
+    try {
+      const artistHasChat = await User.findOne({ _id: chat.artist._id, chatIds: chat._id });
+      if (!artistHasChat) {
+        await User.findByIdAndUpdate(chat.artist._id, { $addToSet: { chatIds: chat._id } });
+      }
+    } catch (_) {}
     res.json({ success: true, data: chat });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
