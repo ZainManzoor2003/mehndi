@@ -9,6 +9,8 @@ const { applyToBooking, getMyAppliedBookings, getApplicationsForBooking, updateA
 
 const { protect } = require('../middleware/auth');
 const { createCheckoutSession } = require('../controllers/paymentController');
+const chatController = require('../controllers/chatController');
+const portfolioController = require('../controllers/portfolioController');
 
 // Auth routes
 router.post('/api/auth/register', signup);
@@ -31,9 +33,23 @@ router.put('/api/applications/withdraw', protect, withdrawApplication);
 router.get('/api/applications/my-applied', protect, getMyAppliedBookings);
 router.get('/api/applications/booking/:bookingId', protect, getApplicationsForBooking);
 router.put('/api/applications/:applicationId/status', protect, updateApplicationStatus);
-
 // Payments (removed)
 // Payments
 router.post('/api/payments/create-checkout', protect, createCheckoutSession);
+
+
+
+// Chat routes
+router.post('/api/chats/ensure', protect, chatController.ensureChat);
+router.get('/api/chats', protect, chatController.listMyChats);
+router.get('/api/chats/:chatId', protect, chatController.getChat);
+router.post('/api/chats/:chatId/messages', protect, chatController.sendMessage);
+router.put('/api/chats/:chatId/read', protect, chatController.markRead);
+
+// Portfolio routes (artists only)
+router.get('/api/portfolios/me', protect, portfolioController.listMyPortfolios);
+router.post('/api/portfolios', protect, portfolioController.createPortfolio);
+router.put('/api/portfolios/:id', protect, portfolioController.updatePortfolio);
+router.delete('/api/portfolios/:id', protect, portfolioController.deletePortfolio);
 
 module.exports = router;

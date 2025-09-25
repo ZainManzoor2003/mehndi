@@ -7819,6 +7819,9 @@ body.dark-theme .scroll-header .henna-line {
 .messages-section {
   width: 100%;
   height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .messages-container {
@@ -7828,6 +7831,8 @@ body.dark-theme .scroll-header .henna-line {
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(139, 115, 85, 0.1);
+  width: 100%;
+  max-width: 1200px;
 }
 
 .conversations-sidebar {

@@ -25,6 +25,11 @@ const UserSchema = new mongoose.Schema(
       trim: true,
       match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email']
     },
+    userProfileImage: {
+      type: String,
+      trim: true,
+      default: ''
+    },
     password: {
       type: String,
       required: [true, 'Password is required'],
@@ -37,6 +42,7 @@ const UserSchema = new mongoose.Schema(
       required: [true, 'User type is required'],
       default: 'client'
     },
+    chatIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Chat' }],
     createdAt: {
       type: Date,
       default: Date.now

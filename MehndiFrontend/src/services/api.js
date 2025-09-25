@@ -197,6 +197,33 @@ export const messagesAPI = {
   },
 };
 
+// Chats API functions
+export const chatAPI = {
+  ensureChat: async (clientId, artistId) => {
+    return apiRequest('/chats/ensure', {
+      method: 'POST',
+      body: JSON.stringify({ clientId, artistId }),
+    });
+  },
+  listMyChats: async () => {
+    return apiRequest('/chats');
+  },
+  getChat: async (chatId) => {
+    return apiRequest(`/chats/${chatId}`);
+  },
+  sendMessage: async (chatId, text) => {
+    return apiRequest(`/chats/${chatId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ text }),
+    });
+  },
+  markRead: async (chatId) => {
+    return apiRequest(`/chats/${chatId}/read`, {
+      method: 'PUT'
+    });
+  }
+};
+
 // Reviews API functions
 export const reviewsAPI = {
   // Create review (clients only)
@@ -310,6 +337,30 @@ export const notificationsAPI = {
       method: 'DELETE',
     });
   },
+};
+
+// Portfolios API functions
+export const portfoliosAPI = {
+  listMine: async () => {
+    return apiRequest('/portfolios/me');
+  },
+  create: async (data) => {
+    return apiRequest('/portfolios', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+  update: async (id, data) => {
+    return apiRequest(`/portfolios/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+  remove: async (id) => {
+    return apiRequest(`/portfolios/${id}`, {
+      method: 'DELETE'
+    });
+  }
 };
 
 // Bookings API functions
@@ -481,10 +532,12 @@ const apiExports = {
   applicationsAPI,
   paymentsAPI,
   messagesAPI,
+  chatAPI,
   reviewsAPI,
   usersAPI,
   uploadAPI,
   notificationsAPI,
+  portfoliosAPI,
 };
 
 export default apiExports; 

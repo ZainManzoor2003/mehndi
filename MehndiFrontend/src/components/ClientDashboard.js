@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import './messages.css';
+import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import DashboardSidebar from './DashboardSidebar';
-import apiService from '../services/api';
+import apiService, { chatAPI } from '../services/api';
+import socket, { buildDirectRoomId, joinRoom, sendRoomMessage, sendTyping, signalOnline, onPresenceUpdate } from '../services/socket';
 import ProposalsPage from './ProposalsPage';
 
 const { jobsAPI, proposalsAPI, bookingsAPI } = apiService;
@@ -11,6 +13,7 @@ const ClientDashboard = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { tab } = useParams();
+  const location = useLocation();
   const userName = user ? user.firstName : 'Client';
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('visa-1234');
@@ -29,6 +32,7 @@ const ClientDashboard = () => {
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [newMessage, setNewMessage] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [typingUserId, setTypingUserId] = useState(null);
   
   // Real proposals data from backend
   const [realProposals, setRealProposals] = useState([]);
@@ -104,122 +108,12 @@ const ClientDashboard = () => {
     }
   ]);
 
-  // Mock data for conversations
-  const [conversations] = useState([
-    {
-      id: 1,
-      artistName: 'Zara Henna Arts',
-      artistImage: 'https://via.placeholder.com/50x50',
-      lastMessage: 'Thank you for choosing me! I\'m excited to work with you.',
-      lastMessageTime: '10:30 AM',
-      unreadCount: 2,
-      status: 'online',
-      messages: [
-        {
-          id: 1,
-          senderId: 'artist',
-          senderName: 'Zara Henna Arts',
-          message: 'Hi! I received your booking request for the bridal mehndi.',
-          timestamp: '2024-03-15 09:15 AM',
-          type: 'text'
-        },
-        {
-          id: 2,
-          senderId: 'user',
-          senderName: 'Aisha',
-          message: 'Hello! Yes, I\'m excited to work with you. Can we discuss the design details?',
-          timestamp: '2024-03-15 09:20 AM',
-          type: 'text'
-        },
-        {
-          id: 3,
-          senderId: 'artist',
-          senderName: 'Zara Henna Arts',
-          message: 'Absolutely! I have some amazing bridal designs. Would you prefer traditional or modern fusion?',
-          timestamp: '2024-03-15 09:25 AM',
-          type: 'text'
-        },
-        {
-          id: 4,
-          senderId: 'artist',
-          senderName: 'Zara Henna Arts',
-          message: 'Thank you for choosing me! I\'m excited to work with you.',
-          timestamp: '2024-03-15 10:30 AM',
-          type: 'text'
-        }
-      ]
-    },
-    {
-      id: 2,
-      artistName: 'Henna by Aisha',
-      artistImage: 'https://via.placeholder.com/50x50',
-      lastMessage: 'I can adjust the design as per your preference.',
-      lastMessageTime: 'Yesterday',
-      unreadCount: 0,
-      status: 'offline',
-      messages: [
-        {
-          id: 1,
-          senderId: 'user',
-          senderName: 'Aisha',
-          message: 'Hi, I saw your portfolio and loved your work!',
-          timestamp: '2024-03-14 02:00 PM',
-          type: 'text'
-        },
-        {
-          id: 2,
-          senderId: 'artist',
-          senderName: 'Henna by Aisha',
-          message: 'Thank you so much! I\'d love to work with you. What kind of event is this for?',
-          timestamp: '2024-03-14 02:15 PM',
-          type: 'text'
-        },
-        {
-          id: 3,
-          senderId: 'user',
-          senderName: 'Aisha',
-          message: 'It\'s for an Eid celebration. I need something elegant but not too heavy.',
-          timestamp: '2024-03-14 02:20 PM',
-          type: 'text'
-        },
-        {
-          id: 4,
-          senderId: 'artist',
-          senderName: 'Henna by Aisha',
-          message: 'I can adjust the design as per your preference.',
-          timestamp: '2024-03-14 02:25 PM',
-          type: 'text'
-        }
-      ]
-    },
-    {
-      id: 3,
-      artistName: 'Mehndi Magic',
-      artistImage: 'https://via.placeholder.com/50x50',
-      lastMessage: 'Let me know if you have any questions!',
-      lastMessageTime: '2 days ago',
-      unreadCount: 1,
-      status: 'away',
-      messages: [
-        {
-          id: 1,
-          senderId: 'artist',
-          senderName: 'Mehndi Magic',
-          message: 'Hello! I saw your inquiry about festival mehndi designs.',
-          timestamp: '2024-03-13 11:00 AM',
-          type: 'text'
-        },
-        {
-          id: 2,
-          senderId: 'artist',
-          senderName: 'Mehndi Magic',
-          message: 'Let me know if you have any questions!',
-          timestamp: '2024-03-13 11:05 AM',
-          type: 'text'
-        }
-      ]
-    }
-  ]);
+  const [conversations, setConversations] = useState([]);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [currentChat, setCurrentChat] = useState(null);
+  const [onlineUserIds, setOnlineUserIds] = useState(new Set());
+
+  const DEFAULT_AVATAR = 'https://www.gravatar.com/avatar/?d=mp&s=80';
 
   const [notifications] = useState([
     {
@@ -424,6 +318,60 @@ const ClientDashboard = () => {
     }
   }, [isAuthenticated, user, fetchClientJobs, fetchBookings, tab]);
 
+  // Presence: signal that this user is online while on dashboard; listen for updates
+  useEffect(() => {
+    if (!user || !isAuthenticated) return;
+    signalOnline(user._id);
+    const off = onPresenceUpdate(({ userId, isOnline }) => {
+      setOnlineUserIds(prev => {
+        const next = new Set(prev);
+        if (isOnline) next.add(String(userId)); else next.delete(String(userId));
+        return next;
+      });
+    });
+    const onVisibility = () => { if (!document.hidden) signalOnline(user._id); };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => { if (off) off(); document.removeEventListener('visibilitychange', onVisibility); };
+  }, [user, isAuthenticated]);
+
+  // If chatId is provided in query, open messages tab and select that chat
+  useEffect(() => {
+    if (!user) return;
+    const params = new URLSearchParams(location.search);
+    const chatId = params.get('chatId');
+    if (chatId) {
+      setActiveTab('messages');
+      // Load that chat and set selection
+      chatAPI.getChat(chatId).then(res => {
+        if (res.success && res.data) {
+          const chat = res.data;
+          setSelectedConversation(chat);
+          setCurrentChat(chat);
+          setChatMessages(chat.messages || []);
+          const otherId = chat.artist?._id || chat.artistId;
+          if (otherId) {
+            const roomId = buildDirectRoomId(user?._id, otherId);
+            joinRoom(roomId, { userId: user?._id, userType: user?.userType || 'client' });
+          }
+          chatAPI.markRead(chat._id).catch(() => {});
+          // Ensure new chat appears in the list immediately if not present
+          setConversations(prev => {
+            const exists = prev.some(c => (c._id || c.id) === chat._id);
+            if (exists) return prev;
+            const display = {
+              ...chat,
+              artistName: chat.artist ? `${chat.artist.firstName} ${chat.artist.lastName}` : 'Artist',
+              artistImage: chat.artist?.userProfileImage || chat.artistImage,
+              lastMessage: chat.messages?.length ? chat.messages[chat.messages.length - 1].text : '',
+              unreadCount: 0
+            };
+            return [display, ...prev];
+          });
+        }
+      }).catch(() => {});
+    }
+  }, [location.search, user]);
+
   // Refresh data when the page becomes visible (user returns from job creation)
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -549,24 +497,37 @@ const ClientDashboard = () => {
 
   const handleSelectConversation = (conversation) => {
     setSelectedConversation(conversation);
-    // Mark messages as read
-    console.log('Selected conversation:', conversation.artistName);
+    setCurrentChat(conversation);
+    const otherId = conversation.artist?._id || conversation.artistId || conversation.id;
+    const roomId = buildDirectRoomId(user?._id, otherId);
+    joinRoom(roomId, { userId: user?._id, userType: user?.userType || 'client' });
+    chatAPI.getChat(conversation._id).then(res => {
+      if (res.success) setChatMessages(res.data.messages || []);
+    }).then(() => chatAPI.markRead(conversation._id))
+      .catch(console.error);
   };
 
-  const handleSendMessage = () => {
-    if (newMessage.trim() && selectedConversation) {
-      const message = {
-        id: selectedConversation.messages.length + 1,
-        senderId: 'user',
-        senderName: userName,
-        message: newMessage.trim(),
-        timestamp: new Date().toLocaleString(),
-        type: 'text'
-      };
-      
-      // Add message to conversation (in real app, this would update state properly)
-      console.log('Sending message:', message);
-      setNewMessage('');
+  const handleSendMessage = async () => {
+    if (newMessage.trim() && currentChat) {
+      const otherId = currentChat.artist?._id || currentChat.artistId || currentChat.id;
+      const roomId = buildDirectRoomId(user?._id, otherId);
+      const text = newMessage.trim();
+      try {
+        const res = await chatAPI.sendMessage(currentChat._id, text);
+        if (res.success) {
+          const saved = res.data.messages[res.data.messages.length - 1];
+          sendRoomMessage(roomId, {
+            id: saved._id || Date.now(),
+            senderId: saved.sender,
+            senderName: userName,
+            message: saved.text,
+            timestamp: new Date(saved.createdAt || Date.now()).toLocaleString(),
+            type: 'text'
+          });
+          setChatMessages(res.data.messages);
+          setNewMessage('');
+        }
+      } catch (e) { console.error(e); }
     }
   };
 
@@ -576,6 +537,41 @@ const ClientDashboard = () => {
       handleSendMessage();
     }
   };
+
+  useEffect(() => {
+    if (!user || activeTab !== 'messages') return;
+    chatAPI.listMyChats().then(res => {
+      if (res.success) setConversations(res.data || []);
+    }).catch(console.error);
+    const interval = setInterval(() => {
+      chatAPI.listMyChats().then(res => {
+        if (res.success) setConversations(res.data || []);
+      }).catch(() => {});
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [user, activeTab]);
+
+  useEffect(() => {
+    if (!user) return;
+    const onMessage = (incoming) => {
+      if (!currentChat) return;
+      setChatMessages(prev => [...prev, {
+        id: incoming.id,
+        sender: incoming.senderId,
+        text: incoming.message,
+        createdAt: new Date().toISOString(),
+      }]);
+    };
+    const onTyping = ({ userId, isTyping }) => {
+      setTypingUserId(isTyping ? userId : null);
+    };
+    socket.on('message', onMessage);
+    socket.on('typing', onTyping);
+    return () => {
+      socket.off('message', onMessage);
+      socket.off('typing', onTyping);
+    };
+  }, [user, currentChat]);
 
   return (
     <>
@@ -1449,18 +1445,22 @@ const ClientDashboard = () => {
                   <div className="conversations-list">
                     {conversations.map(conversation => (
                       <div 
-                        key={conversation.id} 
-                        className={`conversation-item ${selectedConversation?.id === conversation.id ? 'active' : ''}`}
+                        key={conversation._id || conversation.id} 
+                        className={`conversation-item ${((selectedConversation?._id || selectedConversation?.id) === (conversation._id || conversation.id)) ? 'active' : ''}`}
                         onClick={() => handleSelectConversation(conversation)}
                       >
                         <div className="conversation-avatar">
-                          <img src={conversation.artistImage} alt={conversation.artistName} />
-                          <div className={`status-indicator ${conversation.status}`}></div>
+                          <img src={(conversation.artist?.userProfileImage) || conversation.artistImage || DEFAULT_AVATAR} alt={conversation.artistName || 'User'} />
+                          {(() => {
+                            const otherId = conversation.artist?._id || conversation.artistId || conversation.id;
+                            const online = otherId ? onlineUserIds.has(String(otherId)) : false;
+                            return <div className={`status-indicator ${online ? 'online' : 'offline'}`}></div>;
+                          })()}
                         </div>
                         
-                        <div className="conversation-info">
+                          <div className="conversation-info">
                           <div className="conversation-header">
-                            <h4 className="artist-name">{conversation.artistName}</h4>
+                              <h4 className="artist-name">{conversation.artistName || (conversation.artist ? `${conversation.artist.firstName} ${conversation.artist.lastName}` : 'User')}</h4>
                             <span className="message-time">{conversation.lastMessageTime}</span>
                           </div>
                           <div className="conversation-preview">
@@ -1482,50 +1482,32 @@ const ClientDashboard = () => {
                       {/* Chat Header */}
                       <div className="chat-header">
                         <div className="chat-artist-info">
-                          <img src={selectedConversation.artistImage} alt={selectedConversation.artistName} />
+                          <img src={(selectedConversation.artist?.userProfileImage) || selectedConversation.artistImage || DEFAULT_AVATAR} alt={selectedConversation.artistName || (selectedConversation.artist ? `${selectedConversation.artist.firstName} ${selectedConversation.artist.lastName}` : 'User')} />
                           <div>
-                            <h3>{selectedConversation.artistName}</h3>
-                            <span className={`status-text ${selectedConversation.status}`}>
-                              {selectedConversation.status === 'online' ? 'Online' : 
-                               selectedConversation.status === 'away' ? 'Away' : 'Offline'}
-                            </span>
+                            <h3>{selectedConversation.artistName || (selectedConversation.artist ? `${selectedConversation.artist.firstName} ${selectedConversation.artist.lastName}` : 'User')}</h3>
+                            {(() => {
+                              const otherId = selectedConversation.artist?._id || selectedConversation.artistId || selectedConversation.id;
+                              const online = otherId ? onlineUserIds.has(String(otherId)) : false;
+                              return <span className={`status-text ${online ? 'online' : 'offline'}`}>{online ? 'Online' : 'Offline'}</span>;
+                            })()}
                           </div>
                         </div>
                         
-                        <div className="chat-actions">
-                          <button className="chat-action-btn">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M22 16.92V21a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h4.09a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 10.91a16 16 0 0 0 6 6l2.27-2.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92Z" stroke="currentColor" strokeWidth="2" fill="none"/>
-                            </svg>
-                          </button>
-                          <button className="chat-action-btn">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <polygon points="23 7 16 12 23 17 23 7" stroke="currentColor" strokeWidth="2" fill="none"/>
-                              <rect x="1" y="5" width="15" height="14" rx="2" ry="2" stroke="currentColor" strokeWidth="2" fill="none"/>
-                            </svg>
-                          </button>
-                          <button className="chat-action-btn">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <circle cx="12" cy="12" r="1" stroke="currentColor" strokeWidth="2"/>
-                              <circle cx="19" cy="12" r="1" stroke="currentColor" strokeWidth="2"/>
-                              <circle cx="5" cy="12" r="1" stroke="currentColor" strokeWidth="2"/>
-                            </svg>
-                          </button>
-                        </div>
+                      
                       </div>
 
-                      {/* Messages List */}
-                      <div className="messages-list">
-                        {selectedConversation.messages.map(message => (
+                {/* Messages List */}
+                <div className="messages-list">
+                  {chatMessages.map((message, idx) => (
                           <div 
-                            key={message.id} 
-                            className={`message ${message.senderId === 'user' ? 'sent' : 'received'}`}
+                      key={message.id || idx} 
+                      className={`message ${String(message.sender) === String(user?._id) || message.senderId === 'user' ? 'sent' : 'received'}`}
                           >
                             <div className="message-content">
-                              <p>{message.message}</p>
+                        <p>{message.text || message.message}</p>
                             </div>
                             <div className="message-meta">
-                              <span className="message-time">{message.timestamp}</span>
+                        <span className="message-time">{new Date(message.createdAt || Date.now()).toLocaleString()}</span>
                             </div>
                           </div>
                         ))}

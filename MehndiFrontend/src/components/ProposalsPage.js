@@ -1,13 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import apiService from '../services/api';
+import apiService, { chatAPI } from '../services/api';
+import { useNavigate } from 'react-router-dom';
 
 // Header removed for standalone use inside dashboard and route
 
 const { bookingsAPI, applicationsAPI, paymentsAPI } = apiService;
 
 const ProposalsPage = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState('active');
   const [sortBy, setSortBy] = useState('date');
   const [searchTerm, setSearchTerm] = useState('');
@@ -256,6 +258,21 @@ const ProposalsPage = () => {
     }
   };
 
+  const handleMessageArtist = async (row) => {
+    try {
+      if (!user || !user._id) return;
+      const clientId = user._id;
+      const artistId = row.artist?._id || row.artistId;
+      if (!artistId) return;
+      const res = await chatAPI.ensureChat(clientId, artistId);
+      if (res.success && res.data && res.data._id) {
+        navigate(`/dashboard/messages?chatId=${res.data._id}`);
+      }
+    } catch (e) {
+      console.error('Failed to ensure chat:', e);
+    }
+  };
+
   const getActionButtons = (row) => {
     if (row.status === 'applied') {
       return (
@@ -272,7 +289,7 @@ const ProposalsPage = () => {
           >
             Decline
           </button>
-          <button className="message-btn">
+          <button className="message-btn" onClick={() => handleMessageArtist(row)}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M20 4H4C2.9 4 2.01 4.9 2.01 6L2 18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4ZM20 8L12 13L4 8V6L12 11L20 6V8Z" fill="currentColor"/>
             </svg>
@@ -282,7 +299,7 @@ const ProposalsPage = () => {
     } else {
       return (
         <div className="proposal-actions">
-          <button className="message-btn">
+          <button className="message-btn" onClick={() => handleMessageArtist(row)}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M20 4H4C2.9 4 2.01 4.9 2.01 6L2 18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4ZM20 8L12 13L4 8V6L12 11L20 6V8Z" fill="currentColor"/>
             </svg>

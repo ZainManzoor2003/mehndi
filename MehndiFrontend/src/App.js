@@ -63,6 +63,11 @@ function App() {
                 <ClientDashboard />
               </RoleProtectedRoute>
             } />
+            <Route path="/dashboard/messages" element={
+              <RoleProtectedRoute allowedRoles={["client"]}>
+                <ClientDashboard />
+              </RoleProtectedRoute>
+            } />
             <Route path="/dashboard/bookings" element={
               <RoleProtectedRoute allowedRoles={["client"]}>
                 <AllBookings />
@@ -71,6 +76,11 @@ function App() {
             <Route path="/proposals" element={<ProposalsPage />} />
             <Route path="/proposal" element={<ProposalsPage />} />
             <Route path="/artist-dashboard/:tab?" element={
+              <RoleProtectedRoute allowedRoles={["artist"]}>
+                <ArtistDashboard />
+              </RoleProtectedRoute>
+            } />
+            <Route path="/artist-dashboard/messages" element={
               <RoleProtectedRoute allowedRoles={["artist"]}>
                 <ArtistDashboard />
               </RoleProtectedRoute>

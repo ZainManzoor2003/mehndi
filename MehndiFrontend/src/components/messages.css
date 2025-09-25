@@ -1,0 +1,309 @@
+.dashboard-content .messages-section {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 8px 0;
+  height: calc(100vh - 20px - 16px);
+}
+
+/* Ensure the container keeps centered layout from App.css */
+.dashboard-content .messages-container {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Keep the entire chat header on one line */
+.dashboard-content .chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+}
+
+@media screen and (max-width: 768px) {
+  .dashboard-content .messages-section {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 8px 0;
+    height: calc(100vh - 16px);
+  }
+
+  /* Ensure chat area uses full viewport minus conversations list on mobile */
+  .dashboard-content .chat-area {
+    height: calc(100vh - 200px - 16px);
+  }
+}
+
+/* Remove dashboard top padding when messages view is active (modern browsers) */
+.dashboard-main-content:has(.messages-section) .dashboard-container {
+  padding-top: 0 !important;
+}
+
+/* Keep chat header content (avatar, name, status) on one line */
+.dashboard-content .chat-artist-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+/* Ensure name and status sit side-by-side (horizontal) across browsers */
+.dashboard-content .chat-artist-info > div,
+.dashboard-content .chat-client-info > div {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+}
+
+.dashboard-content .chat-artist-info img,
+.dashboard-content .chat-client-info img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.dashboard-content .chat-artist-info h3,
+.dashboard-content .chat-artist-info .status-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Prevent actions from wrapping */
+.dashboard-content .chat-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+  flex: 0 0 auto;
+}
+
+
+
+/* ===== Artist Profile / Portfolio styles ===== */
+.profile-section .uploader-card {
+  display: block;
+  padding: 16px 12px; /* reduce right/left padding to avoid extra space */
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  margin-bottom: 20px;
+}
+
+.profile-section .form-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 16px;
+  grid-auto-flow: dense;
+  width: 100%;
+}
+
+.profile-section .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  grid-column: span 12;
+  margin: 0; /* remove extra outer spacing */
+}
+
+.profile-section .form-group.full { grid-column: span 12; }
+.profile-section .form-group.half { grid-column: span 6; }
+.profile-section .form-group.third { grid-column: span 4; }
+
+/* Ensure inputs fill available area inside grid cells */
+.profile-section .form-group .form-input,
+.profile-section .form-group textarea.form-input,
+.profile-section .form-group select.form-input {
+  width: 100%;
+}
+
+.profile-section .form-label { font-weight: 600; font-size: 14px; color: #333; }
+.profile-section .form-input {
+  width: 100%;
+  padding: 10px; /* even padding on all sides */
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+  background: #fafafa;
+  box-sizing: border-box;
+  min-height: 40px;
+  line-height: 1.3;
+  margin: 0; /* remove any default margins */
+}
+
+.profile-section .app-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  padding: 10px 16px;
+}
+
+.profile-section .app-btn.save-green {
+  background-color: #16a34a;
+  color: #fff;
+}
+.profile-section .app-btn.save-green:hover { background-color: #15803d; }
+.profile-section .app-btn.save-green:disabled {
+  background-color: #86efac;
+  cursor: not-allowed;
+}
+
+.profile-section .form-actions {
+  grid-column: span 12;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* Portfolio grid responsive */
+.profile-section .portfolio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.profile-section .portfolio-item {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-section .portfolio-item .thumb {
+  width: 100%;
+  padding-top: 60%;
+  background-size: cover;
+  background-position: center;
+  background-color: #f2f2f2;
+}
+
+.profile-section .portfolio-item .item-actions {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+}
+
+.profile-section .portfolio-item .item-info {
+  padding: 10px;
+}
+
+.profile-section .empty-state {
+  padding: 16px;
+  text-align: center;
+  color: #666;
+}
+
+@media (max-width: 768px) {
+  .profile-section .form-group.half,
+  .profile-section .form-group.third { grid-column: span 12; }
+}
+
+/* ===== Profile Modals (Preview & Delete) ===== */
+.profile-section .modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1000;
+}
+
+.profile-section .modal {
+  width: 100%;
+  max-width: 800px;
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  overflow: hidden;
+}
+
+.profile-section .modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.profile-section .modal-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.profile-section .modal-close {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  color: #6b7280;
+}
+.profile-section .modal-close:hover { color: #111827; }
+
+.profile-section .modal-body {
+  padding: 16px;
+}
+
+.profile-section .modal-body .modal-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.profile-section .modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+/* Confirmation modal inherits theme */
+.profile-section .confirmation-modal {
+  width: 100%;
+  max-width: 460px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  padding: 18px 16px;
+}
+
+.profile-section .confirmation-modal .modal-title {
+  margin: 0 0 6px 0;
+}
+
+.profile-section .confirmation-modal .modal-text {
+  margin: 0 0 12px 0;
+  color: #374151;
+}
+
+.profile-section .confirm-btn {
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.profile-section .confirm-btn:hover { background: #dc2626; }
+
+.profile-section .cancel-btn {
+  background: #f3f4f6;
+  color: #111827;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.profile-section .cancel-btn:hover { background: #e5e7eb; }
