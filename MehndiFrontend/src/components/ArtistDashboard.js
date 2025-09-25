@@ -7,7 +7,7 @@ import apiService, { chatAPI } from '../services/api';
 import socket, { buildDirectRoomId, joinRoom, sendRoomMessage, sendTyping } from '../services/socket';
 import { ToastContainer, useToast } from './Toast';
 
-  const { jobsAPI, proposalsAPI, authAPI, bookingsAPI, applicationsAPI } = apiService;
+  const { jobsAPI, proposalsAPI, authAPI, bookingsAPI, applicationsAPI, portfoliosAPI } = apiService;
 
 const ArtistDashboard = () => {
   const navigate = useNavigate();
@@ -88,6 +88,71 @@ const ArtistDashboard = () => {
     }
   });
   const [formErrors, setFormErrors] = useState({});
+
+  // Portfolios state
+  const [portfolios, setPortfolios] = useState([]);
+  const [portfoliosLoading, setPortfoliosLoading] = useState(false);
+  const [portfolioForm, setPortfolioForm] = useState({
+    displayName: '',
+    tagline: '',
+    bio: '',
+    styles: [],
+    categories: [],
+    mediaUrls: [],
+    perHandRate: '',
+    bridalPackagePrice: '',
+    partyPackagePrice: '',
+    hourlyRate: '',
+    outcallFee: '',
+    yearsOfExperience: '',
+    availableLocations: [],
+    travelsToClient: true,
+    mehndiConeType: '',
+    dryingTimeMinutes: '',
+    stainLongevityDays: '',
+    hygienePractices: '',
+    eventTypes: [],
+    maxClientsPerEvent: '',
+    isPublished: false
+  });
+  const [savingPortfolio, setSavingPortfolio] = useState(false);
+  const [portfolioErrors, setPortfolioErrors] = useState({});
+
+  const isValidUrl = (str) => {
+    try {
+      const u = new URL(str);
+      return u.protocol === 'http:' || u.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
+
+  const validatePortfolio = (form) => {
+    const errs = {};
+    if (!form.displayName || !form.displayName.trim()) errs.displayName = 'Display name is required';
+    if (!form.bio || !form.bio.trim()) errs.bio = 'Bio is required';
+    const urls = Array.isArray(form.mediaUrls) ? form.mediaUrls.filter(Boolean) : [];
+    if (urls.length === 0) errs.mediaUrls = 'At least one media URL is required';
+    if (urls.length > 0 && urls.some(u => !isValidUrl(u))) errs.mediaUrls = 'All media URLs must be valid http(s) links';
+    const styles = Array.isArray(form.styles) ? form.styles.filter(Boolean) : [];
+    const categories = Array.isArray(form.categories) ? form.categories.filter(Boolean) : [];
+    if (styles.length === 0 && categories.length === 0) errs.styles = 'Provide at least one style or category';
+    return errs;
+  };
+
+  const fetchMyPortfolios = useCallback(async () => {
+    if (!isAuthenticated || !user || user.userType !== 'artist') return;
+    try {
+      setPortfoliosLoading(true);
+      const resp = await portfoliosAPI.listMine();
+      setPortfolios(resp.data || []);
+    } catch (e) {
+      showError(e.message || 'Failed to load portfolios');
+      setPortfolios([]);
+    } finally {
+      setPortfoliosLoading(false);
+    }
+  }, [isAuthenticated, user, portfoliosAPI]);
   const fetchAppliedBookings = useCallback(async () => {
     if (!isAuthenticated || !user || user.userType !== 'artist') return;
     try {
@@ -702,6 +767,9 @@ const ArtistDashboard = () => {
       ]);
       // Also get pending bookings for Applications tab
       fetchPendingBookings();
+      if (tab === 'profile') {
+        fetchMyPortfolios();
+      }
       return;
     }
 
@@ -716,6 +784,9 @@ const ArtistDashboard = () => {
         fetchAvailableJobs();
         fetchSentProposals();
         fetchPendingBookings();
+        if (tab === 'profile') {
+          fetchMyPortfolios();
+        }
       }, 100);
     } else {
       console.log('User not authenticated');
@@ -1605,74 +1676,138 @@ const ArtistDashboard = () => {
                 </div>
               )}
 
-              {/* Profile (placeholder) */}
+              {/* Profile (Portfolios CRUD) */}
               {activeTab === 'profile' && (
                 <div className="profile-section">
                   <div className="section-header">
                     <h2>Profile</h2>
                   </div>
 
-                  <div className="profile-description">
-                    <p>
-                      Artists can drag and drop multiple photos or videos to build their portfolio. Mobile optimized: form inputs stack vertically on small screens.
-                      Portfolio supports lightbox preview with swipe, reordering, and deleting items. Add category badges like "Bridal", "Festival", or "Party/Casual".
-                      Reviews preview includes filters (All | 5★ | 4★ | 3★ & below) and a "Verified Client" badge. Social media section removed as requested.
-                    </p>
-                  </div>
-
-                  {/* Uploader */}
+                  {/* Create Portfolio */}
                   <div className="uploader-card">
-                    <h3 className="section-title">Add to Portfolio</h3>
-                    <div className="uploader-drop" onDragOver={(e) => e.preventDefault()} onDrop={(e) => e.preventDefault()}>
-                      <div className="uploader-instructions">
-                        <span>Drag & drop images or videos here</span>
-                        <small>or</small>
-                        <button className="browse-requests-btn">Choose from device</button>
-                      </div>
-                    </div>
+                    <h3 className="section-title">Create Portfolio</h3>
                     <div className="uploader-tools">
-                      <label className="form-label">Category Badge</label>
-                      <select className="form-input" defaultValue="Bridal">
-                        <option>Bridal</option>
-                        <option>Festival</option>
-                        <option>Party / Casual</option>
-                      </select>
-                      <div className="edit-tools">
-                        <button className="app-btn secondary">Crop</button>
+                      <div className="form-grid">
+                        <div className="form-group half">
+                          <label className="form-label">Display name</label>
+                          <input className="form-input" value={portfolioForm.displayName} onChange={(e)=>setPortfolioForm({...portfolioForm, displayName:e.target.value})} />
+                          {portfolioErrors.displayName && <small style={{color:'#b91c1c'}}>{portfolioErrors.displayName}</small>}
                       </div>
+                        <div className="form-group half">
+                          <label className="form-label">Tagline</label>
+                          <input className="form-input" value={portfolioForm.tagline} onChange={(e)=>setPortfolioForm({...portfolioForm, tagline:e.target.value})} />
                     </div>
-                  </div>
-
-                  {/* Portfolio Grid */}
-                  <div className="portfolio-grid">
-                    {[1, 2, 3, 4, 5, 6].map(i => (
-                      <div key={i} className="portfolio-item">
-                        <div className="badge">Bridal</div>
-                        <div className="thumb"></div>
-                        <div className="item-actions">
-                          <button className="app-btn secondary">Preview</button>
-                          <button className="app-btn">Reorder</button>
-                          <button className="app-btn danger">Delete</button>
+                        <div className="form-group full">
+                          <label className="form-label">Bio</label>
+                          <textarea className="form-input" rows={3} value={portfolioForm.bio} onChange={(e)=>setPortfolioForm({...portfolioForm, bio:e.target.value})} />
+                          {portfolioErrors.bio && <small style={{color:'#b91c1c'}}>{portfolioErrors.bio}</small>}
+                        </div>
+                        <div className="form-group full">
+                          <label className="form-label">Media URLs (comma separated)</label>
+                          <input className="form-input" value={(portfolioForm.mediaUrls || []).join(', ')} onChange={(e)=>setPortfolioForm({...portfolioForm, mediaUrls:e.target.value.split(',').map(s=>s.trim()).filter(Boolean)})} />
+                          {portfolioErrors.mediaUrls && <small style={{color:'#b91c1c'}}>{portfolioErrors.mediaUrls}</small>}
+                        </div>
+                        <div className="form-group half">
+                          <label className="form-label">Styles (comma separated)</label>
+                          <input className="form-input" value={(portfolioForm.styles || []).join(', ')} onChange={(e)=>setPortfolioForm({...portfolioForm, styles:e.target.value.split(',').map(s=>s.trim()).filter(Boolean)})} />
+                          {portfolioErrors.styles && <small style={{color:'#b91c1c'}}>{portfolioErrors.styles}</small>}
+                        </div>
+                        <div className="form-group half">
+                          <label className="form-label">Categories (comma separated)</label>
+                          <input className="form-input" value={(portfolioForm.categories || []).join(', ')} onChange={(e)=>setPortfolioForm({...portfolioForm, categories:e.target.value.split(',').map(s=>s.trim()).filter(Boolean)})} />
+                        </div>
+                        <div className="form-group third">
+                          <label className="form-label">Hourly Rate (£)</label>
+                          <input className="form-input" type="number" value={portfolioForm.hourlyRate} onChange={(e)=>setPortfolioForm({...portfolioForm, hourlyRate:e.target.value})} />
+                        </div>
+                        <div className="form-group third">
+                          <label className="form-label">Per Hand Rate (£)</label>
+                          <input className="form-input" type="number" value={portfolioForm.perHandRate} onChange={(e)=>setPortfolioForm({...portfolioForm, perHandRate:e.target.value})} />
+                        </div>
+                        <div className="form-group third">
+                          <label className="form-label">Bridal Package (£)</label>
+                          <input className="form-input" type="number" value={portfolioForm.bridalPackagePrice} onChange={(e)=>setPortfolioForm({...portfolioForm, bridalPackagePrice:e.target.value})} />
+                        </div>
+                        <div className="form-group third">
+                          <label className="form-label">Party Package (£)</label>
+                          <input className="form-input" type="number" value={portfolioForm.partyPackagePrice} onChange={(e)=>setPortfolioForm({...portfolioForm, partyPackagePrice:e.target.value})} />
+                        </div>
+                        <div className="form-group third">
+                          <label className="form-label">Outcall Fee (£)</label>
+                          <input className="form-input" type="number" value={portfolioForm.outcallFee} onChange={(e)=>setPortfolioForm({...portfolioForm, outcallFee:e.target.value})} />
+                        </div>
+                        <div className="form-group third">
+                          <label className="form-label">Event Types (comma separated)</label>
+                          <input className="form-input" value={(portfolioForm.eventTypes || []).join(', ')} onChange={(e)=>setPortfolioForm({...portfolioForm, eventTypes:e.target.value.split(',').map(s=>s.trim()).filter(Boolean)})} />
+                        </div>
+                        <div className="form-group third">
+                          <label className="form-label">Travels To Client</label>
+                          <select className="form-input" value={portfolioForm.travelsToClient ? 'yes':'no'} onChange={(e)=>setPortfolioForm({...portfolioForm, travelsToClient:e.target.value==='yes'})}>
+                            <option value="yes">Yes</option>
+                            <option value="no">No</option>
+                      </select>
+                      </div>
+                        <div className="form-group third">
+                          <label className="form-label">Published</label>
+                          <select className="form-input" value={portfolioForm.isPublished ? 'yes':'no'} onChange={(e)=>setPortfolioForm({...portfolioForm, isPublished:e.target.value==='yes'})}>
+                            <option value="yes">Yes</option>
+                            <option value="no">No</option>
+                          </select>
+                        </div>
+                        <div className="form-actions">
+                          <button className={`app-btn save-green`} disabled={savingPortfolio} onClick={async ()=>{
+                            try {
+                              const errs = validatePortfolio(portfolioForm);
+                              setPortfolioErrors(errs);
+                              if (Object.keys(errs).length > 0) { showError('Fill required details correctly'); return; }
+                              setSavingPortfolio(true);
+                              const payload = { ...portfolioForm };
+                              // Convert numeric inputs
+                              ['hourlyRate','perHandRate','bridalPackagePrice','partyPackagePrice','outcallFee','yearsOfExperience','dryingTimeMinutes','stainLongevityDays','maxClientsPerEvent']
+                                .forEach(k=>{ if (payload[k] === '') delete payload[k]; else payload[k] = Number(payload[k]); });
+                              await portfoliosAPI.create(payload);
+                              showSuccess('Portfolio created');
+                              setPortfolioForm({ ...portfolioForm, displayName:'', tagline:'', bio:'', mediaUrls:[], styles:[], categories:[], hourlyRate:'', perHandRate:'', bridalPackagePrice:'', partyPackagePrice:'', outcallFee:'', eventTypes:[] });
+                              fetchMyPortfolios();
+                            } catch (e) {
+                              showError(e.message || 'Failed to create portfolio');
+                            } finally {
+                              setSavingPortfolio(false);
+                            }
+                          }}>{savingPortfolio ? 'Saving…' : 'Save Portfolio'}</button>
                         </div>
                       </div>
-                    ))}
+                    </div>
                   </div>
 
-                  {/* Reviews Preview */}
-                  <div className="reviews-preview">
-                    <div className="reviews-header">
-                      <h3 className="section-title">Preview as client</h3>
-                      <div className="review-filters">
-                        {['All', '5★', '4★', '3★ & below'].map(f => (
-                          <button key={f} className="apps-pill">{f}</button>
-                        ))}
+                  {/* Portfolio List */}
+                  <div className="portfolio-grid">
+                    {portfoliosLoading && <div>Loading portfolios...</div>}
+                    {!portfoliosLoading && portfolios.length === 0 && (
+                      <div className="empty-state">No portfolios yet. Create your first above.</div>
+                    )}
+                    {portfolios.map(p => (
+                      <div key={p._id} className="portfolio-item">
+                        <div className="badge">{(p.categories || [])[0] || 'Mehndi'}</div>
+                        <div className="thumb" style={{ backgroundImage: (p.mediaUrls && p.mediaUrls[0]) ? `url(${p.mediaUrls[0]})` : undefined }}></div>
+                        <div className="item-actions">
+                          <button className="app-btn secondary" onClick={()=>window.open(p.mediaUrls && p.mediaUrls[0] ? p.mediaUrls[0] : '#','_blank')}>Preview</button>
+                          <button className="app-btn danger" onClick={async ()=>{
+                            try {
+                              await portfoliosAPI.remove(p._id);
+                              showSuccess('Portfolio deleted');
+                              fetchMyPortfolios();
+                            } catch (e) {
+                              showError(e.message || 'Failed to delete');
+                            }
+                          }}>Delete</button>
+                        </div>
+                        <div className="item-info">
+                          <div className="item-title">{p.displayName || 'Untitled'}</div>
+                          <div className="item-sub">{p.tagline || ''}</div>
                       </div>
-                    </div>
-                    <div className="review-card">
-                      <div className="reviewer">Aisha Khan <span className="verified">Verified Client</span></div>
-                      <div className="stars">★★★★★</div>
-                      <p className="review-text">Beautiful designs and professional service. Highly recommended!</p>
-                    </div>
+                  </div>
+                    ))}
                   </div>
                 </div>
               )}

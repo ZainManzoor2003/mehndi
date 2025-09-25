@@ -339,6 +339,30 @@ export const notificationsAPI = {
   },
 };
 
+// Portfolios API functions
+export const portfoliosAPI = {
+  listMine: async () => {
+    return apiRequest('/portfolios/me');
+  },
+  create: async (data) => {
+    return apiRequest('/portfolios', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+  update: async (id, data) => {
+    return apiRequest(`/portfolios/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+  remove: async (id) => {
+    return apiRequest(`/portfolios/${id}`, {
+      method: 'DELETE'
+    });
+  }
+};
+
 // Bookings API functions
 export const bookingsAPI = {
   // Create new booking
@@ -502,6 +526,7 @@ const apiExports = {
   usersAPI,
   uploadAPI,
   notificationsAPI,
+  portfoliosAPI,
 };
 
 export default apiExports; 

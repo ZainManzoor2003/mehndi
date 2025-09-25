@@ -9,6 +9,7 @@ const { applyToBooking, getMyAppliedBookings, getApplicationsForBooking, updateA
 
 const { protect } = require('../middleware/auth');
 const chatController = require('../controllers/chatController');
+const portfolioController = require('../controllers/portfolioController');
 
 // Auth routes
 router.post('/api/auth/register', signup);
@@ -40,3 +41,9 @@ router.get('/api/chats', protect, chatController.listMyChats);
 router.get('/api/chats/:chatId', protect, chatController.getChat);
 router.post('/api/chats/:chatId/messages', protect, chatController.sendMessage);
 router.put('/api/chats/:chatId/read', protect, chatController.markRead);
+
+// Portfolio routes (artists only)
+router.get('/api/portfolios/me', protect, portfolioController.listMyPortfolios);
+router.post('/api/portfolios', protect, portfolioController.createPortfolio);
+router.put('/api/portfolios/:id', protect, portfolioController.updatePortfolio);
+router.delete('/api/portfolios/:id', protect, portfolioController.deletePortfolio);

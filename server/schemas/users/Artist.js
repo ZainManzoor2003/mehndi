@@ -5,6 +5,7 @@ require('../User');
 
 const ArtistSchema = new mongoose.Schema(
   {
+    portfolios: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Portfolio' }],
     bio: { type: String, trim: true, maxlength: 1000 },
     skills: { type: [String], default: [] },
     portfolioUrls: { type: [String], default: [] },
