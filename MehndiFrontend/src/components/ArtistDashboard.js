@@ -351,6 +351,18 @@ const ArtistDashboard = () => {
       setApplyLoading(false);
     }
   };
+
+  const handleWithdrawApplication = async (bookingId) => {
+    try {
+      await applicationsAPI.withdrawApplication(bookingId);
+      showSuccess('Application withdrawn successfully!');
+      
+      // Refresh applied bookings list
+      await fetchAppliedBookings();
+    } catch (e) {
+      showError(e.message || 'Failed to withdraw application');
+    }
+  };
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState(null);
 
@@ -1328,6 +1340,9 @@ const ArtistDashboard = () => {
                             <button className="app-btn" onClick={() => openViewBooking(a.id)} disabled={viewLoading}>View Details</button>
                             {applicationsFilter === 'all' && (
                               <button className="app-btn apply-now" style={{ marginLeft: '8px' }} onClick={() => openApplyModal(a.id)}>Apply Now</button>
+                            )}
+                            {applicationsFilter === 'applied' && (
+                              <button className="app-btn app-btn-danger" style={{ marginLeft: '8px' }} onClick={() => handleWithdrawApplication(a.id)}>Withdraw</button>
                             )}
                           </div>
                         </div>

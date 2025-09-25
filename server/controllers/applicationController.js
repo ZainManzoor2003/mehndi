@@ -126,6 +126,73 @@ exports.applyToBooking = async (req, res) => {
   }
 };
 
+// @desc    Withdraw an application (artist withdraws their application)
+// @route   PUT /api/applications/withdraw
+// @access  Private (Artist only)
+exports.withdrawApplication = async (req, res) => {
+  try {
+    const { bookingId } = req.body;
+    
+    if (!bookingId) {
+      return res.status(400).json({ success: false, message: 'bookingId is required' });
+    }
+
+    // Find the application for this artist and booking
+    const application = await Application.findOne({
+      'Booking.booking_id': bookingId,
+      'Booking.artist_id': req.user.id
+    });
+
+    if (!application) {
+      return res.status(404).json({ success: false, message: 'Application not found' });
+    }
+
+    // Find the specific booking reference in the application
+    const bookingRef = application.Booking.find(
+      b => b.booking_id.toString() === bookingId && b.artist_id.toString() === req.user.id
+    );
+
+    if (!bookingRef) {
+      return res.status(404).json({ success: false, message: 'Application not found for this booking' });
+    }
+
+    // Check if the application status is 'applied'
+    if (bookingRef.status !== 'applied') {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Cannot withdraw application with status: ${bookingRef.status}. Only applications with 'applied' status can be withdrawn.` 
+      });
+    }
+
+    // Update the status to 'withdrawn'
+    await Application.updateOne(
+      {
+        _id: application._id,
+        'Booking.booking_id': bookingId,
+        'Booking.artist_id': req.user.id
+      },
+      {
+        $set: {
+          'Booking.$.status': 'withdrawn'
+        }
+      }
+    );
+
+    return res.status(200).json({ 
+      success: true, 
+      message: 'Application withdrawn successfully' 
+    });
+
+  } catch (error) {
+    console.error('Withdraw application error:', error);
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Server error while withdrawing application', 
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' 
+    });
+  }
+};
+
 // @desc    Get bookings the current artist has applications for by status
 // @route   GET /api/applications/my-applied?status=applied
 // @access  Private (Artist only)

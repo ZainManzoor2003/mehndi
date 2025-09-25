@@ -439,6 +439,12 @@ export const applicationsAPI = {
       body: JSON.stringify({ bookingId, artistDetails })
     });
   },
+  withdrawApplication: async (bookingId) => {
+    return apiRequest('/applications/withdraw', {
+      method: 'PUT',
+      body: JSON.stringify({ bookingId })
+    });
+  },
   getMyAppliedBookings: async () => {
     return apiRequest('/applications/my-applied');
   },

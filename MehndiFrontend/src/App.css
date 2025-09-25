@@ -9786,7 +9786,9 @@ body.dark-theme .scroll-header .henna-line {
 .app-btn { background: #e5e7eb; color: #111827; border: 1px solid #e5e7eb; border-radius: 10px; padding: 8px 12px; font-weight: 600; cursor: pointer; }
 .app-btn.secondary { background: #fff; }
 .app-btn.danger { background: #ef4444; border-color: #ef4444; color: #fff; }
+.app-btn-danger { background: #ef4444; border-color: #ef4444; color: #fff; }
 .app-btn:hover { filter: brightness(0.98); }
+.app-btn-danger:hover { filter: brightness(0.9); }
 
 /* Apply Now button specific styling */
 .app-btn.apply-now { background: #22c55e; color: white; border: 1px solid #22c55e; }
