@@ -113,7 +113,7 @@ const ClientDashboard = () => {
   const [currentChat, setCurrentChat] = useState(null);
   const [onlineUserIds, setOnlineUserIds] = useState(new Set());
 
-  const DEFAULT_AVATAR = '/assets/img/favicon.png';
+  const DEFAULT_AVATAR = 'https://www.gravatar.com/avatar/?d=mp&s=80';
 
   const [notifications] = useState([
     {
@@ -354,6 +354,19 @@ const ClientDashboard = () => {
             joinRoom(roomId, { userId: user?._id, userType: user?.userType || 'client' });
           }
           chatAPI.markRead(chat._id).catch(() => {});
+          // Ensure new chat appears in the list immediately if not present
+          setConversations(prev => {
+            const exists = prev.some(c => (c._id || c.id) === chat._id);
+            if (exists) return prev;
+            const display = {
+              ...chat,
+              artistName: chat.artist ? `${chat.artist.firstName} ${chat.artist.lastName}` : 'Artist',
+              artistImage: chat.artist?.userProfileImage || chat.artistImage,
+              lastMessage: chat.messages?.length ? chat.messages[chat.messages.length - 1].text : '',
+              unreadCount: 0
+            };
+            return [display, ...prev];
+          });
         }
       }).catch(() => {});
     }
@@ -1432,12 +1445,12 @@ const ClientDashboard = () => {
                   <div className="conversations-list">
                     {conversations.map(conversation => (
                       <div 
-                        key={conversation.id} 
-                        className={`conversation-item ${selectedConversation?.id === conversation.id ? 'active' : ''}`}
+                        key={conversation._id || conversation.id} 
+                        className={`conversation-item ${((selectedConversation?._id || selectedConversation?.id) === (conversation._id || conversation.id)) ? 'active' : ''}`}
                         onClick={() => handleSelectConversation(conversation)}
                       >
                         <div className="conversation-avatar">
-                          <img src={conversation.artistImage || DEFAULT_AVATAR} alt={conversation.artistName || 'User'} />
+                          <img src={(conversation.artist?.userProfileImage) || conversation.artistImage || DEFAULT_AVATAR} alt={conversation.artistName || 'User'} />
                           {(() => {
                             const otherId = conversation.artist?._id || conversation.artistId || conversation.id;
                             const online = otherId ? onlineUserIds.has(String(otherId)) : false;
@@ -1445,9 +1458,9 @@ const ClientDashboard = () => {
                           })()}
                         </div>
                         
-                        <div className="conversation-info">
+                          <div className="conversation-info">
                           <div className="conversation-header">
-                            <h4 className="artist-name">{conversation.artistName}</h4>
+                              <h4 className="artist-name">{conversation.artistName || (conversation.artist ? `${conversation.artist.firstName} ${conversation.artist.lastName}` : 'User')}</h4>
                             <span className="message-time">{conversation.lastMessageTime}</span>
                           </div>
                           <div className="conversation-preview">
@@ -1469,9 +1482,9 @@ const ClientDashboard = () => {
                       {/* Chat Header */}
                       <div className="chat-header">
                         <div className="chat-artist-info">
-                          <img src={selectedConversation.artistImage || DEFAULT_AVATAR} alt={selectedConversation.artistName || 'User'} />
+                          <img src={(selectedConversation.artist?.userProfileImage) || selectedConversation.artistImage || DEFAULT_AVATAR} alt={selectedConversation.artistName || (selectedConversation.artist ? `${selectedConversation.artist.firstName} ${selectedConversation.artist.lastName}` : 'User')} />
                           <div>
-                            <h3>{selectedConversation.artistName}</h3>
+                            <h3>{selectedConversation.artistName || (selectedConversation.artist ? `${selectedConversation.artist.firstName} ${selectedConversation.artist.lastName}` : 'User')}</h3>
                             {(() => {
                               const otherId = selectedConversation.artist?._id || selectedConversation.artistId || selectedConversation.id;
                               const online = otherId ? onlineUserIds.has(String(otherId)) : false;

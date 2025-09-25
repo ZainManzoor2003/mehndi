@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './messages.css';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import ArtistSidebar from './ArtistSidebar';
 import apiService, { chatAPI } from '../services/api';
@@ -22,7 +22,7 @@ const ArtistDashboard = () => {
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [newMessage, setNewMessage] = useState('');
   const [onlineUserIds, setOnlineUserIds] = useState(new Set());
-  const DEFAULT_AVATAR = '/assets/img/favicon.png';
+  const DEFAULT_AVATAR = 'https://www.gravatar.com/avatar/?d=mp&s=80';
 
   useEffect(() => {
     if (!user || !isAuthenticated) return;
@@ -1036,6 +1036,43 @@ const ArtistDashboard = () => {
     return () => clearInterval(interval);
   }, [user, activeTab]);
 
+  // If chatId is provided in query, open messages tab and select that chat; add to list if missing
+  const location = useLocation();
+  useEffect(() => {
+    if (!user) return;
+    const params = new URLSearchParams(location.search);
+    const chatId = params.get('chatId');
+    if (chatId) {
+      setActiveTab('messages');
+      chatAPI.getChat(chatId).then(res => {
+        if (res.success && res.data) {
+          const chat = res.data;
+          setSelectedConversation(chat);
+          setCurrentChat(chat);
+          setChatMessages(chat.messages || []);
+          const otherId = chat.client?._id || chat.clientId;
+          if (otherId) {
+            const roomId = buildDirectRoomId(user?._id, otherId);
+            joinRoom(roomId, { userId: user?._id, userType: 'artist' });
+          }
+          chatAPI.markRead(chat._id).catch(() => {});
+          setArtistConversations(prev => {
+            const exists = prev.some(c => (c._id || c.id) === chat._id);
+            if (exists) return prev;
+            const display = {
+              ...chat,
+              clientName: chat.client ? `${chat.client.firstName} ${chat.client.lastName}` : 'Client',
+              clientImage: chat.client?.userProfileImage || chat.clientImage,
+              lastMessage: chat.messages?.length ? chat.messages[chat.messages.length - 1].text : '',
+              unreadCount: 0
+            };
+            return [display, ...prev];
+          });
+        }
+      }).catch(() => {});
+    }
+  }, [location.search, user]);
+
   useEffect(() => {
     if (!user) return;
     const onMessage = (incoming) => {
@@ -1515,7 +1552,7 @@ const ArtistDashboard = () => {
                             onClick={() => handleSelectConversation(conversation)}
                           >
                             <div className="conversation-avatar">
-                              <img src={conversation.clientImage || DEFAULT_AVATAR} alt={conversation.clientName || 'User'} />
+                              <img src={(conversation.client?.userProfileImage) || conversation.clientImage || DEFAULT_AVATAR} alt={conversation.clientName || 'User'} />
                               {(() => {
                                 const otherId = conversation.client?._id || conversation.clientId || conversation.id;
                                 const online = otherId ? onlineUserIds.has(String(otherId)) : false;
@@ -1524,8 +1561,8 @@ const ArtistDashboard = () => {
                             </div>
 
                             <div className="conversation-info">
-                              <div className="conversation-header">
-                                <h4 className="client-name">{conversation.clientName}</h4>
+                            <div className="conversation-header">
+                              <h4 className="client-name">{conversation.clientName || (conversation.client ? `${conversation.client.firstName} ${conversation.client.lastName}` : 'User')}</h4>
                                 <span className="message-time">{conversation.lastMessageTime}</span>
                               </div>
                               <div className="conversation-preview">
@@ -1546,17 +1583,17 @@ const ArtistDashboard = () => {
                         <>
                           {/* Chat Header */}
                           <div className="chat-header">
-                            <div className="chat-client-info">
-                              <img src={selectedConversation.clientImage || DEFAULT_AVATAR} alt={selectedConversation.clientName || 'User'} />
-                              <div>
-                                <h3>{selectedConversation.clientName}</h3>
-                                {(() => {
-                                  const otherId = selectedConversation.client?._id || selectedConversation.clientId || selectedConversation.id;
-                                  const online = otherId ? onlineUserIds.has(String(otherId)) : false;
-                                  return <span className={`status-text ${online ? 'online' : 'offline'}`}>{online ? 'Online' : 'Offline'}</span>;
-                                })()}
-                              </div>
-                            </div>
+                        <div className="chat-client-info">
+                          <img src={(selectedConversation.client?.userProfileImage) || selectedConversation.clientImage || DEFAULT_AVATAR} alt={selectedConversation.clientName || (selectedConversation.client ? `${selectedConversation.client.firstName} ${selectedConversation.client.lastName}` : 'User')} />
+                          <div>
+                            <h3>{selectedConversation.clientName || (selectedConversation.client ? `${selectedConversation.client.firstName} ${selectedConversation.client.lastName}` : 'User')}</h3>
+                            {(() => {
+                              const otherId = selectedConversation.client?._id || selectedConversation.clientId || selectedConversation.id;
+                              const online = otherId ? onlineUserIds.has(String(otherId)) : false;
+                              return <span className={`status-text ${online ? 'online' : 'offline'}`}>{online ? 'Online' : 'Offline'}</span>;
+                            })()}
+                          </div>
+                        </div>
                           </div>
 
                           {/* Messages List */}
