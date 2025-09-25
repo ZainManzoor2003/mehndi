@@ -9118,6 +9118,223 @@ body.dark-theme .scroll-header .henna-line {
   .modal-actions button { flex: 1 1 auto; }
 }
 
+/*========== Application Modal ==========*/
+.application-modal {
+  background: var(--white-color);
+  border-radius: 16px;
+  max-width: 800px;
+  width: 95%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.application-modal .modal-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--ad-border);
+  background: var(--ad-surface);
+}
+
+.application-modal .modal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--ad-text);
+  margin: 0;
+}
+
+.application-modal .modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+.application-form {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.form-section {
+  background: var(--ad-surface);
+  border: 1px solid var(--ad-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.form-section .section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--ad-text);
+  margin: 0 0 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--ad-border);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-label {
+  font-weight: 500;
+  color: var(--ad-text);
+  font-size: 0.9rem;
+}
+
+.form-input {
+  padding: 0.75rem;
+  border: 1px solid var(--ad-border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: white;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--ad-primary);
+  box-shadow: 0 0 0 3px rgba(207, 127, 58, 0.1);
+}
+
+.form-input.error {
+  border-color: var(--ad-danger);
+  box-shadow: 0 0 0 3px rgba(178, 44, 44, 0.1);
+}
+
+.form-textarea {
+  padding: 0.75rem;
+  border: 1px solid var(--ad-border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: white;
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-textarea:focus {
+  outline: none;
+  border-color: var(--ad-primary);
+  box-shadow: 0 0 0 3px rgba(207, 127, 58, 0.1);
+}
+
+.form-textarea.error {
+  border-color: var(--ad-danger);
+  box-shadow: 0 0 0 3px rgba(178, 44, 44, 0.1);
+}
+
+.duration-input-group {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 0.5rem;
+}
+
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--ad-text);
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--ad-primary);
+}
+
+.error-text {
+  color: var(--ad-danger);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.application-modal .modal-footer {
+  padding: 1.5rem;
+  border-top: 1px solid var(--ad-border);
+  background: var(--ad-surface);
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.submit-btn {
+  background: var(--ad-primary);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: var(--ad-primary-600);
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Responsive Application Modal */
+@media screen and (max-width: 768px) {
+  .application-modal {
+    width: 98%;
+    max-height: 95vh;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .duration-input-group {
+    grid-template-columns: 1fr;
+  }
+  
+  .application-modal .modal-header,
+  .application-modal .modal-body,
+  .application-modal .modal-footer {
+    padding: 1rem;
+  }
+  
+  .application-form {
+    gap: 1.5rem;
+  }
+  
+  .form-section {
+    padding: 1rem;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .application-modal .modal-footer {
+    flex-direction: column;
+  }
+  
+  .application-modal .modal-footer button {
+    width: 100%;
+  }
+}
+
 /*========== Proposals Page Responsive ==========*/
 /* ===== Artist Dashboard – Booking Notes & Badges ===== */
 .booking-notes {
@@ -9248,19 +9465,19 @@ body.dark-theme .scroll-header .henna-line {
 }
 
 .apply-now-btn {
-  background: #e24d0c;
+  background: #22c55e;
   color: white;
   border: none;
   border-radius: 10px;
   padding: 10px 14px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 3px 0 #b53f0b;
+  box-shadow: 0 3px 0 #16a34a;
 }
 
 .apply-now-btn:active {
   transform: translateY(1px);
-  box-shadow: 0 2px 0 #b53f0b;
+  box-shadow: 0 2px 0 #16a34a;
 }
 
 .browse-row {
@@ -9570,6 +9787,10 @@ body.dark-theme .scroll-header .henna-line {
 .app-btn.secondary { background: #fff; }
 .app-btn.danger { background: #ef4444; border-color: #ef4444; color: #fff; }
 .app-btn:hover { filter: brightness(0.98); }
+
+/* Apply Now button specific styling */
+.app-btn.apply-now { background: #22c55e; color: white; border: 1px solid #22c55e; }
+.app-btn.apply-now:hover { filter: brightness(0.9); }
 
 /* ===== Schedule Calendar ===== */
 .calendar-card { background:#fff; border:1px solid #eef0f3; border-radius:16px; padding:1rem; margin-bottom:1rem; }

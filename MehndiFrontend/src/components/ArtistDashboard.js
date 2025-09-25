@@ -55,6 +55,34 @@ const ArtistDashboard = () => {
   const [applyOpen, setApplyOpen] = useState(false);
   const [applyBookingId, setApplyBookingId] = useState(null);
   const [applyLoading, setApplyLoading] = useState(false);
+  const [applicationForm, setApplicationForm] = useState({
+    proposedBudget: '',
+    estimatedDuration: {
+      value: '',
+      unit: 'hours'
+    },
+    availability: {
+      isAvailableOnDate: true,
+      canTravelToLocation: true,
+      travelDistance: ''
+    },
+    experience: {
+      relevantExperience: '',
+      yearsOfExperience: '',
+      portfolioHighlights: ''
+    },
+    proposal: {
+      message: '',
+      whyInterested: '',
+      additionalNotes: ''
+    },
+    terms: {
+      depositRequired: true,
+      depositAmount: '',
+      cancellationPolicy: 'moderate'
+    }
+  });
+  const [formErrors, setFormErrors] = useState({});
   const fetchAppliedBookings = useCallback(async () => {
     if (!isAuthenticated || !user || user.userType !== 'artist') return;
     try {
@@ -174,19 +202,151 @@ const ArtistDashboard = () => {
   const openApplyModal = (bookingId) => {
     setApplyBookingId(bookingId);
     setApplyOpen(true);
+    // Reset form to default values
+    setApplicationForm({
+      proposedBudget: '',
+      estimatedDuration: {
+        value: '',
+        unit: 'hours'
+      },
+      availability: {
+        isAvailableOnDate: true,
+        canTravelToLocation: true,
+        travelDistance: ''
+      },
+      experience: {
+        relevantExperience: '',
+        yearsOfExperience: '',
+        portfolioHighlights: ''
+      },
+      proposal: {
+        message: '',
+        whyInterested: '',
+        additionalNotes: ''
+      },
+      terms: {
+        depositRequired: true,
+        depositAmount: '',
+        cancellationPolicy: 'moderate'
+      }
+    });
+    setFormErrors({});
   };
 
   const closeApplyModal = () => {
     setApplyOpen(false);
     setApplyBookingId(null);
+    setFormErrors({});
+  };
+
+  const validateForm = () => {
+    const errors = {};
+
+    // Validate proposed budget
+    if (!applicationForm.proposedBudget || applicationForm.proposedBudget <= 0) {
+      errors.proposedBudget = 'Please enter a valid proposed budget';
+    }
+
+    // Validate estimated duration
+    if (!applicationForm.estimatedDuration.value || applicationForm.estimatedDuration.value <= 0) {
+      errors.estimatedDuration = 'Please enter a valid estimated duration';
+    }
+
+    // Validate experience
+    if (!applicationForm.experience.relevantExperience.trim()) {
+      errors.relevantExperience = 'Please describe your relevant experience';
+    }
+
+    if (!applicationForm.experience.yearsOfExperience || applicationForm.experience.yearsOfExperience < 0) {
+      errors.yearsOfExperience = 'Please enter your years of experience';
+    }
+
+    // Validate proposal message
+    if (!applicationForm.proposal.message.trim()) {
+      errors.proposalMessage = 'Please write a proposal message';
+    } else if (applicationForm.proposal.message.trim().length < 50) {
+      errors.proposalMessage = 'Proposal message must be at least 50 characters';
+    }
+
+    // Validate deposit amount if deposit is required
+    if (applicationForm.terms.depositRequired && (!applicationForm.terms.depositAmount || applicationForm.terms.depositAmount < 0)) {
+      errors.depositAmount = 'Please enter a valid deposit amount';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleFormChange = (field, value) => {
+    if (field.includes('.')) {
+      const [parent, child] = field.split('.');
+      setApplicationForm(prev => ({
+        ...prev,
+        [parent]: {
+          ...prev[parent],
+          [child]: value
+        }
+      }));
+    } else {
+      setApplicationForm(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    }
+    
+    // Clear error for this field when user starts typing
+    if (formErrors[field]) {
+      setFormErrors(prev => ({
+        ...prev,
+        [field]: ''
+      }));
+    }
   };
 
   const confirmApply = async () => {
     if (!applyBookingId) return;
+    
+    // Validate form before submitting
+    if (!validateForm()) {
+      return;
+    }
+
     try {
       setApplyLoading(true);
-      await applicationsAPI.applyToBooking(applyBookingId);
+      
+      // Prepare the artist details object
+      const artistDetails = {
+        proposedBudget: parseFloat(applicationForm.proposedBudget),
+        estimatedDuration: {
+          value: parseFloat(applicationForm.estimatedDuration.value),
+          unit: applicationForm.estimatedDuration.unit
+        },
+        availability: {
+          isAvailableOnDate: applicationForm.availability.isAvailableOnDate,
+          canTravelToLocation: applicationForm.availability.canTravelToLocation,
+          travelDistance: applicationForm.availability.travelDistance ? parseFloat(applicationForm.availability.travelDistance) : 0
+        },
+        experience: {
+          relevantExperience: applicationForm.experience.relevantExperience.trim(),
+          yearsOfExperience: parseInt(applicationForm.experience.yearsOfExperience),
+          portfolioHighlights: applicationForm.experience.portfolioHighlights.trim()
+        },
+        proposal: {
+          message: applicationForm.proposal.message.trim(),
+          whyInterested: applicationForm.proposal.whyInterested.trim(),
+          additionalNotes: applicationForm.proposal.additionalNotes.trim()
+        },
+        terms: {
+          depositRequired: applicationForm.terms.depositRequired,
+          depositAmount: applicationForm.terms.depositAmount ? parseFloat(applicationForm.terms.depositAmount) : 0,
+          cancellationPolicy: applicationForm.terms.cancellationPolicy
+        }
+      };
+
+      await applicationsAPI.applyToBooking(applyBookingId, artistDetails);
       closeApplyModal();
+      alert('Application submitted successfully!');
+      
       // Refresh pending bookings list after applying
       await fetchPendingBookings();
     } catch (e) {
@@ -1171,7 +1331,7 @@ const ArtistDashboard = () => {
                           <div className="app-actions">
                             <button className="app-btn" onClick={() => openViewBooking(a.id)} disabled={viewLoading}>View Details</button>
                             {applicationsFilter !== 'applied' && (
-                              <button className="app-btn" style={{ marginLeft: '8px' }} onClick={() => openApplyModal(a.id)}>Apply Now</button>
+                              <button className="app-btn apply-now" style={{ marginLeft: '8px' }} onClick={() => openApplyModal(a.id)}>Apply Now</button>
                             )}
                           </div>
                         </div>
@@ -1874,12 +2034,247 @@ const ArtistDashboard = () => {
 
             {applyOpen && (
               <div className="modal-overlay" onClick={closeApplyModal}>
-                <div className="confirmation-modal" onClick={(e) => e.stopPropagation()}>
-                  <h3 className="modal-title">Apply to this booking?</h3>
-                  <p className="modal-text">This will submit your application to the client for this booking.</p>
-                  <div className="modal-actions">
-                    <button className="cancel-btn" onClick={closeApplyModal} disabled={applyLoading}>Cancel</button>
-                    <button className="confirm-btn" onClick={confirmApply} disabled={applyLoading}>{applyLoading ? 'Applying...' : 'Apply'}</button>
+                <div className="application-modal" onClick={(e) => e.stopPropagation()}>
+                  <div className="modal-header">
+                    <h3 className="modal-title">Apply to Booking</h3>
+                    <button className="modal-close" onClick={closeApplyModal}>×</button>
+                  </div>
+                  
+                  <div className="modal-body">
+                    <div className="application-form">
+                      {/* Budget & Duration Section */}
+                      <div className="form-section">
+                        <h4 className="section-title">Budget & Timeline</h4>
+                        <div className="form-row">
+                          <div className="form-group">
+                            <label className="form-label">Your Proposed Budget (£) *</label>
+                            <input
+                              type="number"
+                              className={`form-input ${formErrors.proposedBudget ? 'error' : ''}`}
+                              placeholder="450"
+                              value={applicationForm.proposedBudget}
+                              onChange={(e) => handleFormChange('proposedBudget', e.target.value)}
+                              disabled={applyLoading}
+                              min="0"
+                              step="0.01"
+                            />
+                            {formErrors.proposedBudget && <span className="error-text">{formErrors.proposedBudget}</span>}
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">Estimated Duration *</label>
+                            <div className="duration-input-group">
+                              <input
+                                type="number"
+                                className={`form-input ${formErrors.estimatedDuration ? 'error' : ''}`}
+                                placeholder="4"
+                                value={applicationForm.estimatedDuration.value}
+                                onChange={(e) => handleFormChange('estimatedDuration.value', e.target.value)}
+                                disabled={applyLoading}
+                                min="0"
+                                step="0.5"
+                              />
+                              <select
+                                className="form-input"
+                                value={applicationForm.estimatedDuration.unit}
+                                onChange={(e) => handleFormChange('estimatedDuration.unit', e.target.value)}
+                                disabled={applyLoading}
+                              >
+                                <option value="hours">Hours</option>
+                                <option value="days">Days</option>
+                              </select>
+                            </div>
+                            {formErrors.estimatedDuration && <span className="error-text">{formErrors.estimatedDuration}</span>}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Experience Section */}
+                      <div className="form-section">
+                        <h4 className="section-title">Experience & Qualifications</h4>
+                        <div className="form-group">
+                          <label className="form-label">Years of Experience *</label>
+                          <input
+                            type="number"
+                            className={`form-input ${formErrors.yearsOfExperience ? 'error' : ''}`}
+                            placeholder="5"
+                            value={applicationForm.experience.yearsOfExperience}
+                            onChange={(e) => handleFormChange('experience.yearsOfExperience', e.target.value)}
+                            disabled={applyLoading}
+                            min="0"
+                          />
+                          {formErrors.yearsOfExperience && <span className="error-text">{formErrors.yearsOfExperience}</span>}
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Relevant Experience *</label>
+                          <textarea
+                            className={`form-textarea ${formErrors.relevantExperience ? 'error' : ''}`}
+                            placeholder="Describe your relevant mehndi experience, specialties, and notable work..."
+                            rows="3"
+                            value={applicationForm.experience.relevantExperience}
+                            onChange={(e) => handleFormChange('experience.relevantExperience', e.target.value)}
+                            disabled={applyLoading}
+                          />
+                          {formErrors.relevantExperience && <span className="error-text">{formErrors.relevantExperience}</span>}
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Portfolio Highlights</label>
+                          <textarea
+                            className="form-textarea"
+                            placeholder="Mention any special techniques, awards, or notable clients..."
+                            rows="2"
+                            value={applicationForm.experience.portfolioHighlights}
+                            onChange={(e) => handleFormChange('experience.portfolioHighlights', e.target.value)}
+                            disabled={applyLoading}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Availability Section */}
+                      <div className="form-section">
+                        <h4 className="section-title">Availability & Location</h4>
+                        <div className="checkbox-group">
+                          <label className="checkbox-label">
+                            <input
+                              type="checkbox"
+                              checked={applicationForm.availability.isAvailableOnDate}
+                              onChange={(e) => handleFormChange('availability.isAvailableOnDate', e.target.checked)}
+                              disabled={applyLoading}
+                            />
+                            <span>I am available on the requested date</span>
+                          </label>
+                          <label className="checkbox-label">
+                            <input
+                              type="checkbox"
+                              checked={applicationForm.availability.canTravelToLocation}
+                              onChange={(e) => handleFormChange('availability.canTravelToLocation', e.target.checked)}
+                              disabled={applyLoading}
+                            />
+                            <span>I can travel to the client's location</span>
+                          </label>
+                        </div>
+                        {applicationForm.availability.canTravelToLocation && (
+                          <div className="form-group">
+                            <label className="form-label">Travel Distance (miles)</label>
+                            <input
+                              type="number"
+                              className="form-input"
+                              placeholder="10"
+                              value={applicationForm.availability.travelDistance}
+                              onChange={(e) => handleFormChange('availability.travelDistance', e.target.value)}
+                              disabled={applyLoading}
+                              min="0"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Proposal Section */}
+                      <div className="form-section">
+                        <h4 className="section-title">Your Proposal</h4>
+                        <div className="form-group">
+                          <label className="form-label">Proposal Message *</label>
+                          <textarea
+                            className={`form-textarea ${formErrors.proposalMessage ? 'error' : ''}`}
+                            placeholder="Write a compelling proposal explaining why you're the best fit for this booking. Include your approach, what makes you unique, and how you'll make this event special..."
+                            rows="4"
+                            value={applicationForm.proposal.message}
+                            onChange={(e) => handleFormChange('proposal.message', e.target.value)}
+                            disabled={applyLoading}
+                          />
+                          <small style={{
+                            color: applicationForm.proposal.message.length < 50 ? '#e74c3c' : '#27ae60',
+                            fontSize: '12px'
+                          }}>
+                            {applicationForm.proposal.message.length}/50 characters minimum
+                          </small>
+                          {formErrors.proposalMessage && <span className="error-text">{formErrors.proposalMessage}</span>}
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Why are you interested in this booking?</label>
+                          <textarea
+                            className="form-textarea"
+                            placeholder="Share what excites you about this particular event..."
+                            rows="2"
+                            value={applicationForm.proposal.whyInterested}
+                            onChange={(e) => handleFormChange('proposal.whyInterested', e.target.value)}
+                            disabled={applyLoading}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Additional Notes</label>
+                          <textarea
+                            className="form-textarea"
+                            placeholder="Any additional information, special requests, or questions..."
+                            rows="2"
+                            value={applicationForm.proposal.additionalNotes}
+                            onChange={(e) => handleFormChange('proposal.additionalNotes', e.target.value)}
+                            disabled={applyLoading}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Terms Section */}
+                      <div className="form-section">
+                        <h4 className="section-title">Terms & Conditions</h4>
+                        <div className="checkbox-group">
+                          <label className="checkbox-label">
+                            <input
+                              type="checkbox"
+                              checked={applicationForm.terms.depositRequired}
+                              onChange={(e) => handleFormChange('terms.depositRequired', e.target.checked)}
+                              disabled={applyLoading}
+                            />
+                            <span>I require a deposit to secure this booking</span>
+                          </label>
+                        </div>
+                        {applicationForm.terms.depositRequired && (
+                          <div className="form-group">
+                            <label className="form-label">Deposit Amount (£)</label>
+                            <input
+                              type="number"
+                              className={`form-input ${formErrors.depositAmount ? 'error' : ''}`}
+                              placeholder="100"
+                              value={applicationForm.terms.depositAmount}
+                              onChange={(e) => handleFormChange('terms.depositAmount', e.target.value)}
+                              disabled={applyLoading}
+                              min="0"
+                              step="0.01"
+                            />
+                            {formErrors.depositAmount && <span className="error-text">{formErrors.depositAmount}</span>}
+                          </div>
+                        )}
+                        <div className="form-group">
+                          <label className="form-label">Cancellation Policy</label>
+                          <select
+                            className="form-input"
+                            value={applicationForm.terms.cancellationPolicy}
+                            onChange={(e) => handleFormChange('terms.cancellationPolicy', e.target.value)}
+                            disabled={applyLoading}
+                          >
+                            <option value="flexible">Flexible - Full refund up to 24 hours before</option>
+                            <option value="moderate">Moderate - 50% refund up to 48 hours before</option>
+                            <option value="strict">Strict - No refunds after booking confirmation</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="modal-footer">
+                    <button
+                      className="cancel-btn"
+                      onClick={closeApplyModal}
+                      disabled={applyLoading}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className="submit-btn"
+                      onClick={confirmApply}
+                      disabled={applyLoading}
+                    >
+                      {applyLoading ? 'Submitting Application...' : 'Submit Application'}
+                    </button>
                   </div>
                 </div>
               </div>

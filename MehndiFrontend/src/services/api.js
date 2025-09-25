@@ -433,10 +433,10 @@ export const proposalsAPI = {
 
 // Applications API
 export const applicationsAPI = {
-  applyToBooking: async (bookingId) => {
+  applyToBooking: async (bookingId, artistDetails) => {
     return apiRequest('/applications/apply', {
       method: 'POST',
-      body: JSON.stringify({ bookingId })
+      body: JSON.stringify({ bookingId, artistDetails })
     });
   },
   getMyAppliedBookings: async () => {

@@ -6,9 +6,44 @@ const Booking = require('../schemas/Booking');
 // @access  Private (Artist only)
 exports.applyToBooking = async (req, res) => {
   try {
-    const { bookingId } = req.body;
+    const { 
+      bookingId,
+      artistDetails 
+    } = req.body;
+    
     if (!bookingId) {
       return res.status(400).json({ success: false, message: 'bookingId is required' });
+    }
+
+    // Validate required artist details
+    if (!artistDetails) {
+      return res.status(400).json({ success: false, message: 'Artist details are required' });
+    }
+
+    const {
+      proposedBudget,
+      estimatedDuration,
+      availability,
+      experience,
+      proposal,
+      terms
+    } = artistDetails;
+
+    // Validate required fields
+    if (!proposedBudget || proposedBudget <= 0) {
+      return res.status(400).json({ success: false, message: 'Valid proposed budget is required' });
+    }
+
+    if (!estimatedDuration || !estimatedDuration.value || estimatedDuration.value <= 0) {
+      return res.status(400).json({ success: false, message: 'Valid estimated duration is required' });
+    }
+
+    if (!experience || !experience.relevantExperience || !experience.yearsOfExperience) {
+      return res.status(400).json({ success: false, message: 'Experience details are required' });
+    }
+
+    if (!proposal || !proposal.message) {
+      return res.status(400).json({ success: false, message: 'Proposal message is required' });
     }
 
     // Ensure booking exists and get status
@@ -22,13 +57,50 @@ exports.applyToBooking = async (req, res) => {
       return res.status(400).json({ success: false, message: 'You can only apply to bookings with pending status' });
     }
 
-    // Create a new application document with the booking ref and current artist id
+    // Check if artist has already applied to this booking
+    const existingApplication = await Application.findOne({
+      'Booking.booking_id': bookingId,
+      'Booking.artist_id': req.user.id
+    });
+
+    if (existingApplication) {
+      return res.status(400).json({ success: false, message: 'You have already applied to this booking' });
+    }
+
+    // Create a new application document with the booking ref and detailed artist information
     const application = await Application.create({
       Booking: [
         {
           booking_id: bookingId,
           artist_id: req.user.id,
-          status: 'applied'
+          status: 'applied',
+          artistDetails: {
+            proposedBudget,
+            estimatedDuration: {
+              value: estimatedDuration.value,
+              unit: estimatedDuration.unit || 'hours'
+            },
+            availability: {
+              isAvailableOnDate: availability?.isAvailableOnDate !== false,
+              canTravelToLocation: availability?.canTravelToLocation !== false,
+              travelDistance: availability?.travelDistance || 0
+            },
+            experience: {
+              relevantExperience: experience.relevantExperience,
+              yearsOfExperience: experience.yearsOfExperience,
+              portfolioHighlights: experience.portfolioHighlights || ''
+            },
+            proposal: {
+              message: proposal.message,
+              whyInterested: proposal.whyInterested || '',
+              additionalNotes: proposal.additionalNotes || ''
+            },
+            terms: {
+              depositRequired: terms?.depositRequired !== false,
+              depositAmount: terms?.depositAmount || 0,
+              cancellationPolicy: terms?.cancellationPolicy || 'moderate'
+            }
+          }
         }
       ]
     });
@@ -45,7 +117,7 @@ exports.applyToBooking = async (req, res) => {
       { $addToSet: { 'artist.appliedApplications': application._id } }
     );
 
-    return res.status(201).json({ success: true, message: 'Application submitted', data: application });
+    return res.status(201).json({ success: true, message: 'Application submitted successfully', data: application });
   } catch (error) {
     console.error('Apply to booking error:', error);
     return res.status(500).json({ success: false, message: 'Server error while applying', error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' });
