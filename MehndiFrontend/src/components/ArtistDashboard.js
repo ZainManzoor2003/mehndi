@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import ArtistSidebar from './ArtistSidebar';
 import apiService from '../services/api';
+import { ToastContainer, useToast } from './Toast';
 
   const { jobsAPI, proposalsAPI, authAPI, bookingsAPI, applicationsAPI } = apiService;
 
@@ -11,6 +12,7 @@ const ArtistDashboard = () => {
   const { tab } = useParams();
   const { user, isAuthenticated } = useAuth();
   const artistName = user ? `${user.firstName} ${user.lastName}` : 'Artist';
+  const { toasts, removeToast, showSuccess, showError, showWarning } = useToast();
 
   const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, applications, messages, schedule, earnings, profile
   const [showProposalModal, setShowProposalModal] = useState(false);
@@ -77,9 +79,7 @@ const ArtistDashboard = () => {
       additionalNotes: ''
     },
     terms: {
-      depositRequired: true,
-      depositAmount: '',
-      cancellationPolicy: 'moderate'
+      agreedToTerms: false
     }
   });
   const [formErrors, setFormErrors] = useState({});
@@ -188,7 +188,7 @@ const ArtistDashboard = () => {
       });
       setViewOpen(true);
     } catch (e) {
-      alert(e.message || 'Failed to load booking');
+      showError(e.message || 'Failed to load booking');
     } finally {
       setViewLoading(false);
     }
@@ -225,9 +225,7 @@ const ArtistDashboard = () => {
         additionalNotes: ''
       },
       terms: {
-        depositRequired: true,
-        depositAmount: '',
-        cancellationPolicy: 'moderate'
+        agreedToTerms: false
       }
     });
     setFormErrors({});
@@ -268,9 +266,9 @@ const ArtistDashboard = () => {
       errors.proposalMessage = 'Proposal message must be at least 50 characters';
     }
 
-    // Validate deposit amount if deposit is required
-    if (applicationForm.terms.depositRequired && (!applicationForm.terms.depositAmount || applicationForm.terms.depositAmount < 0)) {
-      errors.depositAmount = 'Please enter a valid deposit amount';
+    // Validate terms agreement
+    if (!applicationForm.terms.agreedToTerms) {
+      errors.agreedToTerms = 'You must agree to the terms and conditions';
     }
 
     setFormErrors(errors);
@@ -337,20 +335,18 @@ const ArtistDashboard = () => {
           additionalNotes: applicationForm.proposal.additionalNotes.trim()
         },
         terms: {
-          depositRequired: applicationForm.terms.depositRequired,
-          depositAmount: applicationForm.terms.depositAmount ? parseFloat(applicationForm.terms.depositAmount) : 0,
-          cancellationPolicy: applicationForm.terms.cancellationPolicy
+          agreedToTerms: applicationForm.terms.agreedToTerms
         }
       };
 
       await applicationsAPI.applyToBooking(applyBookingId, artistDetails);
       closeApplyModal();
-      alert('Application submitted successfully!');
+      showSuccess('Application submitted successfully!');
       
       // Refresh pending bookings list after applying
       await fetchPendingBookings();
     } catch (e) {
-      alert(e.message || 'Failed to apply');
+      showError(e.message || 'Failed to apply');
     } finally {
       setApplyLoading(false);
     }
@@ -879,7 +875,7 @@ const ArtistDashboard = () => {
   const handleSaveNotes = (bookingId) => {
     const note = bookingNotes[bookingId] || {};
     console.log('Saved notes for', bookingId, note);
-    alert('Notes saved');
+    showSuccess('Notes saved');
   };
 
   const handleSendProposal = (job) => {
@@ -941,7 +937,7 @@ const ArtistDashboard = () => {
         console.log('Proposal submitted successfully:', response.data);
 
         // Show success message
-        alert('Proposal submitted successfully!');
+        showSuccess('Proposal submitted successfully!');
 
         // Close modal and reset form
         handleCloseProposalModal();
@@ -2220,41 +2216,12 @@ const ArtistDashboard = () => {
                           <label className="checkbox-label">
                             <input
                               type="checkbox"
-                              checked={applicationForm.terms.depositRequired}
-                              onChange={(e) => handleFormChange('terms.depositRequired', e.target.checked)}
+                              checked={applicationForm.terms.agreedToTerms}
+                              onChange={(e) => handleFormChange('terms.agreedToTerms', e.target.checked)}
                               disabled={applyLoading}
                             />
-                            <span>I require a deposit to secure this booking</span>
+                            <span>I understand that I cannot withdraw my application after the booking application is accepted.</span>
                           </label>
-                        </div>
-                        {applicationForm.terms.depositRequired && (
-                          <div className="form-group">
-                            <label className="form-label">Deposit Amount (£)</label>
-                            <input
-                              type="number"
-                              className={`form-input ${formErrors.depositAmount ? 'error' : ''}`}
-                              placeholder="100"
-                              value={applicationForm.terms.depositAmount}
-                              onChange={(e) => handleFormChange('terms.depositAmount', e.target.value)}
-                              disabled={applyLoading}
-                              min="0"
-                              step="0.01"
-                            />
-                            {formErrors.depositAmount && <span className="error-text">{formErrors.depositAmount}</span>}
-                          </div>
-                        )}
-                        <div className="form-group">
-                          <label className="form-label">Cancellation Policy</label>
-                          <select
-                            className="form-input"
-                            value={applicationForm.terms.cancellationPolicy}
-                            onChange={(e) => handleFormChange('terms.cancellationPolicy', e.target.value)}
-                            disabled={applyLoading}
-                          >
-                            <option value="flexible">Flexible - Full refund up to 24 hours before</option>
-                            <option value="moderate">Moderate - 50% refund up to 48 hours before</option>
-                            <option value="strict">Strict - No refunds after booking confirmation</option>
-                          </select>
                         </div>
                       </div>
                     </div>
@@ -2282,6 +2249,9 @@ const ArtistDashboard = () => {
           </div>
         </div>
       </div>
+      
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
     </>
   );
 };

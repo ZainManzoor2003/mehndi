@@ -90,18 +90,9 @@ const BookingRefSchema = new mongoose.Schema(
         }
       },
       terms: {
-        depositRequired: {
+        agreedToTerms: {
           type: Boolean,
-          default: true
-        },
-        depositAmount: {
-          type: Number,
-          min: 0
-        },
-        cancellationPolicy: {
-          type: String,
-          enum: ['flexible', 'moderate', 'strict'],
-          default: 'moderate'
+          required: true
         }
       }
     }

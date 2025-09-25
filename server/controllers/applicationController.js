@@ -46,6 +46,10 @@ exports.applyToBooking = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Proposal message is required' });
     }
 
+    if (!terms || !terms.agreedToTerms) {
+      return res.status(400).json({ success: false, message: 'You must agree to the terms and conditions' });
+    }
+
     // Ensure booking exists and get status
     const booking = await Booking.findById(bookingId).select('clientId status');
     if (!booking) {
@@ -96,9 +100,7 @@ exports.applyToBooking = async (req, res) => {
               additionalNotes: proposal.additionalNotes || ''
             },
             terms: {
-              depositRequired: terms?.depositRequired !== false,
-              depositAmount: terms?.depositAmount || 0,
-              cancellationPolicy: terms?.cancellationPolicy || 'moderate'
+              agreedToTerms: terms.agreedToTerms
             }
           }
         }
