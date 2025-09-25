@@ -8,6 +8,7 @@ const { createBooking, getClientBookings, getAllBookings, getBookingById, update
 const { applyToBooking, getMyAppliedBookings, getApplicationsForBooking, updateApplicationStatus, withdrawApplication } = require('../controllers/applicationController');
 
 const { protect } = require('../middleware/auth');
+const { createCheckoutSession } = require('../controllers/paymentController');
 
 // Auth routes
 router.post('/api/auth/register', signup);
@@ -32,5 +33,7 @@ router.get('/api/applications/booking/:bookingId', protect, getApplicationsForBo
 router.put('/api/applications/:applicationId/status', protect, updateApplicationStatus);
 
 // Payments (removed)
+// Payments
+router.post('/api/payments/create-checkout', protect, createCheckoutSession);
 
 module.exports = router;

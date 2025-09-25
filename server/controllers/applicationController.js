@@ -297,7 +297,7 @@ exports.getApplicationsForBooking = async (req, res) => {
 exports.updateApplicationStatus = async (req, res) => {
   try {
     const { applicationId } = req.params;
-    const { bookingId, status } = req.body;
+    const { bookingId, status, paymentPaid, remainingPayment } = req.body;
 
     if (!applicationId || !bookingId || !status) {
       return res.status(400).json({ success: false, message: 'applicationId, bookingId and status are required' });
@@ -327,7 +327,7 @@ exports.updateApplicationStatus = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Application not found for this booking' });
     }
 
-    // If accepted, set booking assignedArtist and confirm booking. Also decline others.
+    // If accepted, set booking assignedArtist and update payment fields if provided.
     if (status === 'accepted') {
       // Get the application to know the artist id
       const application = await Application.findById(applicationId);
@@ -335,9 +335,16 @@ exports.updateApplicationStatus = async (req, res) => {
       const artistId = bookingEntry && bookingEntry.artist_id;
 
       if (artistId) {
-        // Do not confirm here; confirmation will happen after payment success
         if (!Array.isArray(booking.assignedArtist) || !booking.assignedArtist.map(a => a.toString()).includes(artistId.toString())) {
           booking.assignedArtist = [...(booking.assignedArtist || []), artistId];
+        }
+        booking.status = 'confirmed';
+        // Update payment fields if provided by frontend
+        if (typeof paymentPaid !== 'undefined') {
+          booking.paymentPaid = String(paymentPaid);
+        }
+        if (typeof remainingPayment !== 'undefined') {
+          booking.remainingPayment = String(remainingPayment);
         }
         await booking.save();
       }

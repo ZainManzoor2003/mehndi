@@ -455,16 +455,23 @@ export const applicationsAPI = {
   getApplicationsForBooking: async (bookingId) => {
     return apiRequest(`/applications/booking/${bookingId}`);
   },
-  updateApplicationStatus: async (applicationId, bookingId, status) => {
+  updateApplicationStatus: async (applicationId, bookingId, status, extras = {}) => {
     return apiRequest(`/applications/${applicationId}/status`, {
       method: 'PUT',
-      body: JSON.stringify({ bookingId, status })
+      body: JSON.stringify({ bookingId, status, ...extras })
     });
   }
 };
 
 // Payments API
-// Payments API removed
+export const paymentsAPI = {
+  createCheckout: async ({ amount, currency = 'gbp', bookingId, applicationId, successUrl, cancelUrl, description }) => {
+    return apiRequest('/payments/create-checkout', {
+      method: 'POST',
+      body: JSON.stringify({ amount, currency, bookingId, applicationId, successUrl, cancelUrl, description })
+    });
+  },
+};
 
 const apiExports = {
   authAPI,
@@ -472,6 +479,7 @@ const apiExports = {
   bookingsAPI,
   proposalsAPI,
   applicationsAPI,
+  paymentsAPI,
   messagesAPI,
   reviewsAPI,
   usersAPI,
