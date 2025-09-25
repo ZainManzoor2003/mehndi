@@ -70,4 +70,31 @@ exports.sendMessage = async (req, res) => {
   }
 };
 
+// Mark all messages in a chat as read by current user
+exports.markRead = async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const userId = req.user.id;
+    const chat = await Chat.findById(chatId);
+    if (!chat) return res.status(404).json({ success: false, message: 'Chat not found' });
+
+    // Add userId to readBy for all messages that don't include it
+    chat.messages = chat.messages.map(m => {
+      const already = (m.readBy || []).some(id => String(id) === String(userId));
+      if (!already) {
+        m.readBy = [...(m.readBy || []), userId];
+      }
+      return m;
+    });
+    await chat.save();
+
+    const populated = await Chat.findById(chatId)
+      .populate('client', 'firstName lastName userType')
+      .populate('artist', 'firstName lastName userType');
+    res.json({ success: true, data: populated });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 

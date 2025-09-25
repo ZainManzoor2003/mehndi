@@ -903,7 +903,8 @@ const ArtistDashboard = () => {
     joinRoom(roomId, { userId: user?._id, userType: 'artist' });
     chatAPI.getChat(conversation._id).then(res => {
       if (res.success) setChatMessages(res.data.messages || []);
-    }).catch(console.error);
+    }).then(() => chatAPI.markRead(conversation._id))
+      .catch(console.error);
   };
 
   const handleSendMessage = async () => {
@@ -935,6 +936,12 @@ const ArtistDashboard = () => {
     chatAPI.listMyChats().then(res => {
       if (res.success) setArtistConversations(res.data || []);
     }).catch(console.error);
+    const interval = setInterval(() => {
+      chatAPI.listMyChats().then(res => {
+        if (res.success) setArtistConversations(res.data || []);
+      }).catch(() => {});
+    }, 10000);
+    return () => clearInterval(interval);
   }, [user, activeTab]);
 
   useEffect(() => {
@@ -1384,16 +1391,16 @@ const ArtistDashboard = () => {
 
                           {/* Messages List */}
                           <div className="messages-list">
-                            {selectedConversation.messages.map(message => (
+                            {chatMessages.map((message, idx) => (
                               <div
-                                key={message.id}
-                                className={`message ${message.senderId === 'artist' ? 'sent' : 'received'}`}
+                                key={message.id || idx}
+                                className={`message ${String(message.sender) === String(user?._id) || message.senderId === 'artist' ? 'sent' : 'received'}`}
                               >
                                 <div className="message-content">
-                                  <p>{message.message}</p>
+                                  <p>{message.text || message.message}</p>
                                 </div>
                                 <div className="message-meta">
-                                  <span className="message-time">{message.timestamp}</span>
+                                  <span className="message-time">{new Date(message.createdAt || Date.now()).toLocaleString()}</span>
                                 </div>
                               </div>
                             ))}

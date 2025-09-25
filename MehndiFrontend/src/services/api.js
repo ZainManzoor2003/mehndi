@@ -217,6 +217,11 @@ export const chatAPI = {
       body: JSON.stringify({ text }),
     });
   },
+  markRead: async (chatId) => {
+    return apiRequest(`/chats/${chatId}/read`, {
+      method: 'PUT'
+    });
+  }
 };
 
 // Reviews API functions

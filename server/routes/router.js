@@ -39,3 +39,4 @@ router.post('/api/chats/ensure', protect, chatController.ensureChat);
 router.get('/api/chats', protect, chatController.listMyChats);
 router.get('/api/chats/:chatId', protect, chatController.getChat);
 router.post('/api/chats/:chatId/messages', protect, chatController.sendMessage);
+router.put('/api/chats/:chatId/read', protect, chatController.markRead);
