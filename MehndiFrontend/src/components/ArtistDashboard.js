@@ -1326,7 +1326,7 @@ const ArtistDashboard = () => {
                           <p className="app-note">Assigned artists: {a.assignedCount ?? 0}</p>
                           <div className="app-actions">
                             <button className="app-btn" onClick={() => openViewBooking(a.id)} disabled={viewLoading}>View Details</button>
-                            {applicationsFilter !== 'applied' && (
+                            {applicationsFilter === 'all' && (
                               <button className="app-btn apply-now" style={{ marginLeft: '8px' }} onClick={() => openApplyModal(a.id)}>Apply Now</button>
                             )}
                           </div>
