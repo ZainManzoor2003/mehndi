@@ -117,6 +117,10 @@ const ArtistDashboard = () => {
   });
   const [savingPortfolio, setSavingPortfolio] = useState(false);
   const [portfolioErrors, setPortfolioErrors] = useState({});
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewPortfolio, setPreviewPortfolio] = useState(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
 
   const isValidUrl = (str) => {
     try {
@@ -1401,6 +1405,78 @@ const ArtistDashboard = () => {
                 </div>
               )}
 
+              {/* Portfolio Preview Modal */}
+              {previewOpen && previewPortfolio && (
+                <div className="modal-overlay" onClick={()=>{ setPreviewOpen(false); setPreviewPortfolio(null); }}>
+                  <div className="application-modal" onClick={(e)=>e.stopPropagation()}>
+                    <div className="modal-header">
+                      <h3 className="modal-title">Portfolio Preview</h3>
+                      <button className="modal-close" onClick={()=>{ setPreviewOpen(false); setPreviewPortfolio(null); }}>×</button>
+                    </div>
+                    <div className="modal-body">
+                      <div className="modal-grid">
+                        <div className="form-group full">
+                          <strong>{previewPortfolio.displayName || 'Untitled'}</strong>
+                          <div>{previewPortfolio.tagline || ''}</div>
+                        </div>
+                        <div className="form-group full">
+                          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:'8px'}}>
+                            {(previewPortfolio.mediaUrls || []).map((u,idx)=> (
+                              <div key={idx} style={{background:'#f5f5f5',borderRadius:8,overflow:'hidden'}}>
+                                <img alt="media" src={u} style={{width:'100%',height:120,objectFit:'cover'}} />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="form-group full">
+                          <div><strong>Bio</strong></div>
+                          <div>{previewPortfolio.bio}</div>
+                        </div>
+                        <div className="form-group full" style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                          {(previewPortfolio.styles || []).map(s=> (<span key={s} className="apps-pill">{s}</span>))}
+                          {(previewPortfolio.categories || []).map(c=> (<span key={c} className="apps-pill secondary">{c}</span>))}
+                        </div>
+                        <div className="form-group full" style={{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))',gap:8}}>
+                          <div>Hourly: £{previewPortfolio.hourlyRate ?? '-'}</div>
+                          <div>Per Hand: £{previewPortfolio.perHandRate ?? '-'}</div>
+                          <div>Bridal: £{previewPortfolio.bridalPackagePrice ?? '-'}</div>
+                          <div>Party: £{previewPortfolio.partyPackagePrice ?? '-'}</div>
+                          <div>Outcall: £{previewPortfolio.outcallFee ?? '-'}</div>
+                          <div>Travels: {previewPortfolio.travelsToClient ? 'Yes' : 'No'}</div>
+                          <div>Published: {previewPortfolio.isPublished ? 'Yes' : 'No'}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="modal-footer">
+                      <button className="cancel-btn" onClick={()=>{ setPreviewOpen(false); setPreviewPortfolio(null); }}>Close</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Portfolio Delete Confirm Modal */}
+              {deleteConfirmOpen && (
+                <div className="modal-overlay" onClick={()=>{ setDeleteConfirmOpen(false); setDeleteTargetId(null); }}>
+                  <div className="confirmation-modal" onClick={(e)=>e.stopPropagation()}>
+                    <h3 className="modal-title">Delete Portfolio</h3>
+                    <p className="modal-text">Are you sure you want to delete this portfolio?</p>
+                    <div className="modal-actions">
+                      <button className="cancel-btn" onClick={()=>{ setDeleteConfirmOpen(false); setDeleteTargetId(null); }}>Cancel</button>
+                      <button className="confirm-btn decline" onClick={async ()=>{
+                        try {
+                          await portfoliosAPI.remove(deleteTargetId);
+                          setDeleteConfirmOpen(false);
+                          setDeleteTargetId(null);
+                          showSuccess('Portfolio deleted');
+                          fetchMyPortfolios();
+                        } catch(e) {
+                          showError(e.message || 'Failed to delete portfolio');
+                        }
+                      }}>Delete</button>
+                    </div>
+                  </div>
+                </div>
+              )}
               {/* Messages */}
               {activeTab === 'messages' && (
                 <div className="messages-section">
@@ -1791,16 +1867,8 @@ const ArtistDashboard = () => {
                         <div className="badge">{(p.categories || [])[0] || 'Mehndi'}</div>
                         <div className="thumb" style={{ backgroundImage: (p.mediaUrls && p.mediaUrls[0]) ? `url(${p.mediaUrls[0]})` : undefined }}></div>
                         <div className="item-actions">
-                          <button className="app-btn secondary" onClick={()=>window.open(p.mediaUrls && p.mediaUrls[0] ? p.mediaUrls[0] : '#','_blank')}>Preview</button>
-                          <button className="app-btn danger" onClick={async ()=>{
-                            try {
-                              await portfoliosAPI.remove(p._id);
-                              showSuccess('Portfolio deleted');
-                              fetchMyPortfolios();
-                            } catch (e) {
-                              showError(e.message || 'Failed to delete');
-                            }
-                          }}>Delete</button>
+                          <button className="app-btn secondary" onClick={()=>{ setPreviewPortfolio(p); setPreviewOpen(true); }}>Preview</button>
+                          <button className="app-btn danger" onClick={()=>{ setDeleteTargetId(p._id); setDeleteConfirmOpen(true); }}>Delete</button>
                         </div>
                         <div className="item-info">
                           <div className="item-title">{p.displayName || 'Untitled'}</div>
