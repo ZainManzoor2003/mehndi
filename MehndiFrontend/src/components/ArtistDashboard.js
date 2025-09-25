@@ -57,6 +57,9 @@ const ArtistDashboard = () => {
   const [applyOpen, setApplyOpen] = useState(false);
   const [applyBookingId, setApplyBookingId] = useState(null);
   const [applyLoading, setApplyLoading] = useState(false);
+  const [withdrawConfirmOpen, setWithdrawConfirmOpen] = useState(false);
+  const [withdrawBookingId, setWithdrawBookingId] = useState(null);
+  const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [applicationForm, setApplicationForm] = useState({
     proposedBudget: '',
     estimatedDuration: {
@@ -351,23 +354,33 @@ const ArtistDashboard = () => {
       setApplyLoading(false);
     }
   };
-  const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
-  const [selectedApplication, setSelectedApplication] = useState(null);
 
-  const openWithdrawModal = (application) => {
-    setSelectedApplication(application);
-    setWithdrawModalOpen(true);
+  const handleWithdrawApplication = (bookingId) => {
+    setWithdrawBookingId(bookingId);
+    setWithdrawConfirmOpen(true);
   };
 
-  const closeWithdrawModal = () => {
-    setWithdrawModalOpen(false);
-    setSelectedApplication(null);
+  const closeWithdrawConfirm = () => {
+    setWithdrawConfirmOpen(false);
+    setWithdrawBookingId(null);
   };
 
-  const confirmWithdraw = () => {
-    if (!selectedApplication) return;
-    setApplications(prev => prev.map(a => a.id === selectedApplication.id ? { ...a, status: 'withdrawn' } : a));
-    closeWithdrawModal();
+  const confirmWithdraw = async () => {
+    if (!withdrawBookingId) return;
+    
+    try {
+      setWithdrawLoading(true);
+      await applicationsAPI.withdrawApplication(withdrawBookingId);
+      showSuccess('Application withdrawn successfully!');
+      closeWithdrawConfirm();
+      
+      // Refresh applied bookings list
+      await fetchAppliedBookings();
+    } catch (e) {
+      showError(e.message || 'Failed to withdraw application');
+    } finally {
+      setWithdrawLoading(false);
+    }
   };
 
   // Schedule - simple calendar and bookings by date (mock)
@@ -1326,8 +1339,11 @@ const ArtistDashboard = () => {
                           <p className="app-note">Assigned artists: {a.assignedCount ?? 0}</p>
                           <div className="app-actions">
                             <button className="app-btn" onClick={() => openViewBooking(a.id)} disabled={viewLoading}>View Details</button>
-                            {applicationsFilter !== 'applied' && (
+                            {applicationsFilter === 'all' && (
                               <button className="app-btn apply-now" style={{ marginLeft: '8px' }} onClick={() => openApplyModal(a.id)}>Apply Now</button>
+                            )}
+                            {applicationsFilter === 'applied' && (
+                              <button className="app-btn app-btn-danger" style={{ marginLeft: '8px' }} onClick={() => handleWithdrawApplication(a.id)}>Withdraw</button>
                             )}
                           </div>
                         </div>
@@ -1688,23 +1704,36 @@ const ArtistDashboard = () => {
 
             </div>
 
-
-            {withdrawModalOpen && (
-              <div className="modal-overlay">
-                <div className="confirmation-modal">
+            {/* Withdraw Confirmation Modal */}
+            {withdrawConfirmOpen && (
+              <div className="modal-overlay" onClick={closeWithdrawConfirm}>
+                <div className="confirmation-modal" onClick={(e) => e.stopPropagation()}>
                   <h3 className="modal-title">Withdraw Application</h3>
                   <p className="modal-text">
-                    Are you sure you want to withdraw this application?
+                    Are you sure you want to withdraw your application?
                     <br />
-                    Once withdrawn, <span style={{ color: '#dc2626', fontWeight: 700 }}>you cannot re-apply</span> to this request.
+                    <strong>You can't apply to this booking again.</strong>
                   </p>
                   <div className="modal-actions">
-                    <button className="cancel-btn" onClick={closeWithdrawModal}>Cancel</button>
-                    <button className="confirm-btn decline" onClick={confirmWithdraw}>Confirm Withdraw</button>
+                    <button 
+                      className="cancel-btn" 
+                      onClick={closeWithdrawConfirm}
+                      disabled={withdrawLoading}
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      className="confirm-btn decline" 
+                      onClick={confirmWithdraw}
+                      disabled={withdrawLoading}
+                    >
+                      {withdrawLoading ? 'Withdrawing...' : 'Yes, Withdraw'}
+                    </button>
                   </div>
                 </div>
               </div>
             )}
+
 
             {viewOpen && viewForm && (
               <div className="modal-overlay" onClick={closeViewBooking}>
