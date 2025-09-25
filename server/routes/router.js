@@ -8,6 +8,7 @@ const { createBooking, getClientBookings, getAllBookings, getBookingById, update
 const { applyToBooking, getMyAppliedBookings, getApplicationsForBooking, updateApplicationStatus, withdrawApplication } = require('../controllers/applicationController');
 
 const { protect } = require('../middleware/auth');
+const chatController = require('../controllers/chatController');
 
 // Auth routes
 router.post('/api/auth/register', signup);
@@ -32,3 +33,9 @@ router.get('/api/applications/booking/:bookingId', protect, getApplicationsForBo
 router.put('/api/applications/:applicationId/status', protect, updateApplicationStatus);
 
 module.exports = router;
+
+// Chat routes
+router.post('/api/chats/ensure', protect, chatController.ensureChat);
+router.get('/api/chats', protect, chatController.listMyChats);
+router.get('/api/chats/:chatId', protect, chatController.getChat);
+router.post('/api/chats/:chatId/messages', protect, chatController.sendMessage);

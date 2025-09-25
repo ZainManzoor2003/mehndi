@@ -3,7 +3,8 @@ import './messages.css';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import ArtistSidebar from './ArtistSidebar';
-import apiService from '../services/api';
+import apiService, { chatAPI } from '../services/api';
+import socket, { buildDirectRoomId, joinRoom, sendRoomMessage, sendTyping } from '../services/socket';
 import { ToastContainer, useToast } from './Toast';
 
   const { jobsAPI, proposalsAPI, authAPI, bookingsAPI, applicationsAPI } = apiService;
@@ -759,87 +760,9 @@ const ArtistDashboard = () => {
   // Use real jobs or show empty state
   const displayJobs = availableJobs;
 
-  // Mock data for artist conversations
-  const [artistConversations] = useState([
-    {
-      id: 1,
-      clientName: 'Aisha Khan',
-      clientImage: 'https://via.placeholder.com/50x50',
-      lastMessage: 'Thank you for your proposal! Can we discuss the design details?',
-      lastMessageTime: '30 min ago',
-      unreadCount: 1,
-      status: 'online',
-      messages: [
-        {
-          id: 1,
-          senderId: 'client',
-          senderName: 'Aisha Khan',
-          message: 'Hi! I saw your proposal for my bridal mehndi. Your work looks amazing!',
-          timestamp: '2024-03-15 09:15 AM',
-          type: 'text'
-        },
-        {
-          id: 2,
-          senderId: 'artist',
-          senderName: 'Zara Henna Arts',
-          message: 'Thank you so much! I\'d love to work with you. I have some beautiful bridal designs in mind.',
-          timestamp: '2024-03-15 09:25 AM',
-          type: 'text'
-        },
-        {
-          id: 3,
-          senderId: 'client',
-          senderName: 'Aisha Khan',
-          message: 'Thank you for your proposal! Can we discuss the design details?',
-          timestamp: '2024-03-15 10:00 AM',
-          type: 'text'
-        }
-      ]
-    },
-    {
-      id: 2,
-      clientName: 'Fatima Ali',
-      clientImage: 'https://via.placeholder.com/50x50',
-      lastMessage: 'Perfect! Looking forward to working with you.',
-      lastMessageTime: 'Yesterday',
-      unreadCount: 0,
-      status: 'offline',
-      messages: [
-        {
-          id: 1,
-          senderId: 'artist',
-          senderName: 'Zara Henna Arts',
-          message: 'Hello! I saw your Eid celebration request. I\'d love to help make it special!',
-          timestamp: '2024-03-14 02:00 PM',
-          type: 'text'
-        },
-        {
-          id: 2,
-          senderId: 'client',
-          senderName: 'Fatima Ali',
-          message: 'Hi! Your portfolio is beautiful. Can you handle 6 people in 4 hours?',
-          timestamp: '2024-03-14 02:15 PM',
-          type: 'text'
-        },
-        {
-          id: 3,
-          senderId: 'artist',
-          senderName: 'Zara Henna Arts',
-          message: 'Absolutely! I can create elegant designs that work well for family events.',
-          timestamp: '2024-03-14 02:20 PM',
-          type: 'text'
-        },
-        {
-          id: 4,
-          senderId: 'client',
-          senderName: 'Fatima Ali',
-          message: 'Perfect! Looking forward to working with you.',
-          timestamp: '2024-03-14 02:25 PM',
-          type: 'text'
-        }
-      ]
-    }
-  ]);
+  const [artistConversations, setArtistConversations] = useState([]);
+  const [currentChat, setCurrentChat] = useState(null);
+  const [chatMessages, setChatMessages] = useState([]);
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -974,23 +897,67 @@ const ArtistDashboard = () => {
 
   const handleSelectConversation = (conversation) => {
     setSelectedConversation(conversation);
+    setCurrentChat(conversation);
+    const clientId = conversation.client?._id || conversation.clientId || conversation.id;
+    const roomId = buildDirectRoomId(user?._id, clientId);
+    joinRoom(roomId, { userId: user?._id, userType: 'artist' });
+    chatAPI.getChat(conversation._id).then(res => {
+      if (res.success) setChatMessages(res.data.messages || []);
+    }).catch(console.error);
   };
 
-  const handleSendMessage = () => {
-    if (newMessage.trim() && selectedConversation) {
-      const message = {
-        id: selectedConversation.messages.length + 1,
-        senderId: 'artist',
-        senderName: artistName,
-        message: newMessage.trim(),
-        timestamp: new Date().toLocaleString(),
-        type: 'text'
-      };
-
-      console.log('Sending message:', message);
-      setNewMessage('');
+  const handleSendMessage = async () => {
+    if (newMessage.trim() && currentChat) {
+      const clientId = currentChat.client?._id || currentChat.clientId || currentChat.id;
+      const roomId = buildDirectRoomId(user?._id, clientId);
+      const text = newMessage.trim();
+      try {
+        const res = await chatAPI.sendMessage(currentChat._id, text);
+        if (res.success) {
+          const saved = res.data.messages[res.data.messages.length - 1];
+          sendRoomMessage(roomId, {
+            id: saved._id || Date.now(),
+            senderId: saved.sender,
+            senderName: artistName,
+            message: saved.text,
+            timestamp: new Date(saved.createdAt || Date.now()).toLocaleString(),
+            type: 'text'
+          });
+          setChatMessages(res.data.messages);
+          setNewMessage('');
+        }
+      } catch (e) { console.error(e); }
     }
   };
+
+  useEffect(() => {
+    if (!user || activeTab !== 'messages') return;
+    chatAPI.listMyChats().then(res => {
+      if (res.success) setArtistConversations(res.data || []);
+    }).catch(console.error);
+  }, [user, activeTab]);
+
+  useEffect(() => {
+    if (!user) return;
+    const onMessage = (incoming) => {
+      if (!currentChat) return;
+      setChatMessages(prev => [...prev, {
+        id: incoming.id,
+        sender: incoming.senderId,
+        text: incoming.message,
+        createdAt: new Date().toISOString(),
+      }]);
+    };
+    const onTyping = ({ userId, isTyping }) => {
+      // optional: typing state
+    };
+    socket.on('message', onMessage);
+    socket.on('typing', onTyping);
+    return () => {
+      socket.off('message', onMessage);
+      socket.off('typing', onTyping);
+    };
+  }, [user, currentChat]);
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {

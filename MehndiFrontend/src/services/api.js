@@ -197,6 +197,28 @@ export const messagesAPI = {
   },
 };
 
+// Chats API functions
+export const chatAPI = {
+  ensureChat: async (clientId, artistId) => {
+    return apiRequest('/chats/ensure', {
+      method: 'POST',
+      body: JSON.stringify({ clientId, artistId }),
+    });
+  },
+  listMyChats: async () => {
+    return apiRequest('/chats');
+  },
+  getChat: async (chatId) => {
+    return apiRequest(`/chats/${chatId}`);
+  },
+  sendMessage: async (chatId, text) => {
+    return apiRequest(`/chats/${chatId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ text }),
+    });
+  },
+};
+
 // Reviews API functions
 export const reviewsAPI = {
   // Create review (clients only)
@@ -470,6 +492,7 @@ const apiExports = {
   proposalsAPI,
   applicationsAPI,
   messagesAPI,
+  chatAPI,
   reviewsAPI,
   usersAPI,
   uploadAPI,

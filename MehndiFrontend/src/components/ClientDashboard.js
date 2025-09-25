@@ -3,7 +3,8 @@ import './messages.css';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import DashboardSidebar from './DashboardSidebar';
-import apiService from '../services/api';
+import apiService, { chatAPI } from '../services/api';
+import socket, { buildDirectRoomId, joinRoom, sendRoomMessage, sendTyping } from '../services/socket';
 import ProposalsPage from './ProposalsPage';
 
 const { jobsAPI, proposalsAPI, bookingsAPI } = apiService;
@@ -30,6 +31,7 @@ const ClientDashboard = () => {
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [newMessage, setNewMessage] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [typingUserId, setTypingUserId] = useState(null);
   
   // Real proposals data from backend
   const [realProposals, setRealProposals] = useState([]);
@@ -105,122 +107,9 @@ const ClientDashboard = () => {
     }
   ]);
 
-  // Mock data for conversations
-  const [conversations] = useState([
-    {
-      id: 1,
-      artistName: 'Zara Henna Arts',
-      artistImage: 'https://via.placeholder.com/50x50',
-      lastMessage: 'Thank you for choosing me! I\'m excited to work with you.',
-      lastMessageTime: '10:30 AM',
-      unreadCount: 2,
-      status: 'online',
-      messages: [
-        {
-          id: 1,
-          senderId: 'artist',
-          senderName: 'Zara Henna Arts',
-          message: 'Hi! I received your booking request for the bridal mehndi.',
-          timestamp: '2024-03-15 09:15 AM',
-          type: 'text'
-        },
-        {
-          id: 2,
-          senderId: 'user',
-          senderName: 'Aisha',
-          message: 'Hello! Yes, I\'m excited to work with you. Can we discuss the design details?',
-          timestamp: '2024-03-15 09:20 AM',
-          type: 'text'
-        },
-        {
-          id: 3,
-          senderId: 'artist',
-          senderName: 'Zara Henna Arts',
-          message: 'Absolutely! I have some amazing bridal designs. Would you prefer traditional or modern fusion?',
-          timestamp: '2024-03-15 09:25 AM',
-          type: 'text'
-        },
-        {
-          id: 4,
-          senderId: 'artist',
-          senderName: 'Zara Henna Arts',
-          message: 'Thank you for choosing me! I\'m excited to work with you.',
-          timestamp: '2024-03-15 10:30 AM',
-          type: 'text'
-        }
-      ]
-    },
-    {
-      id: 2,
-      artistName: 'Henna by Aisha',
-      artistImage: 'https://via.placeholder.com/50x50',
-      lastMessage: 'I can adjust the design as per your preference.',
-      lastMessageTime: 'Yesterday',
-      unreadCount: 0,
-      status: 'offline',
-      messages: [
-        {
-          id: 1,
-          senderId: 'user',
-          senderName: 'Aisha',
-          message: 'Hi, I saw your portfolio and loved your work!',
-          timestamp: '2024-03-14 02:00 PM',
-          type: 'text'
-        },
-        {
-          id: 2,
-          senderId: 'artist',
-          senderName: 'Henna by Aisha',
-          message: 'Thank you so much! I\'d love to work with you. What kind of event is this for?',
-          timestamp: '2024-03-14 02:15 PM',
-          type: 'text'
-        },
-        {
-          id: 3,
-          senderId: 'user',
-          senderName: 'Aisha',
-          message: 'It\'s for an Eid celebration. I need something elegant but not too heavy.',
-          timestamp: '2024-03-14 02:20 PM',
-          type: 'text'
-        },
-        {
-          id: 4,
-          senderId: 'artist',
-          senderName: 'Henna by Aisha',
-          message: 'I can adjust the design as per your preference.',
-          timestamp: '2024-03-14 02:25 PM',
-          type: 'text'
-        }
-      ]
-    },
-    {
-      id: 3,
-      artistName: 'Mehndi Magic',
-      artistImage: 'https://via.placeholder.com/50x50',
-      lastMessage: 'Let me know if you have any questions!',
-      lastMessageTime: '2 days ago',
-      unreadCount: 1,
-      status: 'away',
-      messages: [
-        {
-          id: 1,
-          senderId: 'artist',
-          senderName: 'Mehndi Magic',
-          message: 'Hello! I saw your inquiry about festival mehndi designs.',
-          timestamp: '2024-03-13 11:00 AM',
-          type: 'text'
-        },
-        {
-          id: 2,
-          senderId: 'artist',
-          senderName: 'Mehndi Magic',
-          message: 'Let me know if you have any questions!',
-          timestamp: '2024-03-13 11:05 AM',
-          type: 'text'
-        }
-      ]
-    }
-  ]);
+  const [conversations, setConversations] = useState([]);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [currentChat, setCurrentChat] = useState(null);
 
   const [notifications] = useState([
     {
@@ -550,24 +439,36 @@ const ClientDashboard = () => {
 
   const handleSelectConversation = (conversation) => {
     setSelectedConversation(conversation);
-    // Mark messages as read
-    console.log('Selected conversation:', conversation.artistName);
+    setCurrentChat(conversation);
+    const otherId = conversation.artist?._id || conversation.artistId || conversation.id;
+    const roomId = buildDirectRoomId(user?._id, otherId);
+    joinRoom(roomId, { userId: user?._id, userType: user?.userType || 'client' });
+    chatAPI.getChat(conversation._id).then(res => {
+      if (res.success) setChatMessages(res.data.messages || []);
+    }).catch(console.error);
   };
 
-  const handleSendMessage = () => {
-    if (newMessage.trim() && selectedConversation) {
-      const message = {
-        id: selectedConversation.messages.length + 1,
-        senderId: 'user',
-        senderName: userName,
-        message: newMessage.trim(),
-        timestamp: new Date().toLocaleString(),
-        type: 'text'
-      };
-      
-      // Add message to conversation (in real app, this would update state properly)
-      console.log('Sending message:', message);
-      setNewMessage('');
+  const handleSendMessage = async () => {
+    if (newMessage.trim() && currentChat) {
+      const otherId = currentChat.artist?._id || currentChat.artistId || currentChat.id;
+      const roomId = buildDirectRoomId(user?._id, otherId);
+      const text = newMessage.trim();
+      try {
+        const res = await chatAPI.sendMessage(currentChat._id, text);
+        if (res.success) {
+          const saved = res.data.messages[res.data.messages.length - 1];
+          sendRoomMessage(roomId, {
+            id: saved._id || Date.now(),
+            senderId: saved.sender,
+            senderName: userName,
+            message: saved.text,
+            timestamp: new Date(saved.createdAt || Date.now()).toLocaleString(),
+            type: 'text'
+          });
+          setChatMessages(res.data.messages);
+          setNewMessage('');
+        }
+      } catch (e) { console.error(e); }
     }
   };
 
@@ -577,6 +478,35 @@ const ClientDashboard = () => {
       handleSendMessage();
     }
   };
+
+  useEffect(() => {
+    if (!user || activeTab !== 'messages') return;
+    chatAPI.listMyChats().then(res => {
+      if (res.success) setConversations(res.data || []);
+    }).catch(console.error);
+  }, [user, activeTab]);
+
+  useEffect(() => {
+    if (!user) return;
+    const onMessage = (incoming) => {
+      if (!currentChat) return;
+      setChatMessages(prev => [...prev, {
+        id: incoming.id,
+        sender: incoming.senderId,
+        text: incoming.message,
+        createdAt: new Date().toISOString(),
+      }]);
+    };
+    const onTyping = ({ userId, isTyping }) => {
+      setTypingUserId(isTyping ? userId : null);
+    };
+    socket.on('message', onMessage);
+    socket.on('typing', onTyping);
+    return () => {
+      socket.off('message', onMessage);
+      socket.off('typing', onTyping);
+    };
+  }, [user, currentChat]);
 
   return (
     <>

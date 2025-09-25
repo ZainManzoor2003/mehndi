@@ -37,6 +37,7 @@ const UserSchema = new mongoose.Schema(
       required: [true, 'User type is required'],
       default: 'client'
     },
+    chatIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Chat' }],
     createdAt: {
       type: Date,
       default: Date.now
