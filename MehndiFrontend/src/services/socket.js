@@ -28,6 +28,16 @@ export const sendTyping = (roomId, userId, isTyping) => {
   socket.emit('typing', { roomId, userId, isTyping });
 };
 
+export const signalOnline = (userId) => {
+  if (!userId) return;
+  socket.emit('presence:online', { userId });
+};
+
+export const onPresenceUpdate = (handler) => {
+  socket.on('presence:update', handler);
+  return () => socket.off('presence:update', handler);
+};
+
 export default socket;
 
 

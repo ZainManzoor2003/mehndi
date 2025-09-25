@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import ArtistSidebar from './ArtistSidebar';
 import apiService, { chatAPI } from '../services/api';
-import socket, { buildDirectRoomId, joinRoom, sendRoomMessage, sendTyping } from '../services/socket';
+import socket, { buildDirectRoomId, joinRoom, sendRoomMessage, sendTyping, signalOnline, onPresenceUpdate } from '../services/socket';
 import { ToastContainer, useToast } from './Toast';
 
   const { jobsAPI, proposalsAPI, authAPI, bookingsAPI, applicationsAPI, portfoliosAPI } = apiService;
@@ -21,6 +21,23 @@ const ArtistDashboard = () => {
   const [selectedJob, setSelectedJob] = useState(null);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [newMessage, setNewMessage] = useState('');
+  const [onlineUserIds, setOnlineUserIds] = useState(new Set());
+  const DEFAULT_AVATAR = '/assets/img/favicon.png';
+
+  useEffect(() => {
+    if (!user || !isAuthenticated) return;
+    signalOnline(user._id);
+    const off = onPresenceUpdate(({ userId, isOnline }) => {
+      setOnlineUserIds(prev => {
+        const next = new Set(prev);
+        if (isOnline) next.add(String(userId)); else next.delete(String(userId));
+        return next;
+      });
+    });
+    const onVisibility = () => { if (!document.hidden) signalOnline(user._id); };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => { if (off) off(); document.removeEventListener('visibilitychange', onVisibility); };
+  }, [user, isAuthenticated]);
   const [proposalData, setProposalData] = useState({
     message: '',
     price: '',
@@ -1498,8 +1515,12 @@ const ArtistDashboard = () => {
                             onClick={() => handleSelectConversation(conversation)}
                           >
                             <div className="conversation-avatar">
-                              <img src={conversation.clientImage} alt={conversation.clientName} />
-                              <div className={`status-indicator ${conversation.status}`}></div>
+                              <img src={conversation.clientImage || DEFAULT_AVATAR} alt={conversation.clientName || 'User'} />
+                              {(() => {
+                                const otherId = conversation.client?._id || conversation.clientId || conversation.id;
+                                const online = otherId ? onlineUserIds.has(String(otherId)) : false;
+                                return <div className={`status-indicator ${online ? 'online' : 'offline'}`}></div>;
+                              })()}
                             </div>
 
                             <div className="conversation-info">
@@ -1526,12 +1547,14 @@ const ArtistDashboard = () => {
                           {/* Chat Header */}
                           <div className="chat-header">
                             <div className="chat-client-info">
-                              <img src={selectedConversation.clientImage} alt={selectedConversation.clientName} />
+                              <img src={selectedConversation.clientImage || DEFAULT_AVATAR} alt={selectedConversation.clientName || 'User'} />
                               <div>
                                 <h3>{selectedConversation.clientName}</h3>
-                                <span className={`status-text ${selectedConversation.status}`}>
-                                  {selectedConversation.status === 'online' ? 'Online' : 'Offline'}
-                                </span>
+                                {(() => {
+                                  const otherId = selectedConversation.client?._id || selectedConversation.clientId || selectedConversation.id;
+                                  const online = otherId ? onlineUserIds.has(String(otherId)) : false;
+                                  return <span className={`status-text ${online ? 'online' : 'offline'}`}>{online ? 'Online' : 'Offline'}</span>;
+                                })()}
                               </div>
                             </div>
                           </div>

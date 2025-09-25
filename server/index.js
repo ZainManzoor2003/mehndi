@@ -34,7 +34,19 @@ db().then(() => {
     }
   })
 
+  // Simple in-memory presence tracking: userId -> Set of socketIds
+  const userIdToSockets = new Map();
+
   io.on('connection', (socket) => {
+    // Identify/presence online: expected { userId }
+    socket.on('presence:online', ({ userId }) => {
+      if (!userId) return;
+      const set = userIdToSockets.get(String(userId)) || new Set();
+      set.add(socket.id);
+      userIdToSockets.set(String(userId), set);
+      io.emit('presence:update', { userId: String(userId), isOnline: true });
+    });
+
     // Join room: expected { roomId, userId, userType }
     socket.on('join', ({ roomId }) => {
       if (!roomId) return
@@ -56,7 +68,19 @@ db().then(() => {
     })
 
     socket.on('disconnect', () => {
-      // Optionally broadcast disconnect events per room
+      // Remove socket from any presence sets and broadcast offline if none remain
+      for (const [userId, set] of userIdToSockets.entries()) {
+        if (set.has(socket.id)) {
+          set.delete(socket.id)
+          if (set.size === 0) {
+            userIdToSockets.delete(userId)
+            io.emit('presence:update', { userId, isOnline: false })
+          } else {
+            userIdToSockets.set(userId, set)
+          }
+          break
+        }
+      }
     })
   })
 

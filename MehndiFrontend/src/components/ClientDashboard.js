@@ -4,7 +4,7 @@ import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import DashboardSidebar from './DashboardSidebar';
 import apiService, { chatAPI } from '../services/api';
-import socket, { buildDirectRoomId, joinRoom, sendRoomMessage, sendTyping } from '../services/socket';
+import socket, { buildDirectRoomId, joinRoom, sendRoomMessage, sendTyping, signalOnline, onPresenceUpdate } from '../services/socket';
 import ProposalsPage from './ProposalsPage';
 
 const { jobsAPI, proposalsAPI, bookingsAPI } = apiService;
@@ -111,6 +111,9 @@ const ClientDashboard = () => {
   const [conversations, setConversations] = useState([]);
   const [chatMessages, setChatMessages] = useState([]);
   const [currentChat, setCurrentChat] = useState(null);
+  const [onlineUserIds, setOnlineUserIds] = useState(new Set());
+
+  const DEFAULT_AVATAR = '/assets/img/favicon.png';
 
   const [notifications] = useState([
     {
@@ -314,6 +317,22 @@ const ClientDashboard = () => {
       fetchBookings();
     }
   }, [isAuthenticated, user, fetchClientJobs, fetchBookings, tab]);
+
+  // Presence: signal that this user is online while on dashboard; listen for updates
+  useEffect(() => {
+    if (!user || !isAuthenticated) return;
+    signalOnline(user._id);
+    const off = onPresenceUpdate(({ userId, isOnline }) => {
+      setOnlineUserIds(prev => {
+        const next = new Set(prev);
+        if (isOnline) next.add(String(userId)); else next.delete(String(userId));
+        return next;
+      });
+    });
+    const onVisibility = () => { if (!document.hidden) signalOnline(user._id); };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => { if (off) off(); document.removeEventListener('visibilitychange', onVisibility); };
+  }, [user, isAuthenticated]);
 
   // If chatId is provided in query, open messages tab and select that chat
   useEffect(() => {
@@ -1418,8 +1437,12 @@ const ClientDashboard = () => {
                         onClick={() => handleSelectConversation(conversation)}
                       >
                         <div className="conversation-avatar">
-                          <img src={conversation.artistImage} alt={conversation.artistName} />
-                          <div className={`status-indicator ${conversation.status}`}></div>
+                          <img src={conversation.artistImage || DEFAULT_AVATAR} alt={conversation.artistName || 'User'} />
+                          {(() => {
+                            const otherId = conversation.artist?._id || conversation.artistId || conversation.id;
+                            const online = otherId ? onlineUserIds.has(String(otherId)) : false;
+                            return <div className={`status-indicator ${online ? 'online' : 'offline'}`}></div>;
+                          })()}
                         </div>
                         
                         <div className="conversation-info">
@@ -1446,36 +1469,18 @@ const ClientDashboard = () => {
                       {/* Chat Header */}
                       <div className="chat-header">
                         <div className="chat-artist-info">
-                          <img src={selectedConversation.artistImage} alt={selectedConversation.artistName} />
+                          <img src={selectedConversation.artistImage || DEFAULT_AVATAR} alt={selectedConversation.artistName || 'User'} />
                           <div>
                             <h3>{selectedConversation.artistName}</h3>
-                            <span className={`status-text ${selectedConversation.status}`}>
-                              {selectedConversation.status === 'online' ? 'Online' : 
-                               selectedConversation.status === 'away' ? 'Away' : 'Offline'}
-                            </span>
+                            {(() => {
+                              const otherId = selectedConversation.artist?._id || selectedConversation.artistId || selectedConversation.id;
+                              const online = otherId ? onlineUserIds.has(String(otherId)) : false;
+                              return <span className={`status-text ${online ? 'online' : 'offline'}`}>{online ? 'Online' : 'Offline'}</span>;
+                            })()}
                           </div>
                         </div>
                         
-                        <div className="chat-actions">
-                          <button className="chat-action-btn">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M22 16.92V21a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h4.09a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 10.91a16 16 0 0 0 6 6l2.27-2.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92Z" stroke="currentColor" strokeWidth="2" fill="none"/>
-                            </svg>
-                          </button>
-                          <button className="chat-action-btn">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <polygon points="23 7 16 12 23 17 23 7" stroke="currentColor" strokeWidth="2" fill="none"/>
-                              <rect x="1" y="5" width="15" height="14" rx="2" ry="2" stroke="currentColor" strokeWidth="2" fill="none"/>
-                            </svg>
-                          </button>
-                          <button className="chat-action-btn">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <circle cx="12" cy="12" r="1" stroke="currentColor" strokeWidth="2"/>
-                              <circle cx="19" cy="12" r="1" stroke="currentColor" strokeWidth="2"/>
-                              <circle cx="5" cy="12" r="1" stroke="currentColor" strokeWidth="2"/>
-                            </svg>
-                          </button>
-                        </div>
+                      
                       </div>
 
                 {/* Messages List */}
