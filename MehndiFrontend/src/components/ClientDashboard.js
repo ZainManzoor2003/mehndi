@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import './messages.css';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import DashboardSidebar from './DashboardSidebar';

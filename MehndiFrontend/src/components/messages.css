@@ -1,0 +1,67 @@
+.dashboard-content .messages-section {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 8px 0;
+  height: calc(100vh - 20px - 16px);
+}
+
+/* Ensure the container keeps centered layout from App.css */
+.dashboard-content .messages-container {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Keep the entire chat header on one line */
+.dashboard-content .chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+}
+
+@media screen and (max-width: 768px) {
+  .dashboard-content .messages-section {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 8px 0;
+    height: calc(100vh - 16px);
+  }
+
+  /* Ensure chat area uses full viewport minus conversations list on mobile */
+  .dashboard-content .chat-area {
+    height: calc(100vh - 200px - 16px);
+  }
+}
+
+/* Remove dashboard top padding when messages view is active (modern browsers) */
+.dashboard-main-content:has(.messages-section) .dashboard-container {
+  padding-top: 0 !important;
+}
+
+/* Keep chat header content (avatar, name, status) on one line */
+.dashboard-content .chat-artist-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.dashboard-content .chat-artist-info h3,
+.dashboard-content .chat-artist-info .status-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Prevent actions from wrapping */
+.dashboard-content .chat-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+  flex: 0 0 auto;
+}
+
+
