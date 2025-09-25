@@ -445,6 +445,15 @@ export const applicationsAPI = {
   getMyApplicationsByStatus: async (status) => {
     const qs = new URLSearchParams({ status }).toString();
     return apiRequest(`/applications/my-applied?${qs}`);
+  },
+  getApplicationsForBooking: async (bookingId) => {
+    return apiRequest(`/applications/booking/${bookingId}`);
+  },
+  updateApplicationStatus: async (applicationId, bookingId, status) => {
+    return apiRequest(`/applications/${applicationId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ bookingId, status })
+    });
   }
 };
 

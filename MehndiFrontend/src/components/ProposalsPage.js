@@ -1,107 +1,109 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import apiService from '../services/api';
+
 // Header removed for standalone use inside dashboard and route
 
+const { bookingsAPI, applicationsAPI } = apiService;
+
 const ProposalsPage = () => {
+  const { isAuthenticated } = useAuth();
   const [activeFilter, setActiveFilter] = useState('active');
   const [sortBy, setSortBy] = useState('date');
   const [searchTerm, setSearchTerm] = useState('');
   const [showAcceptModal, setShowAcceptModal] = useState(false);
   const [showDeclineModal, setShowDeclineModal] = useState(false);
-  const [selectedProposal, setSelectedProposal] = useState(null);
-  const [expandedRequest, setExpandedRequest] = useState(1); // Default to first request expanded
+  const [selectedRow, setSelectedRow] = useState(null);
+  const [expandedRequest, setExpandedRequest] = useState(null);
 
-  // Mock data for requests
-  const [requests] = useState([
-    {
-      id: 1,
-      title: 'Bridal Mehndi for August',
-      location: 'London',
-      date: '29 July 2025',
-      status: 'open',
-      proposalCount: 3
-    },
-    {
-      id: 2,
-      title: 'Eid Mehndi Party',
-      location: 'Birmingham',
-      date: '10 April 2025',
-      status: 'open',
-      proposalCount: 1
-    }
-  ]);
+  // Live data
+  const [bookings, setBookings] = useState([]); // pending bookings only
+  const [applicationsByBooking, setApplicationsByBooking] = useState({}); // { bookingId: Application[] }
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  // Mock data for proposals
-  const [proposals] = useState({
-    1: [
-      {
-        id: 1,
-        artistName: 'Newartisttest',
-        artistInitials: 'NE',
-        rating: 4.5,
-        location: 'London',
-        price: '£566.00',
-        time: '6 hrs',
-        status: 'declined'
-      },
-      {
-        id: 2,
-        artistName: 'Henna by Aisha',
-        artistInitials: 'HE',
-        rating: 4.9,
-        location: 'London',
-        price: '£520.00',
-        time: '5 hrs',
-        status: 'pending'
-      },
-      {
-        id: 3,
-        artistName: 'ArtistryByX',
-        artistInitials: 'AR',
-        rating: 5.0,
-        location: 'London',
-        price: '£600.00',
-        time: '7 hrs',
-        status: 'accepted'
+  useEffect(() => {
+    const load = async () => {
+      if (!isAuthenticated) return;
+      try {
+        setLoading(true);
+        setError('');
+        const res = await bookingsAPI.getMyBookings();
+        const myBookings = (res.data || []).filter(b => b.status === 'pending');
+        setBookings(myBookings);
+        // default expand first
+        if (myBookings.length && !expandedRequest) setExpandedRequest(myBookings[0]._id);
+        // fetch applications per booking in parallel
+        const entries = await Promise.all(
+          myBookings.map(async (b) => {
+            try {
+              const r = await applicationsAPI.getApplicationsForBooking(b._id);
+              return [b._id, r.data || []];
+            } catch (e) {
+              return [b._id, []];
+            }
+          })
+        );
+        setApplicationsByBooking(Object.fromEntries(entries));
+      } catch (e) {
+        setError(e.message || 'Failed to load proposals');
+      } finally {
+        setLoading(false);
       }
-    ],
-    2: [
-      {
-        id: 4,
-        artistName: 'Creative Henna',
-        artistInitials: 'CH',
-        rating: 4.7,
-        location: 'Birmingham',
-        price: '£300.00',
-        time: '4 hrs',
-        status: 'pending'
-      }
-    ]
-  });
+    };
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]);
 
   const handleFilterChange = (filter) => {
     setActiveFilter(filter);
   };
 
-  const handleAccept = (proposal) => {
-    setSelectedProposal(proposal);
+  const handleAccept = (row) => {
+    setSelectedRow(row);
     setShowAcceptModal(true);
   };
 
-  const handleDecline = (proposal) => {
-    setSelectedProposal(proposal);
+  const handleDecline = (row) => {
+    setSelectedRow(row);
     setShowDeclineModal(true);
   };
 
-  const handleConfirmAccept = () => {
-    console.log('Accepted proposal:', selectedProposal);
-    setShowAcceptModal(false);
-    setSelectedProposal(null);
+  const updateRowStatus = (bookingId, applicationId, status) => {
+    setApplicationsByBooking(prev => {
+      const copy = { ...prev };
+      const list = (copy[bookingId] || []).map(a => a.applicationId === applicationId ? { ...a, status } : a);
+      copy[bookingId] = list;
+      return copy;
+    });
   };
 
-  const handleConfirmDecline = () => {
-    console.log('Declined proposal:', selectedProposal);
-    setShowDeclineModal(false);
-    setSelectedProposal(null);
+  const handleConfirmAccept = async () => {
+    if (!selectedRow) return;
+    try {
+      await applicationsAPI.updateApplicationStatus(selectedRow.applicationId, selectedRow.bookingId, 'accepted');
+      // server returns refreshed list; refetch this booking
+      const refreshed = await applicationsAPI.getApplicationsForBooking(selectedRow.bookingId);
+      setApplicationsByBooking(prev => ({ ...prev, [selectedRow.bookingId]: refreshed.data || [] }));
+    } catch (e) {
+      // optimistic update fallback
+      updateRowStatus(selectedRow.bookingId, selectedRow.applicationId, 'accepted');
+    } finally {
+      setShowAcceptModal(false);
+      setSelectedRow(null);
+    }
+  };
+
+  const handleConfirmDecline = async () => {
+    if (!selectedRow) return;
+    try {
+      await applicationsAPI.updateApplicationStatus(selectedRow.applicationId, selectedRow.bookingId, 'declined');
+      updateRowStatus(selectedRow.bookingId, selectedRow.applicationId, 'declined');
+    } catch (e) {
+    } finally {
+      setShowDeclineModal(false);
+      setSelectedRow(null);
+    }
   };
 
   const handleToggleExpanded = (requestId) => {
@@ -110,7 +112,7 @@ const ProposalsPage = () => {
 
   const getStatusBadge = (status) => {
     switch (status) {
-      case 'pending':
+      case 'applied':
         return <span className="status-badge pending">⏰ Pending</span>;
       case 'accepted':
         return <span className="status-badge accepted">✅ Accepted</span>;
@@ -121,19 +123,19 @@ const ProposalsPage = () => {
     }
   };
 
-  const getActionButtons = (proposal) => {
-    if (proposal.status === 'pending') {
+  const getActionButtons = (row) => {
+    if (row.status === 'applied') {
       return (
         <div className="proposal-actions">
           <button 
             className="accept-btn"
-            onClick={() => handleAccept(proposal)}
+            onClick={() => handleAccept(row)}
           >
             Accept
           </button>
           <button 
             className="decline-btn"
-            onClick={() => handleDecline(proposal)}
+            onClick={() => handleDecline(row)}
           >
             Decline
           </button>
@@ -167,13 +169,13 @@ const ProposalsPage = () => {
               className={`filter-tab ${activeFilter === 'all' ? 'active' : ''}`}
               onClick={() => handleFilterChange('all')}
             >
-              All Requests (2)
+              All Requests ({bookings.length})
             </button>
             <button 
               className={`filter-tab ${activeFilter === 'active' ? 'active' : ''}`}
               onClick={() => handleFilterChange('active')}
             >
-              Active (2)
+              Active ({bookings.length})
             </button>
             <button 
               className={`filter-tab ${activeFilter === 'completed' ? 'active' : ''}`}
@@ -208,22 +210,34 @@ const ProposalsPage = () => {
 
         {/* Requests List */}
         <div className="requests-container">
-          {requests.map(request => (
-            <div key={request.id} className="request-section">
+          {error && (
+            <div className="error-text">{error}</div>
+          )}
+          {loading && (
+            <div className="loading-text">Loading...</div>
+          )}
+          {bookings.map(request => {
+            const proposals = applicationsByBooking[request._id] || [];
+            const appliedOnly = proposals.filter(p => p.status === 'applied');
+            const proposalCount = appliedOnly.length;
+            const title = `${request.eventType?.join(', ') || 'Mehndi'} — ${request.city || request.location}`;
+            const date = request.eventDate ? new Date(request.eventDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+            return (
+            <div key={request._id} className="request-section">
               {/* Request Header */}
               <div className="request-header">
                 <div className="request-info">
-                  <h3 className="request-title">{request.title}</h3>
-                  <p className="request-details">{request.location} • {request.date}</p>
+                  <h3 className="request-title">{title}</h3>
+                  <p className="request-details">{request.city || request.location} • {date}</p>
                 </div>
                 <div className="request-controls">
                   <span className="status-badge open">Open</span>
-                  <span className="proposal-count">{request.proposalCount} proposal{request.proposalCount !== 1 ? 's' : ''}</span>
+                  <span className="proposal-count">{proposalCount} proposal{proposalCount !== 1 ? 's' : ''}</span>
                   <button 
                     className="expand-toggle"
-                    onClick={() => handleToggleExpanded(request.id)}
+                    onClick={() => handleToggleExpanded(request._id)}
                   >
-                    {expandedRequest === request.id ? (
+                    {expandedRequest === request._id ? (
                       <>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <path d="M18 15L12 9L6 15" stroke="currentColor" strokeWidth="2" fill="none"/>
@@ -245,7 +259,7 @@ const ProposalsPage = () => {
               </div>
 
               {/* Expanded Proposals Table */}
-              {expandedRequest === request.id && (
+              {expandedRequest === request._id && (
                 <div className="proposals-table-section">
                   <div className="proposals-header">
                     <h4>Recent Proposals</h4>
@@ -263,7 +277,7 @@ const ProposalsPage = () => {
                     </div>
                   </div>
 
-                  <div className="proposals-table">
+                   <div className="proposals-table">
                     <div className="table-header">
                       <span className="col-artist">Artist</span>
                       <span className="col-price">Price/Time</span>
@@ -271,31 +285,31 @@ const ProposalsPage = () => {
                       <span className="col-actions">Actions</span>
                     </div>
 
-                    {proposals[request.id]?.map(proposal => (
-                      <div key={proposal.id} className="table-row">
+                    {appliedOnly.map(app => (
+                      <div key={app.applicationId} className="table-row">
                         <div className="col-artist">
                           <div className="artist-info">
                             <div className="artist-avatar">
-                              {proposal.artistInitials}
+                              {(app.artist?.firstName?.[0] || 'A')}{(app.artist?.lastName?.[0] || '')}
                             </div>
                             <div className="artist-details">
-                              <span className="artist-name">{proposal.artistName}</span>
+                              <span className="artist-name">{app.artist ? `${app.artist.firstName} ${app.artist.lastName}` : 'Artist'}</span>
                               <div className="artist-meta">
-                                <span className="rating">⭐ {proposal.rating}</span>
-                                <span className="location">• {proposal.location}</span>
+                                <span className="rating">⭐ {app.artist?.rating || '—'}</span>
+                                <span className="location">• {request.city || request.location}</span>
                               </div>
                             </div>
                           </div>
                         </div>
                         <div className="col-price">
-                          <span className="price">{proposal.price}</span>
-                          <span className="time">{proposal.time}</span>
+                          <span className="price">£{app.artistDetails?.proposedBudget || '—'}</span>
+                          <span className="time">{app.artistDetails?.estimatedDuration?.value || '—'} {app.artistDetails?.estimatedDuration?.unit || 'hours'}</span>
                         </div>
                         <div className="col-status">
-                          {getStatusBadge(proposal.status)}
+                          {getStatusBadge(app.status)}
                         </div>
                         <div className="col-actions">
-                          {getActionButtons(proposal)}
+                          {getActionButtons(app)}
                         </div>
                       </div>
                     ))}
@@ -303,7 +317,7 @@ const ProposalsPage = () => {
                 </div>
               )}
             </div>
-          ))}
+          );})}
         </div>
 
         {/* Accept Modal */}

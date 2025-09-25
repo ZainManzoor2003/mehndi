@@ -163,4 +163,133 @@ exports.getMyAppliedBookings = async (req, res) => {
   }
 };
 
+// @desc    Get all applications for a specific booking (for the owning client)
+// @route   GET /api/applications/booking/:bookingId
+// @access  Private (Client only)
+exports.getApplicationsForBooking = async (req, res) => {
+  try {
+    const bookingId = req.params.bookingId;
+    if (!bookingId) {
+      return res.status(400).json({ success: false, message: 'bookingId is required' });
+    }
+
+    // Ensure the booking exists and belongs to the requesting client
+    const booking = await Booking.findById(bookingId).select('clientId');
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    if (!req.user || req.user.userType !== 'client' || booking.clientId.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Not authorized to view applications for this booking' });
+    }
+
+    // Aggregate applications for this booking and unwind the Booking array to access the embedded item
+    const mongoose = require('mongoose');
+    const results = await Application.aggregate([
+      { $unwind: '$Booking' },
+      { $match: { 'Booking.booking_id': new mongoose.Types.ObjectId(bookingId) } },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'Booking.artist_id',
+          foreignField: '_id',
+          as: 'artist'
+        }
+      },
+      { $unwind: '$artist' },
+      {
+        $project: {
+          _id: 1,
+          applicationId: '$_id',
+          bookingId: '$Booking.booking_id',
+          artistId: '$Booking.artist_id',
+          status: '$Booking.status',
+          artistDetails: '$Booking.artistDetails',
+          artist: {
+            _id: '$artist._id',
+            firstName: '$artist.firstName',
+            lastName: '$artist.lastName',
+            email: '$artist.email',
+            rating: '$artist.artist.rating'
+          }
+        }
+      },
+      { $sort: { _id: -1 } }
+    ]);
+
+    return res.status(200).json({ success: true, count: results.length, data: results });
+  } catch (error) {
+    console.error('Get applications for booking error:', error);
+    return res.status(500).json({ success: false, message: 'Server error while fetching applications', error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' });
+  }
+};
+
+// @desc    Update an application status for a booking (client accepts/declines)
+// @route   PUT /api/applications/:applicationId/status
+// @access  Private (Client only)
+exports.updateApplicationStatus = async (req, res) => {
+  try {
+    const { applicationId } = req.params;
+    const { bookingId, status } = req.body;
+
+    if (!applicationId || !bookingId || !status) {
+      return res.status(400).json({ success: false, message: 'applicationId, bookingId and status are required' });
+    }
+
+    const allowed = ['accepted', 'declined'];
+    if (!allowed.includes(status)) {
+      return res.status(400).json({ success: false, message: `Invalid status. Allowed: ${allowed.join(', ')}` });
+    }
+
+    // Verify booking ownership
+    const booking = await Booking.findById(bookingId).select('clientId assignedArtist status');
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+    if (!req.user || req.user.userType !== 'client' || booking.clientId.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Not authorized to update applications for this booking' });
+    }
+
+    // Update the target application's embedded Booking entry status
+    const updateResult = await Application.updateOne(
+      { _id: applicationId, 'Booking.booking_id': bookingId },
+      { $set: { 'Booking.$.status': status } }
+    );
+
+    if (updateResult.matchedCount === 0) {
+      return res.status(404).json({ success: false, message: 'Application not found for this booking' });
+    }
+
+    // If accepted, set booking assignedArtist and confirm booking. Also decline others.
+    if (status === 'accepted') {
+      // Get the application to know the artist id
+      const application = await Application.findById(applicationId);
+      const bookingEntry = application.Booking.find(b => b.booking_id.toString() === bookingId.toString());
+      const artistId = bookingEntry && bookingEntry.artist_id;
+
+      if (artistId) {
+        // Assign artist to booking and set status to confirmed
+        if (!Array.isArray(booking.assignedArtist) || !booking.assignedArtist.map(a => a.toString()).includes(artistId.toString())) {
+          booking.assignedArtist = [...(booking.assignedArtist || []), artistId];
+        }
+        booking.status = 'confirmed';
+        await booking.save();
+
+        // Decline all other applications for this booking
+        await Application.updateMany(
+          { 'Booking.booking_id': bookingId, _id: { $ne: applicationId } },
+          { $set: { 'Booking.$[elem].status': 'declined' } },
+          { arrayFilters: [ { 'elem.booking_id': bookingId } ] }
+        );
+      }
+    }
+
+    // Return refreshed list for this booking
+    return exports.getApplicationsForBooking(req, res);
+  } catch (error) {
+    console.error('Update application status error:', error);
+    return res.status(500).json({ success: false, message: 'Server error while updating application status', error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' });
+  }
+};
+
 
