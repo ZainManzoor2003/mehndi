@@ -516,10 +516,10 @@ export const applicationsAPI = {
 
 // Payments API
 export const paymentsAPI = {
-  createCheckout: async ({ amount, currency = 'gbp', bookingId, applicationId, successUrl, cancelUrl, description }) => {
+  createCheckout: async ({ amount, currency = 'gbp', bookingId, applicationId, successUrl, cancelUrl, description, isPaid, remainingAmount }) => {
     return apiRequest('/payments/create-checkout', {
       method: 'POST',
-      body: JSON.stringify({ amount, currency, bookingId, applicationId, successUrl, cancelUrl, description })
+      body: JSON.stringify({ amount, currency, bookingId, applicationId, successUrl, cancelUrl, description, isPaid, remainingAmount })
     });
   },
 };

@@ -46,18 +46,9 @@ const ClientDashboard = () => {
   const [bookingsLoading, setBookingsLoading] = useState(false);
   const [bookingsError, setBookingsError] = useState('');
   
-  // Mock data - this would come from API calls
-  const [nextEvent] = useState({
-    title: 'Bridal Mehndi',
-    date: 'Oct 10, 2025',
-    time: '3:00 PM',
-    daysLeft: 20,
-    location: '123 Celebration Hall, Downtown City',
-    artist: 'Zara Henna Arts',
-    depositPaid: true,
-    finalPaymentDue: 'in 14 days',
-    allSet: true
-  });
+  // Dynamic booking data from API
+  const [nextEvent, setNextEvent] = useState(null);
+  const [secondEvent, setSecondEvent] = useState(null);
 
   const [upcomingBookings] = useState([
     {
@@ -216,15 +207,110 @@ const ClientDashboard = () => {
         console.log('Setting client bookings:', response.data.length, 'bookings found');
         setAllBookings(response.data);
         setBookingsError('');
+        
+        // Find the closest upcoming booking to today's date
+        const today = new Date();
+        const upcomingBookings = response.data
+          .filter(booking => {
+            const eventDate = new Date(booking.eventDate);
+            return eventDate > today && (booking.status === 'confirmed' || booking.status === 'in_progress');
+          })
+          .sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate)); // Sort by closest date first
+        
+        if (upcomingBookings.length > 0) {
+          // Get the closest upcoming booking (first in sorted array)
+          const latestBooking = upcomingBookings[0];
+          
+          const eventDate = new Date(latestBooking.eventDate);
+          const today = new Date();
+          const daysLeft = Math.ceil((eventDate - today) / (1000 * 60 * 60 * 24));
+          
+          const getEventTitle = (eventType, otherEventType) => {
+            if (eventType && eventType.length > 0) {
+              const types = eventType.join(', ');
+              return otherEventType ? `${types} - ${otherEventType}` : types;
+            }
+            return otherEventType || 'Mehndi Booking';
+          };
+          
+          const getArtistName = (assignedArtist) => {
+            if (assignedArtist && assignedArtist[0].firstName) {
+              return `${assignedArtist[0].firstName} ${assignedArtist[0].lastName}`;
+            }
+            return 'TBD - No artist assigned yet';
+          };
+          
+          const formatDate = (dateString) => {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-GB', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric'
+            });
+          };
+          
+          const formatTime = (dateString) => {
+            const date = new Date(dateString);
+            return date.toLocaleTimeString('en-GB', {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true
+            });
+          };
+          
+          setNextEvent({
+            id: latestBooking._id,
+            title: getEventTitle(latestBooking.eventType, latestBooking.otherEventType),
+            date: formatDate(latestBooking.eventDate),
+            time:latestBooking.preferredTimeSlot,
+            daysLeft: daysLeft,
+            location: latestBooking.location,
+            artist: getArtistName(latestBooking.assignedArtist),
+            isPaid: latestBooking.isPaid || 'none',
+            paymentPaid: latestBooking.paymentPaid || '0',
+            remainingPayment: latestBooking.remainingPayment || '0',
+            status: latestBooking.status
+          });
+
+          // Get the second closest upcoming booking if it exists
+          if (upcomingBookings.length > 1) {
+            const secondBooking = upcomingBookings[1];
+            const secondEventDate = new Date(secondBooking.eventDate);
+            const secondDaysLeft = Math.ceil((secondEventDate - today) / (1000 * 60 * 60 * 24));
+            
+            setSecondEvent({
+              id: secondBooking._id,
+              title: getEventTitle(secondBooking.eventType, secondBooking.otherEventType),
+              date: formatDate(secondBooking.eventDate),
+              time: secondBooking.preferredTimeSlot,
+              daysLeft: secondDaysLeft,
+              location: secondBooking.location,
+              artist: getArtistName(secondBooking.assignedArtist),
+              isPaid: secondBooking.isPaid || 'none',
+              paymentPaid: secondBooking.paymentPaid || '0',
+              remainingPayment: secondBooking.remainingPayment || '0',
+              status: secondBooking.status
+            });
+          } else {
+            setSecondEvent(null);
+          }
+        } else {
+          setNextEvent(null);
+          setSecondEvent(null);
+        }
       } else {
         console.log('No bookings data in response or unsuccessful response');
         setAllBookings([]);
         setBookingsError('No bookings found');
+        setNextEvent(null);
+        setSecondEvent(null);
       }
     } catch (error) {
       console.error('Error fetching client bookings:', error);
       setBookingsError(error.message || 'Failed to fetch bookings');
       setAllBookings([]);
+      setNextEvent(null);
+      setSecondEvent(null);
     } finally {
       setBookingsLoading(false);
     }
@@ -608,40 +694,64 @@ const ClientDashboard = () => {
               {/* Welcome Section */}
               <div className="welcome-section">
                 <h2 className="welcome-message">
-                  Hi {userName} 👋, your bridal mehndi is coming up soon!
+                  Hi {userName} 👋, {nextEvent ? `your ${nextEvent.title.toLowerCase()} is coming up soon!` : 'welcome to your dashboard!'}
                 </h2>
                 
                 {/* Next Event Card */}
-                <div className="next-event-card">
-                  <div className="event-header">
-                    <span className="event-icon">📅</span>
-                    <h3>Next Event: {nextEvent.title} – {nextEvent.date}</h3>
-                  </div>
-                  
-                  <div className="event-details">
-                    <div className="event-left">
-                      <p><strong>Date & Time:</strong> {nextEvent.date} · {nextEvent.time}</p>
-                      <p className="event-countdown">⏰ Event in {nextEvent.daysLeft} days</p>
-                      <p><strong>Location:</strong> {nextEvent.location}</p>
-                      <p><strong>Artist:</strong> {nextEvent.artist}</p>
+                {nextEvent ? (
+                  <div className="next-event-card">
+                    <div className="event-header">
+                      <span className="event-icon">📅</span>
+                      <h3>Next Event: {nextEvent.title} – {nextEvent.date}</h3>
                     </div>
                     
-                    <div className="event-right">
-                      <div className="status-badge deposit-paid">
-                        📋 Deposit Paid
+                    <div className="event-details">
+                      <div className="event-left">
+                        <p><strong>Date & Time:</strong> {nextEvent.date} · {nextEvent.time}</p>
+                        <p className="event-countdown">⏰ Event in {nextEvent.daysLeft} days</p>
+                        <p><strong>Location:</strong> {nextEvent.location}</p>
+                        <p><strong>Artist:</strong> {nextEvent.artist}</p>
                       </div>
-                      <div className="payment-progress">
-                        <div className="progress-bar">
-                          <div className="progress-fill"></div>
+                      
+                      <div className="event-right">
+                        <div className={`status-badge ${nextEvent.isPaid === 'full' ? 'deposit-paid' : 'payment-pending'}`}>
+                          {nextEvent.isPaid === 'full' ? '📋 Fully Paid' : 
+                           nextEvent.isPaid === 'half' ? '📋 Deposit Paid' : '📋 Payment Pending'}
                         </div>
-                        <p className="payment-text">Final 50% Payment Due {nextEvent.finalPaymentDue}</p>
+                        <div className="payment-progress">
+                          <div className="progress-bar">
+                            <div 
+                              className="progress-fill" 
+                              style={{ 
+                                width: nextEvent.isPaid === 'full' ? '100%' : 
+                                       nextEvent.isPaid === 'half' ? '50%' : '0%' 
+                              }}
+                            ></div>
+                          </div>
+                          <p className="payment-text">
+                            {nextEvent.isPaid === 'full' ? 'Payment Complete' :
+                             nextEvent.isPaid === 'half' ? `Final 50% Payment Dues (£${nextEvent.remainingPayment})` :
+                             `Payment Required (£${nextEvent.remainingPayment || '0'})`}
+                          </p>
+                        </div>
+                        {nextEvent.isPaid === 'full' ? (
+                          <p className="all-set">You're all set 🎉</p>
+                        ) : (
+                          <button className="pay-remaining-btn" onClick={handlePayRemaining}>
+                            Pay Remaining Dues
+                          </button>
+                        )}
                       </div>
-                      <p className="all-set">You're all set 🎉</p>
                     </div>
                   </div>
-                  
-                  <button className="view-booking-btn">View Full Booking</button>
-                </div>
+                ) : (
+                  <div className="no-upcoming-events">
+                    <div className="no-events-icon">📅</div>
+                    <h3>No Upcoming Events</h3>
+                    <p>You don't have any confirmed upcoming bookings.</p>
+                    <Link to="/booking" className="btn-primary">Book Your Next Event</Link>
+                  </div>
+                )}
               </div>
 
               <div className="dashboard-main">
@@ -657,35 +767,57 @@ const ClientDashboard = () => {
                     </Link>
                   </div>
                   
-                  {upcomingBookings.map(booking => (
-                    <div key={booking.id} className="booking-card">
-                      <div className="booking-info">
-                        <h4 className="booking-title">{booking.title}</h4>
-                        <p className="booking-artist">With {booking.artist}</p>
-                        <p className="booking-date">{booking.date} · {booking.time}</p>
-                        <span className="days-left-badge">{booking.daysLeft} days left</span>
+                  {/* First upcoming booking */}
+                 
+
+                  {/* Second upcoming booking */}
+                  {secondEvent && (
+                    <div className="next-event-card">
+                      <div className="event-header">
+                        <span className="event-icon">📅</span>
+                        <h3>Second Event: {secondEvent.title} – {secondEvent.date}</h3>
                       </div>
                       
-                      <div className="booking-actions">
-                        <button className="reschedule-btn">Reschedule</button>
-                        <button className="message-btn">Message</button>
-                      </div>
-                      
-                      <div className="payment-status">
-                        <div className="payment-item">
-                          <span className="payment-icon deposit">📋</span>
-                          <span>Deposit Secured</span>
+                      <div className="event-details">
+                        <div className="event-left">
+                          <p><strong>Date & Time:</strong> {secondEvent.date} · {secondEvent.time}</p>
+                          <p className="event-countdown">⏰ Event in {secondEvent.daysLeft} days</p>
+                          <p><strong>Location:</strong> {secondEvent.location}</p>
+                          <p><strong>Artist:</strong> {secondEvent.artist}</p>
                         </div>
-                        <div className="payment-item">
-                          <span className="payment-icon warning">⚠️</span>
-                          <span>Final 50% due {booking.finalPaymentDue}</span>
+                        
+                        <div className="event-right">
+                          <div className={`status-badge ${secondEvent.isPaid === 'full' ? 'deposit-paid' : 'payment-pending'}`}>
+                            {secondEvent.isPaid === 'full' ? '📋 Fully Paid' : 
+                             secondEvent.isPaid === 'half' ? '📋 Deposit Paid' : '📋 Payment Pending'}
+                          </div>
+                          <div className="payment-progress">
+                            <div className="progress-bar">
+                              <div 
+                                className="progress-fill" 
+                                style={{ 
+                                  width: secondEvent.isPaid === 'full' ? '100%' : 
+                                         secondEvent.isPaid === 'half' ? '50%' : '0%' 
+                                }}
+                              ></div>
+                            </div>
+                            <p className="payment-text">
+                              {secondEvent.isPaid === 'full' ? 'Payment Complete' :
+                               secondEvent.isPaid === 'half' ? `Final 50% Payment Dues (£${secondEvent.remainingPayment})` :
+                               `Payment Required (£${secondEvent.remainingPayment || '0'})`}
+                            </p>
+                          </div>
+                          {secondEvent.isPaid === 'full' ? (
+                            <p className="all-set">You're all set 🎉</p>
+                          ) : (
+                            <button className="pay-remaining-btn" onClick={handlePayRemaining}>
+                              Pay Remaining Dues
+                            </button>
+                          )}
                         </div>
-                        <button className="pay-remaining-btn" onClick={handlePayRemaining}>Pay Remaining</button>
                       </div>
-                      
-                      <p className="final-payment-note">Final payment scheduled — due soon ⏳</p>
                     </div>
-                  ))}
+                  )}
 
                   {/* Post New Request Section */}
                   <div className="no-more-bookings">
@@ -717,201 +849,7 @@ const ClientDashboard = () => {
 
               {/* My Requests Section */}
               {!showProposalsView ? (
-                <div className="requests-section">
-                  <h3 className="section-title">Recent Proposals Received</h3>
-              
-              {/* Quick Proposals Summary */}
-              <div className="proposals-summary" style={{ marginBottom: '20px', padding: '15px', background: '#f8f9fa', borderRadius: '8px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <h4 style={{ margin: '0 0 5px 0' }}>📩 {realProposals.length} Total Proposals</h4>
-                    <p style={{ margin: 0, color: '#666' }}>
-                      {realProposals.filter(p => p.status === 'pending').length} Pending • 
-                      {realProposals.filter(p => p.status === 'accepted').length} Accepted • 
-                      {realProposals.filter(p => p.status === 'rejected').length} Rejected
-                    </p>
-                  </div>
-                  <button 
-                    onClick={() => window.open('/proposals','_blank')}
-                    onAuxClick={(e) => { if (e.button===1) window.open('/proposals','_blank'); }}
-                    style={{ 
-                      background: '#d4a574', 
-                      color: 'white', 
-                      border: 'none', 
-                      padding: '10px 20px', 
-                      borderRadius: '5px', 
-                      cursor: 'pointer' 
-                    }}
-                  >
-                    View All Proposals
-                  </button>
-                </div>
-              </div>
-
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h3 className="section-title" style={{ margin: 0 }}>My Posted Jobs</h3>
-                <button 
-                  onClick={() => {
-                    console.log('Manual refresh jobs clicked');
-                    fetchClientJobs();
-                  }}
-                  style={{
-                    background: '#d4a574',
-                    color: 'white',
-                    border: 'none',
-                    padding: '8px 16px',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '14px'
-                  }}
-                >
-                  🔄 Refresh Jobs
-                </button>
-              </div>
-              
-              {/* Real Client Jobs */}
-              {jobsLoading ? (
-                <div className="loading-state" style={{ textAlign: 'center', padding: '40px' }}>
-                  <div className="loading-spinner" style={{ 
-                    width: '40px', 
-                    height: '40px', 
-                    border: '4px solid #f3f3f3', 
-                    borderTop: '4px solid #d4a574', 
-                    borderRadius: '50%', 
-                    animation: 'spin 1s linear infinite',
-                    margin: '0 auto 16px'
-                  }}></div>
-                  <p>Loading your jobs...</p>
-                </div>
-              ) : clientJobs.length > 0 ? (
-                <div className="client-jobs-list">
-                  {clientJobs.map(job => (
-                    <div 
-                      key={job._id} 
-                      className="client-job-card clickable-job-card" 
-                      onClick={() => handleJobClick(job._id)}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <div className="job-card-header">
-                        <div className="request-info">
-                          <h4 className="job-card-title">{job.title}</h4>
-                          <div className="job-card-meta">
-                            <span className="request-date">
-                              📅 {job.eventDetails?.eventDate ? new Date(job.eventDetails.eventDate).toLocaleDateString('en-GB') : 'Date TBD'}
-                            </span>
-                            <span className="request-location">
-                              📍 {job.location?.city || 'Location not specified'}
-                            </span>
-                            <span className="request-budget">
-                              💰 £{job.budget?.min || 0}-{job.budget?.max || 0}
-                            </span>
-                          </div>
-                          <p className="request-description">{job.description}</p>
-                          <div className="click-hint">
-                            👁️ Click to view full details and proposals
-                          </div>
-                        </div>
-                        <div className="job-card-actions">
-                          <span className={`status-badge ${job.status}`}>
-                            {job.status || 'open'}
-                          </span>
-                          <div className="job-proposals-info">
-                            <p className="proposals-count">
-                              {realProposals.filter(p => p.jobId === job._id).length} proposals
-                            </p>
-                            <button 
-                              className="view-proposals-btn"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                window.open(`/job/${job._id}`,'_blank');
-                              }}
-                            >
-                              View Proposals
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Job Details */}
-                      <div className="job-additional-info">
-                        <div className="job-info-grid">
-                          <div className="job-info-item">
-                            <span className="job-info-label">Event Type:</span>
-                            <span className="job-info-value">{job.eventDetails?.eventType || 'Not specified'}</span>
-                          </div>
-                          <div className="job-info-item">
-                            <span className="job-info-label">Guest Count:</span>
-                            <span className="job-info-value">{job.eventDetails?.guestCount || 'Not specified'}</span>
-                          </div>
-                          <div className="job-info-item">
-                            <span className="job-info-label">Duration:</span>
-                            <span className="job-info-value">{job.eventDetails?.duration?.estimated || 'Not specified'} hours</span>
-                          </div>
-                          <div className="job-info-item">
-                            <span className="job-info-label">Posted:</span>
-                            <span className="job-info-value">{job.createdAt ? new Date(job.createdAt).toLocaleDateString('en-GB') : 'Unknown'}</span>
-                          </div>
-                        </div>
-                        {job.requirements?.designStyle && (
-                          <div className="job-requirements-info">
-                            <span className="job-info-label">Required Style:</span>
-                            <span className="job-info-value">{job.requirements.designStyle.join(', ')}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="empty-jobs-state" style={{ textAlign: 'center', padding: '40px', background: '#f8f9fa', borderRadius: '8px' }}>
-                  <div className="empty-icon" style={{ fontSize: '48px', marginBottom: '16px' }}>📝</div>
-                  <h3 style={{ margin: '0 0 8px 0', color: '#333' }}>No jobs found</h3>
-                  <p style={{ margin: '0 0 20px 0', color: '#666' }}>
-                    {isAuthenticated && user ? 
-                      `User: ${user.firstName} ${user.lastName} (${user.userType})` :
-                      'Please check authentication status'
-                    }
-                  </p>
-                  <p style={{ margin: '0 0 20px 0', color: '#666' }}>
-                    Check the browser console (F12) and backend logs for debugging information.
-                  </p>
-                  <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-                    <button 
-                      onClick={() => {
-                        console.log('Debug refresh clicked');
-                        console.log('User state:', { isAuthenticated, user });
-                        fetchClientJobs();
-                      }}
-                      style={{
-                        background: '#e74c3c',
-                        color: 'white',
-                        padding: '12px 24px',
-                        borderRadius: '6px',
-                        border: 'none',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      🔍 Debug Refresh
-                    </button>
-                    <Link 
-                      to="/booking-form" 
-                      style={{
-                        background: '#d4a574',
-                        color: 'white',
-                        padding: '12px 24px',
-                        borderRadius: '6px',
-                        textDecoration: 'none',
-                        display: 'inline-block'
-                      }}
-                    >
-                      Post New Job
-                    </Link>
-                  </div>
-                </div>
-              )}
-
-
-                </div>
+                <></>
               ) : (
                 /* Proposals View */
                 <div className="proposals-view">

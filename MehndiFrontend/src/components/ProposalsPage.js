@@ -10,12 +10,13 @@ const { bookingsAPI, applicationsAPI, paymentsAPI } = apiService;
 const ProposalsPage = () => {
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
-  const [activeFilter, setActiveFilter] = useState('active');
   const [sortBy, setSortBy] = useState('date');
   const [searchTerm, setSearchTerm] = useState('');
   const [showAcceptModal, setShowAcceptModal] = useState(false);
   const [showDeclineModal, setShowDeclineModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
+  const [selectedArtistDetails, setSelectedArtistDetails] = useState(null);
   const [expandedRequest, setExpandedRequest] = useState(null);
 
   // Live data
@@ -31,7 +32,7 @@ const ProposalsPage = () => {
         setLoading(true);
         setError('');
         const res = await bookingsAPI.getMyBookings();
-        const myBookings = (res.data || []).filter(b => b.status === 'pending');
+        const myBookings = (res.data || []).filter(b => b.status==='in_progress');
         setBookings(myBookings);
         // default expand first
         if (myBookings.length && !expandedRequest) setExpandedRequest(myBookings[0]._id);
@@ -65,16 +66,27 @@ const ProposalsPage = () => {
     const applicationId = params.get('applicationId');
     const paidAmountParam = params.get('paidAmount');
     const remainingParam = params.get('remaining');
+    const isPaidParam = params.get('isPaid');
+    
+    console.log('Frontend - URL params:', {
+      checkout,
+      bookingId,
+      applicationId,
+      paidAmountParam,
+      remainingParam,
+      isPaidParam
+    });
     if (checkout === 'success' && bookingId && applicationId) {
       const finalize = async () => {
         try {
           const paidAmountNum = Number(paidAmountParam || 0) || 0;
           const remainingNum = Number(remainingParam || 0) || 0;
+          const isPaidValue = isPaidParam || 'none';
           await applicationsAPI.updateApplicationStatus(
             applicationId,
             bookingId,
             'accepted',
-            { paymentPaid: paidAmountNum, remainingPayment: remainingNum }
+            { paymentPaid: paidAmountNum, remainingPayment: remainingNum, isPaid: isPaidValue }
           );
         } catch (e) {
         } finally {
@@ -114,9 +126,6 @@ const ProposalsPage = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
 
-  const handleFilterChange = (filter) => {
-    setActiveFilter(filter);
-  };
 
   const handleAccept = (row) => {
     setSelectedRow(row);
@@ -146,22 +155,30 @@ const ProposalsPage = () => {
       const now = new Date();
       const diffDays = eventDate ? Math.ceil((eventDate - now) / (1000 * 60 * 60 * 24)) : 0;
       const proposed = Number(selectedRow?.artistDetails?.proposedBudget) || 0;
-      const percent = diffDays > 14 ? 0.5 : 1;
+      const percent = diffDays >= 14 ? 0.5 : 1;
       const paidAmount = Math.round(proposed * percent);
       const remainingAmount = Math.max(proposed - paidAmount, 0);
+      const isPaid = diffDays >= 14 ? 'half' : 'full';
 
       // Create Stripe Checkout session for paidAmount
-      const successUrl = `${window.location.origin}?checkout=success&bookingId=${encodeURIComponent(selectedRow.bookingId)}&applicationId=${encodeURIComponent(selectedRow.applicationId)}&paidAmount=${encodeURIComponent(paidAmount)}&remaining=${encodeURIComponent(remainingAmount)}`;
+      const successUrl = `${window.location.origin}?checkout=success&bookingId=${encodeURIComponent(selectedRow.bookingId)}
+      &applicationId=${encodeURIComponent(selectedRow.applicationId)}&paidAmount=${encodeURIComponent(paidAmount)}
+      &remaining=${encodeURIComponent(remainingAmount)}&isPaid=${encodeURIComponent(isPaid)}`;
       const cancelUrl = `${window.location.origin}?checkout=canceled&bookingId=${encodeURIComponent(selectedRow.bookingId)}&applicationId=${encodeURIComponent(selectedRow.applicationId)}`;
 
+      console.log('Frontend - Sending isPaid:', isPaid);
+      console.log('Frontend - Success URL:', successUrl);
+      
       const checkout = await paymentsAPI.createCheckout({
         amount: paidAmount,
+        remainingAmount,
         currency: 'gbp',
         bookingId: selectedRow.bookingId,
         applicationId: selectedRow.applicationId,
         successUrl,
         cancelUrl,
-        description: 'Upfront payment to confirm booking'
+        description: 'Upfront payment to confirm booking',
+        isPaid: isPaid,
       });
 
       if (checkout?.data?.url) {
@@ -273,6 +290,11 @@ const ProposalsPage = () => {
     }
   };
 
+  const handleViewDetails = (row) => {
+    setSelectedArtistDetails(row);
+    setShowDetailsModal(true);
+  };
+
   const getActionButtons = (row) => {
     if (row.status === 'applied') {
       return (
@@ -294,6 +316,9 @@ const ProposalsPage = () => {
               <path d="M20 4H4C2.9 4 2.01 4.9 2.01 6L2 18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4ZM20 8L12 13L4 8V6L12 11L20 6V8Z" fill="currentColor"/>
             </svg>
           </button>
+          <button className="view-details-btn" onClick={() => handleViewDetails(row)}>
+            View Details
+          </button>
         </div>
       );
     } else {
@@ -304,38 +329,47 @@ const ProposalsPage = () => {
               <path d="M20 4H4C2.9 4 2.01 4.9 2.01 6L2 18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4ZM20 8L12 13L4 8V6L12 11L20 6V8Z" fill="currentColor"/>
             </svg>
           </button>
+          <button className="view-details-btn" onClick={() => handleViewDetails(row)}>
+            View Details
+          </button>
         </div>
       );
     }
   };
 
+  // Filter bookings based on search term
+  const filteredBookings = useMemo(() => {
+    if (!searchTerm.trim()) return bookings;
+    
+    const searchLower = searchTerm.toLowerCase();
+    return bookings.filter(booking => {
+      // Search by event type
+      const eventTypeMatch = booking.eventType?.some(type => 
+        type.toLowerCase().includes(searchLower)
+      ) || false;
+      
+      // Search by location/city
+      const locationMatch = (booking.city || booking.location || '')
+        .toLowerCase().includes(searchLower);
+      
+      // Search by artist name in proposals
+      const hasArtistMatch = applicationsByBooking[booking._id]?.some(app => {
+        const artistName = `${app.artist?.firstName || ''} ${app.artist?.lastName || ''}`.toLowerCase();
+        return artistName.includes(searchLower);
+      }) || false;
+      
+      return eventTypeMatch || locationMatch || hasArtistMatch;
+    });
+  }, [bookings, searchTerm, applicationsByBooking]);
+
+  // Calculate total number of bookings
+  const totalBookings = filteredBookings.length;
+
   return (
     <>
       <div className="proposals-page">
-        {/* Filter Tabs */}
+        {/* Search Bar */}
         <div className="proposals-filters">
-          <div className="filter-tabs">
-            <button 
-              className={`filter-tab ${activeFilter === 'all' ? 'active' : ''}`}
-              onClick={() => handleFilterChange('all')}
-            >
-              All Requests ({bookings.length})
-            </button>
-            <button 
-              className={`filter-tab ${activeFilter === 'active' ? 'active' : ''}`}
-              onClick={() => handleFilterChange('active')}
-            >
-              Active ({bookings.length})
-            </button>
-            <button 
-              className={`filter-tab ${activeFilter === 'completed' ? 'active' : ''}`}
-              onClick={() => handleFilterChange('completed')}
-            >
-              Completed (0)
-            </button>
-          </div>
-
-          {/* Search and Filter Controls */}
           <div className="filter-controls">
             <div className="search-box">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -344,17 +378,14 @@ const ProposalsPage = () => {
               </svg>
               <input 
                 type="text" 
-                placeholder="Search requests" 
+                placeholder="Search by event type, location, or artist name" 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <button className="filters-btn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46" stroke="currentColor" strokeWidth="2" fill="none"/>
-              </svg>
-              Filters
-            </button>
+            <div className="booking-count">
+              Total Bookings: {totalBookings}
+            </div>
           </div>
         </div>
 
@@ -366,7 +397,7 @@ const ProposalsPage = () => {
           {loading && (
             <div className="loading-text">Loading...</div>
           )}
-          {bookings.map(request => {
+          {filteredBookings.map(request => {
             const proposals = applicationsByBooking[request._id] || [];
             const appliedOnly = proposals.filter(p => p.status === 'applied');
             const proposalCount = appliedOnly.length;
@@ -403,8 +434,6 @@ const ProposalsPage = () => {
                       </>
                     )}
                   </button>
-                  <button className="edit-btn">✏️</button>
-                  <button className="close-btn">✕</button>
                 </div>
               </div>
 
@@ -516,6 +545,136 @@ const ProposalsPage = () => {
                   onClick={handleConfirmDecline}
                 >
                   Confirm
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Artist Details Modal */}
+        {showDetailsModal && selectedArtistDetails && (
+          <div className="modal-overlay">
+            <div className="artist-details-modal">
+              <div className="modal-header">
+                <h3 className="modal-title">Artist Details</h3>
+                <button 
+                  className="close-modal-btn"
+                  onClick={() => setShowDetailsModal(false)}
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="artist-details-content">
+                <div className="artist-profile-section">
+                  <div className="artist-avatar-large">
+                    {(selectedArtistDetails.artist?.firstName?.[0] || 'A')}{(selectedArtistDetails.artist?.lastName?.[0] || '')}
+                  </div>
+                  <div className="artist-basic-info">
+                    <h4 className="artist-name">
+                      {selectedArtistDetails.artist ? 
+                        `${selectedArtistDetails.artist.firstName} ${selectedArtistDetails.artist.lastName}` : 
+                        'Artist'
+                      }
+                    </h4>
+                    <div className="artist-rating">
+                      <span className="rating">⭐ {selectedArtistDetails.artist?.rating || '—'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="artist-details-grid">
+                  <div className="detail-section">
+                    <h5>Proposal Details</h5>
+                    <div className="detail-item">
+                      <span className="detail-label">Proposed Budget:</span>
+                      <span className="detail-value">£{selectedArtistDetails.artistDetails?.proposedBudget || '—'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Estimated Duration:</span>
+                      <span className="detail-value">
+                        {selectedArtistDetails.artistDetails?.estimatedDuration?.value || '—'} 
+                        {selectedArtistDetails.artistDetails?.estimatedDuration?.unit || ' hours'}
+                      </span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Message:</span>
+                      <span className="detail-value long-text">{selectedArtistDetails.artistDetails?.proposal?.message || 'No message provided'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Additional Notes:</span>
+                      <span className="detail-value long-text">{selectedArtistDetails.artistDetails?.proposal?.additionalNotes || 'No additional notes'}</span>
+                    </div>
+                  </div>
+
+                  <div className="detail-section">
+                    <h5>Availability</h5>
+                    <div className="detail-item">
+                      <span className="detail-label">Can Travel to Location:</span>
+                      <span className="detail-value">
+                        {selectedArtistDetails.artistDetails?.availability?.canTravelToLocation ? '✅ Yes' : '❌ No'}
+                      </span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Available on Date:</span>
+                      <span className="detail-value">
+                        {selectedArtistDetails.artistDetails?.availability?.isAvailableOnDate ? '✅ Yes' : '❌ No'}
+                      </span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Flexible Schedule:</span>
+                      <span className="detail-value">
+                        {selectedArtistDetails.artistDetails?.availability?.flexibleSchedule ? '✅ Yes' : '❌ No'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="detail-section">
+                    <h5>Experience & Portfolio</h5>
+                    <div className="detail-item">
+                      <span className="detail-label">Portfolio Highlights:</span>
+                      <span className="detail-value long-text">{selectedArtistDetails.artistDetails?.experience?.portfolioHighlights || 'Not provided'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Relevant Experience:</span>
+                      <span className="detail-value long-text">{selectedArtistDetails.artistDetails?.experience?.relevantExperience || 'Not provided'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Years of Experience:</span>
+                      <span className="detail-value">{selectedArtistDetails.artistDetails?.experience?.yearsOfExperience || 'Not specified'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Specializations:</span>
+                      <span className="detail-value">{selectedArtistDetails.artistDetails?.experience?.specializations || 'Not specified'}</span>
+                    </div>
+                  </div>
+
+                  <div className="detail-section">
+                    <h5>Terms & Conditions</h5>
+                    <div className="detail-item">
+                      <span className="detail-label">Agreed to Terms:</span>
+                      <span className="detail-value">
+                        {selectedArtistDetails.artistDetails?.terms?.agreedToTerms ? '✅ Yes' : '❌ No'}
+                      </span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Payment Terms:</span>
+                      <span className="detail-value">{selectedArtistDetails.artistDetails?.terms?.paymentTerms || 'Not specified'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Cancellation Policy:</span>
+                      <span className="detail-value">{selectedArtistDetails.artistDetails?.terms?.cancellationPolicy || 'Not specified'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <button 
+                  className="cancel-btn"
+                  onClick={() => setShowDetailsModal(false)}
+                >
+                  Close
                 </button>
               </div>
             </div>

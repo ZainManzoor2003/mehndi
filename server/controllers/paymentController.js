@@ -5,7 +5,9 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || '');
 // @access  Private (Client only)
 exports.createCheckoutSession = async (req, res) => {
   try {
-    const { amount, currency = 'gbp', bookingId, applicationId, successUrl, cancelUrl, description } = req.body || {};
+    const { amount, currency = 'gbp', bookingId, applicationId, successUrl, cancelUrl,
+      description, isPaid,remainingAmount } = req.body || {};
+    
 
     if (!process.env.STRIPE_SECRET_KEY) {
       return res.status(500).json({ success: false, message: 'Stripe not configured on server' });
@@ -43,11 +45,11 @@ exports.createCheckoutSession = async (req, res) => {
         bookingId: String(bookingId),
         applicationId: String(applicationId),
         paidAmount: String(amount),
+        remainingAmount: String(remainingAmount),
+        isPaid: String(isPaid || 'none'),
       },
-      success_url:
-         `http://localhost:3000/dashboard/proposals?checkout=success&bookingId=${encodeURIComponent(bookingId)}&applicationId=${encodeURIComponent(applicationId)}&paidAmount=${encodeURIComponent(amount)}`,
-      cancel_url:
-        `http://localhost:3000/dashboard/proposals?checkout=canceled&bookingId=${encodeURIComponent(bookingId)}&applicationId=${encodeURIComponent(applicationId)}`,
+      success_url:  `http://localhost:3000/dashboard/proposals?checkout=success&bookingId=${encodeURIComponent(bookingId)}&applicationId=${encodeURIComponent(applicationId)}&paidAmount=${encodeURIComponent(amount)}&isPaid=${encodeURIComponent(isPaid || 'none')}&remaining=${encodeURIComponent(remainingAmount || '0')}`,
+      cancel_url: `http://localhost:3000/dashboard/proposals?checkout=canceled&bookingId=${encodeURIComponent(bookingId)}&applicationId=${encodeURIComponent(applicationId)}`,
     });
 
     return res.status(200).json({ success: true, data: { id: session.id, url: session.url } });

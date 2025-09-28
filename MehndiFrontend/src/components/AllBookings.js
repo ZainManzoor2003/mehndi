@@ -537,11 +537,14 @@ const AllBookings = () => {
                             <div className="card-actions">
                               {getStatusBadge(booking.status)}
                               {booking.status == 'pending' &&
-                                <button className="icon-btn edit" onClick={() => openEditModal(booking)} title="Edit booking">✏️
-                                </button>
+                                <>
+                                  <button className="icon-btn edit" onClick={() => openEditModal(booking)} title="Edit booking">✏️
+                                  </button>
+
+                                  <button className="icon-btn delete" onClick={() => handleDelete(booking)} title="Delete booking">🗑️</button>
+                            </>
                               }
-                              <button className="icon-btn delete" onClick={() => handleDelete(booking)} title="Delete booking">🗑️</button>
-                            </div>
+                              </div>
                           </div>
 
                           <div className="card-content">

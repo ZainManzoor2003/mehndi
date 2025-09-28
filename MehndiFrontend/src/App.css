@@ -7157,7 +7157,9 @@ body.dark-theme .scroll-header .henna-line {
   padding: 0.75rem 1rem;
   border-radius: 8px;
   border: 1px solid var(--light-beige);
-  min-width: 250px;
+  min-width: 400px;
+  flex: 1;
+  max-width: 600px;
 }
 
 .search-box svg {
@@ -7362,6 +7364,7 @@ body.dark-theme .scroll-header .henna-line {
   
   .search-box {
     min-width: 200px;
+    max-width: none;
   }
   
   .proposal-header {
@@ -8790,7 +8793,19 @@ body.dark-theme .scroll-header .henna-line {
 .filter-controls {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 1rem;
+  width: 100%;
+}
+
+.booking-count {
+  color: var(--title-color);
+  font-weight: var(--font-semi-bold);
+  font-size: var(--normal-font-size);
+  background: var(--container-color);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--light-beige);
 }
 
 .requests-container {
@@ -9002,17 +9017,21 @@ body.dark-theme .scroll-header .henna-line {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
 }
 
 .accept-btn {
   background: var(--title-color);
   border: none;
   color: var(--white-color);
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 0.75rem;
   border-radius: 6px;
   cursor: pointer;
   font-weight: var(--font-semi-bold);
   transition: all 0.3s ease;
+  white-space: nowrap;
+  min-width: 60px;
 }
 
 .accept-btn:hover {
@@ -9023,11 +9042,13 @@ body.dark-theme .scroll-header .henna-line {
   background: #dc3545;
   border: none;
   color: var(--white-color);
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 0.75rem;
   border-radius: 6px;
   cursor: pointer;
   font-weight: var(--font-semi-bold);
   transition: all 0.3s ease;
+  white-space: nowrap;
+  min-width: 60px;
 }
 
 .decline-btn:hover {
@@ -9045,11 +9066,33 @@ body.dark-theme .scroll-header .henna-line {
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
 }
 
 .message-btn:hover {
   border-color: var(--accent-gold);
   color: var(--accent-orange);
+}
+
+.view-details-btn {
+  background: var(--accent-gold);
+  border: none;
+  color: var(--white-color);
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: var(--font-medium);
+  font-size: var(--small-font-size);
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  min-width: 80px;
+}
+
+.view-details-btn:hover {
+  background: #b8860b;
+  transform: translateY(-1px);
 }
 
 .confirmation-modal {
@@ -9060,6 +9103,137 @@ body.dark-theme .scroll-header .henna-line {
   width: 92%;
   margin: 0 auto;
   margin-top: 8vh;
+}
+
+.artist-details-modal {
+  background: var(--white-color);
+  border-radius: 16px;
+  padding: 0;
+  box-shadow: 0 10px 30px rgba(139, 115, 85, 0.2);
+  max-width: 800px;
+  width: 92%;
+  max-height: 90vh;
+  overflow-y: auto;
+  margin: 0 auto;
+  margin-top: 5vh;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid var(--light-beige);
+}
+
+.close-modal-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-color);
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.close-modal-btn:hover {
+  background: var(--light-beige);
+  color: var(--title-color);
+}
+
+.artist-details-content {
+  padding: 2rem;
+}
+
+.artist-profile-section {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--light-beige);
+}
+
+.artist-avatar-large {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--accent-orange);
+  color: var(--white-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: var(--font-semi-bold);
+}
+
+.artist-basic-info h4 {
+  color: var(--title-color);
+  font-size: var(--h3-font-size);
+  margin-bottom: 0.5rem;
+}
+
+.artist-rating {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: var(--text-color);
+  font-size: var(--small-font-size);
+}
+
+.artist-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.detail-section {
+  background: var(--container-color);
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--light-beige);
+}
+
+.detail-section h5 {
+  color: var(--title-color);
+  font-size: var(--h4-font-size);
+  margin-bottom: 1rem;
+  font-weight: var(--font-semi-bold);
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+  gap: 1rem;
+}
+
+.detail-item:last-child {
+  margin-bottom: 0;
+}
+
+.detail-label {
+  color: var(--text-color);
+  font-weight: var(--font-medium);
+  min-width: 120px;
+  flex-shrink: 0;
+}
+
+.detail-value {
+  color: var(--title-color);
+  text-align: right;
+  flex: 1;
+  word-break: break-word;
+  line-height: 1.4;
+  max-width: 200px;
+}
+
+.detail-value.long-text {
+  text-align: left;
+  max-width: none;
+  margin-top: 0.25rem;
 }
 
 .modal-title {
@@ -9120,6 +9294,33 @@ body.dark-theme .scroll-header .henna-line {
   .confirmation-modal { padding: 1rem; width: 95%; max-width: 95%; margin-top: 6vh; }
   .modal-actions { justify-content: stretch; }
   .modal-actions button { flex: 1 1 auto; }
+  
+  .artist-details-modal {
+    width: 95%;
+    max-width: 95%;
+    margin-top: 3vh;
+  }
+  
+  .artist-profile-section {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+  
+  .artist-details-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .detail-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  
+  .detail-value {
+    text-align: left;
+  }
 }
 
 /*========== Application Modal ==========*/
@@ -9669,7 +9870,14 @@ body.dark-theme .scroll-header .henna-line {
   }
   
   .filter-controls {
-    justify-content: center;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .booking-count {
+    text-align: center;
+    margin-top: 0.5rem;
   }
   
   .request-header {
@@ -9737,6 +9945,24 @@ body.dark-theme .scroll-header .henna-line {
   
   .proposals-table-section {
     padding: 1rem;
+  }
+  
+  .proposal-actions {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+  
+  .accept-btn,
+  .decline-btn,
+  .view-details-btn {
+    padding: 0.4rem 0.5rem;
+    font-size: 0.75rem;
+    min-width: 50px;
+  }
+  
+  .message-btn {
+    width: 35px;
+    height: 35px;
   }
   
   .artist-info {

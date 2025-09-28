@@ -202,6 +202,13 @@ const BookingSchema = new mongoose.Schema({
     trim: true
   },
 
+  // Payment status
+  isPaid: {
+    type: String,
+    enum: ['none', 'half', 'full'],
+    default: 'none'
+  },
+
   // Artist Assignment (can be multiple)
   assignedArtist: [
     {

@@ -107,10 +107,13 @@ exports.applyToBooking = async (req, res) => {
       ]
     });
 
-    // Add artist to booking.appliedArtists (no duplicates)
+    // Add artist to booking.appliedArtists (no duplicates) and update status to in_progress
     await Booking.updateOne(
       { _id: bookingId },
-      { $addToSet: { appliedArtists: req.user.id } }
+      { 
+        $addToSet: { appliedArtists: req.user.id },
+        $set: { status: 'in_progress' }
+      }
     );
 
     // Add application id to artist.appliedApplications
@@ -175,6 +178,15 @@ exports.withdrawApplication = async (req, res) => {
         $set: {
           'Booking.$.status': 'withdrawn'
         }
+      }
+    );
+
+    // Update booking status to 'pending' and remove artist from appliedArtists array
+    await Booking.updateOne(
+      { _id: bookingId },
+      { 
+        $set: { status: 'pending' },
+        $pull: { appliedArtists: req.user.id }
       }
     );
 
@@ -297,7 +309,8 @@ exports.getApplicationsForBooking = async (req, res) => {
 exports.updateApplicationStatus = async (req, res) => {
   try {
     const { applicationId } = req.params;
-    const { bookingId, status, paymentPaid, remainingPayment } = req.body;
+    const { bookingId, status, paymentPaid, remainingPayment, isPaid } = req.body;
+    console.log(isPaid,remainingPayment)
 
     if (!applicationId || !bookingId || !status) {
       return res.status(400).json({ success: false, message: 'applicationId, bookingId and status are required' });
@@ -345,6 +358,9 @@ exports.updateApplicationStatus = async (req, res) => {
         }
         if (typeof remainingPayment !== 'undefined') {
           booking.remainingPayment = String(remainingPayment);
+        }
+        if (typeof isPaid !== 'undefined') {
+          booking.isPaid = isPaid;
         }
         await booking.save();
       }

@@ -93,7 +93,7 @@ exports.webhook = async (req, res) => {
   try {
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
-      const { bookingId, applicationId, percent } = session.metadata || {};
+      const { bookingId, applicationId, percent, isPaid } = session.metadata || {};
 
       if (bookingId && applicationId) {
         // Mark application as accepted, booking confirmed, and paymentPaid as percent
@@ -106,6 +106,9 @@ exports.webhook = async (req, res) => {
         if (booking) {
           booking.status = 'confirmed';
           booking.paymentPaid = percent === '100' ? 'paid' : 'partial';
+          if (isPaid) {
+            booking.isPaid = isPaid;
+          }
           await booking.save();
 
           // Decline other applications
