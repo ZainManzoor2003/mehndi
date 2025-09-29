@@ -54,8 +54,7 @@ const BookingForm = () => {
     { id: 1, name: 'Contact' },
     { id: 2, name: 'Event' },
     { id: 3, name: 'Style' },
-    { id: 4, name: 'Budget' },
-    { id: 5, name: 'Review' }
+    { id: 4, name: 'Budget' }
   ];
 
   const handleInputChange = (e) => {
@@ -240,16 +239,6 @@ const BookingForm = () => {
     <>
       <Header />
       <div className="booking-container">
-        <div className="booking-header">
-          <p className="booking-notice">To post a request - client must sign in or sign up</p>
-          <h1 className="booking-title">Post a Mehndi Request (Booking Form)</h1>
-          <p className="booking-subtitle">
-            Tell Us What You Need – Artists Will Apply to You!
-          </p>
-          <p className="booking-description">
-            Sit back and let artists send you offers based on your event, budget, and style.
-          </p>
-        </div>
 
         <div className="booking-form-container">
           {/* Progress Bar */}

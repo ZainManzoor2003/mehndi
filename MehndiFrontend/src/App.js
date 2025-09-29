@@ -1,6 +1,7 @@
 import React from 'react';
 import './App.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute, RoleProtectedRoute, PublicRoute } from './components/RouteGuards';
 import LogoutButton from './components/LogoutButton';
@@ -40,9 +41,10 @@ const LandingPage = () => (
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <div className="App">
+    <GoogleOAuthProvider clientId="262818084611-h1hqd4vvma7otjo0cvo9drb4la9fe8p0.apps.googleusercontent.com">
+      <AuthProvider>
+        <Router>
+          <div className="App">
           {/* Logout button moved into sidebar */}
           <Routes>
             <Route path="/" element={<LandingPage />} />
@@ -87,9 +89,10 @@ function App() {
             } />
             <Route path="/job/:jobId" element={<JobDetails />} />
           </Routes>
-        </div>
-      </Router>
-    </AuthProvider>
+          </div>
+        </Router>
+      </AuthProvider>
+    </GoogleOAuthProvider>
   );
 }
 

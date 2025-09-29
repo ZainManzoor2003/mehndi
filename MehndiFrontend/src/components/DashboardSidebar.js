@@ -163,9 +163,6 @@ const DashboardSidebar = ({ activeTab, onTabChange, isOpen, onClose, bookingCoun
                 >
                   <span className="sidebar-icon">{item.icon}</span>
                   <span className="sidebar-text">{item.title}</span>
-                  {item.id === 'bookings' && bookingCount > 0 && (
-                    <span className="sidebar-badge">{bookingCount}</span>
-                  )}
                 </button>
               </li>
             ))}

@@ -2043,8 +2043,6 @@
 
 .payment-progress .progress-bar {
   width: 100%;
-  height: 8px;
-  background: var(--light-beige);
   border-radius: 4px;
   overflow: hidden;
   margin-bottom: 0.5rem;

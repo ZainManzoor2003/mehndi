@@ -93,19 +93,11 @@ export const authAPI = {
     return apiRequest('/auth/me');
   },
 
-  // Update user details
+  // Update user profile (includes password if provided)
   updateProfile: async (userData) => {
-    return apiRequest('/auth/update-details', {
+    return apiRequest('/auth/update-profile', {
       method: 'PUT',
       body: JSON.stringify(userData),
-    });
-  },
-
-  // Update password
-  updatePassword: async (passwordData) => {
-    return apiRequest('/auth/update-password', {
-      method: 'PUT',
-      body: JSON.stringify(passwordData),
     });
   },
 
@@ -122,6 +114,14 @@ export const authAPI = {
     return apiRequest('/auth/reset-password', {
       method: 'PUT',
       body: JSON.stringify({ token, password }),
+    });
+  },
+
+  // Google OAuth authentication
+  googleAuth: async (credential) => {
+    return apiRequest('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ credential }),
     });
   },
 };

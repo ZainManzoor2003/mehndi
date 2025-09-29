@@ -61,8 +61,8 @@ exports.createCheckoutSession = async (req, res) => {
           quantity: 1,
         },
       ],
-      success_url: `${process.env.CLIENT_BASE_URL || 'http://localhost:3000'}/proposal?status=success&booking=${bookingId}&application=${applicationId}`,
-      cancel_url: `${process.env.CLIENT_BASE_URL || 'http://localhost:3000'}/proposal?status=cancelled&booking=${bookingId}&application=${applicationId}`,
+      success_url: `${'http://localhost:3000'}/proposal?status=success&booking=${bookingId}&application=${applicationId}`,
+      cancel_url: `${'http://localhost:3000'}/proposal?status=cancelled&booking=${bookingId}&application=${applicationId}`,
       metadata: {
         bookingId,
         applicationId,

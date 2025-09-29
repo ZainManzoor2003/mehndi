@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 // Auth routes
-const { signup, login, me } = require('../controllers/authController');
+const { signup, login, me, updateProfile, googleAuth } = require('../controllers/authController');
 const { createBooking, getClientBookings, getAllBookings, getBookingById, updateBookingStatus, updateBooking, deleteBooking, getPendingBookings } = require('../controllers/bookingController');
 
 const { applyToBooking, getMyAppliedBookings, getApplicationsForBooking, updateApplicationStatus, withdrawApplication } = require('../controllers/applicationController');
@@ -15,7 +15,9 @@ const portfolioController = require('../controllers/portfolioController');
 // Auth routes
 router.post('/api/auth/register', signup);
 router.post('/api/auth/login', login);
+router.post('/api/auth/google', googleAuth);
 router.get('/api/auth/me', protect, me);
+router.put('/api/auth/update-profile', protect, updateProfile);
 
 // Booking routes
 router.post('/api/bookings', protect, createBooking);

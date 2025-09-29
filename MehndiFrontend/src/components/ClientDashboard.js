@@ -6,6 +6,7 @@ import DashboardSidebar from './DashboardSidebar';
 import apiService, { chatAPI } from '../services/api';
 import socket, { buildDirectRoomId, joinRoom, sendRoomMessage, sendTyping, signalOnline, onPresenceUpdate } from '../services/socket';
 import ProposalsPage from './ProposalsPage';
+import ClientProfile from './ClientProfile';
 
 const { jobsAPI, proposalsAPI, bookingsAPI } = apiService;
 
@@ -213,13 +214,15 @@ const ClientDashboard = () => {
         const upcomingBookings = response.data
           .filter(booking => {
             const eventDate = new Date(booking.eventDate);
-            return eventDate > today && (booking.status === 'confirmed' || booking.status === 'in_progress');
+            return eventDate > today && (booking.status === 'confirmed');
           })
           .sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate)); // Sort by closest date first
-        
-        if (upcomingBookings.length > 0) {
+
+          
+          if (upcomingBookings.length > 0) {
           // Get the closest upcoming booking (first in sorted array)
           const latestBooking = upcomingBookings[0];
+          console.log('Latest booking:', latestBooking);
           
           const eventDate = new Date(latestBooking.eventDate);
           const today = new Date();
@@ -234,8 +237,8 @@ const ClientDashboard = () => {
           };
           
           const getArtistName = (assignedArtist) => {
-            if (assignedArtist && assignedArtist[0].firstName) {
-              return `${assignedArtist[0].firstName} ${assignedArtist[0].lastName}`;
+            if (assignedArtist && assignedArtist?.firstName) {
+              return `${assignedArtist?.firstName} ${assignedArtist?.lastName}`;
             }
             return 'TBD - No artist assigned yet';
           };
@@ -833,7 +836,7 @@ const ClientDashboard = () => {
                 </div>
 
                 {/* Right Column - Notifications */}
-                <div className="notifications-section">
+                {/* <div className="notifications-section">
                   <h3 className="section-title">🔔 Notifications</h3>
                   
                   <div className="notifications-list">
@@ -844,7 +847,7 @@ const ClientDashboard = () => {
                       </div>
                     ))}
                   </div>
-                </div>
+                </div> */}
               </div>
 
               {/* My Requests Section */}
@@ -1602,6 +1605,13 @@ const ClientDashboard = () => {
                   })}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Profile View */}
+          {activeTab === 'profile' && (
+            <div className="profile-tab-section">
+              <ClientProfile />
             </div>
           )}
         </div>
