@@ -237,8 +237,8 @@ const ClientDashboard = () => {
           };
           
           const getArtistName = (assignedArtist) => {
-            if (assignedArtist && assignedArtist?.firstName) {
-              return `${assignedArtist?.firstName} ${assignedArtist?.lastName}`;
+            if (assignedArtist && assignedArtist[0]?.firstName) {
+              return `${assignedArtist[0]?.firstName} ${assignedArtist[0]?.lastName}`;
             }
             return 'TBD - No artist assigned yet';
           };

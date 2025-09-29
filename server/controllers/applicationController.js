@@ -57,8 +57,8 @@ exports.applyToBooking = async (req, res) => {
     }
 
     // Only allow applying to pending bookings
-    if (booking.status !== 'pending') {
-      return res.status(400).json({ success: false, message: 'You can only apply to bookings with pending status' });
+    if (booking.status !== 'pending' && booking.status!=='in_progress') {
+      return res.status(400).json({ success: false, message: 'You can only apply to bookings with pending or in_progress status' });
     }
 
     // Check if artist has already applied to this booking

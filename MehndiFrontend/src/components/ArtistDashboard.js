@@ -54,6 +54,7 @@ const ArtistDashboard = () => {
 
   // Overview state for next event, bookings and notifications
   const [nextEvent, setNextEvent] = useState(null);
+  const [secondEvent, setSecondEvent] = useState(null);
   const [upcomingBookings, setUpcomingBookings] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [bookingNotes, setBookingNotes] = useState({});
@@ -234,7 +235,7 @@ const ArtistDashboard = () => {
         client: `${b.firstName} ${b.lastName} · ${b.city || b.location || ''}`.trim(),
         budget: `£${b.minimumBudget ?? 0}${b.maximumBudget ? ` - £${b.maximumBudget}` : ''}`,
         appliedOn: new Date(b.createdAt).toLocaleDateString('en-GB'),
-        status: 'pending',
+        status: 'in_progress' || 'pending',
         assignedCount: Array.isArray(b.assignedArtist) ? b.assignedArtist.length : (b.assignedArtist ? 1 : 0)
       }));
       setApplications(items);
@@ -243,6 +244,108 @@ const ArtistDashboard = () => {
       setApplications([]);
     } finally {
       setAppsLoading(false);
+    }
+  }, [isAuthenticated, user]);
+
+  // Compute artist's next and second events dynamically from their accepted applications
+  const fetchArtistUpcomingEvents = useCallback(async () => {
+    if (!isAuthenticated || !user || user.userType !== 'artist') return;
+    try {
+      // Get applications accepted for this artist
+      const resp = await applicationsAPI.getMyApplicationsByStatus('accepted');
+      const apps = Array.isArray(resp.data) ? resp.data : [];
+
+      // Enrich each with booking details (date, client) if needed
+      const enriched = await Promise.all(apps.map(async (a) => {
+        try {
+          const bookingId = a.bookingId || a.booking?.id || a.booking?._id || a._id; // best-effort
+          if (bookingId) {
+            const bResp = await bookingsAPI.getBooking(bookingId);
+            const b = bResp?.data || {};
+            return {
+              applicationId: a._id,
+              bookingId,
+              client: b.firstName && b.lastName ? `${b.firstName} ${b.lastName}` : (a.firstName && a.lastName ? `${a.firstName} ${a.lastName}` : 'Client'),
+              eventDate: b.eventDate || a.eventDate,
+              eventType: b.eventType || a.eventType,
+              otherEventType: b.otherEventType || a.otherEventType,
+              preferredTimeSlot: b.preferredTimeSlot || a.preferredTimeSlot,
+            };
+          }
+        } catch (_) {}
+        // Fallback to application fields
+        return {
+          applicationId: a._id,
+          bookingId: a.bookingId || a._id,
+          client: a.firstName && a.lastName ? `${a.firstName} ${a.lastName}` : 'Client',
+          eventDate: a.eventDate,
+          eventType: a.eventType,
+          otherEventType: a.otherEventType,
+          preferredTimeSlot: a.preferredTimeSlot,
+        };
+      }));
+
+      const today = new Date();
+      const future = enriched
+        .filter(e => e.eventDate && new Date(e.eventDate) > today)
+        .sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate));
+
+      const getEventTitle = (eventType, otherEventType) => {
+        if (Array.isArray(eventType) && eventType.length > 0) {
+          const types = eventType.join(', ');
+          return otherEventType ? `${types} – ${otherEventType}` : types;
+        }
+        return otherEventType || 'Mehndi Booking';
+      };
+
+      const formatDateText = (dateString, preferred) => {
+        const date = new Date(dateString);
+        const datePart = date.toLocaleDateString('en-GB');
+        const pref = Array.isArray(preferred) ? preferred.join(', ') : (preferred || 'Flexible');
+        return `${datePart} · ${pref}`;
+      };
+      console.log('Future events:', future);
+
+      if (future.length > 0) {
+        const first = future[0];
+        const firstDate = new Date(first.eventDate);
+        const hoursDiff = Math.max(0, Math.ceil((firstDate.getTime() - Date.now()) / (1000 * 60 * 60)));
+        const daysLeft = Math.max(0, Math.ceil((firstDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+        setNextEvent({
+          id: first.bookingId,
+          title: getEventTitle(first.eventType, first.otherEventType),
+          client: first.client,
+          dateText: formatDateText(first.eventDate, first.preferredTimeSlot),
+          status: 'Deposit Received',
+          startsInText: hoursDiff < 24 ? `Starts in ${hoursDiff} hour${hoursDiff === 1 ? '' : 's'}` : undefined,
+          daysLeftText: `${daysLeft} day${daysLeft === 1 ? '' : 's'} left`,
+        });
+
+        if (future.length > 1) {
+          const second = future[1];
+          const secondDate = new Date(second.eventDate);
+          const hours2 = Math.max(0, Math.ceil((secondDate.getTime() - Date.now()) / (1000 * 60 * 60)));
+          const daysLeft2 = Math.max(0, Math.ceil((secondDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+          setSecondEvent({
+            id: second.bookingId,
+            title: getEventTitle(second.eventType, second.otherEventType),
+            client: second.client,
+            dateText: formatDateText(second.eventDate, second.preferredTimeSlot),
+            status: 'Deposit Received',
+            startsInText: hours2 < 24 ? `Starts in ${hours2} hour${hours2 === 1 ? '' : 's'}` : undefined,
+            daysLeftText: `${daysLeft2} day${daysLeft2 === 1 ? '' : 's'} left`,
+          });
+        } else {
+          setSecondEvent(null);
+        }
+      } else {
+        setNextEvent(null);
+        setSecondEvent(null);
+      }
+    } catch (e) {
+      // If anything fails, just clear
+      setNextEvent(null);
+      setSecondEvent(null);
     }
   }, [isAuthenticated, user]);
 
@@ -715,15 +818,8 @@ const ArtistDashboard = () => {
     if (useMockData) {
       setLoading(false);
 
-      // Next Event (Bridal Mehndi – Oct 10, 2025)
-      setNextEvent({
-        id: 'evt-bridal-2025-10-10',
-        title: 'Bridal Mehndi',
-        client: 'Aisha Khan',
-        dateText: 'Oct 10, 2025 · 3:00 PM',
-        status: 'Deposit Received',
-        startsInText: 'Starts in 2 hours'
-      });
+      // Also try computing dynamic upcoming events if API available
+      fetchArtistUpcomingEvents();
 
       // Upcoming bookings (Eid Mehndi – Sep 15, 2025)
       setUpcomingBookings([
@@ -799,12 +895,13 @@ const ArtistDashboard = () => {
       user: user ? { userType: user.userType, name: `${user.firstName} ${user.lastName}` } : null
     });
 
-    if (isAuthenticated) {
+     if (isAuthenticated) {
       console.log('User is authenticated, fetching jobs and proposals...');
       setTimeout(() => {
         fetchAvailableJobs();
         fetchSentProposals();
-        fetchPendingBookings();
+         fetchPendingBookings();
+         fetchArtistUpcomingEvents();
         if (tab === 'profile') {
           fetchMyPortfolios();
         }
@@ -813,7 +910,7 @@ const ArtistDashboard = () => {
       console.log('User not authenticated');
       setLoading(false);
     }
-  }, [isAuthenticated, user, fetchAvailableJobs, fetchSentProposals, fetchPendingBookings]);
+  }, [isAuthenticated, user, fetchAvailableJobs, fetchSentProposals, fetchPendingBookings, fetchArtistUpcomingEvents]);
 
   // Derive overview data when proposals change
   useEffect(() => {
@@ -1191,6 +1288,9 @@ const ArtistDashboard = () => {
                           <div className="event-left">
                             <p><strong>Client:</strong> {nextEvent.client}</p>
                             <p><strong>Date & Time:</strong> {nextEvent.dateText}</p>
+                             {nextEvent.daysLeftText && (
+                               <p className="event-countdown">⏰ {nextEvent.daysLeftText}</p>
+                             )}
                           </div>
                           <div className="event-right">
                             <div className="status-badge deposit-paid">📋 Deposit Received</div>
@@ -1201,7 +1301,7 @@ const ArtistDashboard = () => {
                           </div>
                         </div>
                       )}
-                      <button className="view-booking-btn" onClick={() => setActiveTab('proposals')}>View Event Details</button>
+                      {/* Removed View Event Details button per requirement */}
                     </div>
                   </div>
 
@@ -1215,50 +1315,30 @@ const ArtistDashboard = () => {
                           <p>No more upcoming bookings</p>
                         </div>
                       ) : (
-                        upcomingBookings.map(b => (
-                          <div key={b.id} className="booking-card">
+                        <>
+                        {secondEvent && (
+                          <div className="booking-card">
                             <div className="booking-info">
-                              <h4 className="booking-title">{b.title}</h4>
-                              <p className="booking-artist">Client {b.client}</p>
+                              <h4 className="booking-title">{secondEvent.title}</h4>
+                              <p className="booking-artist">Client {secondEvent.client}</p>
                               <div className="booking-meta">
-                                <span className="status-badge small">{b.status}</span>
-                                {b.daysLeftText && (
-                                  <span className="days-left-text">{b.daysLeftText}</span>
+                                <span className="status-badge small">{secondEvent.status}</span>
+                                {secondEvent.daysLeftText && (
+                                  <span className="days-left-text">{secondEvent.daysLeftText}</span>
                                 )}
                               </div>
-                            </div>
-                            <div className="booking-actions">
-                              <button className="message-btn" onClick={() => setActiveTab('messages')}>Message</button>
-                              <button className="reschedule-btn" onClick={() => setActiveTab('proposals')}>Details</button>
-                            </div>
-                            <div className="booking-notes">
-                              <label className="notes-label">Notes & Reminders</label>
-                              <textarea
-                                className="notes-textarea"
-                                placeholder="Add prep notes here..."
-                                value={bookingNotes[b.id]?.text || ''}
-                                onChange={(e) => handleNoteChange(b.id, e.target.value)}
-                                rows="3"
-                              />
-                              <div className="notes-actions-row">
-                                <label className="followup-checkbox">
-                                  <input
-                                    type="checkbox"
-                                    checked={!!bookingNotes[b.id]?.followUp}
-                                    onChange={() => handleToggleFollowUp(b.id)}
-                                  />
-                                  <span>Follow up with client</span>
-                                </label>
-                                <button className="save-notes-btn" onClick={() => handleSaveNotes(b.id)}>Save Notes</button>
+                              <div className="booking-meta" style={{marginTop:'6px'}}>
+                                <span><strong>Date & Time:</strong> {secondEvent.dateText}</span>
                               </div>
                             </div>
                           </div>
-                        ))
+                        )}
+                        </>
                       )}
                     </div>
 
                     {/* Right Column - Notifications */}
-                    <div className="notifications-section">
+                    {/* <div className="notifications-section">
                       <h3 className="section-title">🔔 Notifications</h3>
                       <div className="notifications-list">
                         {notifications.length === 0 ? (
@@ -1272,7 +1352,7 @@ const ArtistDashboard = () => {
                           ))
                         )}
                       </div>
-                    </div>
+                    </div> */}
                   </div>
 
                   {/* Requests Near You */}

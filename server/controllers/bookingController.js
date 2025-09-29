@@ -228,7 +228,8 @@ const getAllBookings = async (req, res) => {
 const getPendingBookings = async (req, res) => {
   try {
     const artistId = req.user && req.user.id ? req.user.id : null;
-    const query = { status: 'pending' };
+    // Return both pending and in_progress bookings
+    const query = { status: { $in: ['pending', 'in_progress'] } };
     if (artistId) {
       // exclude bookings the current artist has already applied to
       query.appliedArtists = { $nin: [artistId] };
