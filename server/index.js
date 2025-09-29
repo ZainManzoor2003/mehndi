@@ -10,7 +10,7 @@ const cookieParser = require('cookie-parser');
 const db = require('./config/db')
 
 const corsOptions = {
-  origin: ['http://localhost:3000','https://mehndi-client.vercel.app'],
+  origin: ['http://localhost:3000','https://mehndi-client.vercel.app','http://localhost:5001'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
