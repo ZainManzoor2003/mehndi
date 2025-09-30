@@ -11,6 +11,7 @@ const { protect } = require('../middleware/auth');
 const { createCheckoutSession } = require('../controllers/paymentController');
 const chatController = require('../controllers/chatController');
 const portfolioController = require('../controllers/portfolioController');
+const { getWallet, updateWallet, getAllWallets } = require('../controllers/walletController');
 
 // Auth routes
 router.post('/api/auth/register', signup);
@@ -53,5 +54,10 @@ router.get('/api/portfolios/me', protect, portfolioController.listMyPortfolios);
 router.post('/api/portfolios', protect, portfolioController.createPortfolio);
 router.put('/api/portfolios/:id', protect, portfolioController.updatePortfolio);
 router.delete('/api/portfolios/:id', protect, portfolioController.deletePortfolio);
+
+// Wallet routes
+router.get('/api/wallet', protect, getWallet);
+router.put('/api/wallet/update', protect, updateWallet);
+router.get('/api/wallet/all', protect, getAllWallets);
 
 module.exports = router;

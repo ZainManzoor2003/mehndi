@@ -1,4 +1,5 @@
 const User = require('../schemas/User');
+const Wallet = require('../schemas/Wallet');
 const { OAuth2Client } = require('google-auth-library');
 const mongoose = require('mongoose');
 
@@ -21,6 +22,14 @@ const signup = async (req, res) => {
     }
 
     const user = await User.create({ firstName, lastName, email, password, userType });
+    
+    // Create wallet for the new user
+    await Wallet.create({
+      userId: user._id,
+      walletAmount: 0,
+      role: userType
+    });
+
     const token = user.generateToken();
 
     const safeUser = user.toObject();
@@ -229,6 +238,13 @@ const googleAuth = async (req, res) => {
       password: generatedPassword, // This will be hashed by pre-save middleware
       userType: 'client', // Default to client for Google OAuth
       userProfileImage: picture || null
+    });
+
+    // Create wallet for the new Google OAuth user
+    await Wallet.create({
+      userId: user._id,
+      walletAmount: 0,
+      role: 'client'
     });
 
     const token = user.generateToken();

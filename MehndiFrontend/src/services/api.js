@@ -1,5 +1,5 @@
-// const API_BASE_URL = 'http://localhost:5001/api';
-const API_BASE_URL = 'https://mehndi-server.vercel.app/api';
+const API_BASE_URL = 'http://localhost:5001/api';
+// const API_BASE_URL = 'https://mehndi-server.vercel.app/api';
 
 // API utility functions
 const handleResponse = async (response) => {
