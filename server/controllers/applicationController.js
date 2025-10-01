@@ -1,5 +1,6 @@
 const Application = require('../schemas/Application');
 const Booking = require('../schemas/Booking');
+const User = require('../schemas/User');
 
 // @desc    Apply to a booking (artist creates an application entry)
 // @route   POST /api/applications/apply
@@ -371,6 +372,75 @@ exports.updateApplicationStatus = async (req, res) => {
   } catch (error) {
     console.error('Update application status error:', error);
     return res.status(500).json({ success: false, message: 'Server error while updating application status', error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' });
+  }
+};
+
+
+// @desc    Artist cancels an accepted application -> notify client by email
+// @route   POST /api/applications/cancel
+// @access  Private (Artist only)
+exports.notifyCancellationByArtist = async (req, res) => {
+  try {
+    const { bookingId, reason, details } = req.body || {};
+    console.log('notifyCancellationByArtist payload:', { bookingId, reason, details, artistId: req.user?.id });
+    if (!bookingId) {
+      return res.status(400).json({ success: false, message: 'bookingId is required' });
+    }
+
+    if (!req.user || req.user.userType !== 'artist') {
+      return res.status(403).json({ success: false, message: 'Only artists can cancel accepted applications.' });
+    }
+
+    const updateResult = await Application.updateOne(
+      { 'Booking.booking_id': bookingId, 'Booking.artist_id': req.user.id },
+      { $set: { 'Booking.$[elem].status': 'expired' } },
+      { arrayFilters: [{ 'elem.booking_id': bookingId }] }
+    );
+
+    if (updateResult.modifiedCount === 0) {
+        return res.status(404).json({ success: false, message: 'No application found for this booking and artist to cancel.' });
+    }
+
+    // Get booking and client
+    const booking = await Booking.findById(bookingId).select('clientId eventType');
+    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+
+    const client = await User.findById(booking.clientId).select('email');
+    if (!client || !client.email) return res.status(404).json({ success: false, message: 'Client email not found' });
+
+    // Send email
+    const nodemailer = require('nodemailer');
+    const transport = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER || "ahmadmurtaza2233@gmail.com",
+        pass: process.env.EMAIL_PASS || "czhupnxmdckqhydy",
+      },
+    });
+
+    const eventType = Array.isArray(booking.eventType) ? booking.eventType.join(', ') : (booking.eventType || 'Mehndi');
+    const html = `
+      <div style="font-family:Arial,sans-serif;font-size:14px;color:#111">
+        <h2>Application Cancellation Notice</h2>
+        <p>The artist has cancelled an accepted application.</p>
+        <p><strong>Booking ID:</strong> ${bookingId}</p>
+        <p><strong>Event Type:</strong> ${eventType}</p>
+        <p><strong>Artist ID:</strong> ${req.user.id}</p>
+        ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
+        ${details ? `<p><strong>Details:</strong> ${details}</p>` : ''}
+      </div>`;
+
+    await transport.sendMail({
+      from: process.env.EMAIL_USER,
+      to: client.email,
+      subject: 'Artist cancelled the accepted application',
+      html,
+    });
+
+    return res.status(200).json({ success: true, message: 'Cancellation email sent to client.' });
+  } catch (error) {
+    console.error('notifyCancellationByArtist error:', error);
+    return res.status(500).json({ success: false, message: 'Server error while sending cancellation email' });
   }
 };
 

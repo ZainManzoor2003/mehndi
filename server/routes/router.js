@@ -5,7 +5,7 @@ const router = express.Router();
 const { signup, login, me, updateProfile, googleAuth } = require('../controllers/authController');
 const { createBooking, getClientBookings, getAllBookings, getBookingById, updateBookingStatus, updateBooking, deleteBooking, getPendingBookings } = require('../controllers/bookingController');
 
-const { applyToBooking, getMyAppliedBookings, getApplicationsForBooking, updateApplicationStatus, withdrawApplication } = require('../controllers/applicationController');
+const { applyToBooking, getMyAppliedBookings, getApplicationsForBooking, updateApplicationStatus, withdrawApplication, notifyCancellationByArtist } = require('../controllers/applicationController');
 
 const { protect } = require('../middleware/auth');
 const { createCheckoutSession } = require('../controllers/paymentController');
@@ -36,6 +36,7 @@ router.put('/api/applications/withdraw', protect, withdrawApplication);
 router.get('/api/applications/my-applied', protect, getMyAppliedBookings);
 router.get('/api/applications/booking/:bookingId', protect, getApplicationsForBooking);
 router.put('/api/applications/:applicationId/status', protect, updateApplicationStatus);
+router.post('/api/applications/cancel', protect, notifyCancellationByArtist); //Newly added by MA 
 // Payments (removed)
 // Payments
 router.post('/api/payments/create-checkout', protect, createCheckoutSession);

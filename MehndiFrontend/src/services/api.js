@@ -511,6 +511,12 @@ export const applicationsAPI = {
       method: 'PUT',
       body: JSON.stringify({ bookingId, status, ...extras })
     });
+  },
+  notifyCancelAccepted: async ({ bookingId, reason, details }) => {
+    return apiRequest('/applications/cancel', {
+      method: 'POST',
+      body: JSON.stringify({ bookingId, reason, details })
+    });
   }
 };
 

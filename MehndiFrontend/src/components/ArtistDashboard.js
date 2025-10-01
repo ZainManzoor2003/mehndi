@@ -4,6 +4,8 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import ArtistSidebar from './ArtistSidebar';
 import apiService, { chatAPI } from '../services/api';
+import CancelAcceptedModal from './modals/CancelAcceptedModal';
+import MarkCompleteProofModal from './modals/MarkCompleteProofModal';
 import socket, { buildDirectRoomId, joinRoom, sendRoomMessage, sendTyping, signalOnline, onPresenceUpdate } from '../services/socket';
 import { ToastContainer, useToast } from './Toast';
 
@@ -71,6 +73,10 @@ const ArtistDashboard = () => {
   const [applications, setApplications] = useState([]);
   const [appsLoading, setAppsLoading] = useState(false);
   const [appsError, setAppsError] = useState('');
+  const [cancelAcceptedOpen, setCancelAcceptedOpen] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState(null);
+  const [markProofOpen, setMarkProofOpen] = useState(false);
+  const [markTargetBookingId, setMarkTargetBookingId] = useState(null);
   const [viewOpen, setViewOpen] = useState(false);
   const [viewLoading, setViewLoading] = useState(false);
   const [viewForm, setViewForm] = useState(null);
@@ -139,6 +145,9 @@ const ArtistDashboard = () => {
   const [previewPortfolio, setPreviewPortfolio] = useState(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [acceptedByDate, setAcceptedByDate] = useState({});
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
 
   const isValidUrl = (str) => {
     try {
@@ -222,6 +231,30 @@ const ArtistDashboard = () => {
       setAppsLoading(false);
     }
   }, [isAuthenticated, user]);
+
+  const openCancelAccepted = (id) => {
+    setCancelTarget({ bookingId: id });
+    setCancelAcceptedOpen(true);
+  };
+
+  const handleConfirmCancelAccepted = async ({ reason, details }) => {
+    try {
+      // Send bookingId only; backend will locate the current artist's application for this booking
+      const bookingId = cancelTarget?.bookingId;
+      if (!bookingId) throw new Error('Missing bookingId for cancellation');
+      console.log('sending notifyCancelAccepted with:', { bookingId, reason, details });
+      await applicationsAPI.notifyCancelAccepted({ bookingId, reason, details });
+      showSuccess('Client will be notified by email');
+      if (applicationsFilter === 'accepted') {
+        fetchApplicationsByStatus('accepted');
+      }
+    } catch (e) {
+      showError(e.message || 'Failed to submit cancellation');
+    } finally {
+      setCancelAcceptedOpen(false);
+      setCancelTarget(null);
+    }
+  };
 
   const fetchPendingBookings = useCallback(async () => {
     if (!isAuthenticated || !user || user.userType !== 'artist') return;
@@ -574,9 +607,9 @@ const ArtistDashboard = () => {
     }
   };
 
-  // Schedule - simple calendar and bookings by date (mock)
-  const [calendarMonth, setCalendarMonth] = useState(new Date(2025, 9, 1)); // Oct 2025
-  const [selectedDate, setSelectedDate] = useState(new Date(2025, 8, 15)); // Sep 15, 2025
+  // // Schedule - simple calendar and bookings by date (mock)
+  // const [calendarMonth, setCalendarMonth] = useState(new Date(2025, 9, 1)); // Oct 2025
+  // const [selectedDate, setSelectedDate] = useState(new Date(2025, 8, 15)); // Sep 15, 2025
 
   const bookingsByDate = {
     '2025-09-15': [
@@ -600,6 +633,75 @@ const ArtistDashboard = () => {
 
   const isSameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
   const toKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+  // Accepted calendar data built dynamically from backend
+
+  const fetchAcceptedCalendar = useCallback(async () => {
+    if (!isAuthenticated || !user || user.userType !== 'artist') return;
+    try {
+      const resp = await applicationsAPI.getMyApplicationsByStatus('accepted');
+      const apps = Array.isArray(resp.data) ? resp.data : [];
+
+      // Fetch booking details for each booking_id
+      const toTag = (eventType) => {
+        const types = Array.isArray(eventType) ? eventType : (eventType ? [eventType] : []);
+        const lower = types.map(t => String(t).toLowerCase());
+        if (lower.some(t => t.includes('wedding') || t.includes('bridal'))) return 'bridal';
+        if (lower.some(t => t.includes('festival'))) return 'festival';
+        if (lower.some(t => t.includes('party'))) return 'party';
+        return 'casual';
+      };
+
+      const entries = await Promise.all(apps.map(async (a) => {
+        try {
+          const bookingId = a.bookingId || a.booking_id || a._id;
+          if (!bookingId) return null;
+          const bResp = await bookingsAPI.getBooking(bookingId);
+          const b = bResp?.data || {};
+          return {
+            id: bookingId,
+            client: b.firstName && b.lastName ? `${b.firstName} ${b.lastName}` : 'Client',
+            title: Array.isArray(b.eventType) && b.eventType.length ? b.eventType.join(', ') : (b.otherEventType || 'Mehndi Booking'),
+            date: b.eventDate ? new Date(b.eventDate) : null,
+            time: Array.isArray(b.preferredTimeSlot) ? b.preferredTimeSlot.join(', ') : (b.preferredTimeSlot || ''),
+            location: b.location || b.city || b.postalCode || '',
+            status: 'Accepted',
+            tag: toTag(b.eventType)
+          };
+        } catch (_) {
+          return null;
+        }
+      }));
+
+      const grouped = {};
+      entries.filter(Boolean).forEach((e) => {
+        if (!e.date) return;
+        const k = toKey(e.date);
+        if (!grouped[k]) grouped[k] = [];
+        grouped[k].push(e);
+      });
+
+      setAcceptedByDate(grouped);
+
+      // Default selected date to first upcoming booking if available
+      const upcomingDates = Object.keys(grouped)
+        .map(k => new Date(k))
+        .filter(d => d >= new Date())
+        .sort((a,b)=>a-b);
+      if (upcomingDates.length) {
+        setSelectedDate(upcomingDates[0]);
+        setCalendarMonth(upcomingDates[0]);
+      }
+    } catch (_) {
+      setAcceptedByDate({});
+    }
+  }, [isAuthenticated, user]);
+
+  useEffect(() => {
+    if (activeTab === 'schedule') {
+      fetchAcceptedCalendar();
+    }
+  }, [activeTab, fetchAcceptedCalendar]);
 
   // Cancel booking modal state
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
@@ -1520,7 +1622,7 @@ const ArtistDashboard = () => {
                           >
                             {applicationsFilter === 'all' ? 'Active' : (a.status.charAt(0).toUpperCase() + a.status.slice(1))}
                           </span>
-                          <p className="app-note">Assigned artists: {a.assignedCount ?? 0}</p>
+                          {/* <p className="app-note">Assigned artists: {a.assignedCount ?? 0}</p> */}
                           <div className="app-actions">
                             <button className="app-btn" onClick={() => openViewBooking(a.id)} disabled={viewLoading}>View Details</button>
                             {applicationsFilter === 'all' && (
@@ -1528,6 +1630,9 @@ const ArtistDashboard = () => {
                             )}
                             {applicationsFilter === 'applied' && (
                               <button className="app-btn app-btn-danger" style={{ marginLeft: '8px' }} onClick={() => handleWithdrawApplication(a.id)}>Withdraw</button>
+                            )}
+                            {applicationsFilter === 'accepted' && (
+                              <button className="app-btn app-btn-danger" style={{ marginLeft: '8px' }} onClick={() => openCancelAccepted(a.id)}>Cancel</button>
                             )}
                           </div>
                         </div>
@@ -1538,6 +1643,28 @@ const ArtistDashboard = () => {
                   </div>
                 </div>
               )}
+
+              {/* Cancel Accepted Application Modal */}
+              <CancelAcceptedModal
+                isOpen={cancelAcceptedOpen}
+                onClose={() => { setCancelAcceptedOpen(false); setCancelTarget(null); }}
+                onConfirm={handleConfirmCancelAccepted}
+              />
+
+              <MarkCompleteProofModal
+                isOpen={markProofOpen}
+                onClose={() => { setMarkProofOpen(false); setMarkTargetBookingId(null); }}
+                onSubmit={(result) => {
+                  console.log('MarkComplete proof uploaded:', { bookingId: markTargetBookingId, ...result });
+                  setMarkProofOpen(false);
+                  setMarkTargetBookingId(null);
+                }}
+                cloudinary={{
+                  cloudName: "dstelsc7m",
+                  uploadPreset: "mehndi",
+                  folder: 'mehndi/proofs'
+                }}
+              />
 
               {/* Portfolio Preview Modal */}
               {previewOpen && previewPortfolio && (
@@ -1756,8 +1883,8 @@ const ArtistDashboard = () => {
                         {Array.from({ length: 42 }).map((_, idx) => {
                           const date = getCellDate(idx);
                           const isCurrentMonth = date.getMonth() === calendarMonth.getMonth();
-                          const dateBookings = bookingsByDate[toKey(date)];
-                          const dotType = dateBookings && dateBookings.length > 0 ? (dateBookings[0].type || 'bridal') : null;
+                          const dateBookings = acceptedByDate[toKey(date)];
+                          const dotType = dateBookings && dateBookings.length > 0 ? (dateBookings[0].tag || 'casual') : null;
                           return (
                             <button
                               key={idx}
@@ -1781,7 +1908,10 @@ const ArtistDashboard = () => {
 
                   <div className="bookings-by-date">
                     <h3 className="section-title">Bookings on {selectedDate.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</h3>
-                    {(bookingsByDate[toKey(selectedDate)] || []).map(b => (
+                    {!(acceptedByDate[toKey(selectedDate)] || []).length && (
+                      <div className="empty-banner">No bookings on this date.</div>
+                    )}
+                    {(acceptedByDate[toKey(selectedDate)] || []).map(b => (
                       <div key={b.id} className="booking-line-card">
                         <div className="b-info">
                           <div className="b-title">{b.title}</div>
@@ -1791,11 +1921,8 @@ const ArtistDashboard = () => {
                           <span className="b-badge">{b.status}</span>
                         </div>
                         <div className="b-actions">
-                          <button className="app-btn secondary">Message</button>
-                          {b.status === 'Deposit Paid' && (
-                            <button className="app-btn danger" style={{ background: '#ef4444', borderColor: '#ef4444' }} onClick={() => openCancelModal(b)}>Cancel</button>
-                          )}
-                          <button className="app-btn" style={{ background: '#e24d0c', color: '#fff', borderColor: '#e24d0c' }}>Mark Complete</button>
+                          <button className="app-btn danger" style={{ background: '#ef4444', borderColor: '#ef4444' }} onClick={() => openCancelAccepted(b.id)}>Cancel</button>
+                          <button className="app-btn" style={{ background: '#e24d0c', color: '#fff', borderColor: '#e24d0c' }} onClick={() => { setMarkTargetBookingId(b.id); setMarkProofOpen(true); }}>Mark Complete</button>
                         </div>
                       </div>
                     ))}
