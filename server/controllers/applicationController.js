@@ -496,10 +496,14 @@ exports.updateApplicationStatus = async (req, res) => {
 // @access  Private (Artist only)
 exports.notifyCancellationByArtist = async (req, res) => {
   try {
-    const { bookingId, reason, details } = req.body || {};
-    console.log('notifyCancellationByArtist payload:', { bookingId, reason, details, artistId: req.user?.id });
+    const { bookingId, reason } = req.body || {};
+    console.log('notifyCancellationByArtist payload:', { bookingId, reason, artistId: req.user?.id });
     if (!bookingId) {
       return res.status(400).json({ success: false, message: 'bookingId is required' });
+    }
+
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ success: false, message: 'Cancellation reason is required' });
     }
 
     if (!req.user || req.user.userType !== 'artist') {
@@ -517,11 +521,14 @@ exports.notifyCancellationByArtist = async (req, res) => {
     }
 
     // Get booking and client
-    const booking = await Booking.findById(bookingId).select('clientId eventType');
+    const booking = await Booking.findById(bookingId).select('clientId eventType firstName lastName eventDate preferredTimeSlot');
     if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
 
-    const client = await User.findById(booking.clientId).select('email');
+    const client = await User.findById(booking.clientId).select('email firstName lastName');
     if (!client || !client.email) return res.status(404).json({ success: false, message: 'Client email not found' });
+
+    // Get artist details
+    const artist = await User.findById(req.user.id).select('firstName lastName email phoneNumber');
 
     // Send email
     const nodemailer = require('nodemailer');
@@ -534,21 +541,83 @@ exports.notifyCancellationByArtist = async (req, res) => {
     });
 
     const eventType = Array.isArray(booking.eventType) ? booking.eventType.join(', ') : (booking.eventType || 'Mehndi');
+    const eventDate = booking.eventDate ? new Date(booking.eventDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
+    const eventTime = Array.isArray(booking.preferredTimeSlot) ? booking.preferredTimeSlot.join(', ') : 'Not specified';
+    
+    // Base URL for frontend (adjust as needed)
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const relistUrl = `${frontendUrl}/client-dashboard?action=relist&bookingId=${bookingId}`;
+    const refundUrl = `${frontendUrl}/client-dashboard?action=refund&bookingId=${bookingId}`;
+    
     const html = `
-      <div style="font-family:Arial,sans-serif;font-size:14px;color:#111">
-        <h2>Application Cancellation Notice</h2>
-        <p>The artist has cancelled an accepted application.</p>
-        <p><strong>Booking ID:</strong> ${bookingId}</p>
-        <p><strong>Event Type:</strong> ${eventType}</p>
-        <p><strong>Artist ID:</strong> ${req.user.id}</p>
-        ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
-        ${details ? `<p><strong>Details:</strong> ${details}</p>` : ''}
+      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,sans-serif;font-size:15px;color:#333;max-width:600px;margin:0 auto;padding:20px;background-color:#f9f9f9;">
+        <div style="background-color:white;padding:40px 35px;border-radius:12px;box-shadow:0 2px 15px rgba(0,0,0,0.08);">
+          
+          <h2 style="color:#333;margin-top:0;font-size:22px;font-weight:600;">Hi ${client.firstName},</h2>
+          
+          <p style="line-height:1.6;color:#555;">
+            We know how disappointing this must be — your booked artist, <strong>${artist.firstName} ${artist.lastName}</strong>, 
+            is no longer available for your appointment on <strong>${eventDate}</strong> at <strong>${eventTime}</strong>.
+          </p>
+
+          <div style="background-color:#fef2f2;padding:15px;border-radius:8px;margin:20px 0;border-left:4px solid #dc2626;">
+            <p style="margin:0;color:#991b1b;font-size:14px;"><strong>Reason:</strong></p>
+            <p style="margin:8px 0 0 0;color:#555;">${reason}</p>
+          </div>
+          
+          <p style="line-height:1.6;color:#555;margin-top:25px;">
+            You can now choose how you'd like to proceed:
+          </p>
+
+          <div style="background-color:#f9fafb;padding:20px;border-radius:10px;margin:20px 0;">
+            <div style="margin-bottom:20px;">
+              <p style="margin:0 0 8px 0;font-weight:600;color:#333;">1. Relist your booking request</p>
+              <p style="margin:0;color:#666;font-size:14px;line-height:1.5;">
+                We'll make your request live again so other artists can apply. 
+                Your 50% deposit will carry over — no need to pay again unless the new artist's rate is higher.
+              </p>
+            </div>
+            <div>
+              <p style="margin:0 0 8px 0;font-weight:600;color:#333;">2. Request a full refund</p>
+              <p style="margin:0;color:#666;font-size:14px;line-height:1.5;">
+                Prefer not to wait? We'll return your deposit in full.
+              </p>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:15px;margin:30px 0;">
+            <a href="${relistUrl}" style="flex:1;text-decoration:none;">
+              <div style="background-color:#d4a574;color:white;padding:14px 24px;border-radius:8px;text-align:center;font-weight:600;font-size:15px;cursor:pointer;">
+                🔄 Relist My Booking
+              </div>
+            </a>
+            <a href="${refundUrl}" style="flex:1;text-decoration:none;">
+              <div style="background-color:#10b981;color:white;padding:14px 24px;border-radius:8px;text-align:center;font-weight:600;font-size:15px;cursor:pointer;">
+                💸 Request Refund
+              </div>
+            </a>
+          </div>
+
+          <div style="background-color:#fffbeb;padding:15px;border-radius:8px;margin:25px 0;border-left:4px solid #f59e0b;">
+            <p style="margin:0;color:#92400e;font-size:14px;line-height:1.5;">
+              🔔 <strong>Note:</strong> If no new artists apply within 48 hours, we'll refund your deposit automatically — or you can contact us for help.
+            </p>
+          </div>
+          
+          <p style="line-height:1.6;color:#555;margin-top:25px;">
+            Thanks for your understanding — and if you need help updating your request or finding someone new, we're always here.
+          </p>
+          
+          <p style="margin-top:30px;color:#888;font-size:13px;border-top:1px solid #eee;padding-top:20px;">
+            — The Mehndi Me Team 💝
+          </p>
+        </div>
       </div>`;
 
     await transport.sendMail({
       from: process.env.EMAIL_USER,
       to: client.email,
-      subject: 'Artist cancelled the accepted application',
+      subject: "Don't Worry — We'll Help You Rebook or Refund Your Deposit",
       html,
     });
 

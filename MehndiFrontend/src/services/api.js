@@ -549,10 +549,10 @@ export const applicationsAPI = {
       body: JSON.stringify({ bookingId, status, ...extras })
     });
   },
-  notifyCancelAccepted: async ({ bookingId, reason, details }) => {
+  notifyCancelAccepted: async ({ bookingId, reason }) => {
     return apiRequest('/applications/cancel', {
       method: 'POST',
-      body: JSON.stringify({ bookingId, reason, details })
+      body: JSON.stringify({ bookingId, reason })
     });
   },
   completeApplication: async ({ bookingId, images = [], video = '' }) => {
