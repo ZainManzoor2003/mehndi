@@ -554,6 +554,25 @@ export const applicationsAPI = {
       method: 'POST',
       body: JSON.stringify({ bookingId, reason, details })
     });
+  },
+  completeApplication: async ({ bookingId, images = [], video = '' }) => {
+    return apiRequest('/applications/complete', {
+      method: 'PUT',
+      body: JSON.stringify({ bookingId, images, video })
+    });
+  },
+  
+  // Add note to application (artist only)
+  addApplicationNote: async (bookingId, { content, followUp = false }) => {
+    return apiRequest('/applications/notes', {
+      method: 'POST',
+      body: JSON.stringify({ bookingId, content, followUp })
+    });
+  },
+
+  // Get notes for an application (artist only)
+  getApplicationNotes: async (bookingId) => {
+    return apiRequest(`/applications/notes/${bookingId}`);
   }
 };
 

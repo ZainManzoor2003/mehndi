@@ -5,7 +5,7 @@ const router = express.Router();
 const { signup, login, me, updateProfile, googleAuth } = require('../controllers/authController');
 const { createBooking, getClientBookings, getAllBookings, getBookingById, updateBookingStatus, updateBooking, deleteBooking, getPendingBookings, completeBooking } = require('../controllers/bookingController');
 
-const { applyToBooking, getMyAppliedBookings, getApplicationsForBooking, updateApplicationStatus, withdrawApplication, notifyCancellationByArtist } = require('../controllers/applicationController');
+const { applyToBooking, getMyAppliedBookings, getApplicationsForBooking, updateApplicationStatus, withdrawApplication, notifyCancellationByArtist, completeApplication, addApplicationNote, getApplicationNotes } = require('../controllers/applicationController');
 
 const { protect } = require('../middleware/auth');
 const { adminOnly } = require('../middleware/auth');
@@ -46,7 +46,10 @@ router.put('/api/applications/withdraw', protect, withdrawApplication);
 router.get('/api/applications/my-applied', protect, getMyAppliedBookings);
 router.get('/api/applications/booking/:bookingId', protect, getApplicationsForBooking);
 router.put('/api/applications/:applicationId/status', protect, updateApplicationStatus);
-router.post('/api/applications/cancel', protect, notifyCancellationByArtist); //Newly added by MA 
+router.post('/api/applications/cancel', protect, notifyCancellationByArtist); //Newly added by MA
+router.put('/api/applications/complete', protect, completeApplication); //Mark application as completed with media
+router.post('/api/applications/notes', protect, addApplicationNote); //Add note to application
+router.get('/api/applications/notes/:bookingId', protect, getApplicationNotes); //Get notes for application 
 // Payments (removed)
 // Payments
 router.post('/api/payments/create-checkout', protect, createCheckoutSession);
