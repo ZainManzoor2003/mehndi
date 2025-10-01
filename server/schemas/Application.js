@@ -17,6 +17,35 @@ const BookingRefSchema = new mongoose.Schema(
       default: 'applied',
       trim: true,
     },
+    // Media attachments
+    images: {
+      type: [String],
+      default: []
+    },
+    video: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    // Notes added by artist for this application
+    notes: [
+      {
+        content: {
+          type: String,
+          required: true,
+          trim: true,
+          maxlength: 2000
+        },
+        followUp: {
+          type: Boolean,
+          default: false
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now
+        }
+      }
+    ],
     // Artist application details
     artistDetails: {
       proposedBudget: {

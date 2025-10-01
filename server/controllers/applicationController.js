@@ -2,7 +2,7 @@ const Application = require('../schemas/Application');
 const Booking = require('../schemas/Booking');
 const User = require('../schemas/User');
 
-// @desc    Apply to a booking (artist creates an application entry)
+// @desc    Artist applies to a booking with full application details
 // @route   POST /api/applications/apply
 // @access  Private (Artist only)
 exports.applyToBooking = async (req, res) => {
@@ -130,83 +130,204 @@ exports.applyToBooking = async (req, res) => {
   }
 };
 
+// exports.applyToBooking = async (req, res) => {
+//   try {
+//     const { 
+//       bookingId,
+//       artistDetails 
+//     } = req.body;
+    
+//     // Validate required fields
+//     if (!bookingId || !artistDetails) {
+//       return res.status(400).json({ success: false, message: 'bookingId and artistDetails are required' });
+//     }
+
+//     const {
+//       proposedBudget,
+//       estimatedDuration,
+//       availability,
+//       experience,
+//       proposal,
+//       terms
+//     } = artistDetails;
+
+//     // Validate nested required fields
+//     if (
+//       !proposedBudget ||
+//       !estimatedDuration?.value ||
+//       !estimatedDuration?.unit ||
+//       typeof availability?.isAvailableOnDate === 'undefined' ||
+//       typeof availability?.canTravelToLocation === 'undefined' ||
+//       !experience?.relevantExperience ||
+//       typeof experience?.yearsOfExperience === 'undefined' ||
+//       !proposal?.message ||
+//       !terms?.agreedToTerms
+//     ) {
+//       return res.status(400).json({ 
+//         success: false, 
+//         message: 'Missing required application fields' 
+//       });
+//     }
+
+//     // Check if user is an artist
+//     if (!req.user || req.user.userType !== 'artist') {
+//       return res.status(403).json({ success: false, message: 'Only artists can apply to bookings' });
+//     }
+
+//     // Check if booking exists and is open for applications
+//     const booking = await Booking.findById(bookingId).select('status assignedArtist appliedArtists');
+//     if (!booking) {
+//       return res.status(404).json({ success: false, message: 'Booking not found' });
+//     }
+//     if (booking.status === 'cancelled') {
+//       return res.status(400).json({ success: false, message: 'Cannot apply to a cancelled booking' });
+//     }
+
+//     // Check if artist has already applied
+//     const existingApplication = await Application.findOne({
+//       'Booking.booking_id': bookingId,
+//       'Booking.artist_id': req.user.id
+//     });
+//     if (existingApplication) {
+//       return res.status(400).json({ success: false, message: 'You have already applied to this booking' });
+//     }
+
+//     // Create or update application
+//     let application = await Application.findOne({ 'Booking.artist_id': req.user.id });
+//     if (!application) {
+//       application = new Application({ Booking: [] });
+//     }
+
+//     // Add new booking application with complete artistDetails
+//     application.Booking.push({
+//           booking_id: bookingId,
+//           artist_id: req.user.id,
+//           status: 'applied',
+//           artistDetails: {
+//             proposedBudget,
+//             estimatedDuration: {
+//               value: estimatedDuration.value,
+//           unit: estimatedDuration.unit
+//             },
+//             availability: {
+//           isAvailableOnDate: availability.isAvailableOnDate,
+//           canTravelToLocation: availability.canTravelToLocation,
+//           travelDistance: availability.travelDistance || 0
+//             },
+//             experience: {
+//               relevantExperience: experience.relevantExperience,
+//               yearsOfExperience: experience.yearsOfExperience,
+//               portfolioHighlights: experience.portfolioHighlights || ''
+//             },
+//             proposal: {
+//               message: proposal.message,
+//               whyInterested: proposal.whyInterested || '',
+//               additionalNotes: proposal.additionalNotes || ''
+//             },
+//             terms: {
+//               agreedToTerms: terms.agreedToTerms
+//             }
+//           }
+//     });
+
+//     await application.save();
+
+//     // Optionally populate full booking details if needed for response
+//     await application.populate([
+//       {
+//         path: 'Booking.booking_id',
+//         select: 'eventType eventDate location city firstName lastName email phoneNumber preferredTimeSlot minimumBudget maximumBudget',
+//         model: 'Booking',
+//         match: { _id: bookingId },
+//         transform: (doc) => {
+//           if (!doc) return null;
+//           return {
+//             _id: doc._id,
+//             eventType: doc.eventType,
+//             eventDate: doc.eventDate,
+//             location: doc.location,
+//             city: doc.city,
+//             firstName: doc.firstName,
+//             lastName: doc.lastName,
+//             email: doc.email,
+//             phoneNumber: doc.phoneNumber,
+//             preferredTimeSlot: doc.preferredTimeSlot,
+//             minimumBudget: doc.minimumBudget,
+//             maximumBudget: doc.maximumBudget
+//           }
+//         }
+//       }
+//     ]);
+
+//     // Add artist to booking.appliedArtists (no duplicates) and update status to in_progress
+//     await Booking.updateOne(
+//       { _id: bookingId },
+//       { 
+//         $addToSet: { appliedArtists: req.user.id },
+//         $set: { status: 'in_progress' }
+//       }
+//     );
+
+//     // Add application id to artist.appliedApplications
+//     await require('../schemas/User').updateOne(
+//       { _id: req.user.id },
+//       { $addToSet: { 'artist.appliedApplications': application._id } }
+//     );
+
+//     return res.status(201).json({ success: true, message: 'Application submitted successfully', data: application });
+//   } catch (error) {
+//     console.error('Apply to booking error:', error);
+//     return res.status(500).json({ success: false, message: 'Server error while applying', error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' });
+//   }
+// };
+
 // @desc    Withdraw an application (artist withdraws their application)
 // @route   PUT /api/applications/withdraw
 // @access  Private (Artist only)
 exports.withdrawApplication = async (req, res) => {
   try {
     const { bookingId } = req.body;
-    
     if (!bookingId) {
       return res.status(400).json({ success: false, message: 'bookingId is required' });
     }
 
-    // Find the application for this artist and booking
-    const application = await Application.findOne({
-      'Booking.booking_id': bookingId,
-      'Booking.artist_id': req.user.id
-    });
+    if (!req.user || req.user.userType !== 'artist') {
+      return res.status(403).json({ success: false, message: 'Only artists can withdraw applications' });
+    }
 
+    const application = await Application.findOne({ 'Booking.artist_id': req.user.id });
     if (!application) {
       return res.status(404).json({ success: false, message: 'Application not found' });
     }
 
-    // Find the specific booking reference in the application
-    const bookingRef = application.Booking.find(
-      b => b.booking_id.toString() === bookingId && b.artist_id.toString() === req.user.id
-    );
-
-    if (!bookingRef) {
-      return res.status(404).json({ success: false, message: 'Application not found for this booking' });
+    const bookingEntry = application.Booking.find(b => b.booking_id.toString() === bookingId);
+    if (!bookingEntry) {
+      return res.status(404).json({ success: false, message: 'You have not applied to this booking' });
     }
 
-    // Check if the application status is 'applied'
-    if (bookingRef.status !== 'applied') {
-      return res.status(400).json({ 
-        success: false, 
-        message: `Cannot withdraw application with status: ${bookingRef.status}. Only applications with 'applied' status can be withdrawn.` 
-      });
+    // Only allow withdrawal if not already accepted
+    if (bookingEntry.status === 'accepted') {
+      return res.status(400).json({ success: false, message: 'Cannot withdraw an accepted application. Please contact the client to cancel.' });
     }
 
-    // Update the status to 'withdrawn'
-    await Application.updateOne(
-      {
-        _id: application._id,
-        'Booking.booking_id': bookingId,
-        'Booking.artist_id': req.user.id
-      },
-      {
-        $set: {
-          'Booking.$.status': 'withdrawn'
-        }
-      }
-    );
+    // Remove the booking entry from application
+    application.Booking = application.Booking.filter(b => b.booking_id.toString() !== bookingId);
+    await application.save();
 
-    // Update booking status to 'pending' and remove artist from appliedArtists array
+    // Remove artist from booking.appliedArtists
     await Booking.updateOne(
       { _id: bookingId },
-      { 
-        $set: { status: 'pending' },
-        $pull: { appliedArtists: req.user.id }
-      }
+      { $pull: { appliedArtists: req.user.id } }
     );
 
-    return res.status(200).json({ 
-      success: true, 
-      message: 'Application withdrawn successfully' 
-    });
-
+    return res.status(200).json({ success: true, message: 'Application withdrawn successfully' });
   } catch (error) {
     console.error('Withdraw application error:', error);
-    return res.status(500).json({ 
-      success: false, 
-      message: 'Server error while withdrawing application', 
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' 
-    });
+    return res.status(500).json({ success: false, message: 'Server error while withdrawing application' });
   }
 };
 
-// @desc    Get bookings the current artist has applications for by status
+// @desc    Get all bookings the artist has applied to
 // @route   GET /api/applications/my-applied?status=applied
 // @access  Private (Artist only)
 exports.getMyAppliedBookings = async (req, res) => {
@@ -243,64 +364,58 @@ exports.getMyAppliedBookings = async (req, res) => {
   }
 };
 
-// @desc    Get all applications for a specific booking (for the owning client)
+// @desc    Get all applications for a booking (for client to review)
 // @route   GET /api/applications/booking/:bookingId
-// @access  Private (Client only)
+// @access  Private (Client owner of booking)
 exports.getApplicationsForBooking = async (req, res) => {
   try {
-    const bookingId = req.params.bookingId;
+    const { bookingId } = req.params;
     if (!bookingId) {
       return res.status(400).json({ success: false, message: 'bookingId is required' });
     }
 
-    // Ensure the booking exists and belongs to the requesting client
+    // Verify booking ownership
     const booking = await Booking.findById(bookingId).select('clientId');
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
-
     if (!req.user || req.user.userType !== 'client' || booking.clientId.toString() !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Not authorized to view applications for this booking' });
     }
 
-    // Aggregate applications for this booking and unwind the Booking array to access the embedded item
-    const mongoose = require('mongoose');
-    const results = await Application.aggregate([
-      { $unwind: '$Booking' },
-      { $match: { 'Booking.booking_id': new mongoose.Types.ObjectId(bookingId) } },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'Booking.artist_id',
-          foreignField: '_id',
-          as: 'artist'
-        }
-      },
-      { $unwind: '$artist' },
-      {
-        $project: {
-          _id: 1,
-          applicationId: '$_id',
-          bookingId: '$Booking.booking_id',
-          artistId: '$Booking.artist_id',
-          status: '$Booking.status',
-          artistDetails: '$Booking.artistDetails',
-          artist: {
-            _id: '$artist._id',
-            firstName: '$artist.firstName',
-            lastName: '$artist.lastName',
-            email: '$artist.email',
-            rating: '$artist.artist.rating'
-          }
-        }
-      },
-      { $sort: { _id: -1 } }
-    ]);
+    // Find all applications that have this booking
+    const applications = await Application.find({ 'Booking.booking_id': bookingId })
+      .populate('Booking.artist_id', 'firstName lastName email phoneNumber artist')
+      .lean();
 
-    return res.status(200).json({ success: true, count: results.length, data: results });
+    // Extract relevant booking entries and artist info
+    const result = [];
+    for (const app of applications) {
+      const bookingEntry = app.Booking.find(b => b.booking_id.toString() === bookingId);
+      if (bookingEntry && bookingEntry.artist_id) {
+        result.push({
+          applicationId: app._id,
+          artist: {
+            _id: bookingEntry.artist_id._id,
+            firstName: bookingEntry.artist_id.firstName,
+            lastName: bookingEntry.artist_id.lastName,
+            email: bookingEntry.artist_id.email,
+            phoneNumber: bookingEntry.artist_id.phoneNumber,
+            profilePicture: bookingEntry.artist_id.artist?.profilePicture,
+            bio: bookingEntry.artist_id.artist?.bio,
+            portfolioLinks: bookingEntry.artist_id.artist?.portfolioLinks
+          },
+          status: bookingEntry.status,
+          artistDetails: bookingEntry.artistDetails,
+          appliedDate: app.createdAt
+        });
+      }
+    }
+
+    return res.status(200).json({ success: true, data: result });
   } catch (error) {
     console.error('Get applications for booking error:', error);
-    return res.status(500).json({ success: false, message: 'Server error while fetching applications', error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' });
+    return res.status(500).json({ success: false, message: 'Server error while fetching applications' });
   }
 };
 
@@ -373,7 +488,7 @@ exports.updateApplicationStatus = async (req, res) => {
     console.error('Update application status error:', error);
     return res.status(500).json({ success: false, message: 'Server error while updating application status', error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' });
   }
-};
+}
 
 
 // @desc    Artist cancels an accepted application -> notify client by email
@@ -444,4 +559,177 @@ exports.notifyCancellationByArtist = async (req, res) => {
   }
 };
 
+// @desc    Mark application as completed with media proof (artist uploads images/video)
+// @route   PUT /api/applications/complete
+// @access  Private (Artist only)
+exports.completeApplication = async (req, res) => {
+  try {
+    const { bookingId, images = [], video = '' } = req.body;
 
+    if (!bookingId) {
+      return res.status(400).json({ success: false, message: 'bookingId is required' });
+    }
+
+    if (!req.user || req.user.userType !== 'artist') {
+      return res.status(403).json({ success: false, message: 'Only artists can mark applications as completed.' });
+    }
+
+    // Find the application and update the specific booking entry
+    const application = await Application.findOne({
+      'Booking.booking_id': bookingId,
+      'Booking.artist_id': req.user.id
+    });
+
+    if (!application) {
+      return res.status(404).json({ success: false, message: 'Application not found for this booking and artist' });
+    }
+
+    // Update the specific booking entry within the application
+    const updateResult = await Application.updateOne(
+      { 
+        _id: application._id,
+        'Booking.booking_id': bookingId,
+        'Booking.artist_id': req.user.id
+      },
+      { 
+        $set: { 
+          'Booking.$.status': 'completed',
+          'Booking.$.images': Array.isArray(images) ? images.slice(0, 3) : [],
+          'Booking.$.video': typeof video === 'string' ? video : ''
+        } 
+      }
+    );
+
+    if (updateResult.modifiedCount === 0) {
+      return res.status(404).json({ success: false, message: 'Failed to update application' });
+    }
+
+    return res.status(200).json({ 
+      success: true, 
+      message: 'Application marked as completed successfully',
+      data: { bookingId, images, video }
+    });
+  } catch (error) {
+    console.error('Complete application error:', error);
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Server error while completing application',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+};
+
+// @desc    Add a note to an application (by artist for accepted application)
+// @route   POST /api/applications/notes
+// @access  Private (Artist only)
+exports.addApplicationNote = async (req, res) => {
+  try {
+    const { bookingId, content, followUp = false } = req.body;
+
+    if (!bookingId) {
+      return res.status(400).json({ success: false, message: 'bookingId is required' });
+    }
+
+    if (!content || !content.trim()) {
+      return res.status(400).json({ success: false, message: 'Note content is required' });
+    }
+
+    if (req.user.userType !== 'artist') {
+      return res.status(403).json({ success: false, message: 'Only artists can add notes' });
+    }
+
+    // Find the application for this artist and booking
+    const application = await Application.findOne({
+      'Booking.booking_id': bookingId,
+      'Booking.artist_id': req.user.id,
+      'Booking.status': 'accepted'
+    });
+
+    if (!application) {
+      return res.status(404).json({ success: false, message: 'No accepted application found for this booking' });
+    }
+
+    // Find the specific booking entry
+    const bookingEntry = application.Booking.find(
+      b => b.booking_id.toString() === bookingId.toString() && b.artist_id.toString() === req.user.id
+    );
+
+    if (!bookingEntry) {
+      return res.status(404).json({ success: false, message: 'Booking entry not found' });
+    }
+
+    // Add note to the booking entry
+    if (!bookingEntry.notes) {
+      bookingEntry.notes = [];
+    }
+
+    bookingEntry.notes.push({
+      content: content.trim(),
+      followUp: followUp === true,
+      createdAt: new Date()
+    });
+
+    await application.save();
+
+    return res.status(200).json({ 
+      success: true, 
+      message: 'Note added successfully', 
+      data: bookingEntry.notes 
+    });
+  } catch (error) {
+    console.error('Add application note error:', error);
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Server error while adding note',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+};
+
+// @desc    Get notes for an application (by artist)
+// @route   GET /api/applications/notes/:bookingId
+// @access  Private (Artist only)
+exports.getApplicationNotes = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+
+    if (!bookingId) {
+      return res.status(400).json({ success: false, message: 'bookingId is required' });
+    }
+
+    if (req.user.userType !== 'artist') {
+      return res.status(403).json({ success: false, message: 'Only artists can view notes' });
+    }
+
+    // Find the application for this artist and booking
+    const application = await Application.findOne({
+      'Booking.booking_id': bookingId,
+      'Booking.artist_id': req.user.id
+    });
+
+    if (!application) {
+      return res.status(404).json({ success: false, message: 'No application found for this booking' });
+    }
+
+    // Find the specific booking entry
+    const bookingEntry = application.Booking.find(
+      b => b.booking_id.toString() === bookingId.toString() && b.artist_id.toString() === req.user.id
+    );
+
+    if (!bookingEntry) {
+      return res.status(404).json({ success: false, message: 'Booking entry not found' });
+    }
+
+    return res.status(200).json({ 
+      success: true, 
+      data: bookingEntry.notes || [] 
+    });
+  } catch (error) {
+    console.error('Get application notes error:', error);
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Server error while fetching notes',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+};

@@ -1,5 +1,5 @@
-// const API_BASE_URL = 'http://localhost:5001/api';
-const API_BASE_URL = 'https://mehndi-server.vercel.app/api';
+const API_BASE_URL = 'http://localhost:5001/api';
+// const API_BASE_URL = 'https://mehndi-server.vercel.app/api';
 
 // API utility functions
 const handleResponse = async (response) => {
@@ -554,6 +554,25 @@ export const applicationsAPI = {
       method: 'POST',
       body: JSON.stringify({ bookingId, reason, details })
     });
+  },
+  completeApplication: async ({ bookingId, images = [], video = '' }) => {
+    return apiRequest('/applications/complete', {
+      method: 'PUT',
+      body: JSON.stringify({ bookingId, images, video })
+    });
+  },
+  
+  // Add note to application (artist only)
+  addApplicationNote: async (bookingId, { content, followUp = false }) => {
+    return apiRequest('/applications/notes', {
+      method: 'POST',
+      body: JSON.stringify({ bookingId, content, followUp })
+    });
+  },
+
+  // Get notes for an application (artist only)
+  getApplicationNotes: async (bookingId) => {
+    return apiRequest(`/applications/notes/${bookingId}`);
   }
 };
 

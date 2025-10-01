@@ -8,6 +8,7 @@ import CancelAcceptedModal from './modals/CancelAcceptedModal';
 import MarkCompleteProofModal from './modals/MarkCompleteProofModal';
 import socket, { buildDirectRoomId, joinRoom, sendRoomMessage, sendTyping, signalOnline, onPresenceUpdate } from '../services/socket';
 import { ToastContainer, useToast } from './Toast';
+import { FaCalendarAlt, FaCheckCircle, FaClock, FaStickyNote, FaEye, FaWallet, FaCommentDots, FaStar, FaMoneyBillWave, FaCalendarCheck, FaHourglassHalf, FaArrowCircleUp, FaExclamationTriangle, FaEnvelope, FaTimes, FaArrowLeft } from 'react-icons/fa';
 
   const { jobsAPI, proposalsAPI, authAPI, bookingsAPI, applicationsAPI, portfoliosAPI } = apiService;
 
@@ -59,7 +60,6 @@ const ArtistDashboard = () => {
   const [secondEvent, setSecondEvent] = useState(null);
   const [upcomingBookings, setUpcomingBookings] = useState([]);
   const [notifications, setNotifications] = useState([]);
-  const [bookingNotes, setBookingNotes] = useState({});
   const [nearbyRequests, setNearbyRequests] = useState([]);
   const [kpiStats] = useState({
     bookings: { value: 7, sub: '+40% vs last month', trend: 'up' },
@@ -148,6 +148,12 @@ const ArtistDashboard = () => {
   const [acceptedByDate, setAcceptedByDate] = useState({});
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [calendarMonth, setCalendarMonth] = useState(new Date());
+  
+  // Notes state
+  const [bookingNotes, setBookingNotes] = useState({}); // { bookingId: { notes: [...], newNote: '', followUp: false } }
+  const [savingNote, setSavingNote] = useState(false);
+  const [viewNotesModalOpen, setViewNotesModalOpen] = useState(false);
+  const [viewNotesBookingId, setViewNotesBookingId] = useState(null);
 
   const isValidUrl = (str) => {
     try {
@@ -221,6 +227,7 @@ const ArtistDashboard = () => {
         budget: `£${b.minimumBudget ?? 0}${b.maximumBudget ? ` - £${b.maximumBudget}` : ''}`,
         appliedOn: new Date(b.createdAt).toLocaleDateString('en-GB'),
         status: status,
+        eventDate: b.eventDate,
         assignedCount: Array.isArray(b.assignedArtist) ? b.assignedArtist.length : (b.assignedArtist ? 1 : 0)
       }));
       setApplications(list);
@@ -245,9 +252,12 @@ const ArtistDashboard = () => {
       console.log('sending notifyCancelAccepted with:', { bookingId, reason, details });
       await applicationsAPI.notifyCancelAccepted({ bookingId, reason, details });
       showSuccess('Client will be notified by email');
+      // Refetch applications in Applications tab
       if (applicationsFilter === 'accepted') {
         fetchApplicationsByStatus('accepted');
       }
+      // Refetch calendar data
+      fetchAcceptedCalendar();
     } catch (e) {
       showError(e.message || 'Failed to submit cancellation');
     } finally {
@@ -269,6 +279,7 @@ const ArtistDashboard = () => {
         budget: `£${b.minimumBudget ?? 0}${b.maximumBudget ? ` - £${b.maximumBudget}` : ''}`,
         appliedOn: new Date(b.createdAt).toLocaleDateString('en-GB'),
         status: 'in_progress' || 'pending',
+        eventDate: b.eventDate,
         assignedCount: Array.isArray(b.assignedArtist) ? b.assignedArtist.length : (b.assignedArtist ? 1 : 0)
       }));
       setApplications(items);
@@ -303,6 +314,7 @@ const ArtistDashboard = () => {
               eventType: b.eventType || a.eventType,
               otherEventType: b.otherEventType || a.otherEventType,
               preferredTimeSlot: b.preferredTimeSlot || a.preferredTimeSlot,
+              location: b.location || b.city || b.postalCode || '',
             };
           }
         } catch (_) {}
@@ -315,6 +327,7 @@ const ArtistDashboard = () => {
           eventType: a.eventType,
           otherEventType: a.otherEventType,
           preferredTimeSlot: a.preferredTimeSlot,
+          location: a.location || a.city || a.postalCode || '',
         };
       }));
 
@@ -333,40 +346,46 @@ const ArtistDashboard = () => {
 
       const formatDateText = (dateString, preferred) => {
         const date = new Date(dateString);
-        const datePart = date.toLocaleDateString('en-GB');
+        const datePart = date.toLocaleDateString('en-GB', { 
+          day: '2-digit', 
+          month: 'short', 
+          year: 'numeric' 
+        });
         const pref = Array.isArray(preferred) ? preferred.join(', ') : (preferred || 'Flexible');
-        return `${datePart} · ${pref}`;
+        return { date: datePart, timeSlot: pref };
       };
       console.log('Future events:', future);
 
       if (future.length > 0) {
         const first = future[0];
         const firstDate = new Date(first.eventDate);
-        const hoursDiff = Math.max(0, Math.ceil((firstDate.getTime() - Date.now()) / (1000 * 60 * 60)));
         const daysLeft = Math.max(0, Math.ceil((firstDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+        const dateFormatted = formatDateText(first.eventDate, first.preferredTimeSlot);
         setNextEvent({
           id: first.bookingId,
           title: getEventTitle(first.eventType, first.otherEventType),
           client: first.client,
-          dateText: formatDateText(first.eventDate, first.preferredTimeSlot),
+          date: dateFormatted.date,
+          timeSlot: dateFormatted.timeSlot,
+          location: first.location,
           status: 'Deposit Received',
-          startsInText: hoursDiff < 24 ? `Starts in ${hoursDiff} hour${hoursDiff === 1 ? '' : 's'}` : undefined,
-          daysLeftText: `${daysLeft} day${daysLeft === 1 ? '' : 's'} left`,
+          daysLeft: daysLeft,
         });
 
         if (future.length > 1) {
           const second = future[1];
           const secondDate = new Date(second.eventDate);
-          const hours2 = Math.max(0, Math.ceil((secondDate.getTime() - Date.now()) / (1000 * 60 * 60)));
           const daysLeft2 = Math.max(0, Math.ceil((secondDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+          const dateFormatted2 = formatDateText(second.eventDate, second.preferredTimeSlot);
           setSecondEvent({
             id: second.bookingId,
             title: getEventTitle(second.eventType, second.otherEventType),
             client: second.client,
-            dateText: formatDateText(second.eventDate, second.preferredTimeSlot),
+            date: dateFormatted2.date,
+            timeSlot: dateFormatted2.timeSlot,
+            location: second.location,
             status: 'Deposit Received',
-            startsInText: hours2 < 24 ? `Starts in ${hours2} hour${hours2 === 1 ? '' : 's'}` : undefined,
-            daysLeftText: `${daysLeft2} day${daysLeft2 === 1 ? '' : 's'} left`,
+            daysLeft: daysLeft2,
           });
         } else {
           setSecondEvent(null);
@@ -385,6 +404,8 @@ const ArtistDashboard = () => {
   const openViewBooking = async (bookingId) => {
     try {
       setViewLoading(true);
+      // Prevent body scroll when modal opens
+      document.body.style.overflow = 'hidden';
       const resp = await bookingsAPI.getBooking(bookingId);
       const b = resp.data || {};
       setViewForm({
@@ -424,6 +445,8 @@ const ArtistDashboard = () => {
   const closeViewBooking = () => {
     setViewOpen(false);
     setViewForm(null);
+    // Restore body scroll when modal closes
+    document.body.style.overflow = 'auto';
   };
 
   const openApplyModal = (bookingId) => {
@@ -702,6 +725,25 @@ const ArtistDashboard = () => {
       fetchAcceptedCalendar();
     }
   }, [activeTab, fetchAcceptedCalendar]);
+
+  // Fetch notes when secondEvent changes
+  useEffect(() => {
+    if (secondEvent?.id && user?.userType === 'artist') {
+      applicationsAPI.getApplicationNotes(secondEvent.id)
+        .then(resp => {
+          if (resp.success) {
+            setBookingNotes(prev => ({
+              ...prev,
+              [secondEvent.id]: {
+                ...prev[secondEvent.id],
+                notes: resp.data || []
+              }
+            }));
+          }
+        })
+        .catch(console.error);
+    }
+  }, [secondEvent, user]);
 
   // Cancel booking modal state
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
@@ -1058,6 +1100,27 @@ const ArtistDashboard = () => {
   const handleTabChange = (tab) => {
     setActiveTab(tab);
 
+    // Refetch data based on tab
+    if (tab === 'dashboard') {
+      navigate(`/artist-dashboard`);
+      fetchArtistUpcomingEvents();
+      fetchPendingBookings();
+    } else if (tab === 'applications') {
+      if (applicationsFilter === 'all') {
+        fetchPendingBookings();
+      } else {
+        fetchApplicationsByStatus(applicationsFilter);
+      }
+    } else if (tab === 'schedule') {
+      fetchAcceptedCalendar();
+    } else if (tab === 'messages') {
+      chatAPI.listMyChats().then(res => {
+        if (res.success) setArtistConversations(res.data || []);
+      }).catch(console.error);
+    } else if (tab === 'profile') {
+      fetchMyPortfolios();
+    }
+
     if (tab === 'dashboard') {
       navigate(`/artist-dashboard`);
       return;
@@ -1382,61 +1445,310 @@ const ArtistDashboard = () => {
                     {/* Next Event Card */}
                     <div className="next-event-card">
                       <div className="event-header">
-                        <span className="event-icon">📅</span>
-                        <h3>Next Event: {nextEvent ? `${nextEvent.title} – ${nextEvent.dateText}` : 'No upcoming event'}</h3>
+                        <FaCalendarAlt className="event-icon" style={{ color: '#d4a574', fontSize: '24px' }} />
+                        <h3 style={{ marginLeft: '12px' }}>
+                          {nextEvent ? `Next Event: ${nextEvent.title}` : 'No upcoming event'}
+                        </h3>
                       </div>
                       {nextEvent && (
-                        <div className="event-details">
-                          <div className="event-left">
-                            <p><strong>Client:</strong> {nextEvent.client}</p>
-                            <p><strong>Date & Time:</strong> {nextEvent.dateText}</p>
-                             {nextEvent.daysLeftText && (
-                               <p className="event-countdown">⏰ {nextEvent.daysLeftText}</p>
-                             )}
+                        <>
+                          <div className="event-details">
+                            <div className="event-left">
+                              <p style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                                {/* <FaUser style={{ color: '#d4a574' }} /> */}
+                                <strong>Client:</strong> {nextEvent.client}
+                              </p>
+                              <p style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                                {/* <FaCalendarAlt style={{ color: '#d4a574' }} /> */}
+                                <strong>Date:</strong> {nextEvent.date} - {nextEvent.timeSlot}
+                              </p>
+                                {nextEvent.location && (
+                                  <p style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                                    <strong>Location:</strong> {nextEvent.location}
+                                  </p>
+                                )}
+                            </div>
+                            <div className="event-right">
+                              <div className="status-badge deposit-paid" style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'transparent', padding: '0px', margin: '0px', color: '#2d5f3f', fontWeight: '600' }}>
+                                <FaCheckCircle style={{ color: '#2d5f3f' }} />
+                                {nextEvent.status}
+                              </div>
+                              <p style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#e67e22', fontWeight: '600', marginTop: '0px' }}>
+                                <FaClock style={{ color: '#e67e22' }} />
+                                Starts in {nextEvent.daysLeft} day{nextEvent.daysLeft === 1 ? '' : 's'}
+                              </p>
+                            </div>
                           </div>
-                          <div className="event-right">
-                            <div className="status-badge deposit-paid">📋 Deposit Received</div>
-                            <p className="all-set">You're all set 🎉</p>
-                            {nextEvent.startsInText && (
-                              <p className="starts-in-text">⏱ {nextEvent.startsInText}</p>
-                            )}
+                          <div style={{ marginTop: '16px' }}>
+                            <button 
+                              className="btn-primary" 
+                              onClick={() => openViewBooking(nextEvent.id)}
+                              style={{ 
+                                padding: '10px 24px',
+                                fontSize: '14px',
+                                fontWeight: '600',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                backgroundColor: '#d4a574',
+                                border: 'none',
+                                color: 'white'
+                              }}
+                            >
+                              View Event Details
+                            </button>
                           </div>
-                        </div>
+                        </>
                       )}
-                      {/* Removed View Event Details button per requirement */}
                     </div>
                   </div>
 
                   <div className="dashboard-main">
                     {/* Left Column - Bookings */}
                     <div className="bookings-section">
-                      <h3 className="section-title">📅 Upcoming & Confirmed Bookings</h3>
-                      {upcomingBookings.length === 0 ? (
-                        <div className="no-more-bookings">
-                          <div className="plus-icon">+</div>
-                          <p>No more upcoming bookings</p>
+                      <h3 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <FaCalendarAlt style={{ color: '#d4a574' }} /> 
+                        Upcoming & Confirmed Bookings
+                      </h3>
+                      {(!secondEvent) ? (
+                        <div style={{ textAlign: 'center' }}>
+                          <div className="no-more-bookings" style={{ 
+                            border: '2px dashed #d4a574', 
+                            borderRadius: '12px', 
+                            padding: '40px 20px',
+                            textAlign: 'center',
+                            backgroundColor: '#F5DEB3',
+                            marginBottom: '20px'
+                          }}>
+                            <p style={{ 
+                              fontSize: '16px', 
+                              fontWeight: '600', 
+                              color: '#666', 
+                              margin: 0
+                            }}>
+                              No more confirmed bookings
+                            </p>
+                          </div>
                         </div>
                       ) : (
                         <>
                         {secondEvent && (
-                          <div className="booking-card">
+                          <div className="booking-card" style={{ marginBottom: '20px' }}>
                             <div className="booking-info">
-                              <h4 className="booking-title">{secondEvent.title}</h4>
-                              <p className="booking-artist">Client {secondEvent.client}</p>
-                              <div className="booking-meta">
+                              <h4 className="booking-title">{secondEvent.title} - {secondEvent.date}</h4>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                                <p className="booking-artist">Client: {secondEvent.client}</p>
                                 <span className="status-badge small">{secondEvent.status}</span>
-                                {secondEvent.daysLeftText && (
-                                  <span className="days-left-text">{secondEvent.daysLeftText}</span>
+                              </div>
+                              <div className="booking-meta" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                              <span>{secondEvent.timeSlot}</span>
+                                {secondEvent.daysLeft !== undefined && (
+                                  <span className="days-left-text">{secondEvent.daysLeft} day{secondEvent.daysLeft === 1 ? '' : 's'} left ⌛</span>
                                 )}
                               </div>
-                              <div className="booking-meta" style={{marginTop:'6px'}}>
-                                <span><strong>Date & Time:</strong> {secondEvent.dateText}</span>
+                              {/* <div className="booking-meta" style={{marginTop:'6px'}}>
+                                <span><strong>Date:</strong> {secondEvent.date}</span>
+                              </div> */}
+                              {/* <div className="booking-meta" style={{marginTop:'4px'}}>
+                                <span><strong>Time:</strong> {secondEvent.timeSlot}</span>
+                              </div> */}
+                            </div>
+                            
+                            {/* View Detail Button */}
+                            <div style={{ marginTop: '12px' }}>
+                              <button 
+                                className="btn-primary" 
+                                onClick={() => openViewBooking(secondEvent.id)}
+                                style={{ 
+                                  padding: '8px 20px',
+                                  fontSize: '14px',
+                                  fontWeight: '600',
+                                  borderRadius: '8px',
+                                  cursor: 'pointer',
+                                  backgroundColor: '#d4a574',
+                                  border: 'none',
+                                  color: 'white'
+                                }}
+                              >
+                                View Event Details
+                              </button>
+                            </div>
+
+                            {/* Notes & Reminders Section */}
+                            <div style={{ 
+                              marginTop: '20px', 
+                              padding: '16px', 
+                              backgroundColor: '#f9f9f9', 
+                              borderRadius: '8px',
+                              border: '1px solid #e0e0e0'
+                            }}>
+                              <h4 style={{ 
+                                margin: '0 0 12px 0', 
+                                fontSize: '14px', 
+                                fontWeight: '600',
+                                color: '#333',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                              }}>
+                                <FaStickyNote style={{ color: '#d4a574' }} />
+                                Notes & Reminders
+                              </h4>
+                              
+                              <textarea 
+                                placeholder="Add prep notes here..."
+                                value={bookingNotes[secondEvent.id]?.newNote || ''}
+                                onChange={(e) => {
+                                  setBookingNotes(prev => ({
+                                    ...prev,
+                                    [secondEvent.id]: {
+                                      ...prev[secondEvent.id],
+                                      newNote: e.target.value
+                                    }
+                                  }));
+                                }}
+                                style={{
+                                  width: '100%',
+                                  minHeight: '80px',
+                                  padding: '10px',
+                                  border: '1px solid #ddd',
+                                  borderRadius: '6px',
+                                  fontSize: '13px',
+                                  resize: 'vertical',
+                                  marginBottom: '10px'
+                                }}
+                                disabled={savingNote}
+                              />
+                              
+                              {/* <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                                <input 
+                                  type="checkbox" 
+                                  id={`followup-${secondEvent.id}`}
+                                  checked={bookingNotes[secondEvent.id]?.followUp || false}
+                                  onChange={(e) => {
+                                    setBookingNotes(prev => ({
+                                      ...prev,
+                                      [secondEvent.id]: {
+                                        ...prev[secondEvent.id],
+                                        followUp: e.target.checked
+                                      }
+                                    }));
+                                  }}
+                                  style={{ cursor: 'pointer' }}
+                                  disabled={savingNote}
+                                />
+                                <label htmlFor={`followup-${secondEvent.id}`} style={{ fontSize: '13px', cursor: 'pointer', userSelect: 'none' }}>
+                                  Follow up with client
+                                </label>
+                              </div> */}
+                              
+                              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                <button 
+                                  onClick={async () => {
+                                    const note = bookingNotes[secondEvent.id]?.newNote?.trim();
+                                    if (!note) {
+                                      showError('Please enter a note');
+                                      return;
+                                    }
+                                    
+                                    try {
+                                      setSavingNote(true);
+                                      await applicationsAPI.addApplicationNote(secondEvent.id, {
+                                        content: note,
+                                        followUp: bookingNotes[secondEvent.id]?.followUp || false
+                                      });
+                                      
+                                      // Fetch updated notes
+                                      const resp = await applicationsAPI.getApplicationNotes(secondEvent.id);
+                                      setBookingNotes(prev => ({
+                                        ...prev,
+                                        [secondEvent.id]: {
+                                          notes: resp.data || [],
+                                          newNote: '',
+                                          followUp: false
+                                        }
+                                      }));
+                                      
+                                      showSuccess('Note saved successfully');
+                                    } catch (e) {
+                                      showError(e.message || 'Failed to save note');
+                                    } finally {
+                                      setSavingNote(false);
+                                    }
+                                  }}
+                                  disabled={savingNote || !bookingNotes[secondEvent.id]?.newNote?.trim()}
+                                  style={{
+                                    padding: '8px 16px',
+                                    backgroundColor: '#d4a574',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    fontSize: '13px',
+                                    fontWeight: '600',
+                                    cursor: savingNote || !bookingNotes[secondEvent.id]?.newNote?.trim() ? 'not-allowed' : 'pointer',
+                                    opacity: savingNote || !bookingNotes[secondEvent.id]?.newNote?.trim() ? 0.6 : 1
+                                  }}
+                                >
+                                  {savingNote ? 'Saving...' : 'Save Notes'}
+                                </button>
+                                
+                                {bookingNotes[secondEvent.id]?.notes?.length > 0 && (
+                                  <button 
+                                    onClick={() => {
+                                      setViewNotesBookingId(secondEvent.id);
+                                      setViewNotesModalOpen(true);
+                                    }}
+                                    style={{
+                                      padding: '8px 16px',
+                                      backgroundColor: 'transparent',
+                                      color: '#d4a574',
+                                      border: '1px solid #d4a574',
+                                      borderRadius: '6px',
+                                      fontSize: '13px',
+                                      fontWeight: '600',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '6px'
+                                    }}
+                                  >
+                                    <FaEye /> View Notes ({bookingNotes[secondEvent.id]?.notes?.length})
+                                  </button>
+                                )}
                               </div>
                             </div>
                           </div>
                         )}
                         </>
                       )}
+                      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+                        <button 
+                          onClick={() => {
+                            setActiveTab('applications');
+                            navigate('/artist-dashboard/applications');
+                          }}
+                          style={{
+                            padding: '12px 28px',
+                            backgroundColor: 'transparent',
+                            color: '#d4a574',
+                            border: '2px solid #d4a574',
+                            borderRadius: '8px',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease'
+                          }}
+                          onMouseOver={(e) => {
+                            e.target.style.backgroundColor = '#d4a574';
+                            e.target.style.color = 'white';
+                          }}
+                          onMouseOut={(e) => {
+                            e.target.style.backgroundColor = 'transparent';
+                            e.target.style.color = '#d4a574';
+                          }}
+                        >
+                          View All Bookings
+                        </button>
+                      </div>
                     </div>
 
                     {/* Right Column - Notifications */}
@@ -1485,24 +1797,172 @@ const ArtistDashboard = () => {
                   </div>
 
                   {/* KPI Stats (moved below Requests Near You) */}
-                  <div className="kpi-grid">
-                    <div className="kpi-card">
-                      <div className="kpi-title">Bookings {kpiStats.bookings.trend === 'up' ? '↗' : '↘'}</div>
-                      <div className="kpi-value">{kpiStats.bookings.value}</div>
-                      <div className="kpi-subtext kpi-success">{kpiStats.bookings.sub}</div>
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(4, 1fr)', 
+                    gap: '20px',
+                    marginBottom: '30px'
+                  }}>
+                    {/* Bookings Card */}
+                    <div style={{
+                      backgroundColor: 'white',
+                      borderRadius: '12px',
+                      textAlign: 'center',
+                      padding: '20px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      border: '1px solid #f0f0f0'
+                    }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        gap: '8px',
+                        marginBottom: '8px'
+                      }}>
+                        <span style={{ 
+                          fontSize: '22px', 
+                          fontWeight: '700',
+                          color: '#333'
+                        }}>
+                          {kpiStats.bookings.value} Bookings
+                        </span>
+                        <span style={{ 
+                          fontSize: '20px', 
+                          color: '#22c55e',
+                          fontWeight: '600'
+                        }}>
+                          ↗
+                        </span>
+                      </div>
+                      <div style={{ 
+                        fontSize: '12px', 
+                        color: '#22c55e',
+                        fontWeight: '500'
+                      }}>
+                        {kpiStats.bookings.sub}
+                      </div>
                     </div>
-                    <div className="kpi-card">
-                      <div className="kpi-title">Applications {kpiStats.applications.trend === 'up' ? '↗' : '↘'}</div>
-                      <div className="kpi-value">{kpiStats.applications.value}</div>
-                      <div className="kpi-subtext kpi-info">{kpiStats.applications.sub}</div>
+
+                    {/* Applications Card */}
+                    <div style={{
+                      backgroundColor: 'white',
+                      borderRadius: '12px',
+                      padding: '20px',
+                      textAlign: 'center',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      border: '1px solid #f0f0f0'
+                    }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        gap: '8px',
+                        marginBottom: '8px'
+                      }}>
+                        <span style={{ 
+                          fontSize: '22px', 
+                          fontWeight: '700',
+                          color: '#333'
+                        }}>
+                          {kpiStats.applications.value} Applications
+                        </span>
+                        <span style={{ 
+                          fontSize: '20px', 
+                          color: '#298AFF',
+                          fontWeight: '600'
+                        }}>
+                          ↗
+                        </span>
+                      </div>
+                      <div style={{ 
+                        fontSize: '12px', 
+                        color: '#298AFF',
+                        fontWeight: '500'
+                      }}>
+                        {kpiStats.applications.sub}
+                      </div>
                     </div>
-                    <div className="kpi-card">
-                      <div className="kpi-title">{kpiStats.conversion.value} {kpiStats.conversion.trend === 'up' ? '↗' : '↘'}</div>
-                      <div className="kpi-subtext kpi-purple">{kpiStats.conversion.sub}</div>
+
+                    {/* Conversion Rate Card */}
+                    <div style={{
+                      backgroundColor: 'white',
+                      borderRadius: '12px',
+                      padding: '20px',
+                      textAlign: 'center',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      border: '1px solid #f0f0f0'
+                    }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        gap: '8px',
+                        marginBottom: '8px'
+                      }}>
+                        <span style={{ 
+                          fontSize: '22px', 
+                          fontWeight: '700',
+                          color: '#333'
+                        }}>
+                          {kpiStats.conversion.value}
+                        </span>
+                        <span style={{ 
+                          fontSize: '20px', 
+                          color: '#ef4444',
+                          fontWeight: '600'
+                        }}>
+                          ↘
+                        </span>
+                      </div>
+                      <div style={{ 
+                        fontSize: '12px', 
+                        fontWeight: '600',
+                        color: 'purple',
+                        marginBottom: '4px'
+                      }}>
+                        Conversion Rate
+                      </div>
                     </div>
-                    <div className="kpi-card">
-                      <div className="kpi-title">{kpiStats.response.value} {kpiStats.response.trend === 'up' ? '↗' : '↘'}</div>
-                      <div className="kpi-subtext kpi-gold">{kpiStats.response.sub}</div>
+
+                    {/* Response Rate Card */}
+                    <div style={{
+                      backgroundColor: 'white',
+                      borderRadius: '12px',
+                      padding: '20px',
+                      textAlign: 'center',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      border: '1px solid #f0f0f0'
+                    }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        gap: '8px',
+                        marginBottom: '8px'
+                      }}>
+                        <span style={{ 
+                          fontSize: '22px', 
+                          fontWeight: '700',
+                          color: '#333'
+                        }}>
+                          {kpiStats.response.value}
+                        </span>
+                        <span style={{ 
+                          fontSize: '20px', 
+                          color: '#22c55e',
+                          fontWeight: '600'
+                        }}>
+                          ↗
+                        </span>
+                      </div>
+                      <div style={{ 
+                        fontSize: '12px', 
+                        fontWeight: '600',
+                        color: '#EABF36',
+                        marginBottom: '4px'
+                      }}>
+                        Response Rate
+                      </div>
                     </div>
                   </div>
 
@@ -1514,26 +1974,173 @@ const ArtistDashboard = () => {
                       <p className="metric-line"><span className="metric-label">Avg Client Spend:</span> <strong>£350</strong></p>
                       <p className="metric-highlight">You earned 20% more than avg artist in London this month 🎉</p>
                     </div>
-                    <div className="quick-links-grid">
-                      <div className="quick-card">
-                        <div className="quick-icon">💳</div>
-                        <div>
-                          <div className="quick-title">Wallet / Earnings</div>
-                          <div className="quick-sub">£750.00 earned</div>
+                    <div style={{ 
+                      display: 'grid', 
+                      gridTemplateColumns: 'repeat(3, 1fr)', 
+                      gap: '20px',
+                      marginTop: '20px'
+                    }}>
+                      {/* Wallet / Earnings Card */}
+                      <div style={{
+                        backgroundColor: 'white',
+                        borderRadius: '12px',
+                        padding: '30px 20px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                        border: '1px solid #f0f0f0',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        textAlign: 'center',
+                        gap: '12px',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-4px)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                      }}
+                      onClick={() => {
+                        setActiveTab('earnings');
+                        navigate('/artist-dashboard/earnings');
+                      }}
+                      >
+                        <div style={{
+                          width: '60px',
+                          height: '60px',
+                          borderRadius: '12px',
+                          backgroundColor: '#fff5e6',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          <FaWallet style={{ fontSize: '28px', color: '#ff8c42' }} />
+                        </div>
+                        <div style={{ 
+                          fontSize: '16px', 
+                          fontWeight: '600',
+                          color: '#333'
+                        }}>
+                          Wallet / Earnings
+                        </div>
+                        <div style={{ 
+                          fontSize: '13px', 
+                          color: '#888',
+                          fontWeight: '500'
+                        }}>
+                          £750.00 earned
                         </div>
                       </div>
-                      <div className="quick-card">
-                        <div className="quick-icon">💬</div>
-                        <div>
-                          <div className="quick-title">Messages</div>
-                          <div className="quick-sub">3 new</div>
+
+                      {/* Messages Card */}
+                      <div style={{
+                        backgroundColor: 'white',
+                        borderRadius: '12px',
+                        padding: '30px 20px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                        border: '1px solid #f0f0f0',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        textAlign: 'center',
+                        gap: '12px',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-4px)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                      }}
+                      onClick={() => {
+                        setActiveTab('messages');
+                        navigate('/artist-dashboard/messages');
+                      }}
+                      >
+                        <div style={{
+                          width: '60px',
+                          height: '60px',
+                          borderRadius: '12px',
+                          backgroundColor: '#fff5e6',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          <FaCommentDots style={{ fontSize: '28px', color: '#ff8c42' }} />
+                        </div>
+                        <div style={{ 
+                          fontSize: '16px', 
+                          fontWeight: '600',
+                          color: '#333'
+                        }}>
+                          Messages
+                        </div>
+                        <div style={{ 
+                          fontSize: '13px', 
+                          color: '#888',
+                          fontWeight: '500'
+                        }}>
+                          3 new
                         </div>
                       </div>
-                      <div className="quick-card">
-                        <div className="quick-icon">⭐</div>
-                        <div>
-                          <div className="quick-title">Reviews</div>
-                          <div className="quick-sub">12 total</div>
+
+                      {/* Reviews Card */}
+                      <div style={{
+                        backgroundColor: 'white',
+                        borderRadius: '12px',
+                        padding: '30px 20px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                        border: '1px solid #f0f0f0',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        textAlign: 'center',
+                        gap: '12px',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-4px)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                      }}
+                      >
+                        <div style={{
+                          width: '60px',
+                          height: '60px',
+                          borderRadius: '12px',
+                          backgroundColor: '#fff5e6',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          <FaStar style={{ fontSize: '28px', color: '#ff8c42' }} />
+                        </div>
+                        <div style={{ 
+                          fontSize: '16px', 
+                          fontWeight: '600',
+                          color: '#333'
+                        }}>
+                          Reviews
+                        </div>
+                        <div style={{ 
+                          fontSize: '13px', 
+                          color: '#888',
+                          fontWeight: '500'
+                        }}>
+                          12 total
                         </div>
                       </div>
                     </div>
@@ -1547,31 +2154,262 @@ const ArtistDashboard = () => {
                   <p className="apps-subtitle">Track all the requests you’ve applied to</p>
 
                   {/* Stats */}
-                  <div className="apps-stats-grid">
-                    <div className="apps-stat card-applied">
-                      <div className="apps-stat-value">1</div>
-                      <div className="apps-stat-label">Applied</div>
-                      <div className="apps-stat-diff up">+1 this week</div>
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(5, 1fr)', 
+                    gap: '15px',
+                    marginBottom: '30px'
+                  }}>
+                    {/* Applied */}
+                    <div style={{
+                      backgroundColor: 'white',
+                      borderRadius: '12px',
+                      padding: '25px 15px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                      border: '1px solid #f0f0f0',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      textAlign: 'center',
+                      gap: '10px'
+                    }}>
+                      <div style={{
+                        width: '45px',
+                        height: '45px',
+                        borderRadius: '10px',
+                        backgroundColor: '#fef3c7',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <FaEnvelope style={{ fontSize: '20px', color: '#f59e0b' }} />
+                      </div>
+                      <div style={{ 
+                        fontSize: '32px', 
+                        fontWeight: '700',
+                        color: '#333'
+                      }}>
+                        1
+                      </div>
+                      <div style={{ 
+                        fontSize: '14px', 
+                        fontWeight: '600',
+                        color: '#666'
+                      }}>
+                        Applied
+                      </div>
+                      <div style={{ 
+                        fontSize: '12px', 
+                        color: '#f59e0b',
+                        fontWeight: '500',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}>
+                        <span>▲</span> +1 this week
+                      </div>
                     </div>
-                    <div className="apps-stat card-accepted">
-                      <div className="apps-stat-value">1</div>
-                      <div className="apps-stat-label">Accepted</div>
-                      <div className="apps-stat-diff up">+1 this week</div>
+
+                    {/* Accepted */}
+                    <div style={{
+                      backgroundColor: 'white',
+                      borderRadius: '12px',
+                      padding: '25px 15px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                      border: '1px solid #f0f0f0',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      textAlign: 'center',
+                      gap: '10px'
+                    }}>
+                      <div style={{
+                        width: '45px',
+                        height: '45px',
+                        borderRadius: '10px',
+                        backgroundColor: '#d1fae5',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <FaCheckCircle style={{ fontSize: '20px', color: '#10b981' }} />
+                      </div>
+                      <div style={{ 
+                        fontSize: '32px', 
+                        fontWeight: '700',
+                        color: '#333'
+                      }}>
+                        1
+                      </div>
+                      <div style={{ 
+                        fontSize: '14px', 
+                        fontWeight: '600',
+                        color: '#666'
+                      }}>
+                        Accepted
+                      </div>
+                      <div style={{ 
+                        fontSize: '12px', 
+                        color: '#10b981',
+                        fontWeight: '500',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}>
+                        <span>▲</span> +1 this week
+                      </div>
                     </div>
-                    <div className="apps-stat card-declined">
-                      <div className="apps-stat-value">1</div>
-                      <div className="apps-stat-label">Declined</div>
-                      <div className="apps-stat-diff down">-1 this week</div>
+
+                    {/* Declined */}
+                    <div style={{
+                      backgroundColor: 'white',
+                      borderRadius: '12px',
+                      padding: '25px 15px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                      border: '1px solid #f0f0f0',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      textAlign: 'center',
+                      gap: '10px'
+                    }}>
+                      <div style={{
+                        width: '45px',
+                        height: '45px',
+                        borderRadius: '10px',
+                        backgroundColor: '#fee2e2',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <FaTimes style={{ fontSize: '20px', color: '#ef4444' }} />
+                      </div>
+                      <div style={{ 
+                        fontSize: '32px', 
+                        fontWeight: '700',
+                        color: '#333'
+                      }}>
+                        1
+                      </div>
+                      <div style={{ 
+                        fontSize: '14px', 
+                        fontWeight: '600',
+                        color: '#666'
+                      }}>
+                        Declined
+                      </div>
+                      <div style={{ 
+                        fontSize: '12px', 
+                        color: '#ef4444',
+                        fontWeight: '500',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}>
+                        <span>▼</span> -1 this week
+                      </div>
                     </div>
-                    <div className="apps-stat card-withdrawn">
-                      <div className="apps-stat-value">0</div>
-                      <div className="apps-stat-label">Withdrawn</div>
-                      <div className="apps-stat-diff">No change</div>
+
+                    {/* Withdrawn */}
+                    <div style={{
+                      backgroundColor: 'white',
+                      borderRadius: '12px',
+                      padding: '25px 15px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                      border: '1px solid #f0f0f0',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      textAlign: 'center',
+                      gap: '10px'
+                    }}>
+                      <div style={{
+                        width: '45px',
+                        height: '45px',
+                        borderRadius: '10px',
+                        backgroundColor: '#f5f5f5',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <FaArrowLeft style={{ fontSize: '20px', color: '#999' }} />
+                      </div>
+                      <div style={{ 
+                        fontSize: '32px', 
+                        fontWeight: '700',
+                        color: '#333'
+                      }}>
+                        0
+                      </div>
+                      <div style={{ 
+                        fontSize: '14px', 
+                        fontWeight: '600',
+                        color: '#666'
+                      }}>
+                        Withdrawn
+                      </div>
+                      <div style={{ 
+                        fontSize: '12px', 
+                        color: '#999',
+                        fontWeight: '500'
+                      }}>
+                        No change
+                      </div>
                     </div>
-                    <div className="apps-stat card-expired">
-                      <div className="apps-stat-value">1</div>
-                      <div className="apps-stat-label">Expired</div>
-                      <div className="apps-stat-diff up">+1 this week</div>
+
+                    {/* Expired */}
+                    <div style={{
+                      backgroundColor: 'white',
+                      borderRadius: '12px',
+                      padding: '25px 15px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                      border: '1px solid #f0f0f0',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      textAlign: 'center',
+                      gap: '10px'
+                    }}>
+                      <div style={{
+                        width: '45px',
+                        height: '45px',
+                        borderRadius: '10px',
+                        backgroundColor: '#f5f5f5',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <FaClock style={{ fontSize: '20px', color: '#999' }} />
+                      </div>
+                      <div style={{ 
+                        fontSize: '32px', 
+                        fontWeight: '700',
+                        color: '#333'
+                      }}>
+                        1
+                      </div>
+                      <div style={{ 
+                        fontSize: '14px', 
+                        fontWeight: '600',
+                        color: '#666'
+                      }}>
+                        Expired
+                      </div>
+                      <div style={{ 
+                        fontSize: '12px', 
+                        color: '#f59e0b',
+                        fontWeight: '500',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}>
+                        <span>▲</span> +1 this week
+                      </div>
                     </div>
                   </div>
 
@@ -1631,9 +2469,41 @@ const ArtistDashboard = () => {
                             {applicationsFilter === 'applied' && (
                               <button className="app-btn app-btn-danger" style={{ marginLeft: '8px' }} onClick={() => handleWithdrawApplication(a.id)}>Withdraw</button>
                             )}
+                            {applicationsFilter === 'accepted' && (() => {
+                              // Check if event is within 14 days
+                              const eventDate = new Date(a.eventDate);
+                              const today = new Date();
+                              const daysDiff = Math.ceil((eventDate - today) / (1000 * 60 * 60 * 24));
+                              const isWithin14Days = daysDiff <= 14 && daysDiff >= 0;
+                              const tooltipMsg = "You can't cancel within 14 days of the event";
+
+                              return (
+                                <div style={{ position: 'relative', display: 'inline-block' }}>
+                                  <button 
+                                    className="app-btn app-btn-danger" 
+                                    style={{ 
+                                      marginLeft: '8px',
+                                      cursor: isWithin14Days ? 'not-allowed' : 'pointer',
+                                      opacity: isWithin14Days ? 0.5 : 1
+                                    }} 
+                                    onClick={() => {
+                                      if (isWithin14Days) {
+                                        showError(tooltipMsg);
+                                        return;
+                                      }
+                                      openCancelAccepted(a.id);
+                                    }}
+                                    disabled={isWithin14Days}
+                                    title={isWithin14Days ? tooltipMsg : ''}
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              );
+                            })()}
                             {applicationsFilter === 'accepted' && (
-                              <button className="app-btn app-btn-danger" style={{ marginLeft: '8px' }} onClick={() => openCancelAccepted(a.id)}>Cancel</button>
-                            )}
+                                <button className="app-btn" style={{ background: '#e24d0c', color: '#fff', borderColor: '#e24d0c' }} onClick={() => { setMarkTargetBookingId(a.id); setMarkProofOpen(true); }}>Mark Complete</button>
+                              )}
                           </div>
                         </div>
                       ))}
@@ -1656,9 +2526,17 @@ const ArtistDashboard = () => {
                 onClose={() => { setMarkProofOpen(false); setMarkTargetBookingId(null); }}
                 onSubmit={(result) => {
                   console.log('MarkComplete proof uploaded:', { bookingId: markTargetBookingId, ...result });
+                  showSuccess('Booking marked as completed successfully!');
                   setMarkProofOpen(false);
                   setMarkTargetBookingId(null);
+                  // Refetch applications in Applications tab
+                  if (applicationsFilter === 'accepted') {
+                    fetchApplicationsByStatus('accepted');
+                  }
+                  // Refetch calendar data
+                  fetchAcceptedCalendar();
                 }}
+                bookingId= {markTargetBookingId}
                 cloudinary={{
                   cloudName: "dstelsc7m",
                   uploadPreset: "mehndi",
@@ -1873,7 +2751,7 @@ const ArtistDashboard = () => {
                       <h3>Calendar</h3>
                     </div>
                     <div className="calendar-body">
-                      <div className="calendar-control">
+                      <div className="calendar-control" style={{ margin:'0 auto' }}>
                         <button className="cal-nav" onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))}>«</button>
                         <div className="cal-month">{calendarMonth.toLocaleString('en-GB', { month: 'long', year: 'numeric' })}</div>
                         <button className="cal-nav" onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))}>»</button>
@@ -1898,7 +2776,7 @@ const ArtistDashboard = () => {
                         })}
                       </div>
                     </div>
-                    <div className="cal-legend">
+                    <div className="cal-legend" style={{display:'flex', justifyContent:'center'}}>
                       <span className="legend-item"><span className="legend-dot bridal"></span>Bridal</span>
                       <span className="legend-item"><span className="legend-dot festival"></span>Festival</span>
                       <span className="legend-item"><span className="legend-dot party"></span>Party</span>
@@ -1938,37 +2816,243 @@ const ArtistDashboard = () => {
                   </div>
 
                   <h3 className="section-title" style={{ marginBottom: '10px' }}>Wallet & Earnings</h3>
-                  <div className="earnings-grid">
-                    <div className="earning-card">
-                      <div className="earning-icon">💳</div>
-                      <div className="earning-label">Lifetime Earnings</div>
-                      <div className="earning-value">£3,200.00</div>
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(4, 1fr)', 
+                    gap: '20px',
+                    marginBottom: '30px'
+                  }}>
+                    {/* Lifetime Earnings Card */}
+                    <div style={{
+                      backgroundColor: 'white',
+                      borderRadius: '12px',
+                      padding: '30px 20px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      border: '1px solid #f0f0f0',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      textAlign: 'center',
+                      gap: '12px'
+                    }}>
+                      <div style={{
+                        width: '50px',
+                        height: '50px',
+                        borderRadius: '10px',
+                        backgroundColor: '#fff5e6',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <FaWallet style={{ fontSize: '24px', color: '#ff8c42' }} />
+                      </div>
+                      <div style={{ 
+                        fontSize: '13px', 
+                        color: '#666',
+                        fontWeight: '500'
+                      }}>
+                        Lifetime Earnings
+                      </div>
+                      <div style={{ 
+                        fontSize: '24px', 
+                        fontWeight: '700',
+                        color: '#333'
+                      }}>
+                        £3,200.00
+                      </div>
                     </div>
-                    <div className="earning-card">
-                      <div className="earning-icon">📅</div>
-                      <div className="earning-label">This Month</div>
-                      <div className="earning-value">£750.00</div>
+
+                    {/* This Month Card */}
+                    <div style={{
+                      backgroundColor: 'white',
+                      borderRadius: '12px',
+                      padding: '30px 20px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      border: '1px solid #f0f0f0',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      textAlign: 'center',
+                      gap: '12px'
+                    }}>
+                      <div style={{
+                        width: '50px',
+                        height: '50px',
+                        borderRadius: '10px',
+                        backgroundColor: '#fff5e6',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <FaCalendarCheck style={{ fontSize: '24px', color: '#ff8c42' }} />
+                      </div>
+                      <div style={{ 
+                        fontSize: '13px', 
+                        color: '#666',
+                        fontWeight: '500'
+                      }}>
+                        This Month
+                      </div>
+                      <div style={{ 
+                        fontSize: '24px', 
+                        fontWeight: '700',
+                        color: '#333'
+                      }}>
+                        £750.00
+                      </div>
                     </div>
-                    <div className="earning-card">
-                      <div className="earning-icon">⏳</div>
-                      <div className="earning-label">Pending Payouts</div>
-                      <div className="earning-value">£250.00</div>
+
+                    {/* Pending Payouts Card */}
+                    <div style={{
+                      backgroundColor: 'white',
+                      borderRadius: '12px',
+                      padding: '30px 20px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      border: '1px solid #f0f0f0',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      textAlign: 'center',
+                      gap: '12px'
+                    }}>
+                      <div style={{
+                        width: '50px',
+                        height: '50px',
+                        borderRadius: '10px',
+                        backgroundColor: '#fff5e6',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <FaHourglassHalf style={{ fontSize: '24px', color: '#ff8c42' }} />
+                      </div>
+                      <div style={{ 
+                        fontSize: '13px', 
+                        color: '#666',
+                        fontWeight: '500'
+                      }}>
+                        Pending Payouts
+                      </div>
+                      <div style={{ 
+                        fontSize: '24px', 
+                        fontWeight: '700',
+                        color: '#333'
+                      }}>
+                        £250.00
+                      </div>
                     </div>
-                    <div className="earning-card">
-                      <div className="earning-icon">📤</div>
-                      <div className="earning-label">Next Payout</div>
-                      <div className="earning-value"><div>2025-09-03</div><small>(today)</small></div>
+
+                    {/* Next Payout Card */}
+                    <div style={{
+                      backgroundColor: 'white',
+                      borderRadius: '12px',
+                      padding: '30px 20px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      border: '1px solid #f0f0f0',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      textAlign: 'center',
+                      gap: '12px'
+                    }}>
+                      <div style={{
+                        width: '50px',
+                        height: '50px',
+                        borderRadius: '10px',
+                        backgroundColor: '#fff5e6',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <FaArrowCircleUp style={{ fontSize: '24px', color: '#ff8c42' }} />
+                      </div>
+                      <div style={{ 
+                        fontSize: '13px', 
+                        color: '#666',
+                        fontWeight: '500'
+                      }}>
+                        Next Payout
+                      </div>
+                      <div style={{ 
+                        fontSize: '20px', 
+                        fontWeight: '700',
+                        color: '#333'
+                      }}>
+                        2025-09-03
+                        <div style={{ 
+                          fontSize: '13px', 
+                          fontWeight: '500',
+                          color: '#666',
+                          marginTop: '4px'
+                        }}>
+                          (today)
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="earnings-notices">
-                    <div className="notice-card success">
-                      <span className="notice-icon">✅</span>
-                      <p>£250 will be released once the event is marked complete or automatically in 24 hours.</p>
+                  {/* Notification Cards */}
+                  <div style={{ 
+                    display: 'flex',
+                    gap: '20px',
+                    marginBottom: '30px'
+                  }}>
+                    {/* Success Notice */}
+                    <div style={{
+                      flex: 1,
+                      backgroundColor: '#f0fdf4',
+                      border: '1px solid #86efac',
+                      borderRadius: '8px',
+                      padding: '16px 20px',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '12px'
+                    }}>
+                      <FaCheckCircle style={{ 
+                        fontSize: '20px', 
+                        color: '#16a34a',
+                        flexShrink: 0,
+                        marginTop: '2px'
+                      }} />
+                      <p style={{ 
+                        margin: 0, 
+                        fontSize: '14px', 
+                        color: '#166534',
+                        lineHeight: '1.5'
+                      }}>
+                        £250 will be released once the event is marked complete or automatically in 24 hours.
+                      </p>
                     </div>
-                    <div className="notice-card warn">
-                      <span className="notice-icon">⚠️</span>
-                      <p>Your payout to Barclays Bank is processing — expected by Sep 3.</p>
+
+                    {/* Warning Notice */}
+                    <div style={{
+                      flex: 1,
+                      backgroundColor: '#fffbeb',
+                      border: '1px solid #fde047',
+                      borderRadius: '8px',
+                      padding: '16px 20px',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '12px'
+                    }}>
+                      <FaExclamationTriangle style={{ 
+                        fontSize: '20px', 
+                        color: '#d97706',
+                        flexShrink: 0,
+                        marginTop: '2px'
+                      }} />
+                      <p style={{ 
+                        margin: 0, 
+                        fontSize: '14px', 
+                        color: '#92400e',
+                        lineHeight: '1.5'
+                      }}>
+                        Your payout to Barclays Bank is processing — expected by Sep 3.
+                      </p>
                     </div>
                   </div>
 
@@ -2181,13 +3265,37 @@ const ArtistDashboard = () => {
 
 
             {viewOpen && viewForm && (
-              <div className="modal-overlay" onClick={closeViewBooking}>
-                <div className="modal" onClick={(e) => e.stopPropagation()}>
-                  <div className="modal-header">
+              <div className="modal-overlay" onClick={closeViewBooking} style={{ 
+                position: 'fixed', 
+                top: 0, 
+                left: 0, 
+                right: 0, 
+                bottom: 0, 
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 9999
+              }}>
+                <div className="modal" onClick={(e) => e.stopPropagation()} style={{
+                  maxWidth: '700px',
+                  width: '90%',
+                  maxHeight: '85vh',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  backgroundColor: 'white',
+                  borderRadius: '12px',
+                  overflow: 'hidden'
+                }}>
+                  <div className="modal-header" style={{ flexShrink: 0 }}>
                     <h3 className="modal-title">Booking Details</h3>
                     <button className="modal-close" onClick={closeViewBooking}>×</button>
                   </div>
-                  <div className="modal-body">
+                  <div className="modal-body" style={{ 
+                    overflowY: 'auto', 
+                    flex: 1,
+                    padding: '20px'
+                  }}>
                     <div className="modal-grid">
                       <div className="form-group">
                         <label>First name</label>
@@ -2334,8 +3442,92 @@ const ArtistDashboard = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="modal-footer">
+                  <div className="modal-footer" style={{ flexShrink: 0, padding: '15px 20px' }}>
                     <button className="btn-primary" onClick={closeViewBooking}>Close</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* View Notes Modal */}
+            {viewNotesModalOpen && viewNotesBookingId && (
+              <div className="modal-overlay" onClick={() => setViewNotesModalOpen(false)} style={{ 
+                position: 'fixed', 
+                top: 0, 
+                left: 0, 
+                right: 0, 
+                bottom: 0, 
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 9999
+              }}>
+                <div className="modal" onClick={(e) => e.stopPropagation()} style={{
+                  maxWidth: '600px',
+                  width: '90%',
+                  maxHeight: '85vh',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  backgroundColor: 'white',
+                  borderRadius: '12px',
+                  overflow: 'hidden'
+                }}>
+                  <div className="modal-header" style={{ flexShrink: 0 }}>
+                    <h3 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <FaStickyNote style={{ color: '#d4a574' }} />
+                      All Notes
+                    </h3>
+                    <button className="modal-close" onClick={() => setViewNotesModalOpen(false)}>×</button>
+                  </div>
+                  <div className="modal-body" style={{ 
+                    overflowY: 'auto', 
+                    flex: 1,
+                    padding: '20px'
+                  }}>
+                    {bookingNotes[viewNotesBookingId]?.notes?.length === 0 ? (
+                      <p style={{ textAlign: 'center', color: '#888', padding: '20px' }}>No notes yet</p>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {bookingNotes[viewNotesBookingId]?.notes?.map((note, idx) => (
+                          <div key={idx} style={{
+                            padding: '16px',
+                            backgroundColor: '#f9f9f9',
+                            borderRadius: '8px',
+                            border: '1px solid #e0e0e0'
+                          }}>
+                            <div style={{ marginBottom: '8px', fontSize: '12px', color: '#888' }}>
+                              {new Date(note.createdAt).toLocaleDateString('en-GB', { 
+                                day: '2-digit', 
+                                month: 'short', 
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </div>
+                            <div style={{ fontSize: '14px', color: '#333', whiteSpace: 'pre-wrap' }}>
+                              {note.content}
+                            </div>
+                            {note.followUp && (
+                              <div style={{ 
+                                marginTop: '8px', 
+                                padding: '4px 8px', 
+                                backgroundColor: '#fff3cd', 
+                                borderRadius: '4px',
+                                fontSize: '12px',
+                                color: '#856404',
+                                display: 'inline-block'
+                              }}>
+                                ⚠️ Follow-up required
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="modal-footer" style={{ flexShrink: 0, padding: '15px 20px' }}>
+                    <button className="btn-primary" onClick={() => setViewNotesModalOpen(false)}>Close</button>
                   </div>
                 </div>
               </div>
