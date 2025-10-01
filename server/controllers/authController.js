@@ -215,16 +215,10 @@ const googleAuth = async (req, res) => {
     let user = await User.findOne({ email });
     
     if (user) {
-      // User exists, generate token and return
-      const token = user.generateToken();
-      const safeUser = user.toObject();
-      delete safeUser.password;
-      
-      return res.status(200).json({ 
-        success: true, 
-        token, 
-        data: { user: safeUser },
-        message: `Welcome back! Your password is ${user.firstName}12345`
+      // User exists, do not auto-login; inform frontend email already exists
+      return res.status(409).json({ 
+        success: false, 
+        message: 'Email already exists. Please log in to continue.' 
       });
     }
 

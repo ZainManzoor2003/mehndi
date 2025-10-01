@@ -115,6 +115,108 @@ const AllBookings = () => {
     }
   };
 
+  const [completeOpen, setCompleteOpen] = useState(false);
+  const [completeTarget, setCompleteTarget] = useState(null);
+  const [completeImages, setCompleteImages] = useState([]);
+  const [completeVideo, setCompleteVideo] = useState(null);
+  const [imagePreviews, setImagePreviews] = useState([]);
+  const [videoPreview, setVideoPreview] = useState('');
+  const [uploading, setUploading] = useState(false);
+
+  const openCompleteModal = (booking) => {
+    setCompleteTarget(booking);
+    setCompleteImages([]);
+    setCompleteVideo(null);
+    setImagePreviews([]);
+    setVideoPreview('');
+    setCompleteOpen(true);
+  };
+
+  const closeCompleteModal = () => {
+    setCompleteOpen(false);
+    setCompleteTarget(null);
+    setCompleteImages([]);
+    setCompleteVideo(null);
+    setImagePreviews([]);
+    setVideoPreview('');
+  };
+
+  const handleImageSelect = (e) => {
+    const files = Array.from(e.target.files || []).slice(0, 3);
+    setCompleteImages(files);
+    
+    // Create previews
+    const previews = [];
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        previews.push(reader.result);
+        if (previews.length === files.length) {
+          setImagePreviews([...previews]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleVideoSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setCompleteVideo(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setVideoPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = (index) => {
+    const newImages = completeImages.filter((_, i) => i !== index);
+    const newPreviews = imagePreviews.filter((_, i) => i !== index);
+    setCompleteImages(newImages);
+    setImagePreviews(newPreviews);
+  };
+
+  const removeVideo = () => {
+    setCompleteVideo(null);
+    setVideoPreview('');
+  };
+
+  const uploadToCloudinary = async (file, resourceType = 'image') => {
+    const url = `https://api.cloudinary.com/v1_1/dfoetpdk9/${resourceType}/upload`;
+    const fd = new FormData();
+    fd.append('file', file);
+    // IMPORTANT: replace with your actual unsigned preset name created in Cloudinary settings
+    fd.append('upload_preset', 'mehndi');
+    const res = await fetch(url, { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || 'Upload failed');
+    return data.secure_url || data.url;
+  };
+
+  const handleConfirmComplete = async () => {
+    if (!completeTarget) return;
+    try {
+      setUploading(true);
+      const imgs = completeImages.slice(0,3);
+      const uploaded = [];
+      for (const f of imgs) {
+        uploaded.push(await uploadToCloudinary(f, 'image'));
+      }
+      let videoUrl = '';
+      if (completeVideo) videoUrl = await uploadToCloudinary(completeVideo, 'video');
+      await bookingsAPI.completeBooking(completeTarget._id, { images: uploaded, video: videoUrl });
+      const refreshed = await bookingsAPI.getMyBookings();
+      setAllBookings(refreshed.data || []);
+      closeCompleteModal();
+    } catch (err) {
+      alert(err.message || 'Failed to complete booking');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleTabChange = (tabId) => {
     if (tabId === 'dashboard') {
       navigate('/dashboard');
@@ -232,7 +334,7 @@ const AllBookings = () => {
           <div className="dashboard-main-content">
             <button
               className="mobile-sidebar-toggle"
-              onClick={() => setSidebarOpen(true)}
+              onClick={() => setSidebarOpen(!sidebarOpen)}
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="3" y1="6" x2="21" y2="6" />
@@ -360,7 +462,7 @@ const AllBookings = () => {
           <div className="dashboard-main-content">
             <button
               className="mobile-sidebar-toggle"
-              onClick={() => setSidebarOpen(true)}
+              onClick={() => setSidebarOpen(!sidebarOpen)}
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="3" y1="6" x2="21" y2="6" />
@@ -410,7 +512,7 @@ const AllBookings = () => {
           <div className="dashboard-main-content">
             <button
               className="mobile-sidebar-toggle"
-              onClick={() => setSidebarOpen(true)}
+              onClick={() => setSidebarOpen(!sidebarOpen)}
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="3" y1="6" x2="21" y2="6" />
@@ -459,7 +561,7 @@ const AllBookings = () => {
           {/* Mobile Sidebar Toggle */}
           <button
             className="mobile-sidebar-toggle"
-            onClick={() => setSidebarOpen(true)}
+            onClick={() => setSidebarOpen(!sidebarOpen)}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="3" y1="6" x2="21" y2="6" />
@@ -536,6 +638,9 @@ const AllBookings = () => {
                             </div>
                             <div className="card-actions">
                               {getStatusBadge(booking.status)}
+                              {booking.status === 'confirmed' && (
+                                <button className="btn-primary" onClick={() => openCompleteModal(booking)} style={{marginLeft:'8px'}}>Mark as complete</button>
+                              )}
                               {booking.status == 'pending' &&
                                 <>
                                   <button className="icon-btn edit" onClick={() => openEditModal(booking)} title="Edit booking">✏️
@@ -619,11 +724,6 @@ const AllBookings = () => {
                               <span className="meta-badge">🎨 {booking.designStyle}</span>
                               <span className="meta-badge">👥 {booking.numberOfPeople} people</span>
                             </div>
-                          </div>
-                          <div className="card-actions">
-                            {getStatusBadge(booking.status)}
-                            <button className="icon-btn edit" onClick={() => openEditModal(booking)} title="Edit booking">✏️</button>
-                            <button className="icon-btn delete" onClick={() => handleDelete(booking)} title="Delete booking">🗑️</button>
                           </div>
                         </div>
 
@@ -912,6 +1012,176 @@ const AllBookings = () => {
           )}
         </div>
       </div>
+      {completeOpen && (
+        <div className="modal-overlay" onClick={closeCompleteModal}>
+          <div className="modal" onClick={(e)=>e.stopPropagation()} style={{ maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div className="modal-header">
+              <h3 className="modal-title">Complete Booking</h3>
+              <button className="modal-close" onClick={closeCompleteModal}>×</button>
+            </div>
+            <div className="modal-body">
+              <p style={{ marginBottom: '20px', color: '#666' }}>Upload up to 3 images and one video (optional). Files will be uploaded to Cloudinary.</p>
+              
+              {/* Images Upload Section */}
+              <div className="form-group" style={{ marginBottom: '25px' }}>
+                <label style={{ display: 'block', fontWeight: '600', marginBottom: '10px', color: '#333' }}>
+                  Images (max 3)
+                </label>
+                <label htmlFor="complete-images-upload" className="upload-label" style={{ 
+                  display: 'block',
+                  padding: '20px',
+                  border: '2px dashed #d4a574',
+                  borderRadius: '8px',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  backgroundColor: '#faf8f5',
+                  transition: 'all 0.3s ease'
+                }}>
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d4a574" strokeWidth="2" style={{ margin: '0 auto 10px' }}>
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                  </svg>
+                  <p style={{ margin: '0', color: '#d4a574', fontWeight: '600' }}>
+                    Click to upload images
+                  </p>
+                  <small style={{ color: '#888' }}>PNG, JPG, WEBP • Max 3 images</small>
+                </label>
+                <input
+                  type="file"
+                  id="complete-images-upload"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageSelect}
+                  style={{ display: 'none' }}
+                />
+                
+                {/* Image Previews */}
+                {imagePreviews.length > 0 && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginTop: '15px' }}>
+                    {imagePreviews.map((preview, index) => (
+                      <div key={index} style={{ position: 'relative' }}>
+                        <img 
+                          src={preview} 
+                          alt={`Preview ${index + 1}`} 
+                          style={{ 
+                            width: '100%', 
+                            height: '120px', 
+                            objectFit: 'cover', 
+                            borderRadius: '8px',
+                            border: '2px solid #d4a574'
+                          }} 
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(index)}
+                          style={{
+                            position: 'absolute',
+                            top: '5px',
+                            right: '5px',
+                            background: '#e74c3c',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '25px',
+                            height: '25px',
+                            cursor: 'pointer',
+                            fontSize: '16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 'bold'
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Video Upload Section */}
+              <div className="form-group" style={{ marginBottom: '15px' }}>
+                <label style={{ display: 'block', fontWeight: '600', marginBottom: '10px', color: '#333' }}>
+                  Video (optional)
+                </label>
+                <label htmlFor="complete-video-upload" className="upload-label" style={{ 
+                  display: 'block',
+                  padding: '20px',
+                  border: '2px dashed #d4a574',
+                  borderRadius: '8px',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  backgroundColor: '#faf8f5',
+                  transition: 'all 0.3s ease'
+                }}>
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d4a574" strokeWidth="2" style={{ margin: '0 auto 10px' }}>
+                    <polygon points="23 7 16 12 23 17 23 7"/>
+                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                  </svg>
+                  <p style={{ margin: '0', color: '#d4a574', fontWeight: '600' }}>
+                    Click to upload video
+                  </p>
+                  <small style={{ color: '#888' }}>MP4, MOV, AVI • Optional</small>
+                </label>
+                <input
+                  type="file"
+                  id="complete-video-upload"
+                  accept="video/*"
+                  onChange={handleVideoSelect}
+                  style={{ display: 'none' }}
+                />
+                
+                {/* Video Preview */}
+                {videoPreview && (
+                  <div style={{ marginTop: '15px', position: 'relative' }}>
+                    <video 
+                      src={videoPreview} 
+                      controls
+                      style={{ 
+                        width: '100%', 
+                        maxHeight: '200px', 
+                        borderRadius: '8px',
+                        border: '2px solid #d4a574'
+                      }} 
+                    />
+                    <button
+                      type="button"
+                      onClick={removeVideo}
+                      style={{
+                        position: 'absolute',
+                        top: '10px',
+                        right: '10px',
+                        background: '#e74c3c',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '50%',
+                        width: '30px',
+                        height: '30px',
+                        cursor: 'pointer',
+                        fontSize: '18px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={closeCompleteModal}>Cancel</button>
+              <button className="btn-primary" onClick={handleConfirmComplete} disabled={uploading}>
+                {uploading ? 'Uploading...' : 'Confirm & Complete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

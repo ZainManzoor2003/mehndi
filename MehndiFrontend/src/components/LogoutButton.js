@@ -38,7 +38,7 @@ const clearAllCookies = () => {
   } catch {}
 };
 
-const LogoutButton = () => {
+const LogoutButton = ({ variant = 'floating', className = '' }) => {
   const navigate = useNavigate();
   const { logout, isAuthenticated } = useAuth();
 
@@ -52,6 +52,14 @@ const LogoutButton = () => {
     clearAllCookies();
     navigate('/login', { replace: true });
   };
+
+  if (variant === 'sidebar') {
+    return (
+      <button onClick={handleLogout} className={`sidebar-logout-btn ${className}`}>
+        Logout
+      </button>
+    );
+  }
 
   return (
     <button

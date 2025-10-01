@@ -1,5 +1,5 @@
-const API_BASE_URL = 'http://localhost:5001/api';
-// const API_BASE_URL = 'https://mehndi-server.vercel.app/api';
+// const API_BASE_URL = 'http://localhost:5001/api';
+const API_BASE_URL = 'https://mehndi-server.vercel.app/api';
 
 // API utility functions
 const handleResponse = async (response) => {
@@ -238,6 +238,17 @@ export const reviewsAPI = {
   getArtistReviews: async (artistId) => {
     return apiRequest(`/reviews/artist/${artistId}`);
   },
+
+  // Get current client's completed bookings to review
+  getCompletedBookingsToReview: async (onlyNotRated = true) => {
+    const qs = onlyNotRated ? '?onlyNotRated=true' : '';
+    return apiRequest(`/bookings/completed${qs}`);
+  },
+
+  // Get my review for specific booking
+  getMyReviewForBooking: async (bookingId) => {
+    return apiRequest(`/reviews/booking/${bookingId}`);
+  },
 };
 
 // Users API functions
@@ -253,6 +264,24 @@ export const usersAPI = {
   getArtist: async (artistId) => {
     return apiRequest(`/users/artist/${artistId}`);
   },
+};
+
+// Admin API functions
+export const adminAPI = {
+  // Users
+  listUsers: async () => apiRequest('/admin/users'),
+  updateUser: async (userId, updates) => apiRequest(`/admin/users/${userId}`, { method: 'PUT', body: JSON.stringify(updates) }),
+  deleteUser: async (userId) => apiRequest(`/admin/users/${userId}`, { method: 'DELETE' }),
+
+  // Applications status summary
+  getApplicationStatusSummary: async () => apiRequest('/admin/applications/status'),
+  getAllApplications: async () => apiRequest('/admin/applications'),
+
+  // Blogs
+  listBlogs: async () => apiRequest('/admin/blogs'),
+  createBlog: async (data) => apiRequest('/admin/blogs', { method: 'POST', body: JSON.stringify(data) }),
+  updateBlog: async (blogId, data) => apiRequest(`/admin/blogs/${blogId}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteBlog: async (blogId) => apiRequest(`/admin/blogs/${blogId}`, { method: 'DELETE' }),
 };
 
 // Upload API functions
@@ -400,6 +429,14 @@ export const bookingsAPI = {
       body: JSON.stringify({ status }),
     });
   },
+
+  // Complete booking with media URLs
+  completeBooking: async (bookingId, { images = [], video = '' }) => {
+    return apiRequest(`/bookings/${bookingId}/complete`, {
+      method: 'PUT',
+      body: JSON.stringify({ images, video })
+    });
+  },
   
   // Update booking (client edits)
   updateBooking: async (bookingId, bookingData) => {
@@ -541,6 +578,7 @@ const apiExports = {
   chatAPI,
   reviewsAPI,
   usersAPI,
+  adminAPI,
   uploadAPI,
   notificationsAPI,
   portfoliosAPI,

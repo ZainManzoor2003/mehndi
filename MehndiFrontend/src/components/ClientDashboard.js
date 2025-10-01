@@ -3,7 +3,7 @@ import './messages.css';
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import DashboardSidebar from './DashboardSidebar';
-import apiService, { chatAPI } from '../services/api';
+import apiService, { chatAPI, reviewsAPI } from '../services/api';
 import socket, { buildDirectRoomId, joinRoom, sendRoomMessage, sendTyping, signalOnline, onPresenceUpdate } from '../services/socket';
 import ProposalsPage from './ProposalsPage';
 import ClientProfile from './ClientProfile';
@@ -66,39 +66,52 @@ const ClientDashboard = () => {
   ]);
 
   // Mock data for completed bookings
-  const [completedBookings] = useState([
-    {
-      id: 1,
-      title: 'Wedding Mehndi',
-      artist: 'Zara Henna Arts',
-      date: 'March 15, 2024',
-      time: '2:00 PM',
-      price: '£450',
-      hasReview: false,
-      artistImage: 'https://via.placeholder.com/60x60'
-    },
-    {
-      id: 2,
-      title: 'Birthday Party Mehndi',
-      artist: 'Artistic Henna',
-      date: 'February 10, 2024',
-      time: '4:00 PM',
-      price: '£280',
-      hasReview: true,
-      rating: 5,
-      artistImage: 'https://via.placeholder.com/60x60'
-    },
-    {
-      id: 3,
-      title: 'Festival Celebration',
-      artist: 'Mehndi Magic',
-      date: 'January 20, 2024',
-      time: '6:00 PM',
-      price: '£320',
-      hasReview: false,
-      artistImage: 'https://via.placeholder.com/60x60'
+  const [completedBookings, setCompletedBookings] = useState([]); // from backend
+  const [notRatedBookings, setNotRatedBookings] = useState([]);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [reviewTarget, setReviewTarget] = useState(null);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState('');
+  const [viewReviewModal, setViewReviewModal] = useState(false);
+  const [viewReviewData, setViewReviewData] = useState(null);
+  // Load completed bookings for reviews
+  useEffect(() => {
+    const loadReviewsData = async () => {
+      try {
+        const all = await reviewsAPI.getCompletedBookingsToReview(false);
+        const pending = await reviewsAPI.getCompletedBookingsToReview(true);
+        setCompletedBookings(all.data || []);
+        setNotRatedBookings(pending.data || []);
+      } catch (e) {
+        console.error('Load review data error', e);
+      }
+    };
+    if (isAuthenticated) loadReviewsData();
+  }, [isAuthenticated]);
+
+  const openReviewModal = (booking) => {
+    setReviewTarget(booking);
+    setReviewRating(0);
+    setReviewComment('');
+    setReviewModalOpen(true);
+  };
+  const closeReviewModal = () => {
+    setReviewModalOpen(false);
+    setReviewTarget(null);
+  };
+  const submitReview = async () => {
+    try {
+      await reviewsAPI.createReview({ bookingId: reviewTarget._id, rating: reviewRating, comment: reviewComment });
+      // refresh
+      const all = await reviewsAPI.getCompletedBookingsToReview(false);
+      const pending = await reviewsAPI.getCompletedBookingsToReview(true);
+      setCompletedBookings(all.data || []);
+      setNotRatedBookings(pending.data || []);
+      closeReviewModal();
+    } catch (e) {
+      alert(e.message || 'Failed to submit review');
     }
-  ]);
+  };
 
   const [conversations, setConversations] = useState([]);
   const [chatMessages, setChatMessages] = useState([]);
@@ -509,6 +522,15 @@ const ClientDashboard = () => {
       return;
     }
     navigate(`/dashboard/${tab}`);
+  };
+
+  // Helper: get display title for event types
+  const getEventTitleGlobal = (eventType, otherEventType) => {
+    if (Array.isArray(eventType) && eventType.length > 0) {
+      const types = eventType.join(', ');
+      return otherEventType ? `${types} - ${otherEventType}` : types;
+    }
+    return otherEventType || 'Mehndi Booking';
   };
 
   const handleSidebarToggle = () => {
@@ -1296,68 +1318,60 @@ const ClientDashboard = () => {
                 <p className="reviews-subtitle">Review your completed bookings and help other clients</p>
               </div>
 
-              <div className="reviews-stats">
+              {/* <div className="reviews-stats">
                 <div className="stats-card">
                   <h3>Total Reviews</h3>
-                  <span className="stats-number">{completedBookings.filter(b => b.hasReview).length}</span>
+                  <span className="stats-number">{(completedBookings.length - notRatedBookings.length)}</span>
                 </div>
                 <div className="stats-card">
                   <h3>Pending Reviews</h3>
-                  <span className="stats-number">{completedBookings.filter(b => !b.hasReview).length}</span>
+                  <span className="stats-number">{notRatedBookings.length}</span>
                 </div>
-                <div className="stats-card">
-                  <h3>Average Rating</h3>
-                  <span className="stats-number">
-                    {completedBookings.filter(b => b.hasReview).length > 0 
-                      ? (completedBookings.filter(b => b.hasReview).reduce((acc, b) => acc + (b.rating || 0), 0) / completedBookings.filter(b => b.hasReview).length).toFixed(1)
-                      : 'N/A'
-                    }
-                  </span>
-                </div>
-              </div>
+              </div> */}
 
               <div className="completed-bookings">
                 <h3 className="section-subtitle">Completed Bookings</h3>
                 
                 {completedBookings.map(booking => (
-                  <div key={booking.id} className="completed-booking-card">
+                  <div key={booking._id} className="completed-booking-card">
                     <div className="booking-main-info">
                       <div className="artist-section">
                         <div className="artist-avatar">
-                          <img src={booking.artistImage} alt={booking.artist} />
+                          <img src={booking.assignedArtist?.userProfileImage || 'https://via.placeholder.com/60x60'} alt="Artist" />
                         </div>
                         <div className="artist-details">
-                          <h4 className="artist-name">{booking.artist}</h4>
-                          <p className="booking-title">{booking.title}</p>
-                          <p className="booking-date">{booking.date} • {booking.time}</p>
+                          <h4 className="artist-name">{booking.assignedArtist ? `${booking.assignedArtist.firstName || ''} ${booking.assignedArtist.lastName || ''}` : 'Artist'}</h4>
+                          <p className="booking-title">{getEventTitleGlobal(booking.eventType, booking.otherEventType)}</p>
+                          <p className="booking-date">{new Date(booking.eventDate).toLocaleDateString('en-GB')} • {(booking.preferredTimeSlot || []).join(', ')}</p>
                         </div>
                       </div>
                       
-                      <div className="booking-price">
-                        <span className="price-label">Total Paid</span>
-                        <span className="price-amount">{booking.price}</span>
-                      </div>
+                      <div className="booking-price" />
                     </div>
 
                     <div className="review-section">
-                      {booking.hasReview ? (
+                      {booking.rated ? (
                         <div className="review-completed">
-                          <div className="review-rating">
-                            {[...Array(5)].map((_, i) => (
-                              <span key={i} className={`star ${i < booking.rating ? 'filled' : ''}`}>
-                                ⭐
-                              </span>
-                            ))}
-                          </div>
                           <span className="review-status">Review Completed</span>
-                          <button className="view-review-btn">View Review</button>
+                          <button className="view-review-btn" onClick={async ()=>{
+                            try {
+                              const res = await reviewsAPI.getMyReviewForBooking(booking._id);
+                              setViewReviewData({
+                                ...res.data,
+                                booking: booking
+                              });
+                              setViewReviewModal(true);
+                            } catch (e) {
+                              alert(e.message || 'Review not found');
+                            }
+                          }}>View Details</button>
                         </div>
                       ) : (
                         <div className="review-pending">
                           <span className="review-status">Review Pending</span>
                           <button 
                             className="write-review-btn"
-                            onClick={() => handleWriteReview(booking)}
+                            onClick={() => openReviewModal(booking)}
                           >
                             Write Review
                           </button>
@@ -1367,6 +1381,93 @@ const ClientDashboard = () => {
                   </div>
                 ))}
               </div>
+
+              {reviewModalOpen && (
+                <div className="modal-overlay" onClick={closeReviewModal}>
+                  <div className="modal" onClick={(e)=>e.stopPropagation()}>
+                    <div className="modal-header">
+                      <h3 className="modal-title">Write a Review</h3>
+                      <button className="modal-close" onClick={closeReviewModal}>×</button>
+                    </div>
+                    <div className="modal-body">
+                      <div className="form-group">
+                        <label>Rating</label>
+                        <div className="review-rating">
+                          {[1,2,3,4,5].map(n => (
+                            <span key={n} className={`star ${n <= reviewRating ? 'filled' : ''}`} onClick={() => setReviewRating(n)}>⭐</span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="form-group">
+                        <label>Comment</label>
+                        <textarea rows="4" value={reviewComment} onChange={(e)=>setReviewComment(e.target.value)} />
+                      </div>
+                    </div>
+                    <div className="modal-footer">
+                      <button className="btn-secondary" onClick={closeReviewModal}>Cancel</button>
+                      <button className="btn-primary" onClick={submitReview} disabled={reviewRating < 1 || reviewComment.trim().length === 0}>Submit Review</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* View Review Details Modal */}
+              {viewReviewModal && viewReviewData && (
+                <div className="modal-overlay" onClick={() => setViewReviewModal(false)}>
+                  <div className="modal" onClick={(e)=>e.stopPropagation()}>
+                    <div className="modal-header">
+                      <h3 className="modal-title">Review Details</h3>
+                      <button className="modal-close" onClick={() => setViewReviewModal(false)}>×</button>
+                    </div>
+                    <div className="modal-body">
+                      {/* Booking Information */}
+                      <div className="booking-info" style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+                        <div className="artist-section">
+                          <div className="artist-avatar" style={{ width: '60px', height: '60px', borderRadius: '50%', overflow: 'hidden', marginRight: '15px', display: 'inline-block', verticalAlign: 'top' }}>
+                            <img src={viewReviewData.booking?.assignedArtist?.userProfileImage || 'https://via.placeholder.com/60x60'} alt="Artist" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          </div>
+                          <div style={{ display: 'inline-block', verticalAlign: 'top' }}>
+                            <h4 style={{ margin: '0 0 5px 0', fontSize: '16px', fontWeight: '600' }}>
+                              {viewReviewData.booking?.assignedArtist ? `${viewReviewData.booking.assignedArtist.firstName || ''} ${viewReviewData.booking.assignedArtist.lastName || ''}` : 'Artist'}
+                            </h4>
+                            <p style={{ margin: '0 0 3px 0', fontSize: '14px', color: '#666' }}>{getEventTitleGlobal(viewReviewData.booking?.eventType, viewReviewData.booking?.otherEventType)}</p>
+                            <p style={{ margin: '0', fontSize: '13px', color: '#888' }}>{viewReviewData.booking?.eventDate ? new Date(viewReviewData.booking.eventDate).toLocaleDateString('en-GB') : ''}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Rating */}
+                      <div className="form-group" style={{ marginBottom: '20px' }}>
+                        <label style={{ display: 'block', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Rating</label>
+                        <div className="review-rating" style={{ fontSize: '24px' }}>
+                          {[1,2,3,4,5].map(n => (
+                            <span key={n} className={`star ${n <= viewReviewData.rating ? 'filled' : ''}`} style={{ color: n <= viewReviewData.rating ? '#ffc107' : '#ddd', marginRight: '5px' }}>⭐</span>
+                          ))}
+                          <span style={{ marginLeft: '10px', fontSize: '16px', color: '#666' }}>({viewReviewData.rating}/5)</span>
+                        </div>
+                      </div>
+
+                      {/* Comment */}
+                      <div className="form-group">
+                        <label style={{ display: 'block', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Your Review</label>
+                        <div style={{ padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px', color: '#333', lineHeight: '1.6', fontSize: '14px' }}>
+                          {viewReviewData.comment}
+                        </div>
+                      </div>
+
+                      {/* Review Date */}
+                      {viewReviewData.createdAt && (
+                        <div style={{ marginTop: '15px', fontSize: '13px', color: '#888', textAlign: 'right' }}>
+                          Reviewed on {new Date(viewReviewData.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        </div>
+                      )}
+                    </div>
+                    <div className="modal-footer">
+                      <button className="btn-primary" onClick={() => setViewReviewModal(false)}>Close</button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

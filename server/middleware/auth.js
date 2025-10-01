@@ -35,6 +35,20 @@ const protect = async (req, res, next) => {
 
 module.exports = { protect };
 
+// Admin-only guard
+const adminOnly = (req, res, next) => {
+  try {
+    if (!req.user || req.user.userType !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Admin access required' });
+    }
+    next();
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+module.exports.adminOnly = adminOnly;
+
 
 
 
