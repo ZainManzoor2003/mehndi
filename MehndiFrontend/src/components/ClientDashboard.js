@@ -8,7 +8,7 @@ import socket, { buildDirectRoomId, joinRoom, sendRoomMessage, sendTyping, signa
 import ProposalsPage from './ProposalsPage';
 import ClientProfile from './ClientProfile';
 
-const { jobsAPI, proposalsAPI, bookingsAPI } = apiService;
+const { jobsAPI, proposalsAPI, bookingsAPI, walletAPI } = apiService;
 
 const ClientDashboard = () => {
   const { user, isAuthenticated } = useAuth();
@@ -74,6 +74,8 @@ const ClientDashboard = () => {
   const [reviewComment, setReviewComment] = useState('');
   const [viewReviewModal, setViewReviewModal] = useState(false);
   const [viewReviewData, setViewReviewData] = useState(null);
+  const [walletData, setWalletData] = useState({ totalPaid: 0, remainingBalance: 0 });
+  const [walletLoading, setWalletLoading] = useState(false);
   // Load completed bookings for reviews
   useEffect(() => {
     const loadReviewsData = async () => {
@@ -88,6 +90,28 @@ const ClientDashboard = () => {
     };
     if (isAuthenticated) loadReviewsData();
   }, [isAuthenticated]);
+
+  // Load wallet data
+  useEffect(() => {
+    const loadWalletData = async () => {
+      if (!isAuthenticated || activeTab !== 'wallet') return;
+      try {
+        setWalletLoading(true);
+        const response = await walletAPI.getWalletSummary();
+        if (response.success && response.data) {
+          setWalletData({
+            totalPaid: response.data.totalPaid || 0,
+            remainingBalance: response.data.remainingBalance || 0
+          });
+        }
+      } catch (e) {
+        console.error('Load wallet data error', e);
+      } finally {
+        setWalletLoading(false);
+      }
+    };
+    loadWalletData();
+  }, [isAuthenticated, activeTab]);
 
   const openReviewModal = (booking) => {
     setReviewTarget(booking);
@@ -1058,30 +1082,36 @@ const ClientDashboard = () => {
               <h2 className="wallet-title">Your Wallet</h2>
               
               {/* Wallet Overview Cards */}
-              <div className="wallet-overview">
-                <div className="wallet-card total-paid">
-                  <h3 className="wallet-card-title">Total Paid</h3>
-                  <p className="wallet-card-amount green">£250.00</p>
+              {walletLoading ? (
+                <div className="loading-state" style={{ padding: '2rem', textAlign: 'center' }}>
+                  <p>Loading wallet data...</p>
                 </div>
-                
-                <div className="wallet-card remaining-balance">
-                  <h3 className="wallet-card-title">Remaining Balance</h3>
-                  <p className="wallet-card-amount orange">£250.00</p>
+              ) : (
+                <div className="wallet-overview">
+                  <div className="wallet-card total-paid">
+                    <h3 className="wallet-card-title">Total Paid</h3>
+                    <p className="wallet-card-amount green">£{walletData.totalPaid.toFixed(2)}</p>
+                  </div>
+                  
+                  <div className="wallet-card remaining-balance">
+                    <h3 className="wallet-card-title">Remaining Balance</h3>
+                    <p className="wallet-card-amount orange">£{walletData.remainingBalance.toFixed(2)}</p>
+                  </div>
+                  
+                  {/* <div className="wallet-card next-payment">
+                    <h3 className="wallet-card-title">Next Payment Due</h3>
+                    <p className="wallet-card-amount blue">1 Sep 2025</p>
+                  </div> */}
                 </div>
-                
-                <div className="wallet-card next-payment">
-                  <h3 className="wallet-card-title">Next Payment Due</h3>
-                  <p className="wallet-card-amount blue">1 Sep 2025</p>
-                </div>
-              </div>
+              )}
 
               {/* Payment Status Bar */}
-              <div className="payment-status-bar">
+              {/* <div className="payment-status-bar">
                 <div className="status-progress">
                   <div className="progress-indicator"></div>
                 </div>
                 <p className="status-text">Final 50% due soon ⏳</p>
-              </div>
+              </div> */}
 
               {/* Booking Details */}
               <div className="wallet-booking-details">

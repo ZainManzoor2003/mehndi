@@ -148,7 +148,7 @@ const ManageApplications = () => {
             </div>
             {selected && (
               <div className="modal-overlay" onClick={() => setSelected(null)}>
-                <div className="payment-modal" onClick={(e)=>e.stopPropagation()}>
+                <div className="payment-modal" onClick={(e)=>e.stopPropagation()} style={{ maxWidth: '700px', maxHeight: '90vh', overflowY: 'auto' }}>
                   <div className="modal-header">
                     <h2 className="modal-title">Application Details</h2>
                     <button className="modal-close" onClick={() => setSelected(null)}>×</button>
@@ -199,6 +199,52 @@ const ManageApplications = () => {
                         </div>
                       </div>
                     </div>
+
+                    {/* Images Section */}
+                    {selected.booking?.images && selected.booking.images.length > 0 && (
+                      <div className="detail-card" style={{ marginTop: '1.5rem' }}>
+                        <h3 className="modal-section-title">Uploaded Images</h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '15px', marginTop: '10px' }}>
+                          {selected.booking.images.map((img, idx) => (
+                            <div key={idx} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', border: '2px solid #d4a574' }}>
+                              <img 
+                                src={img} 
+                                alt={`Upload ${idx + 1}`}
+                                style={{ 
+                                  width: '100%', 
+                                  height: '150px', 
+                                  objectFit: 'cover',
+                                  cursor: 'pointer'
+                                }}
+                                onClick={() => window.open(img, '_blank')}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Video Section */}
+                    {selected.booking?.video && (
+                      <div className="detail-card" style={{ marginTop: '1.5rem' }}>
+                        <h3 className="modal-section-title">Uploaded Video</h3>
+                        <div style={{ marginTop: '10px', borderRadius: '8px', overflow: 'hidden', border: '2px solid #d4a574' }}>
+                          <video 
+                            controls
+                            style={{ 
+                              width: '100%', 
+                              maxHeight: '400px',
+                              backgroundColor: '#000'
+                            }}
+                          >
+                            <source src={selected.booking.video} type="video/mp4" />
+                            <source src={selected.booking.video} type="video/webm" />
+                            <source src={selected.booking.video} type="video/ogg" />
+                            Your browser does not support the video tag.
+                          </video>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="status-row">
                       <span className="detail-label">Status</span>

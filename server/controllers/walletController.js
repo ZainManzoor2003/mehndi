@@ -1,5 +1,6 @@
 const Wallet = require('../schemas/Wallet');
 const User = require('../schemas/User');
+const Transaction = require('../schemas/Transaction');
 
 // GET /api/wallet - Get user's wallet
 const getWallet = async (req, res) => {
@@ -139,4 +140,34 @@ const getAllWallets = async (req, res) => {
   }
 };
 
-module.exports = { getWallet, updateWallet, getAllWallets };
+// GET /api/wallet/summary - Get wallet summary with total paid from transactions
+const getWalletSummary = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    
+    // Get wallet balance
+    const wallet = await Wallet.findOne({ userId });
+    const remainingBalance = wallet ? wallet.walletAmount : 0;
+    
+    // Calculate total paid from transactions where user is sender
+    const transactions = await Transaction.find({ sender: userId });
+    const totalPaid = transactions.reduce((sum, transaction) => sum + transaction.amount, 0);
+
+    return res.status(200).json({ 
+      success: true, 
+      data: {
+        remainingBalance: remainingBalance,
+        totalPaid: totalPaid,
+        wallet: wallet
+      }
+    });
+  } catch (err) {
+    console.error('Get wallet summary error:', err);
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Server error' 
+    });
+  }
+};
+
+module.exports = { getWallet, updateWallet, getAllWallets, getWalletSummary };

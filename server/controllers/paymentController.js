@@ -48,8 +48,8 @@ exports.createCheckoutSession = async (req, res) => {
         remainingAmount: String(remainingAmount),
         isPaid: String(isPaid || 'none'),
       },
-      success_url:  `http://localhost:3000/dashboard/proposals?checkout=success&bookingId=${encodeURIComponent(bookingId)}&applicationId=${encodeURIComponent(applicationId)}&paidAmount=${encodeURIComponent(amount)}&isPaid=${encodeURIComponent(isPaid || 'none')}&remaining=${encodeURIComponent(remainingAmount || '0')}`,
-      cancel_url: `http://localhost:3000/dashboard/proposals?checkout=canceled&bookingId=${encodeURIComponent(bookingId)}&applicationId=${encodeURIComponent(applicationId)}`,
+      success_url:  `http://localhost:3000/payment-success?checkout=success&bookingId=${encodeURIComponent(bookingId)}&applicationId=${encodeURIComponent(applicationId)}&paidAmount=${encodeURIComponent(amount)}&isPaid=${encodeURIComponent(isPaid || 'none')}&remaining=${encodeURIComponent(remainingAmount || '0')}`,
+      cancel_url: `http://localhost:3000/payment-cancel?checkout=canceled&bookingId=${encodeURIComponent(bookingId)}&applicationId=${encodeURIComponent(applicationId)}`,
     });
 
     return res.status(200).json({ success: true, data: { id: session.id, url: session.url } });
