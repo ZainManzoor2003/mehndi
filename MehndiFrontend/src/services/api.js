@@ -586,6 +586,32 @@ export const paymentsAPI = {
   },
 };
 
+// Wallet API
+export const walletAPI = {
+  getWallet: async () => {
+    return apiRequest('/wallet', {
+      method: 'GET'
+    });
+  },
+  getWalletSummary: async () => {
+    return apiRequest('/wallet/summary', {
+      method: 'GET'
+    });
+  },
+  updateWallet: async (userId, amount, operation) => {
+    return apiRequest('/wallet/update', {
+      method: 'PUT',
+      body: JSON.stringify({ userId, amount, operation })
+    });
+  },
+  getAllWallets: async () => {
+    return apiRequest('/wallet/all', {
+      method: 'GET'
+    });
+  }
+};
+
+
 const apiExports = {
   authAPI,
   jobsAPI,
@@ -601,6 +627,7 @@ const apiExports = {
   uploadAPI,
   notificationsAPI,
   portfoliosAPI,
+  walletAPI
 };
 
 export default apiExports; 
