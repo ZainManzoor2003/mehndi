@@ -1,0 +1,151 @@
+import React, { useEffect, useState } from 'react';
+import AdminSidebar from './AdminSidebar';
+import { authAPI } from '../services/api';
+import { FaUser, FaEnvelope, FaLock, FaEdit, FaSave, FaTimes, FaEye, FaEyeSlash } from 'react-icons/fa';
+
+const AdminUpdateProfile = () => {
+  const [isEditing, setIsEditing] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await authAPI.getProfile();
+        const u = res.data.user;
+        setForm((f) => ({ ...f, firstName: u.firstName || '', lastName: u.lastName || '', email: u.email || '' }));
+      } catch {}
+    })();
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+    setIsLoading(true);
+    try {
+      if (form.newPassword && form.newPassword.length < 6) {
+        setError('New password must be at least 6 characters');
+        setIsLoading(false);
+        return;
+      }
+      if (form.newPassword && form.newPassword !== form.confirmPassword) {
+        setError('New password and confirm password do not match');
+        setIsLoading(false);
+        return;
+      }
+      const { currentPassword, newPassword, confirmPassword, ...rest } = form;
+      const payload = { ...rest };
+      if (currentPassword && newPassword) {
+        payload.currentPassword = currentPassword;
+        payload.newPassword = newPassword;
+      }
+      const res = await authAPI.updateProfile(payload);
+      if (res.success) {
+        setSuccess('Profile updated successfully');
+        setForm((f) => ({ ...f, currentPassword: '', newPassword: '', confirmPassword: '' }));
+      } else {
+        setError(res.message || 'Failed to update profile');
+      }
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="dashboard-layout">
+      <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <div className="dashboard-main-content">
+        <button
+          className="sidebar-toggle-btn"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
+        <div className="dashboard-container">
+          <div className="dashboard-content">
+            <div className="profile-header" style={{ marginBottom: '1rem' }}>
+              <div className="profile-main">
+                <div className="profile-info">
+                  <h2 className="profile-name">{form.firstName} {form.lastName}</h2>
+                  <p className="profile-role">Admin Account</p>
+                  <p className="profile-email">{form.email}</p>
+                </div>
+              </div>
+            </div>
+
+            {error && <div className="alert-message error">{error}</div>}
+            {success && <div className="alert-message success">{success}</div>}
+
+            <form className="profile-form" onSubmit={handleSubmit}>
+              <div className="form-section">
+                <h3 className="form-section-title">
+                  <FaUser className="section-icon" /> Profile Information
+                </h3>
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label className="form-label">First Name</label>
+                    <input className="form-input" type="text" value={form.firstName} onChange={(e)=>setForm({...form, firstName:e.target.value})} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Last Name</label>
+                    <input className="form-input" type="text" value={form.lastName} onChange={(e)=>setForm({...form, lastName:e.target.value})} required />
+                  </div>
+                  <div className="form-group full-width">
+                    <label className="form-label"><FaEnvelope className="input-icon" /> Email Address</label>
+                    <input className="form-input" type="email" value={form.email} onChange={(e)=>setForm({...form, email:e.target.value})} required />
+                  </div>
+                </div>
+
+                <div className="password-section">
+                  <h4 className="password-title"><FaLock className="section-icon" /> Change Password (Optional)</h4>
+                  <div className="form-grid">
+                    <div className="form-group full-width">
+                      <label className="form-label">Current Password</label>
+                      <div className="password-input-wrapper">
+                        <input className="form-input" type={showPassword? 'text':'password'} value={form.currentPassword} onChange={(e)=>setForm({...form, currentPassword:e.target.value})} placeholder="Enter current password" />
+                        <button type="button" className="password-toggle" onClick={()=>setShowPassword(!showPassword)}>{showPassword? <FaEyeSlash/>:<FaEye/>}</button>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">New Password</label>
+                      <div className="password-input-wrapper">
+                        <input className="form-input" type={showNewPassword? 'text':'password'} value={form.newPassword} onChange={(e)=>setForm({...form, newPassword:e.target.value})} placeholder="Enter new password" />
+                        <button type="button" className="password-toggle" onClick={()=>setShowNewPassword(!showNewPassword)}>{showNewPassword? <FaEyeSlash/>:<FaEye/>}</button>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Confirm New Password</label>
+                      <input className="form-input" type="password" value={form.confirmPassword} onChange={(e)=>setForm({...form, confirmPassword:e.target.value})} placeholder="Confirm new password" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="form-actions">
+                  <button type="submit" className="btn-primary" disabled={isLoading}>
+                    {isLoading ? 'Updating...' : (<><FaSave /> Update Profile</>)}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AdminUpdateProfile;
+
+

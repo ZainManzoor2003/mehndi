@@ -181,6 +181,17 @@ const BookingSchema = new mongoose.Schema({
     maxlength: 1000
   },
 
+  // Media attachments
+  images: {
+    type: [String],
+    default: []
+  },
+  video: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+
   // Booking Status
   status: {
     type: String,
@@ -207,6 +218,12 @@ const BookingSchema = new mongoose.Schema({
     type: String,
     enum: ['none', 'half', 'full'],
     default: 'none'
+  },
+
+  // Whether client has submitted a review for this booking
+  rated: {
+    type: Boolean,
+    default: false
   },
 
   // Artist Assignment (can be multiple)

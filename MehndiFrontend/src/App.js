@@ -22,6 +22,11 @@ import ProposalsPage from './components/ProposalsPage';
 import ArtistDashboard from './components/ArtistDashboard';
 import JobDetails from './components/JobDetails';
 import AllBookings from './components/AllBookings';
+import ManageUsers from './components/ManageUsers';
+import ManageApplications from './components/ManageApplications';
+import ManageBlogs from './components/ManageBlogs';
+import AdminUpdateProfile from './components/AdminUpdateProfile';
+import ManageBookings from './components/ManageBookings';
 
 // Main Landing Page Component
 const LandingPage = () => (
@@ -88,6 +93,31 @@ function App() {
               </RoleProtectedRoute>
             } />
             <Route path="/job/:jobId" element={<JobDetails />} />
+            <Route path="/admin-dashboard/users" element={
+              <RoleProtectedRoute allowedRoles={["admin"]}>
+                <ManageUsers />
+              </RoleProtectedRoute>
+            } />
+            <Route path="/admin-dashboard/applications" element={
+              <RoleProtectedRoute allowedRoles={["admin"]}>
+                <ManageApplications />
+              </RoleProtectedRoute>
+            } />
+            <Route path="/admin-dashboard/blogs" element={
+              <RoleProtectedRoute allowedRoles={["admin"]}>
+                <ManageBlogs />
+              </RoleProtectedRoute>
+            } />
+            <Route path="/admin-dashboard/bookings" element={
+              <RoleProtectedRoute allowedRoles={["admin"]}>
+                <ManageBookings />
+              </RoleProtectedRoute>
+            } />
+            <Route path="/admin-dashboard/update-profile" element={
+              <RoleProtectedRoute allowedRoles={["admin"]}>
+                <AdminUpdateProfile />
+              </RoleProtectedRoute>
+            } />
           </Routes>
           </div>
         </Router>

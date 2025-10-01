@@ -420,12 +420,45 @@ const updateBookingStatus = async (req, res) => {
   }
 };
 
+// @desc    Complete a booking by attaching media URLs and setting status completed
+// @route   PUT /api/bookings/:id/complete
+// @access  Private (Client only for own booking)
+const completeBooking = async (req, res) => {
+  try {
+    const { images = [], video = '' } = req.body;
+
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    // Only owner client can mark complete
+    if (req.user.userType !== 'client' || booking.clientId.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Not authorized to complete this booking' });
+    }
+
+    // Accept up to 3 images
+    const imgArray = Array.isArray(images) ? images.slice(0, 3) : [];
+    booking.images = imgArray;
+    if (typeof video === 'string') booking.video = video;
+    booking.status = 'completed';
+
+    await booking.save();
+
+    return res.status(200).json({ success: true, message: 'Booking marked as completed', data: booking });
+  } catch (error) {
+    console.error('Complete booking error:', error);
+    return res.status(500).json({ success: false, message: 'Server error while completing booking' });
+  }
+};
+
 module.exports = {
   createBooking,
   getClientBookings,
   getAllBookings,
   getBookingById,
   updateBookingStatus,
+  completeBooking,
   updateBooking,
   deleteBooking,
   getPendingBookings
