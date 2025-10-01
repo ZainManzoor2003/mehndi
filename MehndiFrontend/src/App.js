@@ -27,6 +27,8 @@ import ManageApplications from './components/ManageApplications';
 import ManageBlogs from './components/ManageBlogs';
 import AdminUpdateProfile from './components/AdminUpdateProfile';
 import ManageBookings from './components/ManageBookings';
+import PaymentSuccess from './components/PaymentSuccess';
+import PaymentCancel from './components/PaymentCancel';
 
 // Main Landing Page Component
 const LandingPage = () => (
@@ -65,6 +67,8 @@ function App() {
               </PublicRoute>
             } />
             <Route path="/booking" element={<BookingForm />} />
+            <Route path="/payment-success" element={<PaymentSuccess />} />
+            <Route path="/payment-cancel" element={<PaymentCancel />} />
             <Route path="/dashboard/:tab?" element={
               <RoleProtectedRoute allowedRoles={["client"]}>
                 <ClientDashboard />

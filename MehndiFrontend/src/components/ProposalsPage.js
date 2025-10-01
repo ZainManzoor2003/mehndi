@@ -59,72 +59,72 @@ const ProposalsPage = () => {
   }, [isAuthenticated]);
 
   // Handle Stripe redirect success/cancel
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const checkout = params.get('checkout');
-    const bookingId = params.get('bookingId');
-    const applicationId = params.get('applicationId');
-    const paidAmountParam = params.get('paidAmount');
-    const remainingParam = params.get('remaining');
-    const isPaidParam = params.get('isPaid');
+  // useEffect(() => {
+  //   const params = new URLSearchParams(window.location.search);
+  //   const checkout = params.get('checkout');
+  //   const bookingId = params.get('bookingId');
+  //   const applicationId = params.get('applicationId');
+  //   const paidAmountParam = params.get('paidAmount');
+  //   const remainingParam = params.get('remaining');
+  //   const isPaidParam = params.get('isPaid');
     
-    console.log('Frontend - URL params:', {
-      checkout,
-      bookingId,
-      applicationId,
-      paidAmountParam,
-      remainingParam,
-      isPaidParam
-    });
-    if (checkout === 'success' && bookingId && applicationId) {
-      const finalize = async () => {
-        try {
-          const paidAmountNum = Number(paidAmountParam || 0) || 0;
-          const remainingNum = Number(remainingParam || 0) || 0;
-          const isPaidValue = isPaidParam || 'none';
-          await applicationsAPI.updateApplicationStatus(
-            applicationId,
-            bookingId,
-            'accepted',
-            { paymentPaid: paidAmountNum, remainingPayment: remainingNum, isPaid: isPaidValue }
-          );
-        } catch (e) {
-        } finally {
-          // Clean URL
-          const url = new URL(window.location.href);
-          url.search = '';
-          window.history.replaceState({}, document.title, url.toString());
-          // Reload lists
-          if (!isAuthenticated) return;
-          try {
-            setLoading(true);
-            setError('');
-            const res = await bookingsAPI.getMyBookings();
-            const myBookings = (res.data || []).filter(b => b.status === 'pending');
-            setBookings(myBookings);
-            if (myBookings.length && !expandedRequest) setExpandedRequest(myBookings[0]._id);
-            const entries = await Promise.all(
-              myBookings.map(async (b) => {
-                try {
-                  const r = await applicationsAPI.getApplicationsForBooking(b._id);
-                  return [b._id, r.data || []];
-                } catch (e) {
-                  return [b._id, []];
-                }
-              })
-            );
-            setApplicationsByBooking(Object.fromEntries(entries));
-          } catch (e) {
-            setError(e.message || 'Failed to load proposals');
-          } finally {
-            setLoading(false);
-          }
-        }
-      };
-      finalize();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated]);
+  //   console.log('Frontend - URL params:', {
+  //     checkout,
+  //     bookingId,
+  //     applicationId,
+  //     paidAmountParam,
+  //     remainingParam,
+  //     isPaidParam
+  //   });
+  //   if (checkout === 'success' && bookingId && applicationId) {
+  //     const finalize = async () => {
+  //       try {
+  //         const paidAmountNum = Number(paidAmountParam || 0) || 0;
+  //         const remainingNum = Number(remainingParam || 0) || 0;
+  //         const isPaidValue = isPaidParam || 'none';
+  //         await applicationsAPI.updateApplicationStatus(
+  //           applicationId,
+  //           bookingId,
+  //           'accepted',
+  //           { paymentPaid: paidAmountNum, remainingPayment: remainingNum, isPaid: isPaidValue }
+  //         );
+  //       } catch (e) {
+  //       } finally {
+  //         // Clean URL
+  //         const url = new URL(window.location.href);
+  //         url.search = '';
+  //         window.history.replaceState({}, document.title, url.toString());
+  //         // Reload lists
+  //         if (!isAuthenticated) return;
+  //         try {
+  //           setLoading(true);
+  //           setError('');
+  //           const res = await bookingsAPI.getMyBookings();
+  //           const myBookings = (res.data || []).filter(b => b.status === 'pending');
+  //           setBookings(myBookings);
+  //           if (myBookings.length && !expandedRequest) setExpandedRequest(myBookings[0]._id);
+  //           const entries = await Promise.all(
+  //             myBookings.map(async (b) => {
+  //               try {
+  //                 const r = await applicationsAPI.getApplicationsForBooking(b._id);
+  //                 return [b._id, r.data || []];
+  //               } catch (e) {
+  //                 return [b._id, []];
+  //               }
+  //             })
+  //           );
+  //           setApplicationsByBooking(Object.fromEntries(entries));
+  //         } catch (e) {
+  //           setError(e.message || 'Failed to load proposals');
+  //         } finally {
+  //           setLoading(false);
+  //         }
+  //       }
+  //     };
+  //     finalize();
+  //   }
+  // // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [isAuthenticated]);
 
 
   const handleAccept = (row) => {
@@ -235,7 +235,7 @@ const ProposalsPage = () => {
         setLoading(true);
         setError('');
         const res = await bookingsAPI.getMyBookings();
-        const myBookings = (res.data || []).filter(b => b.status === 'pending');
+        const myBookings = (res.data || []).filter(b => b.status === 'in_progress');
         setBookings(myBookings);
         // default expand first
         if (myBookings.length && !expandedRequest) setExpandedRequest(myBookings[0]._id);

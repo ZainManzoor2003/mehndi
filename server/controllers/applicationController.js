@@ -1,6 +1,7 @@
 const Application = require('../schemas/Application');
 const Booking = require('../schemas/Booking');
 const User = require('../schemas/User');
+const Transaction = require('../schemas/Transaction');
 
 // @desc    Apply to a booking (artist creates an application entry)
 // @route   POST /api/applications/apply
@@ -364,6 +365,31 @@ exports.updateApplicationStatus = async (req, res) => {
           booking.isPaid = isPaid;
         }
         await booking.save();
+
+        // Create transaction if payment was made
+        if (paymentPaid && paymentPaid > 0) {
+          try {
+            // Check if transaction already exists for this booking
+            const existingTransaction = await Transaction.findOne({
+              sender: req.user.id,
+              receiver: artistId,
+              bookingId: bookingId
+            });
+
+            // Only create if doesn't exist
+            if (!existingTransaction) {
+              await Transaction.create({
+                sender: req.user.id, // Client who is paying
+                receiver: artistId, // Artist receiving payment
+                bookingId: bookingId,
+                amount: Number(paymentPaid)
+              });
+            }
+          } catch (transactionError) {
+            console.error('Error creating transaction:', transactionError);
+            // Don't fail the whole request if transaction creation fails
+          }
+        }
       }
     }
 
