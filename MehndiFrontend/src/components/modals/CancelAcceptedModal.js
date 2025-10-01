@@ -1,51 +1,33 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { FaExclamationCircle } from 'react-icons/fa';
 
 // A small, themed modal for cancelling an already-accepted application.
-// Uses shared modal styles from App.css: .modal-overlay, .confirmation-modal,
-// .modal-header, .modal-title, .modal-close, .modal-text, .form-group,
-// .form-input, .form-textarea, .modal-actions, .cancel-btn, .confirm-btn.decline
-
-const REASONS = [
-  'Scheduling Conflict',
-  'Personal Emergency',
-  'Travel / Location Issue',
-  'Other',
-];
 
 const CancelAcceptedModal = ({
   isOpen,
   onClose,
   onConfirm,
-  initialReason = 'Other',
 }) => {
-  const [reason, setReason] = useState(initialReason);
-  const [details, setDetails] = useState('');
+  const [reason, setReason] = useState('');
   const [error, setError] = useState('');
-
-  const requiresDetails = useMemo(() => reason === 'Other', [reason]);
 
   useEffect(() => {
     if (isOpen) {
-      setReason(initialReason || 'Other');
-      setDetails('');
+      setReason('');
       setError('');
     }
-  }, [isOpen, initialReason]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   const handleConfirm = () => {
-    if (!reason) {
+    if (!reason.trim()) {
       setError('Please provide a cancellation reason.');
-      return;
-    }
-    if (requiresDetails && !details.trim()) {
-      setError('Please provide additional details for "Other".');
       return;
     }
     setError('');
     if (typeof onConfirm === 'function') {
-      onConfirm({ reason, details: details.trim() });
+      onConfirm({ reason: reason.trim() });
     }
   };
 
@@ -70,7 +52,7 @@ const CancelAcceptedModal = ({
         padding: '0',
         boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
       }}>
-        {/* Header with aligned title and close button */}
+        {/* Header with icon and title */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -78,14 +60,17 @@ const CancelAcceptedModal = ({
           padding: '24px 24px 20px 24px',
           borderBottom: 'none'
         }}>
-          <h3 style={{
-            margin: 0,
-            fontSize: '20px',
-            fontWeight: '600',
-            color: '#333'
-          }}>
-            Confirm Cancellation
-          </h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <FaExclamationCircle style={{ fontSize: '24px', color: '#dc2626' }} />
+            <h3 style={{
+              margin: 0,
+              fontSize: '20px',
+              fontWeight: '600',
+              color: '#333'
+            }}>
+              Cancel Booking
+            </h3>
+          </div>
           <button 
             onClick={onClose}
             style={{
@@ -115,62 +100,38 @@ const CancelAcceptedModal = ({
             color: '#666',
             lineHeight: '1.6'
           }}>
-            This action <span style={{ color: '#dc2626', fontWeight: 700 }}>cannot be undone</span>. The client will be notified immediately.
+            Please confirm you'd like to cancel this booking. A message will be sent to the client automatically.
           </p>
 
           <div style={{ marginBottom: '20px' }}>
             <label style={{
               display: 'block',
-              fontSize: '16px',
+              fontSize: '14px',
               fontWeight: '600',
               color: '#333',
               marginBottom: '8px'
             }}>
-              Reason for cancellation
+              Reason for cancellation (required):
             </label>
-            <select 
-              value={reason} 
+            <textarea
+              rows="4"
+              placeholder="e.g. I'm unwell, family emergency, etc."
+              value={reason}
               onChange={(e) => setReason(e.target.value)}
               style={{
                 width: '100%',
-                padding: '10px 12px',
+                padding: '12px',
                 fontSize: '14px',
                 border: '1px solid #ddd',
                 borderRadius: '6px',
                 backgroundColor: 'white',
                 color: '#333',
-                cursor: 'pointer',
+                resize: 'vertical',
+                fontFamily: 'inherit',
                 outline: 'none'
               }}
-            >
-              {REASONS.map((r) => (
-                <option key={r} value={r}>{r}</option>
-              ))}
-            </select>
+            />
           </div>
-
-          {requiresDetails && (
-            <div style={{ marginBottom: '12px' }}>
-              <textarea
-                rows="4"
-                placeholder="Additional details..."
-                value={details}
-                onChange={(e) => setDetails(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  fontSize: '14px',
-                  border: '1px solid #ddd',
-                  borderRadius: '6px',
-                  backgroundColor: 'white',
-                  color: '#333',
-                  resize: 'vertical',
-                  fontFamily: 'inherit',
-                  outline: 'none'
-                }}
-              />
-            </div>
-          )}
 
           {error && (
             <div style={{ 
@@ -186,16 +147,12 @@ const CancelAcceptedModal = ({
           <div style={{
             display: 'flex',
             gap: '12px',
-            marginTop: '24px',
-            justifyContent: 'right',
+            marginTop: '24px'
           }}>
-          <button className="cancel-btn" onClick={onClose}>Keep Booking</button>
-          <button className="confirm-btn decline" onClick={handleConfirm}>Confirm Cancellation</button>
-            {/* <button 
+            <button 
               onClick={onClose}
               style={{
-                flex: 1,
-                padding: '12px 20px',
+                padding: '12px 24px',
                 fontSize: '14px',
                 fontWeight: '600',
                 color: '#666',
@@ -208,13 +165,12 @@ const CancelAcceptedModal = ({
               onMouseOver={(e) => e.target.style.backgroundColor = '#e5e5e5'}
               onMouseOut={(e) => e.target.style.backgroundColor = '#f5f5f5'}
             >
-              Keep Booking
+              Go Back
             </button>
             <button 
               onClick={handleConfirm}
               style={{
-                flex: 1,
-                padding: '12px 20px',
+                padding: '12px 24px',
                 fontSize: '14px',
                 fontWeight: '600',
                 color: 'white',
@@ -228,7 +184,7 @@ const CancelAcceptedModal = ({
               onMouseOut={(e) => e.target.style.backgroundColor = '#dc2626'}
             >
               Confirm Cancellation
-            </button> */}
+            </button>
           </div>
         </div>
       </div>

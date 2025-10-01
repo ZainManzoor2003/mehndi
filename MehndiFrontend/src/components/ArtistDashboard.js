@@ -244,13 +244,13 @@ const ArtistDashboard = () => {
     setCancelAcceptedOpen(true);
   };
 
-  const handleConfirmCancelAccepted = async ({ reason, details }) => {
+  const handleConfirmCancelAccepted = async ({ reason }) => {
     try {
       // Send bookingId only; backend will locate the current artist's application for this booking
       const bookingId = cancelTarget?.bookingId;
       if (!bookingId) throw new Error('Missing bookingId for cancellation');
-      console.log('sending notifyCancelAccepted with:', { bookingId, reason, details });
-      await applicationsAPI.notifyCancelAccepted({ bookingId, reason, details });
+      console.log('sending notifyCancelAccepted with:', { bookingId, reason });
+      await applicationsAPI.notifyCancelAccepted({ bookingId, reason });
       showSuccess('Client will be notified by email');
       // Refetch applications in Applications tab
       if (applicationsFilter === 'accepted') {

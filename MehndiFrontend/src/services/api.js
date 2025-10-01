@@ -1,5 +1,5 @@
-const API_BASE_URL = 'http://localhost:5001/api';
-// const API_BASE_URL = 'https://mehndi-server.vercel.app/api';
+// const API_BASE_URL = 'http://localhost:5001/api';
+const API_BASE_URL = 'https://mehndi-server.vercel.app/api';
 
 // API utility functions
 const handleResponse = async (response) => {
@@ -549,10 +549,10 @@ export const applicationsAPI = {
       body: JSON.stringify({ bookingId, status, ...extras })
     });
   },
-  notifyCancelAccepted: async ({ bookingId, reason, details }) => {
+  notifyCancelAccepted: async ({ bookingId, reason }) => {
     return apiRequest('/applications/cancel', {
       method: 'POST',
-      body: JSON.stringify({ bookingId, reason, details })
+      body: JSON.stringify({ bookingId, reason })
     });
   },
   completeApplication: async ({ bookingId, images = [], video = '' }) => {
@@ -586,31 +586,6 @@ export const paymentsAPI = {
   },
 };
 
-// Wallet API
-export const walletAPI = {
-  getWallet: async () => {
-    return apiRequest('/wallet', {
-      method: 'GET'
-    });
-  },
-  getWalletSummary: async () => {
-    return apiRequest('/wallet/summary', {
-      method: 'GET'
-    });
-  },
-  updateWallet: async (userId, amount, operation) => {
-    return apiRequest('/wallet/update', {
-      method: 'PUT',
-      body: JSON.stringify({ userId, amount, operation })
-    });
-  },
-  getAllWallets: async () => {
-    return apiRequest('/wallet/all', {
-      method: 'GET'
-    });
-  }
-};
-
 const apiExports = {
   authAPI,
   jobsAPI,
@@ -618,7 +593,6 @@ const apiExports = {
   proposalsAPI,
   applicationsAPI,
   paymentsAPI,
-  walletAPI,
   messagesAPI,
   chatAPI,
   reviewsAPI,

@@ -1,7 +1,6 @@
 const Application = require('../schemas/Application');
 const Booking = require('../schemas/Booking');
 const User = require('../schemas/User');
-const Transaction = require('../schemas/Transaction');
 
 // @desc    Artist applies to a booking with full application details
 // @route   POST /api/applications/apply
@@ -288,73 +287,43 @@ exports.applyToBooking = async (req, res) => {
 exports.withdrawApplication = async (req, res) => {
   try {
     const { bookingId } = req.body;
-    
     if (!bookingId) {
       return res.status(400).json({ success: false, message: 'bookingId is required' });
     }
 
-    // Find the application for this artist and booking
-    const application = await Application.findOne({
-      'Booking.booking_id': bookingId,
-      'Booking.artist_id': req.user.id
-    });
+    if (!req.user || req.user.userType !== 'artist') {
+      return res.status(403).json({ success: false, message: 'Only artists can withdraw applications' });
+    }
 
+    const application = await Application.findOne({ 'Booking.artist_id': req.user.id });
     if (!application) {
       return res.status(404).json({ success: false, message: 'Application not found' });
     }
 
-    // Find the specific booking reference in the application
-    const bookingRef = application.Booking.find(
-      b => b.booking_id.toString() === bookingId && b.artist_id.toString() === req.user.id
-    );
-
-    if (!bookingRef) {
-      return res.status(404).json({ success: false, message: 'Application not found for this booking' });
+    const bookingEntry = application.Booking.find(b => b.booking_id.toString() === bookingId);
+    if (!bookingEntry) {
+      return res.status(404).json({ success: false, message: 'You have not applied to this booking' });
     }
 
-    // Check if the application status is 'applied'
-    if (bookingRef.status !== 'applied') {
-      return res.status(400).json({ 
-        success: false, 
-        message: `Cannot withdraw application with status: ${bookingRef.status}. Only applications with 'applied' status can be withdrawn.` 
-      });
+    // Only allow withdrawal if not already accepted
+    if (bookingEntry.status === 'accepted') {
+      return res.status(400).json({ success: false, message: 'Cannot withdraw an accepted application. Please contact the client to cancel.' });
     }
 
-    // Update the status to 'withdrawn'
-    await Application.updateOne(
-      {
-        _id: application._id,
-        'Booking.booking_id': bookingId,
-        'Booking.artist_id': req.user.id
-      },
-      {
-        $set: {
-          'Booking.$.status': 'withdrawn'
-        }
-      }
-    );
+    // Remove the booking entry from application
+    application.Booking = application.Booking.filter(b => b.booking_id.toString() !== bookingId);
+    await application.save();
 
-    // Update booking status to 'pending' and remove artist from appliedArtists array
+    // Remove artist from booking.appliedArtists
     await Booking.updateOne(
       { _id: bookingId },
-      { 
-        $set: { status: 'pending' },
-        $pull: { appliedArtists: req.user.id }
-      }
+      { $pull: { appliedArtists: req.user.id } }
     );
 
-    return res.status(200).json({ 
-      success: true, 
-      message: 'Application withdrawn successfully' 
-    });
-
+    return res.status(200).json({ success: true, message: 'Application withdrawn successfully' });
   } catch (error) {
     console.error('Withdraw application error:', error);
-    return res.status(500).json({ 
-      success: false, 
-      message: 'Server error while withdrawing application', 
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' 
-    });
+    return res.status(500).json({ success: false, message: 'Server error while withdrawing application' });
   }
 };
 
@@ -400,59 +369,53 @@ exports.getMyAppliedBookings = async (req, res) => {
 // @access  Private (Client owner of booking)
 exports.getApplicationsForBooking = async (req, res) => {
   try {
-    const bookingId = req.params.bookingId;
+    const { bookingId } = req.params;
     if (!bookingId) {
       return res.status(400).json({ success: false, message: 'bookingId is required' });
     }
 
-    // Ensure the booking exists and belongs to the requesting client
+    // Verify booking ownership
     const booking = await Booking.findById(bookingId).select('clientId');
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
-
     if (!req.user || req.user.userType !== 'client' || booking.clientId.toString() !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Not authorized to view applications for this booking' });
     }
 
-    // Aggregate applications for this booking and unwind the Booking array to access the embedded item
-    const mongoose = require('mongoose');
-    const results = await Application.aggregate([
-      { $unwind: '$Booking' },
-      { $match: { 'Booking.booking_id': new mongoose.Types.ObjectId(bookingId) } },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'Booking.artist_id',
-          foreignField: '_id',
-          as: 'artist'
-        }
-      },
-      { $unwind: '$artist' },
-      {
-        $project: {
-          _id: 1,
-          applicationId: '$_id',
-          bookingId: '$Booking.booking_id',
-          artistId: '$Booking.artist_id',
-          status: '$Booking.status',
-          artistDetails: '$Booking.artistDetails',
-          artist: {
-            _id: '$artist._id',
-            firstName: '$artist.firstName',
-            lastName: '$artist.lastName',
-            email: '$artist.email',
-            rating: '$artist.artist.rating'
-          }
-        }
-      },
-      { $sort: { _id: -1 } }
-    ]);
+    // Find all applications that have this booking
+    const applications = await Application.find({ 'Booking.booking_id': bookingId })
+      .populate('Booking.artist_id', 'firstName lastName email phoneNumber artist')
+      .lean();
 
-    return res.status(200).json({ success: true, count: results.length, data: results });
+    // Extract relevant booking entries and artist info
+    const result = [];
+    for (const app of applications) {
+      const bookingEntry = app.Booking.find(b => b.booking_id.toString() === bookingId);
+      if (bookingEntry && bookingEntry.artist_id) {
+        result.push({
+          applicationId: app._id,
+          artist: {
+            _id: bookingEntry.artist_id._id,
+            firstName: bookingEntry.artist_id.firstName,
+            lastName: bookingEntry.artist_id.lastName,
+            email: bookingEntry.artist_id.email,
+            phoneNumber: bookingEntry.artist_id.phoneNumber,
+            profilePicture: bookingEntry.artist_id.artist?.profilePicture,
+            bio: bookingEntry.artist_id.artist?.bio,
+            portfolioLinks: bookingEntry.artist_id.artist?.portfolioLinks
+          },
+          status: bookingEntry.status,
+          artistDetails: bookingEntry.artistDetails,
+          appliedDate: app.createdAt
+        });
+      }
+    }
+
+    return res.status(200).json({ success: true, data: result });
   } catch (error) {
     console.error('Get applications for booking error:', error);
-    return res.status(500).json({ success: false, message: 'Server error while fetching applications', error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' });
+    return res.status(500).json({ success: false, message: 'Server error while fetching applications' });
   }
 };
 
@@ -516,31 +479,6 @@ exports.updateApplicationStatus = async (req, res) => {
           booking.isPaid = isPaid;
         }
         await booking.save();
-
-        // Create transaction if payment was made
-        if (paymentPaid && paymentPaid > 0) {
-          try {
-            // Check if transaction already exists for this booking
-            const existingTransaction = await Transaction.findOne({
-              sender: req.user.id,
-              receiver: artistId,
-              bookingId: bookingId
-            });
-
-            // Only create if doesn't exist
-            if (!existingTransaction) {
-              await Transaction.create({
-                sender: req.user.id, // Client who is paying
-                receiver: artistId, // Artist receiving payment
-                bookingId: bookingId,
-                amount: Number(paymentPaid)
-              });
-            }
-          } catch (transactionError) {
-            console.error('Error creating transaction:', transactionError);
-            // Don't fail the whole request if transaction creation fails
-          }
-        }
       }
     }
 
@@ -550,7 +488,7 @@ exports.updateApplicationStatus = async (req, res) => {
     console.error('Update application status error:', error);
     return res.status(500).json({ success: false, message: 'Server error while updating application status', error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' });
   }
-};
+}
 
 
 // @desc    Artist cancels an accepted application -> notify client by email
@@ -558,10 +496,14 @@ exports.updateApplicationStatus = async (req, res) => {
 // @access  Private (Artist only)
 exports.notifyCancellationByArtist = async (req, res) => {
   try {
-    const { bookingId, reason, details } = req.body || {};
-    console.log('notifyCancellationByArtist payload:', { bookingId, reason, details, artistId: req.user?.id });
+    const { bookingId, reason } = req.body || {};
+    console.log('notifyCancellationByArtist payload:', { bookingId, reason, artistId: req.user?.id });
     if (!bookingId) {
       return res.status(400).json({ success: false, message: 'bookingId is required' });
+    }
+
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ success: false, message: 'Cancellation reason is required' });
     }
 
     if (!req.user || req.user.userType !== 'artist') {
@@ -579,11 +521,14 @@ exports.notifyCancellationByArtist = async (req, res) => {
     }
 
     // Get booking and client
-    const booking = await Booking.findById(bookingId).select('clientId eventType');
+    const booking = await Booking.findById(bookingId).select('clientId eventType firstName lastName eventDate preferredTimeSlot');
     if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
 
-    const client = await User.findById(booking.clientId).select('email');
+    const client = await User.findById(booking.clientId).select('email firstName lastName');
     if (!client || !client.email) return res.status(404).json({ success: false, message: 'Client email not found' });
+
+    // Get artist details
+    const artist = await User.findById(req.user.id).select('firstName lastName email phoneNumber');
 
     // Send email
     const nodemailer = require('nodemailer');
@@ -596,21 +541,83 @@ exports.notifyCancellationByArtist = async (req, res) => {
     });
 
     const eventType = Array.isArray(booking.eventType) ? booking.eventType.join(', ') : (booking.eventType || 'Mehndi');
+    const eventDate = booking.eventDate ? new Date(booking.eventDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
+    const eventTime = Array.isArray(booking.preferredTimeSlot) ? booking.preferredTimeSlot.join(', ') : 'Not specified';
+    
+    // Base URL for frontend (adjust as needed)
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const relistUrl = `${frontendUrl}/client-dashboard?action=relist&bookingId=${bookingId}`;
+    const refundUrl = `${frontendUrl}/client-dashboard?action=refund&bookingId=${bookingId}`;
+    
     const html = `
-      <div style="font-family:Arial,sans-serif;font-size:14px;color:#111">
-        <h2>Application Cancellation Notice</h2>
-        <p>The artist has cancelled an accepted application.</p>
-        <p><strong>Booking ID:</strong> ${bookingId}</p>
-        <p><strong>Event Type:</strong> ${eventType}</p>
-        <p><strong>Artist ID:</strong> ${req.user.id}</p>
-        ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
-        ${details ? `<p><strong>Details:</strong> ${details}</p>` : ''}
+      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,sans-serif;font-size:15px;color:#333;max-width:600px;margin:0 auto;padding:20px;background-color:#f9f9f9;">
+        <div style="background-color:white;padding:40px 35px;border-radius:12px;box-shadow:0 2px 15px rgba(0,0,0,0.08);">
+          
+          <h2 style="color:#333;margin-top:0;font-size:22px;font-weight:600;">Hi ${client.firstName},</h2>
+          
+          <p style="line-height:1.6;color:#555;">
+            We know how disappointing this must be — your booked artist, <strong>${artist.firstName} ${artist.lastName}</strong>, 
+            is no longer available for your appointment on <strong>${eventDate}</strong> at <strong>${eventTime}</strong>.
+          </p>
+
+          <div style="background-color:#fef2f2;padding:15px;border-radius:8px;margin:20px 0;border-left:4px solid #dc2626;">
+            <p style="margin:0;color:#991b1b;font-size:14px;"><strong>Reason:</strong></p>
+            <p style="margin:8px 0 0 0;color:#555;">${reason}</p>
+          </div>
+          
+          <p style="line-height:1.6;color:#555;margin-top:25px;">
+            You can now choose how you'd like to proceed:
+          </p>
+
+          <div style="background-color:#f9fafb;padding:20px;border-radius:10px;margin:20px 0;">
+            <div style="margin-bottom:20px;">
+              <p style="margin:0 0 8px 0;font-weight:600;color:#333;">1. Relist your booking request</p>
+              <p style="margin:0;color:#666;font-size:14px;line-height:1.5;">
+                We'll make your request live again so other artists can apply. 
+                Your 50% deposit will carry over — no need to pay again unless the new artist's rate is higher.
+              </p>
+            </div>
+            <div>
+              <p style="margin:0 0 8px 0;font-weight:600;color:#333;">2. Request a full refund</p>
+              <p style="margin:0;color:#666;font-size:14px;line-height:1.5;">
+                Prefer not to wait? We'll return your deposit in full.
+              </p>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:15px;margin:30px 0;">
+            <a href="${relistUrl}" style="flex:1;text-decoration:none;">
+              <div style="background-color:#d4a574;color:white;padding:14px 24px;border-radius:8px;text-align:center;font-weight:600;font-size:15px;cursor:pointer;">
+                🔄 Relist My Booking
+              </div>
+            </a>
+            <a href="${refundUrl}" style="flex:1;text-decoration:none;">
+              <div style="background-color:#10b981;color:white;padding:14px 24px;border-radius:8px;text-align:center;font-weight:600;font-size:15px;cursor:pointer;">
+                💸 Request Refund
+              </div>
+            </a>
+          </div>
+
+          <div style="background-color:#fffbeb;padding:15px;border-radius:8px;margin:25px 0;border-left:4px solid #f59e0b;">
+            <p style="margin:0;color:#92400e;font-size:14px;line-height:1.5;">
+              🔔 <strong>Note:</strong> If no new artists apply within 48 hours, we'll refund your deposit automatically — or you can contact us for help.
+            </p>
+          </div>
+          
+          <p style="line-height:1.6;color:#555;margin-top:25px;">
+            Thanks for your understanding — and if you need help updating your request or finding someone new, we're always here.
+          </p>
+          
+          <p style="margin-top:30px;color:#888;font-size:13px;border-top:1px solid #eee;padding-top:20px;">
+            — The Mehndi Me Team 💝
+          </p>
+        </div>
       </div>`;
 
     await transport.sendMail({
       from: process.env.EMAIL_USER,
       to: client.email,
-      subject: 'Artist cancelled the accepted application',
+      subject: "Don't Worry — We'll Help You Rebook or Refund Your Deposit",
       html,
     });
 
