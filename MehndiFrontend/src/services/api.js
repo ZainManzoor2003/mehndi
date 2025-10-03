@@ -282,6 +282,28 @@ export const adminAPI = {
   createBlog: async (data) => apiRequest('/admin/blogs', { method: 'POST', body: JSON.stringify(data) }),
   updateBlog: async (blogId, data) => apiRequest(`/admin/blogs/${blogId}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteBlog: async (blogId) => apiRequest(`/admin/blogs/${blogId}`, { method: 'DELETE' }),
+
+  // Analytics
+  getAnalytics: async (params) => {
+    const queryString = new URLSearchParams(params).toString();
+    return apiRequest(`/admin/analytics?${queryString}`);
+  },
+  getRequestsByStatus: async (params) => {
+    const queryString = new URLSearchParams(params).toString();
+    return apiRequest(`/admin/analytics/requests-by-status?${queryString}`);
+  },
+  getApplicationsByStatus: async (params) => {
+    const queryString = new URLSearchParams(params).toString();
+    return apiRequest(`/admin/analytics/applications-by-status?${queryString}`);
+  },
+  getGrowthOverTime: async (params) => {
+    const queryString = new URLSearchParams(params).toString();
+    return apiRequest(`/admin/analytics/growth-over-time?${queryString}`);
+  },
+  getActivityByCity: async (params) => {
+    const queryString = new URLSearchParams(params).toString();
+    return apiRequest(`/admin/analytics/activity-by-city?${queryString}`);
+  },
 };
 
 // Upload API functions

@@ -96,3 +96,9 @@ router.post('/api/admin/blogs', protect, adminOnly, adminController.createBlog);
 router.get('/api/admin/blogs', protect, adminOnly, adminController.listBlogs);
 router.put('/api/admin/blogs/:blogId', protect, adminOnly, adminController.updateBlog);
 router.delete('/api/admin/blogs/:blogId', protect, adminOnly, adminController.deleteBlog);
+
+router.get('/api/admin/analytics', protect, adminOnly, adminController.getAnalytics);
+router.get('/api/admin/analytics/requests-by-status', protect, adminOnly, adminController.getRequestsByStatus);
+router.get('/api/admin/analytics/applications-by-status', protect, adminOnly, adminController.getApplicationsByStatus);
+router.get('/api/admin/analytics/growth-over-time', protect, adminOnly, adminController.getGrowthOverTime);
+router.get('/api/admin/analytics/activity-by-city', protect, adminOnly, adminController.getActivityByCity);

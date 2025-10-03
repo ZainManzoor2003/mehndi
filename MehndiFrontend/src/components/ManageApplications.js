@@ -1,14 +1,170 @@
 import React, { useEffect, useState } from 'react';
 import AdminSidebar from './AdminSidebar';
 import { adminAPI } from '../services/api';
+import Select from 'react-select';
 
 const ManageApplications = () => {
   const [stats, setStats] = useState([]);
   const [applications, setApplications] = useState([]);
+  const [filteredApplications, setFilteredApplications] = useState([]);
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState(null);
+  const [selectedCity, setSelectedCity] = useState(null);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(15);
+  const [paginatedApplications, setPaginatedApplications] = useState([]);
+  const [selectedItemsPerPage, setSelectedItemsPerPage] = useState({ value: 15, label: '15 per page' });
+
+  // Status options
+  const statusOptions = [
+    { value: '', label: 'All Statuses' },
+    { value: 'applied', label: 'Applied' },
+    { value: 'accepted', label: 'Accepted' },
+    { value: 'completed', label: 'Completed' },
+    { value: 'cancelled', label: 'Cancelled' },
+    { value: 'expired', label: 'Expired' }
+  ];
+
+  // UK Cities options
+  const cityOptions = [
+    { value: '', label: 'All Cities' },
+    { value: 'London', label: 'London' },
+    { value: 'Birmingham', label: 'Birmingham' },
+    { value: 'Manchester', label: 'Manchester' },
+    { value: 'Glasgow', label: 'Glasgow' },
+    { value: 'Liverpool', label: 'Liverpool' },
+    { value: 'Leeds', label: 'Leeds' },
+    { value: 'Edinburgh', label: 'Edinburgh' },
+    { value: 'Bristol', label: 'Bristol' },
+    { value: 'Cardiff', label: 'Cardiff' },
+    { value: 'Sheffield', label: 'Sheffield' },
+    { value: 'Bradford', label: 'Bradford' },
+    { value: 'Leicester', label: 'Leicester' },
+    { value: 'Coventry', label: 'Coventry' },
+    { value: 'Belfast', label: 'Belfast' },
+    { value: 'Nottingham', label: 'Nottingham' },
+    { value: 'Newcastle', label: 'Newcastle upon Tyne' },
+    { value: 'Brighton', label: 'Brighton' },
+    { value: 'Hull', label: 'Hull' },
+    { value: 'Plymouth', label: 'Plymouth' },
+    { value: 'Stoke', label: 'Stoke-on-Trent' },
+    { value: 'Wolverhampton', label: 'Wolverhampton' },
+    { value: 'Derby', label: 'Derby' },
+    { value: 'Swansea', label: 'Swansea' },
+    { value: 'Southampton', label: 'Southampton' },
+    { value: 'Salford', label: 'Salford' },
+    { value: 'Aberdeen', label: 'Aberdeen' },
+    { value: 'Westminster', label: 'Westminster' },
+    { value: 'Portsmouth', label: 'Portsmouth' },
+    { value: 'York', label: 'York' }
+  ];
+
+  // Items per page options
+  const itemsPerPageOptions = [
+    { value: 5, label: '5 per page' },
+    { value: 15, label: '15 per page' },
+    { value: 30, label: '30 per page' }
+  ];
+
+  // Filter applications based on search term, status, and city
+  useEffect(() => {
+    let filtered = applications;
+
+    // Filter by search term (artist name, client name, budget, etc.)
+    if (searchTerm) {
+      filtered = filtered.filter(app => {
+        const searchLower = searchTerm.toLowerCase();
+        return (
+          app.artist?.firstName?.toLowerCase().includes(searchLower) ||
+          app.artist?.lastName?.toLowerCase().includes(searchLower) ||
+          app.booking?.client?.firstName?.toLowerCase().includes(searchLower) ||
+          app.booking?.client?.lastName?.toLowerCase().includes(searchLower) ||
+          app.proposedBudget?.toString().includes(searchTerm) ||
+          app.booking?.budgetMin?.toString().includes(searchTerm) ||
+          app.booking?.budgetMax?.toString().includes(searchTerm) ||
+          app.booking?.title?.toLowerCase().includes(searchLower) ||
+          app.booking?.location?.toLowerCase().includes(searchLower)
+        );
+      });
+    }
+
+    // Filter by status
+    if (selectedStatus?.value) {
+      filtered = filtered.filter(app => app.status === selectedStatus.value);
+    }
+
+    // Filter by city
+    if (selectedCity?.value) {
+      filtered = filtered.filter(app => 
+        app.booking?.location?.toLowerCase().includes(selectedCity.value.toLowerCase())
+      );
+    }
+
+    setFilteredApplications(filtered);
+    setCurrentPage(1); // Reset to first page when filters change
+  }, [applications, searchTerm, selectedStatus, selectedCity]);
+
+  // Pagination logic
+  useEffect(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    setPaginatedApplications(filteredApplications.slice(startIndex, endIndex));
+  }, [filteredApplications, currentPage, itemsPerPage]);
+
+  // Calculate total pages
+  const totalPages = Math.ceil(filteredApplications.length / itemsPerPage);
+
+  // Pagination handlers
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (option) => {
+    setItemsPerPage(option.value);
+    setSelectedItemsPerPage(option);
+    setCurrentPage(1); // Reset to first page when changing items per page
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  // Generate page numbers array
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      const startPage = Math.max(1, currentPage - 2);
+      const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+      
+      for (let i = startPage; i <= endPage; i++) {
+        pages.push(i);
+      }
+    }
+    
+    return pages;
+  };
 
   useEffect(() => {
     (async () => {
@@ -54,6 +210,8 @@ const ManageApplications = () => {
           <p>Loading...</p>
         ) : (
           <>
+            
+
             {/* Application Stats Cards */}
             <div className="booking-stats">
               <div className="stat-card">
@@ -120,32 +278,412 @@ const ManageApplications = () => {
                 );
               })}
             </div>
-            <div className="table-responsive" style={{ marginTop: '1rem' }}>
-              <table className="styled-table">
-                <thead>
-                  <tr>
-                    <th>Artist</th>
-                    <th>Status</th>
-                    <th>Proposed Budget</th>
-                    <th>Booking Budget</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {applications.map(a => (
-                    <tr key={a.applicationId}>
-                      <td>{a.artist?.firstName} {a.artist?.lastName}</td>
-                      <td>{a.status}</td>
-                      <td>£{a.proposedBudget}</td>
-                      <td>£{a.booking?.budgetMin} - £{a.booking?.budgetMax}</td>
-                      <td>
-                        <button className="btn btn-outline" onClick={() => setSelected(a)}>View Details</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+
+            {/* Filter Section */}
+            <div className="filter-section" style={{
+              backgroundColor: '#fff',
+              padding: '1.5rem',
+              borderRadius: '12px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              marginBottom: '2rem',
+              border: '1px solid #e5e7eb'
+            }}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: (searchTerm || selectedStatus?.value || selectedCity?.value) ? '1fr 1fr 1fr auto' : '1fr 1fr 1fr',
+                gap: '1rem',
+                alignItems: 'end'
+              }}>
+                {/* Search Input */}
+                <div className="filter-item">
+                  <label style={{
+                    display: 'block',
+                    marginBottom: '0.5rem',
+                    fontWeight: '600',
+                    color: '#374151',
+                    fontSize: '0.875rem'
+                  }}>
+                    Search Applications
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Search by artist, client, budget..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '8px',
+                      fontSize: '0.875rem',
+                      transition: 'border-color 0.2s',
+                      backgroundColor: '#f9fafb'
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#d4a574';
+                      e.target.style.backgroundColor = '#fff';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#d1d5db';
+                      e.target.style.backgroundColor = '#f9fafb';
+                    }}
+                  />
+                </div>
+
+                {/* Status Dropdown */}
+                <div className="filter-item">
+                  <label style={{
+                    display: 'block',
+                    marginBottom: '0.5rem',
+                    fontWeight: '600',
+                    color: '#374151',
+                    fontSize: '0.875rem'
+                  }}>
+                    Filter by Status
+                  </label>
+                  <Select
+                    value={selectedStatus}
+                    onChange={setSelectedStatus}
+                    options={statusOptions}
+                    placeholder="All Statuses"
+                    styles={{
+                      control: (provided, state) => ({
+                        ...provided,
+                        border: '2px solid #d1d5db',
+                        borderRadius: '8px',
+                        minHeight: '42px',
+                        backgroundColor: '#f9fafb',
+                        boxShadow: 'none',
+                        '&:hover': {
+                          borderColor: '#d4a574'
+                        },
+                        ...(state.isFocused && {
+                          borderColor: '#d4a574',
+                          backgroundColor: '#fff'
+                        })
+                      }),
+                      placeholder: (provided) => ({
+                        ...provided,
+                        color: '#6b7280',
+                        fontSize: '0.875rem'
+                      }),
+                      option: (provided, state) => ({
+                        ...provided,
+                        backgroundColor: state.isSelected ? '#d4a574' : state.isFocused ? '#fef7ed' : '#fff',
+                        color: state.isSelected ? '#fff' : '#374151',
+                        fontSize: '0.875rem'
+                      }),
+                      singleValue: (provided) => ({
+                        ...provided,
+                        color: '#374151',
+                        fontSize: '0.875rem'
+                      })
+                    }}
+                  />
+                </div>
+
+                {/* Cities Dropdown */}
+                <div className="filter-item">
+                  <label style={{
+                    display: 'block',
+                    marginBottom: '0.5rem',
+                    fontWeight: '600',
+                    color: '#374151',
+                    fontSize: '0.875rem'
+                  }}>
+                    Filter by City
+                  </label>
+                  <Select
+                    value={selectedCity}
+                    onChange={setSelectedCity}
+                    options={cityOptions}
+                    placeholder="All Cities"
+                    styles={{
+                      control: (provided, state) => ({
+                        ...provided,
+                        border: '2px solid #d1d5db',
+                        borderRadius: '8px',
+                        minHeight: '42px',
+                        backgroundColor: '#f9fafb',
+                        boxShadow: 'none',
+                        '&:hover': {
+                          borderColor: '#d4a574'
+                        },
+                        ...(state.isFocused && {
+                          borderColor: '#d4a574',
+                          backgroundColor: '#fff'
+                        })
+                      }),
+                      placeholder: (provided) => ({
+                        ...provided,
+                        color: '#6b7280',
+                        fontSize: '0.875rem'
+                      }),
+                      option: (provided, state) => ({
+                        ...provided,
+                        backgroundColor: state.isSelected ? '#d4a574' : state.isFocused ? '#fef7ed' : '#fff',
+                        color: state.isSelected ? '#fff' : '#374151',
+                        fontSize: '0.875rem'
+                      }),
+                      singleValue: (provided) => ({
+                        ...provided,
+                        color: '#374151',
+                        fontSize: '0.875rem'
+                      })
+                    }}
+                  />
+                </div>
+
+                {/* Clear Filters Button */}
+                {(searchTerm || selectedStatus?.value || selectedCity?.value) && (
+                  <div className="filter-item" style={{ display: 'flex', alignItems: 'end' }}>
+                    <button
+                      onClick={() => {
+                        setSearchTerm('');
+                        setSelectedStatus(null);
+                        setSelectedCity(null);
+                      }}
+                      style={{
+                        padding: '0.75rem 1rem',
+                        backgroundColor: 'transparent',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '6px',
+                        color: '#6b7280',
+                        fontSize: '0.875rem',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        whiteSpace: 'nowrap'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.borderColor = '#d4a574';
+                        e.target.style.color = '#d4a574';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.borderColor = '#d1d5db';
+                        e.target.style.color = '#6b7280';
+                      }}
+                    >
+                      Clear Filters
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
+
+            <div className="table-responsive" style={{ marginTop: '1rem' }}>
+              {paginatedApplications.length === 0 && filteredApplications.length === 0 ? (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '3rem 1rem',
+                  backgroundColor: '#f9fafb',
+                  borderRadius: '8px',
+                  border: '1px solid #e5e7eb'
+                }}>
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.5" style={{ marginBottom: '1rem' }}>
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="m21 21-4.35-4.35"/>
+                  </svg>
+                  <h3 style={{ color: '#6b7280', marginBottom: '0.5rem', fontSize: '1.125rem' }}>No applications found</h3>
+                  <p style={{ color: '#9ca3af', fontSize: '0.875rem' }}>
+                    {searchTerm || selectedStatus?.value || selectedCity?.value 
+                      ? 'Try adjusting your filters to see more results.' 
+                      : 'No applications have been submitted yet.'}
+                  </p>
+                </div>
+              ) : (
+                <table className="styled-table">
+                  <thead>
+                    <tr>
+                      <th>Artist</th>
+                      <th>Status</th>
+                      <th>Proposed Budget</th>
+                      <th>Booking Budget</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedApplications.map(a => (
+                      <tr key={a.applicationId}>
+                        <td>{a.artist?.firstName} {a.artist?.lastName}</td>
+                        <td>{a.status}</td>
+                        <td>£{a.proposedBudget}</td>
+                        <td>£{a.booking?.budgetMin} - £{a.booking?.budgetMax}</td>
+                        <td>
+                          <button className="btn btn-outline" onClick={() => setSelected(a)}>View Details</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            {/* Pagination Component */}
+            {filteredApplications.length > 0 && (
+              <div className="pagination-container" style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginTop: '2rem',
+                padding: '1rem 0',
+                borderTop: '1px solid #e5e7eb'
+              }}>
+                {/* Items per page selector */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>Show:</span>
+                  <Select
+                    value={selectedItemsPerPage}
+                    onChange={handleItemsPerPageChange}
+                    options={itemsPerPageOptions}
+                    menuPlacement="top"
+                    styles={{
+                      control: (provided) => ({
+                        ...provided,
+                        border: '1px solid #d1d5db',
+                        borderRadius: '6px',
+                        minHeight: '36px',
+                        width: '120px',
+                        backgroundColor: '#f9fafb',
+                        boxShadow: 'none',
+                        '&:hover': {
+                          borderColor: '#d4a574'
+                        }
+                      }),
+                      placeholder: (provided) => ({
+                        ...provided,
+                        color: '#6b7280',
+                        fontSize: '0.75rem'
+                      }),
+                      option: (provided, state) => ({
+                        ...provided,
+                        backgroundColor: state.isSelected ? '#d4a574' : state.isFocused ? '#fef7ed' : '#fff',
+                        color: state.isSelected ? '#fff' : '#374151',
+                        fontSize: '0.75rem'
+                      }),
+                      singleValue: (provided) => ({
+                        ...provided,
+                        color: '#374151',
+                        fontSize: '0.75rem'
+                      })
+                    }}
+                  />
+                  <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                    of {filteredApplications.length} applications
+                  </span>
+                </div>
+
+                {/* Pagination controls */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {/* Previous button */}
+                  <button
+                    onClick={handlePreviousPage}
+                    disabled={currentPage === 1}
+                    style={{
+                      padding: '0.5rem 0.75rem',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      backgroundColor: currentPage === 1 ? '#f9fafb' : '#fff',
+                      color: currentPage === 1 ? '#9ca3af' : '#374151',
+                      fontSize: '0.875rem',
+                      cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.25rem'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (currentPage !== 1) {
+                        e.target.style.borderColor = '#d4a574';
+                        e.target.style.color = '#d4a574';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (currentPage !== 1) {
+                        e.target.style.borderColor = '#d1d5db';
+                        e.target.style.color = '#374151';
+                      }
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="15,18 9,12 15,6"/>
+                    </svg>
+                    Previous
+                  </button>
+
+                  {/* Page numbers */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    {getPageNumbers().map((pageNum) => (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        style={{
+                          padding: '0.5rem 0.75rem',
+                          border: `1px solid ${currentPage === pageNum ? '#d4a574' : '#d1d5db'}`,
+                          borderRadius: '6px',
+                          backgroundColor: currentPage === pageNum ? '#d4a574' : '#fff',
+                          color: currentPage === pageNum ? '#fff' : '#374151',
+                          fontSize: '0.875rem',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          minWidth: '40px'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (currentPage !== pageNum) {
+                            e.target.style.borderColor = '#d4a574';
+                            e.target.style.backgroundColor = '#fef7ed';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (currentPage !== pageNum) {
+                            e.target.style.borderColor = '#d1d5db';
+                            e.target.style.backgroundColor = '#fff';
+                          }
+                        }}
+                      >
+                        {pageNum}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Next button */}
+                  <button
+                    onClick={handleNextPage}
+                    disabled={currentPage === totalPages}
+                    style={{
+                      padding: '0.5rem 0.75rem',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      backgroundColor: currentPage === totalPages ? '#f9fafb' : '#fff',
+                      color: currentPage === totalPages ? '#9ca3af' : '#374151',
+                      fontSize: '0.875rem',
+                      cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.25rem'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (currentPage !== totalPages) {
+                        e.target.style.borderColor = '#d4a574';
+                        e.target.style.color = '#d4a574';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (currentPage !== totalPages) {
+                        e.target.style.borderColor = '#d1d5db';
+                        e.target.style.color = '#374151';
+                      }
+                    }}
+                  >
+                    Next
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="9,18 15,12 9,6"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            )}
+
             {selected && (
               <div className="modal-overlay" onClick={() => setSelected(null)}>
                 <div className="payment-modal" onClick={(e)=>e.stopPropagation()} style={{ maxWidth: '700px', maxHeight: '90vh', overflowY: 'auto' }}>
@@ -225,7 +763,7 @@ const ManageApplications = () => {
                     )}
 
                     {/* Video Section */}
-                    {selected.booking?.video && (
+                    {selected.booking?.video && selected.booking.video !== "" && (
                       <div className="detail-card" style={{ marginTop: '1.5rem' }}>
                         <h3 className="modal-section-title">Uploaded Video</h3>
                         <div style={{ marginTop: '10px', borderRadius: '8px', overflow: 'hidden', border: '2px solid #d4a574' }}>
