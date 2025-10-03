@@ -149,8 +149,11 @@ const getWalletSummary = async (req, res) => {
     const wallet = await Wallet.findOne({ userId });
     const remainingBalance = wallet ? wallet.walletAmount : 0;
     
-    // Calculate total paid from transactions where user is sender
-    const transactions = await Transaction.find({ sender: userId });
+    // Calculate total paid from transactions where user is sender (excluding refunds)
+    const transactions = await Transaction.find({ 
+      sender: userId,
+      transactionType: { $ne: 'refund' }
+    });
     const totalPaid = transactions.reduce((sum, transaction) => sum + transaction.amount, 0);
 
     return res.status(200).json({ 

@@ -3,18 +3,19 @@ const router = express.Router();
 
 // Auth routes
 const { signup, login, me, updateProfile, googleAuth } = require('../controllers/authController');
-const { createBooking, getClientBookings, getAllBookings, getBookingById, updateBookingStatus, updateBooking, deleteBooking, getPendingBookings, completeBooking } = require('../controllers/bookingController');
+const { createBooking, getClientBookings, getAllBookings, getBookingById, updateBookingStatus, updateBooking, deleteBooking, getPendingBookings, completeBooking, cancelBooking, updateBookingPaymentStatus } = require('../controllers/bookingController');
 
 const { applyToBooking, getMyAppliedBookings, getApplicationsForBooking, updateApplicationStatus, withdrawApplication, notifyCancellationByArtist, completeApplication, addApplicationNote, getApplicationNotes } = require('../controllers/applicationController');
 
 const { protect } = require('../middleware/auth');
 const { adminOnly } = require('../middleware/auth');
 const adminController = require('../controllers/adminController');
-const { createCheckoutSession } = require('../controllers/paymentController');
+const { createCheckoutSession, createRemainingCheckoutSession } = require('../controllers/paymentController');
 const reviewController = require('../controllers/reviewController');
 const chatController = require('../controllers/chatController');
 const portfolioController = require('../controllers/portfolioController');
 const { getWallet, updateWallet, getAllWallets, getWalletSummary } = require('../controllers/walletController');
+const { getAllTransactions, getMyTransactions } = require('../controllers/transactionController');
 
 // Auth routes
 router.post('/api/auth/register', signup);
@@ -33,6 +34,8 @@ router.get('/api/bookings/completed', protect, reviewController.listCompletedBoo
 router.get('/api/bookings/:id', protect, getBookingById);
 router.put('/api/bookings/:id/status', protect, updateBookingStatus);
 router.put('/api/bookings/:id/complete', protect, completeBooking);
+router.put('/api/bookings/payment-status', protect, updateBookingPaymentStatus);
+router.put('/api/bookings/cancel', protect, cancelBooking);
 
 // Reviews
 router.post('/api/reviews', protect, reviewController.createReview);
@@ -53,6 +56,7 @@ router.get('/api/applications/notes/:bookingId', protect, getApplicationNotes); 
 // Payments (removed)
 // Payments
 router.post('/api/payments/create-checkout', protect, createCheckoutSession);
+router.post('/api/payments/remaining-checkout', protect, createRemainingCheckoutSession);
 
 
 
@@ -74,6 +78,10 @@ router.get('/api/wallet', protect, getWallet);
 router.get('/api/wallet/summary', protect, getWalletSummary);
 router.put('/api/wallet/update', protect, updateWallet);
 router.get('/api/wallet/all', protect, getAllWallets);
+
+// Transaction routes
+router.get('/api/transactions', protect, getAllTransactions);
+router.get('/api/transactions/my-transactions', protect, getMyTransactions);
 
 module.exports = router;
 // Admin routes

@@ -29,6 +29,7 @@ import AdminUpdateProfile from './components/AdminUpdateProfile';
 import ManageBookings from './components/ManageBookings';
 import PaymentSuccess from './components/PaymentSuccess';
 import PaymentCancel from './components/PaymentCancel';
+import PaymentRescheduleBooking from './components/PaymentRescheduleBooking';
 
 // Main Landing Page Component
 const LandingPage = () => (
@@ -69,6 +70,11 @@ function App() {
             <Route path="/booking" element={<BookingForm />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
             <Route path="/payment-cancel" element={<PaymentCancel />} />
+            <Route path="/payment-reschedule-booking/:bookingId" element={
+              <RoleProtectedRoute allowedRoles={["client"]}>
+                <PaymentRescheduleBooking />
+              </RoleProtectedRoute>
+            } />
             <Route path="/dashboard/:tab?" element={
               <RoleProtectedRoute allowedRoles={["client"]}>
                 <ClientDashboard />

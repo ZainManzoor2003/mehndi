@@ -1,5 +1,5 @@
-// const API_BASE_URL = 'http://localhost:5001/api';
-const API_BASE_URL = 'https://mehndi-server.vercel.app/api';
+const API_BASE_URL = 'http://localhost:5001/api';
+// const API_BASE_URL = 'https://mehndi-server.vercel.app/api';
 
 // API utility functions
 const handleResponse = async (response) => {
@@ -452,6 +452,30 @@ export const bookingsAPI = {
       method: 'DELETE',
     });
   },
+
+  // Cancel booking with reason and details
+  cancelBooking: async ({ bookingId, cancellationReason, cancellationDescription,artistId }) => {
+    return apiRequest('/bookings/cancel', {
+      method: 'PUT',
+      body: JSON.stringify({ bookingId, cancellationReason, cancellationDescription,artistId }),
+    });
+  },
+
+  // Create remaining payment checkout
+  createRemainingPayment: async ({ bookingId, remainingAmount,artistId }) => {
+    return apiRequest('/payments/remaining-checkout', {
+      method: 'POST',
+      body: JSON.stringify({ bookingId, remainingAmount,artistId}),
+    });
+  },
+
+  // Update booking payment status
+  updateBookingPaymentStatus: async ({ isPaid, remainingPayment, bookingId,artistId }) => {
+    return apiRequest(`/bookings/payment-status`, {
+      method: 'PUT',
+      body: JSON.stringify({ isPaid, remainingPayment, bookingId,artistId }),
+    });
+  },
 };
 
 // Proposals API
@@ -611,6 +635,20 @@ export const walletAPI = {
   }
 };
 
+// Transaction API
+export const transactionAPI = {
+  getAllTransactions: async () => {
+    return apiRequest('/transactions', {
+      method: 'GET'
+    });
+  },
+  getMyTransactions: async () => {
+    return apiRequest('/transactions/my-transactions', {
+      method: 'GET'
+    });
+  }
+};
+
 
 const apiExports = {
   authAPI,
@@ -627,7 +665,8 @@ const apiExports = {
   uploadAPI,
   notificationsAPI,
   portfoliosAPI,
-  walletAPI
+  walletAPI,
+  transactionAPI
 };
 
 export default apiExports; 

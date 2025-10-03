@@ -20,6 +20,11 @@ const transactionSchema = new mongoose.Schema({
     type: Number,
     required: true,
     min: 0
+  },
+  transactionType: {
+    type: String,
+    required: true,
+    enum: ['half', 'full', 'refund','admin-fee']
   }
 }, {
   timestamps: true

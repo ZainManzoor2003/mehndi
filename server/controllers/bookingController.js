@@ -1,5 +1,8 @@
 const Booking = require('../schemas/Booking');
 const User = require('../schemas/User');
+const Transaction = require('../schemas/Transaction');
+const Wallet = require('../schemas/Wallet');
+const Application = require('../schemas/Application');
 
 // @desc    Create a new booking
 // @route   POST /api/bookings
@@ -452,6 +455,455 @@ const completeBooking = async (req, res) => {
   }
 };
 
+// @desc    Cancel a booking with reason and details
+// @route   PUT /api/bookings/cancel
+// @access  Private (Client only)
+const cancelBooking = async (req, res) => {
+  try {
+    const { bookingId, cancellationReason, cancellationDescription, artistId } = req.body;
+
+    // Validate required fields
+    if (!bookingId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Booking ID is required'
+      });
+    }
+
+    if (!artistId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Artist ID is required'
+      });
+    }
+
+    if (!cancellationReason) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cancellation reason is required'
+      });
+    }
+
+    // If reason is 'Other', description is required
+    if (cancellationReason === 'Other' && (!cancellationDescription || !cancellationDescription.trim())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cancellation description is required when reason is "Other"'
+      });
+    }
+
+    // Find the booking
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    // Verify ownership
+    if (booking.clientId.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to cancel this booking'
+      });
+    }
+
+    // Check if booking can be cancelled
+    if (booking.status === 'cancelled') {
+      return res.status(400).json({
+        success: false,
+        message: 'Booking is already cancelled'
+      });
+    }
+
+    if (booking.status === 'completed') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot cancel a completed booking'
+      });
+    }
+
+    // Update booking with cancellation details
+    booking.status = 'cancelled';
+    booking.cancellationReason = cancellationReason;
+    booking.cancellationDescription = cancellationDescription || null;
+    booking.updatedAt = new Date();
+
+    await booking.save();
+
+    // Update application status to cancelled for this booking and artist
+    await Application.updateOne(
+      { 
+        'Booking.booking_id': bookingId,
+        'Booking.artist_id': artistId
+      },
+      { 
+        $set: { 'Booking.$.status': 'cancelled' }
+      }
+    );
+
+    console.log('Application status updated to cancelled for booking:', bookingId, 'artist:', artistId);
+
+    // Check if refund should be processed (14-day rule)
+    const eventDate = new Date(booking.eventDate);
+    const today = new Date();
+    const diffDays = Math.ceil((eventDate - today) / (1000 * 60 * 60 * 24));
+    const paidAmount = parseFloat(booking.paymentPaid) || 0;
+
+    // console.log('Cancellation check:', { eventDate, today, diffDays, paidAmount });
+
+    if (diffDays > 14 && paidAmount > 0) {
+      // Calculate 10% fee (90% refund to client, 10% to admin)
+      const refundAmount = paidAmount * 0.9; // 90% refund
+      const adminFee = paidAmount * 0.1; // 10% admin fee
+
+      // Find admin user and their wallet
+      const adminUser = await User.findOne({ userType: 'admin' });
+      if (!adminUser) {
+        console.log('No admin user found');
+        return res.status(500).json({
+          success: false,
+          message: 'Admin user not found'
+        });
+      }
+
+      let adminWallet = await Wallet.findOne({ userId: adminUser._id });
+      if (!adminWallet) {
+        console.log('Admin wallet not found for user:', adminUser._id);
+        return res.status(500).json({
+          success: false,
+          message: 'Admin wallet not found'
+        });
+      }
+
+      // Add 10% fee to admin wallet
+      adminWallet.walletAmount += adminFee;
+      await adminWallet.save();
+
+      // Add refund amount to client's wallet
+      let clientWallet = await Wallet.findOne({ userId: req.user.id });
+      if (!clientWallet) {
+        console.log('Client wallet not found for user:', req.user.id);
+        return res.status(500).json({
+          success: false,
+          message: 'Client wallet not found'
+        });
+      }
+
+      // Add refund amount to client wallet
+      clientWallet.walletAmount += refundAmount;
+      await clientWallet.save();
+
+      console.log('Client wallet updated:', {
+        userId: req.user.id,
+        refundAmount: refundAmount,
+        newBalance: clientWallet.walletAmount
+      });
+
+      // Find the original transaction to update
+      const originalTransaction = await Transaction.findOne({
+        sender: req.user.id,
+        receiver: artistId,
+        bookingId: bookingId
+      });
+
+      if (originalTransaction) {
+        // Update original transaction to refund type with 90% amount
+        originalTransaction.amount = refundAmount;
+        originalTransaction.transactionType = 'refund';
+        originalTransaction.updatedAt = new Date();
+        await originalTransaction.save();
+
+        console.log('Transaction updated for refund:', {
+          originalAmount: paidAmount,
+          refundAmount: refundAmount,
+          adminFee: adminFee
+        });
+      } else {
+        console.log('No original transaction found for booking:', bookingId);
+      }
+
+      // Create admin transaction record
+      const adminTransaction = new Transaction({
+        sender: req.user.id,
+        receiver: adminUser._id, // Admin user ID
+        bookingId: bookingId,
+        amount: adminFee,
+        transactionType: 'admin-fee'
+      });
+      await adminTransaction.save();
+
+      console.log('Refund processed:', {
+        totalPaid: paidAmount,
+        clientRefund: refundAmount,
+        adminFee: adminFee,
+        daysUntilEvent: diffDays
+      });
+    } else if (diffDays >= 7 && diffDays <= 14 && paidAmount > 0) {
+      // 7-14 days: 50% refund to client, 50% to admin
+      const refundAmount = paidAmount * 0.5; // 50% refund to client
+      const adminFee = paidAmount * 0.5; // 50% admin fee
+
+      // Find admin user and their wallet
+      const adminUser = await User.findOne({ userType: 'admin' });
+      if (!adminUser) {
+        console.log('No admin user found');
+        return res.status(500).json({
+          success: false,
+          message: 'Admin user not found'
+        });
+      }
+
+      let adminWallet = await Wallet.findOne({ userId: adminUser._id });
+      if (!adminWallet) {
+        console.log('Admin wallet not found for user:', adminUser._id);
+        return res.status(500).json({
+          success: false,
+          message: 'Admin wallet not found'
+        });
+      }
+
+      // Add 50% fee to admin wallet
+      adminWallet.walletAmount += adminFee;
+      await adminWallet.save();
+
+      // Add 50% refund to client's wallet
+      let clientWallet = await Wallet.findOne({ userId: req.user.id });
+      if (!clientWallet) {
+        console.log('Client wallet not found for user:', req.user.id);
+        return res.status(500).json({
+          success: false,
+          message: 'Client wallet not found'
+        });
+      }
+
+      // Add refund amount to client wallet
+      clientWallet.walletAmount += refundAmount;
+      await clientWallet.save();
+
+      console.log('Client wallet updated (50% refund):', {
+        userId: req.user.id,
+        refundAmount: refundAmount,
+        newBalance: clientWallet.walletAmount
+      });
+
+      // Find the original transaction to update
+      const originalTransaction = await Transaction.findOne({
+        sender: req.user.id,
+        receiver: artistId,
+        bookingId: bookingId
+      });
+
+      if (originalTransaction) {
+        // Update original transaction to refund type with 50% amount
+        originalTransaction.amount = refundAmount;
+        originalTransaction.transactionType = 'refund';
+        originalTransaction.updatedAt = new Date();
+        await originalTransaction.save();
+
+        console.log('Transaction updated for 50% refund:', {
+          originalAmount: paidAmount,
+          refundAmount: refundAmount,
+          adminFee: adminFee
+        });
+      } else {
+        console.log('No original transaction found for booking:', bookingId);
+      }
+
+      // Create admin transaction record
+      const adminTransaction = new Transaction({
+        sender: req.user.id,
+        receiver: adminUser._id, // Admin user ID
+        bookingId: bookingId,
+        amount: adminFee,
+        transactionType: 'admin-fee'
+      });
+      await adminTransaction.save();
+
+      console.log('50% refund processed:', {
+        totalPaid: paidAmount,
+        clientRefund: refundAmount,
+        adminFee: adminFee,
+        daysUntilEvent: diffDays
+      });
+    } else {
+      console.log('No refund processed:', {
+        daysUntilEvent: diffDays,
+        paidAmount: paidAmount,
+        reason: diffDays < 7 ? 'Less than 7 days' : 'No payment made'
+      });
+    }
+
+    // TODO: Notify assigned artists about cancellation
+    // TODO: Send cancellation email to client
+
+    // Prepare response data
+    const responseData = {
+      bookingId: booking._id,
+      status: booking.status,
+      cancellationReason: booking.cancellationReason,
+      cancellationDescription: booking.cancellationDescription,
+      cancelledAt: booking.updatedAt,
+      refundProcessed: false,
+      refundAmount: 0,
+      adminFee: 0
+    };
+
+    // Add refund information if applicable
+    if (diffDays > 14 && paidAmount > 0) {
+      responseData.refundProcessed = true;
+      responseData.refundAmount = paidAmount * 0.9;
+      responseData.adminFee = paidAmount * 0.1;
+      responseData.daysUntilEvent = diffDays;
+      responseData.refundType = '90% refund';
+    } else if (diffDays >= 7 && diffDays <= 14 && paidAmount > 0) {
+      responseData.refundProcessed = true;
+      responseData.refundAmount = paidAmount * 0.5;
+      responseData.adminFee = paidAmount * 0.5;
+      responseData.daysUntilEvent = diffDays;
+      responseData.refundType = '50% refund';
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Booking cancelled successfully',
+      data: responseData
+    });
+
+  } catch (error) {
+    console.error('Cancel booking error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while cancelling booking',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+};
+
+// @desc    Update booking payment status for remaining payment
+// @route   PUT /api/bookings/:id/payment-status
+// @access  Private (Client only)
+const updateBookingPaymentStatus = async (req, res) => {
+  try {
+    const { isPaid, remainingPayment, bookingId, artistId} = req.body;
+
+    // Validate required fields
+    if (!isPaid) {
+      return res.status(400).json({
+        success: false,
+        message: 'isPaid status is required'
+      });
+    }
+
+    if (!bookingId) {
+      return res.status(400).json({
+        success: false,
+        message: 'bookingId is required'
+      });
+    }
+
+    // Trim whitespace from bookingId
+    const trimmedBookingId = bookingId.trim();
+
+    console.log('Update payment status - Request data:', {
+      bookingId: bookingId,
+      trimmedBookingId: trimmedBookingId,
+      isPaid: isPaid,
+      remainingPayment: remainingPayment
+    });
+
+    // Find the booking
+    const booking = await Booking.findById(trimmedBookingId);
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    // Verify ownership
+    if (booking.clientId.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to update this booking'
+      });
+    }
+
+    // Update booking payment fields
+    booking.isPaid = isPaid;
+    
+    // Add remaining amount to existing paymentPaid amount
+    const existingPaymentPaid = Number(booking.paymentPaid) || 0;
+    const remainingAmount = Number(remainingPayment) || 0;
+    const totalPaidAmount = existingPaymentPaid + remainingAmount;
+    
+    booking.paymentPaid = String(totalPaidAmount);
+    
+    if (remainingPayment !== undefined) {
+      booking.remainingPayment = String(remainingPayment);
+    }
+    booking.updatedAt = new Date();
+
+    console.log('Payment calculation:', {
+      existingPaymentPaid: existingPaymentPaid,
+      remainingAmount: remainingAmount,
+      totalPaidAmount: totalPaidAmount,
+      newRemainingPayment: remainingPayment
+    });
+
+    await booking.save();
+
+    // Create transaction record for remaining payment
+    if (artistId && isPaid === 'full') {
+      const transactionAmount = Number(remainingPayment) || 0;
+      
+      const transaction = new Transaction({
+        sender: req.user.id,
+        receiver: artistId,
+        bookingId: trimmedBookingId,
+        amount: transactionAmount,
+        transactionType: 'full'
+      });
+      
+      await transaction.save();
+      
+      console.log('Transaction created for remaining payment:', {
+        sender: req.user.id,
+        receiver: artistId,
+        bookingId: trimmedBookingId,
+        amount: transactionAmount,
+        transactionType: 'full'
+      });
+    }
+
+    console.log('Booking payment status updated:', {
+      bookingId: trimmedBookingId,
+      isPaid: isPaid,
+      remainingPayment: remainingPayment
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Booking payment status updated successfully',
+      data: {
+        bookingId: booking._id,
+        isPaid: booking.isPaid,
+        remainingPayment: booking.remainingPayment,
+        updatedAt: booking.updatedAt
+      }
+    });
+
+  } catch (error) {
+    console.error('Update booking payment status error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while updating booking payment status',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+};
+
 module.exports = {
   createBooking,
   getClientBookings,
@@ -461,6 +913,8 @@ module.exports = {
   completeBooking,
   updateBooking,
   deleteBooking,
-  getPendingBookings
+  getPendingBookings,
+  cancelBooking,
+  updateBookingPaymentStatus
 };
 

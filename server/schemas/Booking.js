@@ -199,6 +199,20 @@ const BookingSchema = new mongoose.Schema({
     default: 'pending'
   },
 
+  // Cancellation Details
+  cancellationReason: {
+    type: String,
+    trim: true,
+    maxlength: 200,
+    default: null
+  },
+  cancellationDescription: {
+    type: String,
+    trim: true,
+    maxlength: 1000,
+    default: null
+  },
+
   // Payment
   paymentPaid: {
     type: String,

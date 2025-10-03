@@ -54,12 +54,16 @@ const AllBookings = () => {
       coveragePreference: booking.coveragePreference || '',
       additionalRequests: booking.additionalRequests || ''
     });
+    // Prevent body scroll when modal opens
+    document.body.style.overflow = 'hidden';
     setEditOpen(true);
   };
 
   const closeEditModal = () => {
     setEditOpen(false);
     setEditing(null);
+    // Restore body scroll when modal closes
+    document.body.style.overflow = 'auto';
   };
 
   const handleFormChange = (e) => {
@@ -223,8 +227,13 @@ const AllBookings = () => {
     }
 
     try {
-      // Update booking status to cancelled
-      await bookingsAPI.updateBooking(cancelTarget._id, { status: 'cancelled' });
+      // Cancel booking with reason and details
+      await bookingsAPI.cancelBooking({
+        bookingId: cancelTarget._id,
+        artistId:cancelTarget.assignedArtist[0]._id,
+        cancellationReason: cancelReason,
+        cancellationDescription: cancelDetails
+      });
       
       // Refresh bookings
       const refreshed = await bookingsAPI.getMyBookings();
@@ -413,88 +422,6 @@ const AllBookings = () => {
           </div>
         </div>
 
-        {editOpen && (
-          <div className="modal-overlay" onClick={closeEditModal}>
-            <div className="modal" onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
-                <h3 className="modal-title">Edit Booking</h3>
-                <button className="modal-close" onClick={closeEditModal}>×</button>
-              </div>
-              <div className="modal-body">
-                <div className="modal-grid">
-                  <div className="form-group">
-                    <label>First name</label>
-                    <input name="firstName" value={form.firstName || ''} onChange={handleFormChange} />
-                  </div>
-                  <div className="form-group">
-                    <label>Last name</label>
-                    <input name="lastName" value={form.lastName || ''} onChange={handleFormChange} />
-                  </div>
-                  <div className="form-group">
-                    <label>Email</label>
-                    <input name="email" type="email" value={form.email || ''} onChange={handleFormChange} />
-                  </div>
-                  <div className="form-group">
-                    <label>Phone</label>
-                    <input name="phoneNumber" value={form.phoneNumber || ''} onChange={handleFormChange} />
-                  </div>
-                  <div className="form-group">
-                    <label>Event date</label>
-                    <input name="eventDate" type="date" value={form.eventDate || ''} onChange={handleFormChange} />
-                  </div>
-                  <div className="form-group">
-                    <label>Location</label>
-                    <input name="location" value={form.location || ''} onChange={handleFormChange} />
-                  </div>
-                  <div className="form-group">
-                    <label>Address</label>
-                    <input name="fullAddress" value={form.fullAddress || ''} onChange={handleFormChange} />
-                  </div>
-                  <div className="form-group">
-                    <label>City</label>
-                    <input name="city" value={form.city || ''} onChange={handleFormChange} />
-                  </div>
-                  <div className="form-group">
-                    <label>Postal code</label>
-                    <input name="postalCode" value={form.postalCode || ''} onChange={handleFormChange} />
-                  </div>
-                  <div className="form-group">
-                    <label>Budget min</label>
-                    <input name="minimumBudget" type="number" value={form.minimumBudget ?? ''} onChange={handleFormChange} />
-                  </div>
-                  <div className="form-group">
-                    <label>Budget max</label>
-                    <input name="maximumBudget" type="number" value={form.maximumBudget ?? ''} onChange={handleFormChange} />
-                  </div>
-                  <div className="form-group">
-                    <label>Duration (hours)</label>
-                    <input name="duration" type="number" value={form.duration ?? ''} onChange={handleFormChange} />
-                  </div>
-                  <div className="form-group">
-                    <label>People</label>
-                    <input name="numberOfPeople" type="number" value={form.numberOfPeople ?? ''} onChange={handleFormChange} />
-                  </div>
-                  <div className="form-group">
-                    <label>Design style</label>
-                    <input name="designStyle" value={form.designStyle || ''} onChange={handleFormChange} />
-                  </div>
-                  <div className="form-group">
-                    <label>Complexity</label>
-                    <input name="designComplexity" value={form.designComplexity || ''} onChange={handleFormChange} />
-                  </div>
-                  <div className="form-group full">
-                    <label>Additional requests</label>
-                    <textarea name="additionalRequests" rows="3" value={form.additionalRequests || ''} onChange={handleFormChange} />
-                  </div>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button className="btn-secondary" onClick={closeEditModal} disabled={saving}>Cancel</button>
-                <button className="btn-primary" onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : 'Save changes'}</button>
-              </div>
-            </div>
-          </div>
-        )}
       </>
     );
   }
@@ -691,11 +618,11 @@ const AllBookings = () => {
                             <div className="card-actions">
                               {getStatusBadge(booking.status)}
                               {booking.status === 'confirmed' && (
-                                <>
                                   <button className="btn-secondary" onClick={() => openCancelModal(booking)} style={{marginLeft:'8px', background: '#e74c3c', color: 'white', border: 'none', padding: '14px 20px', fontSize: '0.95rem'}}>Cancel</button>
-                                  <button className="btn-primary" onClick={() => openCompleteModal(booking)} style={{marginLeft:'8px'}}>Mark as complete</button>
-                                </>
                               )}
+                              {booking.status === 'confirmed' && booking.isPaid==='full' && (
+                              <button className="btn-primary" onClick={() => openCompleteModal(booking)} style={{marginLeft:'8px'}}>Mark as complete</button>
+                               )}
                               {booking.status == 'pending' &&
                                 <>
                                   <button className="icon-btn edit" onClick={() => openEditModal(booking)} title="Edit booking">✏️
@@ -837,11 +764,6 @@ const AllBookings = () => {
                               <span className="meta-badge">👥 {booking.numberOfPeople} people</span>
                             </div>
                           </div>
-                          <div className="card-actions">
-                            {getStatusBadge(booking.status)}
-                            <button className="icon-btn edit" onClick={() => openEditModal(booking)} title="Edit booking">✏️</button>
-                            <button className="icon-btn delete" onClick={() => handleDelete(booking)} title="Delete booking">🗑️</button>
-                          </div>
                         </div>
 
                         <div className="card-content">
@@ -888,44 +810,123 @@ const AllBookings = () => {
 
           {editOpen && (
             <div className="modal-overlay" onClick={closeEditModal}>
-              <div className="modal" onClick={(e) => e.stopPropagation()}>
-                <div className="modal-header">
-                  <h3 className="modal-title">Edit Booking</h3>
-                  <button className="modal-close" onClick={closeEditModal}>×</button>
+              <div className="modal edit-booking-modal" onClick={(e) => e.stopPropagation()} style={{
+                maxWidth: '900px',
+                maxHeight: '90vh',
+                width: '95%',
+                margin: '20px auto',
+                display: 'flex',
+                flexDirection: 'column'
+              }}>
+                <div className="modal-header" style={{
+                  flexShrink: 0,
+                  borderBottom: '1px solid #e5e5e5',
+                  padding: '20px 24px',
+                  backgroundColor: '#fafafa'
+                }}>
+                  <h3 className="modal-title" style={{ margin: 0, fontSize: '20px', fontWeight: '600', color: '#333' }}>Edit Booking</h3>
+                  <button className="modal-close" onClick={closeEditModal} style={{
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '24px',
+                    color: '#999',
+                    cursor: 'pointer',
+                    padding: '0',
+                    width: '32px',
+                    height: '32px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>×</button>
                 </div>
-                <div className="modal-body">
-                  <div className="modal-grid">
-                    <div className="form-group">
-                      <label>First name</label>
-                      <input name="firstName" value={form.firstName || ''} onChange={handleFormChange} />
+                <div className="modal-body" style={{
+                  flex: 1,
+                  overflowY: 'auto',
+                  padding: '24px'
+                }}>
+                  <div className="modal-grid" style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                    gap: '20px'
+                  }}>
+                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>First name</label>
+                      <input name="firstName" value={form.firstName || ''} onChange={handleFormChange} style={{
+                        padding: '10px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        outline: 'none',
+                        transition: 'border-color 0.2s ease'
+                      }} />
                     </div>
-                    <div className="form-group">
-                      <label>Last name</label>
-                      <input name="lastName" value={form.lastName || ''} onChange={handleFormChange} />
+                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Last name</label>
+                      <input name="lastName" value={form.lastName || ''} onChange={handleFormChange} style={{
+                        padding: '10px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        outline: 'none',
+                        transition: 'border-color 0.2s ease'
+                      }} />
                     </div>
-                    <div className="form-group">
-                      <label>Email</label>
-                      <input name="email" type="email" value={form.email || ''} onChange={handleFormChange} />
+                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Email</label>
+                      <input name="email" type="email" value={form.email || ''} onChange={handleFormChange} style={{
+                        padding: '10px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        outline: 'none',
+                        transition: 'border-color 0.2s ease'
+                      }} />
                     </div>
-                    <div className="form-group">
-                      <label>Phone</label>
-                      <input name="phoneNumber" value={form.phoneNumber || ''} onChange={handleFormChange} />
+                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Phone</label>
+                      <input name="phoneNumber" value={form.phoneNumber || ''} onChange={handleFormChange} style={{
+                        padding: '10px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        outline: 'none',
+                        transition: 'border-color 0.2s ease'
+                      }} />
                     </div>
-                    <div className="form-group">
-                      <label>Event date</label>
-                      <input name="eventDate" type="date" value={form.eventDate || ''} onChange={handleFormChange} />
+                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Event date</label>
+                      <input name="eventDate" type="date" value={form.eventDate || ''} onChange={handleFormChange} style={{
+                        padding: '10px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        outline: 'none',
+                        transition: 'border-color 0.2s ease'
+                      }} />
                     </div>
-                    <div className="form-group full">
-                      <label>Event type</label>
-                      <div className="checkbox-grid">
+                    <div className="form-group full" style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Event type</label>
+                      <div className="checkbox-grid" style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+                        gap: '10px',
+                        marginBottom: '12px'
+                      }}>
                         {['Wedding', 'Eid', 'Party', 'Festival'].map(opt => (
-                          <label key={opt} className="checkbox-label">
+                          <label key={opt} className="checkbox-label" style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            cursor: 'pointer',
+                            fontSize: '14px'
+                          }}>
                             <input
                               type="checkbox"
                               name="eventType"
                               value={opt}
                               checked={(form.eventType || []).includes(opt)}
                               onChange={handleFormChange}
+                              style={{ margin: 0 }}
                             />
                             <span>{opt}</span>
                           </label>
@@ -936,131 +937,311 @@ const AllBookings = () => {
                         placeholder="Other event type"
                         value={form.otherEventType || ''}
                         onChange={handleFormChange}
+                        style={{
+                          padding: '10px 12px',
+                          border: '1px solid #ddd',
+                          borderRadius: '6px',
+                          fontSize: '14px',
+                          outline: 'none',
+                          transition: 'border-color 0.2s ease'
+                        }}
                       />
                     </div>
-                    <div className="form-group full">
-                      <label>Preferred time slot</label>
-                      <div className="checkbox-grid">
+                    <div className="form-group full" style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Preferred time slot</label>
+                      <div className="checkbox-grid" style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+                        gap: '10px'
+                      }}>
                         {['Morning', 'Afternoon', 'Evening', 'Flexible'].map(opt => (
-                          <label key={opt} className="checkbox-label">
+                          <label key={opt} className="checkbox-label" style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            cursor: 'pointer',
+                            fontSize: '14px'
+                          }}>
                             <input
                               type="checkbox"
                               name="preferredTimeSlot"
                               value={opt}
                               checked={(form.preferredTimeSlot || []).includes(opt)}
                               onChange={handleFormChange}
+                              style={{ margin: 0 }}
                             />
                             <span>{opt}</span>
                           </label>
                         ))}
                       </div>
                     </div>
-                    <div className="form-group full">
-                      <label>Artist travel preference</label>
-                      <div className="radio-group">
-                        <label className="radio-label">
-                          <input type="radio" name="artistTravelsToClientRadio" checked={form.artistTravelsToClient === true} onChange={() => setForm(prev => ({ ...prev, artistTravelsToClient: true }))} />
+                    <div className="form-group full" style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Artist travel preference</label>
+                      <div className="radio-group" style={{
+                        display: 'flex',
+                        gap: '20px',
+                        flexWrap: 'wrap'
+                      }}>
+                        <label className="radio-label" style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          cursor: 'pointer',
+                          fontSize: '14px'
+                        }}>
+                          <input type="radio" name="artistTravelsToClientRadio" checked={form.artistTravelsToClient === true} onChange={() => setForm(prev => ({ ...prev, artistTravelsToClient: true }))} style={{ margin: 0 }} />
                           <span>Artist travels to me</span>
                         </label>
-                        <label className="radio-label">
-                          <input type="radio" name="artistTravelsToClientRadio" checked={form.artistTravelsToClient === false} onChange={() => setForm(prev => ({ ...prev, artistTravelsToClient: false }))} />
+                        <label className="radio-label" style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          cursor: 'pointer',
+                          fontSize: '14px'
+                        }}>
+                          <input type="radio" name="artistTravelsToClientRadio" checked={form.artistTravelsToClient === false} onChange={() => setForm(prev => ({ ...prev, artistTravelsToClient: false }))} style={{ margin: 0 }} />
                           <span>I travel to artist</span>
                         </label>
                       </div>
                     </div>
-                    <div className="form-group">
-                      <label>Location</label>
-                      <input name="location" value={form.location || ''} onChange={handleFormChange} />
+                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Location</label>
+                      <input name="location" value={form.location || ''} onChange={handleFormChange} style={{
+                        padding: '10px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        outline: 'none',
+                        transition: 'border-color 0.2s ease'
+                      }} />
                     </div>
-                    <div className="form-group">
-                      <label>Address</label>
-                      <input name="fullAddress" value={form.fullAddress || ''} onChange={handleFormChange} />
+                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Address</label>
+                      <input name="fullAddress" value={form.fullAddress || ''} onChange={handleFormChange} style={{
+                        padding: '10px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        outline: 'none',
+                        transition: 'border-color 0.2s ease'
+                      }} />
                     </div>
-                    <div className="form-group">
-                      <label>City</label>
-                      <input name="city" value={form.city || ''} onChange={handleFormChange} />
+                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>City</label>
+                      <input name="city" value={form.city || ''} onChange={handleFormChange} style={{
+                        padding: '10px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        outline: 'none',
+                        transition: 'border-color 0.2s ease'
+                      }} />
                     </div>
-                    <div className="form-group">
-                      <label>Postal code</label>
-                      <input name="postalCode" value={form.postalCode || ''} onChange={handleFormChange} />
+                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Postal code</label>
+                      <input name="postalCode" value={form.postalCode || ''} onChange={handleFormChange} style={{
+                        padding: '10px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        outline: 'none',
+                        transition: 'border-color 0.2s ease'
+                      }} />
                     </div>
-                    <div className="form-group">
-                      <label>Budget min</label>
-                      <input name="minimumBudget" type="number" value={form.minimumBudget ?? ''} onChange={handleFormChange} />
+                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Budget min</label>
+                      <input name="minimumBudget" type="number" value={form.minimumBudget ?? ''} onChange={handleFormChange} style={{
+                        padding: '10px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        outline: 'none',
+                        transition: 'border-color 0.2s ease'
+                      }} />
                     </div>
-                    <div className="form-group">
-                      <label>Budget max</label>
-                      <input name="maximumBudget" type="number" value={form.maximumBudget ?? ''} onChange={handleFormChange} />
+                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Budget max</label>
+                      <input name="maximumBudget" type="number" value={form.maximumBudget ?? ''} onChange={handleFormChange} style={{
+                        padding: '10px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        outline: 'none',
+                        transition: 'border-color 0.2s ease'
+                      }} />
                     </div>
-                    <div className="form-group">
-                      <label>Duration (hours)</label>
-                      <input name="duration" type="number" value={form.duration ?? ''} onChange={handleFormChange} />
+                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Duration (hours)</label>
+                      <input name="duration" type="number" value={form.duration ?? ''} onChange={handleFormChange} style={{
+                        padding: '10px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        outline: 'none',
+                        transition: 'border-color 0.2s ease'
+                      }} />
                     </div>
-                    <div className="form-group">
-                      <label>People</label>
-                      <input name="numberOfPeople" type="number" value={form.numberOfPeople ?? ''} onChange={handleFormChange} />
+                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>People</label>
+                      <input name="numberOfPeople" type="number" value={form.numberOfPeople ?? ''} onChange={handleFormChange} style={{
+                        padding: '10px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        outline: 'none',
+                        transition: 'border-color 0.2s ease'
+                      }} />
                     </div>
-                    <div className="form-group">
-                      <label>Design style</label>
-                      <select name="designStyle" value={form.designStyle || ''} onChange={handleFormChange}>
+                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Design style</label>
+                      <select name="designStyle" value={form.designStyle || ''} onChange={handleFormChange} style={{
+                        padding: '10px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        outline: 'none',
+                        transition: 'border-color 0.2s ease',
+                        backgroundColor: 'white'
+                      }}>
                         <option value="">Select style</option>
                         {['Traditional', 'Modern', 'Arabic', 'Indian', 'Moroccan', 'Minimalist', 'Bridal'].map(opt => (
                           <option key={opt} value={opt}>{opt}</option>
                         ))}
                       </select>
                     </div>
-                    <div className="form-group">
-                      <label>Complexity</label>
-                      <select name="designComplexity" value={form.designComplexity || ''} onChange={handleFormChange}>
+                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Complexity</label>
+                      <select name="designComplexity" value={form.designComplexity || ''} onChange={handleFormChange} style={{
+                        padding: '10px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        outline: 'none',
+                        transition: 'border-color 0.2s ease',
+                        backgroundColor: 'white'
+                      }}>
                         <option value="">Select complexity</option>
                         {['Simple', 'Medium', 'Complex', 'Very Complex'].map(opt => (
                           <option key={opt} value={opt}>{opt}</option>
                         ))}
                       </select>
                     </div>
-                    <div className="form-group full">
-                      <label>Body parts to decorate</label>
-                      <div className="checkbox-grid">
+                    <div className="form-group full" style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Body parts to decorate</label>
+                      <div className="checkbox-grid" style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
+                        gap: '10px'
+                      }}>
                         {['Hands', 'Feet', 'Arms', 'Back'].map(opt => (
-                          <label key={opt} className="checkbox-label">
+                          <label key={opt} className="checkbox-label" style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            cursor: 'pointer',
+                            fontSize: '14px'
+                          }}>
                             <input
                               type="checkbox"
                               name="bodyPartsToDecorate"
                               value={opt}
                               checked={(form.bodyPartsToDecorate || []).includes(opt)}
                               onChange={handleFormChange}
+                              style={{ margin: 0 }}
                             />
                             <span>{opt}</span>
                           </label>
                         ))}
                       </div>
                     </div>
-                    <div className="form-group">
-                      <label>Coverage preference</label>
-                      <select name="coveragePreference" value={form.coveragePreference || ''} onChange={handleFormChange}>
+                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Coverage preference</label>
+                      <select name="coveragePreference" value={form.coveragePreference || ''} onChange={handleFormChange} style={{
+                        padding: '10px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        outline: 'none',
+                        transition: 'border-color 0.2s ease',
+                        backgroundColor: 'white'
+                      }}>
                         <option value="">Select coverage</option>
                         {['Light', 'Medium', 'Full', 'Bridal Package'].map(opt => (
                           <option key={opt} value={opt}>{opt}</option>
                         ))}
                       </select>
                     </div>
-                    <div className="form-group">
-                      <label>Venue name</label>
-                      <input name="venueName" value={form.venueName || ''} onChange={handleFormChange} />
+                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Venue name</label>
+                      <input name="venueName" value={form.venueName || ''} onChange={handleFormChange} style={{
+                        padding: '10px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        outline: 'none',
+                        transition: 'border-color 0.2s ease'
+                      }} />
                     </div>
-                    <div className="form-group full">
-                      <label>Design inspiration</label>
-                      <textarea name="designInspiration" rows="3" value={form.designInspiration || ''} onChange={handleFormChange} />
+                    <div className="form-group full" style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Design inspiration</label>
+                      <textarea name="designInspiration" rows="3" value={form.designInspiration || ''} onChange={handleFormChange} style={{
+                        padding: '10px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        outline: 'none',
+                        transition: 'border-color 0.2s ease',
+                        resize: 'vertical',
+                        fontFamily: 'inherit'
+                      }} />
                     </div>
-                    <div className="form-group full">
-                      <label>Additional requests</label>
-                      <textarea name="additionalRequests" rows="3" value={form.additionalRequests || ''} onChange={handleFormChange} />
+                    <div className="form-group full" style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Additional requests</label>
+                      <textarea name="additionalRequests" rows="3" value={form.additionalRequests || ''} onChange={handleFormChange} style={{
+                        padding: '10px 12px',
+                        border: '1px solid #ddd',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        outline: 'none',
+                        transition: 'border-color 0.2s ease',
+                        resize: 'vertical',
+                        fontFamily: 'inherit'
+                      }} />
                     </div>
                   </div>
                 </div>
-                <div className="modal-footer">
-                  <button className="btn-secondary" onClick={closeEditModal} disabled={saving}>Cancel</button>
-                  <button className="btn-primary" onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : 'Save changes'}</button>
+                <div className="modal-footer" style={{
+                  flexShrink: 0,
+                  borderTop: '1px solid #e5e5e5',
+                  padding: '20px 24px',
+                  backgroundColor: '#fafafa',
+                  display: 'flex',
+                  gap: '12px',
+                  justifyContent: 'flex-end'
+                }}>
+                  <button className="btn-secondary" onClick={closeEditModal} disabled={saving} style={{
+                    padding: '12px 24px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: '#666',
+                    backgroundColor: '#f5f5f5',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}>Cancel</button>
+                  <button className="btn-primary" onClick={handleSave} disabled={saving} style={{
+                    padding: '12px 24px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: 'white',
+                    backgroundColor: '#d4a574',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: saving ? 'not-allowed' : 'pointer',
+                    opacity: saving ? 0.7 : 1,
+                    transition: 'all 0.2s ease'
+                  }}>{saving ? 'Saving...' : 'Save changes'}</button>
                 </div>
               </div>
             </div>

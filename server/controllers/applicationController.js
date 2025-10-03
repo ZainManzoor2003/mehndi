@@ -1,6 +1,7 @@
 const Application = require('../schemas/Application');
 const Booking = require('../schemas/Booking');
 const User = require('../schemas/User');
+const Transaction = require('../schemas/Transaction');
 
 // @desc    Artist applies to a booking with full application details
 // @route   POST /api/applications/apply
@@ -383,6 +384,9 @@ exports.getApplicationsForBooking = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Not authorized to view applications for this booking' });
     }
 
+    // Get full booking details
+    const fullBooking = await Booking.findById(bookingId).lean();
+
     // Find all applications that have this booking
     const applications = await Application.find({ 'Booking.booking_id': bookingId })
       .populate('Booking.artist_id', 'firstName lastName email phoneNumber artist')
@@ -395,6 +399,8 @@ exports.getApplicationsForBooking = async (req, res) => {
       if (bookingEntry && bookingEntry.artist_id) {
         result.push({
           applicationId: app._id,
+          bookingId: bookingId,
+          bookingDetails: fullBooking,
           artist: {
             _id: bookingEntry.artist_id._id,
             firstName: bookingEntry.artist_id.firstName,
@@ -479,6 +485,16 @@ exports.updateApplicationStatus = async (req, res) => {
           booking.isPaid = isPaid;
         }
         await booking.save();
+
+        // Create transaction record
+        const transaction = new Transaction({
+          sender: req.user.id,
+          receiver: artistId,
+          bookingId: bookingId,
+          amount: Number(booking.paymentPaid) || 0,
+          transactionType: isPaid
+        });
+        await transaction.save();
       }
     }
 

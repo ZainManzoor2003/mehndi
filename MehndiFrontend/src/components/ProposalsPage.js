@@ -34,6 +34,7 @@ const ProposalsPage = () => {
         const res = await bookingsAPI.getMyBookings();
         const myBookings = (res.data || []).filter(b => b.status==='in_progress');
         setBookings(myBookings);
+        console.log('bookings',myBookings)
         // default expand first
         if (myBookings.length && !expandedRequest) setExpandedRequest(myBookings[0]._id);
         // fetch applications per booking in parallel
@@ -48,6 +49,7 @@ const ProposalsPage = () => {
           })
         );
         setApplicationsByBooking(Object.fromEntries(entries));
+        console.log('applicaions for bookings',Object.fromEntries(entries))
       } catch (e) {
         setError(e.message || 'Failed to load proposals');
       } finally {
@@ -129,6 +131,7 @@ const ProposalsPage = () => {
 
   const handleAccept = (row) => {
     setSelectedRow(row);
+    console.log('row',row)
     setShowAcceptModal(true);
   };
 

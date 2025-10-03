@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import apiService from '../services/api'
+import apiService, { bookingsAPI } from '../services/api'
 
 const { applicationsAPI } = apiService;
 
@@ -16,6 +16,9 @@ const PaymentSuccess = () => {
     const paidAmountParam = params.get('paidAmount');
     const remainingParam = params.get('remaining');
     const isPaidParam = params.get('isPaid');
+    const paymentType = params.get('paymentType');
+    const amount = params.get('amount');
+    const artistId = params.get('artistId');
 
     console.log('Frontend - URL params:', {
       checkout,
@@ -23,21 +26,44 @@ const PaymentSuccess = () => {
       applicationId,
       paidAmountParam,
       remainingParam,
-      isPaidParam
+      isPaidParam,
+      paymentType,
+      amount,
+      artistId
     });
-    if (checkout === 'success' && bookingId && applicationId) {
+
+    if (checkout === 'success') {
       const finalize = async () => {
         try {
-          const paidAmountNum = Number(paidAmountParam || 0) || 0;
-          const remainingNum = Number(remainingParam || 0) || 0;
-          const isPaidValue = isPaidParam || 'none';
-          await applicationsAPI.updateApplicationStatus(
-            applicationId,
-            bookingId,
-            'accepted',
-            { paymentPaid: paidAmountNum, remainingPayment: remainingNum, isPaid: isPaidValue }
-          );
+          // Handle remaining payment flow
+          if (paymentType === 'remaining' && bookingId) {
+            console.log('Processing remaining payment for booking:', bookingId);
+            const isPaidValue = isPaidParam || 'full';
+            const remainingAmount = Number(amount || 0) || 0;
+            
+            await bookingsAPI.updateBookingPaymentStatus({
+              isPaid: isPaidValue,
+              remainingPayment: remainingAmount,
+              bookingId: bookingId,
+              artistId:artistId
+            });
+            
+            console.log('Booking payment status updated successfully');
+          }
+          // Handle regular application payment flow
+          else if (bookingId && applicationId) {
+            const paidAmountNum = Number(paidAmountParam || 0) || 0;
+            const remainingNum = Number(remainingParam || 0) || 0;
+            const isPaidValue = isPaidParam || 'none';
+            await applicationsAPI.updateApplicationStatus(
+              applicationId,
+              bookingId,
+              'accepted',
+              { paymentPaid: paidAmountNum, remainingPayment: remainingNum, isPaid: isPaidValue }
+            );
+          }
         } catch (e) {
+          console.error('Error processing payment:', e);
         } finally {
           // Clean URL
           const url = new URL(window.location.href);
