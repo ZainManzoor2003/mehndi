@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import Header from './Header';
 import apiService from '../services/api';
+import GetLocationModal from './modals/GetLocationModal';
 
 const { bookingsAPI } = apiService;
 
@@ -47,8 +48,13 @@ const BookingForm = () => {
     coveragePreference: '',
     fullAddress: '',
     city: '',
-    postalCode: ''
+    postalCode: '',
+    latitude: '',
+    longitude: ''
   });
+
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [tooltipMessage, setTooltipMessage] = useState('');
 
   const steps = [
     { id: 1, name: 'Contact' },
@@ -191,7 +197,9 @@ const BookingForm = () => {
         bodyPartsToDecorate: formData.bodyPartsToDecorate,
         designInspiration: formData.designInspiration || undefined,
         coveragePreference: formData.coveragePreference || undefined,
-        additionalRequests: formData.additionalRequests || undefined
+        additionalRequests: formData.additionalRequests || undefined,
+        latitude: formData.latitude || undefined,
+        longitude: formData.longitude || undefined
       };
 
       console.log('Submitting booking data:', bookingData);
@@ -209,7 +217,8 @@ const BookingForm = () => {
         location: '', artistTravelsToClient: '', duration: '', numberOfPeople: '',
         designStyle: '', designComplexity: '', bodyPartsToDecorate: [], designInspiration: '',
         minimumBudget: '', maximumBudget: '', additionalRequests: '', venueName: '',
-        coveragePreference: '', fullAddress: '', city: '', postalCode: ''
+        coveragePreference: '', fullAddress: '', city: '', postalCode: '',
+        latitude: '', longitude: ''
       });
       
       // Reset to first step
@@ -707,6 +716,49 @@ const BookingForm = () => {
                   </div>
                 </div>
 
+                <div className="form-row" style={{ display: 'flex', gap: '15px', alignItems: 'end' }}>
+                  <div className="form-group" style={{ flex: '1' }}>
+                    <label className="form-label">Latitude</label>
+                    <input
+                      type="text"
+                      name="latitude"
+                      className="form-input"
+                      placeholder="Latitude"
+                      value={formData.latitude}
+                      readOnly
+                      onFocus={() => {
+                        setTooltipMessage('Click Get Location button to add location');
+                        setTimeout(() => setTooltipMessage(''), 2000);
+                      }}
+                    />
+                  </div>
+                  <div className="form-group" style={{ flex: '1' }}>
+                    <label className="form-label">Longitude</label>
+                    <input
+                      type="text"
+                      name="longitude"
+                      className="form-input"
+                      placeholder="Longitude"
+                      value={formData.longitude}
+                      readOnly
+                      onFocus={() => {
+                        setTooltipMessage('Click Get Location button to add location');
+                        setTimeout(() => setTooltipMessage(''), 2000);
+                      }}
+                    />
+                  </div>
+                  <div className="form-group" style={{ flex: '0 0 auto', minWidth: '140px' }}>
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      onClick={() => setShowLocationModal(true)}
+                      style={{ padding: '12px 20px', width: '100%' }}
+                    >
+                      Get Location
+                    </button>
+                  </div>
+                </div>
+
                 <div className="form-group">
                   <label className="form-label">Additional Requests</label>
                   <textarea
@@ -818,6 +870,25 @@ const BookingForm = () => {
               </div>
             )}
 
+            {tooltipMessage && (
+              <div style={{
+                position: 'fixed',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                backgroundColor: '#333',
+                color: 'white',
+                padding: '12px 20px',
+                borderRadius: '6px',
+                fontSize: '14px',
+                zIndex: 10000,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                whiteSpace: 'nowrap'
+              }}>
+                {tooltipMessage}
+              </div>
+            )}
+
             {/* Navigation Buttons */}
             <div className="form-navigation">
               {currentStep > 1 && (
@@ -865,6 +936,20 @@ const BookingForm = () => {
           </form>
         </div>
       </div>
+
+      {/* Location Modal */}
+      <GetLocationModal 
+        isOpen={showLocationModal}
+        onClose={() => setShowLocationModal(false)}
+        onLocationSelect={(lat, lng) => {
+          setFormData(prev => ({
+            ...prev,
+            latitude: lat,
+            longitude: lng
+          }));
+          setShowLocationModal(false);
+        }}
+      />
     </>
   );
 };

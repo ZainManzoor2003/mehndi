@@ -61,6 +61,8 @@ const ArtistDashboard = () => {
   const [upcomingBookings, setUpcomingBookings] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [nearbyRequests, setNearbyRequests] = useState([]);
+  const [userLocation, setUserLocation] = useState(null); // Used in getCurrentLocation
+  const [nearbyLoading, setNearbyLoading] = useState(false);
   const [kpiStats] = useState({
     bookings: { value: 7, sub: '+40% vs last month', trend: 'up' },
     applications: { value: 3, sub: 'Sent this week', trend: 'up' },
@@ -290,6 +292,78 @@ const ArtistDashboard = () => {
       setAppsLoading(false);
     }
   }, [isAuthenticated, user]);
+
+  const getCurrentLocation = useCallback(() => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocation is not supported by this browser.'));
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setUserLocation({ latitude, longitude });
+          resolve({ latitude, longitude });
+        },
+        (error) => {
+          let errorMessage = 'Failed to get location.';
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage = 'Location access denied by user.';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = 'Location information is unavailable.';
+              break;
+            case error.TIMEOUT:
+              errorMessage = 'Location request timed out.';
+              break;
+          }
+          reject(new Error(errorMessage));
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000 // 5 minutes
+        }
+      );
+    });
+  }, []);
+
+  const fetchNearbyBookings = useCallback(async () => {
+    if (!isAuthenticated || !user || user.userType !== 'artist') return;
+    
+    try {
+      setNearbyLoading(true);
+      
+      // Get user's current location
+      const location = await getCurrentLocation();
+      
+      // Fetch nearby bookings
+      const resp = await bookingsAPI.getNearbyBookings(location.latitude, location.longitude, 3);
+      
+      const nearbyItems = (resp.data || []).map((b) => ({
+        id: b._id,
+        title: `${(b.eventType || []).join(', ') || 'Mehndi'} – ${new Date(b.eventDate).toLocaleDateString('en-GB')}`,
+        client: `${b.firstName} ${b.lastName}`,
+        location: `${b.city || b.location || ''}`.trim() || 'Location not specified',
+        budget: `£${b.minimumBudget ?? 0}${b.maximumBudget ? ` - £${b.maximumBudget}` : ''}`,
+        eventDate: b.eventDate,
+        fullAddress: b.fullAddress,
+        latitude: b.latitude,
+        longitude: b.longitude,
+        // Add other booking details for view detail
+        ...b
+      }));
+      
+      setNearbyRequests(nearbyItems);
+    } catch (e) {
+      console.error('Failed to fetch nearby bookings:', e);
+      setNearbyRequests([]);
+    } finally {
+      setNearbyLoading(false);
+    }
+  }, [isAuthenticated, user, getCurrentLocation]);
 
   // Compute artist's next and second events dynamically from their accepted applications
   const fetchArtistUpcomingEvents = useCallback(async () => {
@@ -593,8 +667,21 @@ const ArtistDashboard = () => {
       closeApplyModal();
       showSuccess('Application submitted successfully!');
       
-      // Refresh pending bookings list after applying
+      // Auto-fetch data after successful submission
       await fetchPendingBookings();
+      await fetchNearbyBookings();
+      await fetchSentProposals();
+      
+      // Refresh current tab data
+      if (activeTab === 'dashboard') {
+        fetchArtistUpcomingEvents();
+      } else if (activeTab === 'applications') {
+        if (applicationsFilter === 'all') {
+          fetchPendingBookings();
+        } else {
+          fetchApplicationsByStatus(applicationsFilter);
+        }
+      }
     } catch (e) {
       showError(e.message || 'Failed to apply');
     } finally {
@@ -1028,6 +1115,7 @@ const ArtistDashboard = () => {
       ]);
       // Also get pending bookings for Applications tab
       fetchPendingBookings();
+      fetchNearbyBookings();
       if (tab === 'profile') {
         fetchMyPortfolios();
       }
@@ -1046,6 +1134,7 @@ const ArtistDashboard = () => {
         fetchSentProposals();
          fetchPendingBookings();
          fetchArtistUpcomingEvents();
+         fetchNearbyBookings();
         if (tab === 'profile') {
           fetchMyPortfolios();
         }
@@ -1054,7 +1143,7 @@ const ArtistDashboard = () => {
       console.log('User not authenticated');
       setLoading(false);
     }
-  }, [isAuthenticated, user, fetchAvailableJobs, fetchSentProposals, fetchPendingBookings, fetchArtistUpcomingEvents]);
+  }, [isAuthenticated, user, fetchAvailableJobs, fetchSentProposals, fetchPendingBookings, fetchArtistUpcomingEvents, fetchNearbyBookings]);
 
   // Derive overview data when proposals change
   useEffect(() => {
@@ -1100,17 +1189,19 @@ const ArtistDashboard = () => {
   const handleTabChange = (tab) => {
     setActiveTab(tab);
 
-    // Refetch data based on tab
+    // Auto-fetch data based on tab
     if (tab === 'dashboard') {
       navigate(`/artist-dashboard`);
       fetchArtistUpcomingEvents();
       fetchPendingBookings();
+      fetchNearbyBookings(); // Always fetch nearby bookings for dashboard
     } else if (tab === 'applications') {
       if (applicationsFilter === 'all') {
         fetchPendingBookings();
       } else {
         fetchApplicationsByStatus(applicationsFilter);
       }
+      fetchSentProposals(); // Always fetch sent proposals for applications tab
     } else if (tab === 'schedule') {
       fetchAcceptedCalendar();
     } else if (tab === 'messages') {
@@ -1124,14 +1215,12 @@ const ArtistDashboard = () => {
     if (tab === 'dashboard') {
       navigate(`/artist-dashboard`);
       return;
-
     }
     navigate(`/artist-dashboard/${tab}`);
 
-    // If switching to proposals tab, fetch the latest proposals
-    if (tab === 'applications') {
-      console.log('Switching to proposals tab - fetching proposals...');
-      fetchSentProposals();
+    // Always fetch nearby bookings when switching tabs (for dashboard access)
+    if (tab !== 'dashboard') {
+      fetchNearbyBookings();
     }
   };
 
@@ -1233,11 +1322,23 @@ const ArtistDashboard = () => {
         // Close modal and reset form
         handleCloseProposalModal();
 
-        // Refresh the proposals list and jobs list with a small delay to ensure backend has processed
+        // Auto-fetch data after successful submission
         setTimeout(async () => {
           console.log('Refreshing data after successful proposal submission...');
           await fetchSentProposals();
           await fetchAvailableJobs();
+          await fetchNearbyBookings();
+          
+          // Refresh current tab data
+          if (activeTab === 'applications') {
+            if (applicationsFilter === 'all') {
+              fetchPendingBookings();
+            } else {
+              fetchApplicationsByStatus(applicationsFilter);
+            }
+          } else if (activeTab === 'dashboard') {
+            fetchArtistUpcomingEvents();
+          }
         }, 1000);
       }
 
@@ -1280,6 +1381,13 @@ const ArtistDashboard = () => {
           });
           setChatMessages(res.data.messages);
           setNewMessage('');
+          
+          // Auto-fetch conversations after sending message
+          if (activeTab === 'messages') {
+            chatAPI.listMyChats().then(res => {
+              if (res.success) setArtistConversations(res.data || []);
+            }).catch(console.error);
+          }
         }
       } catch (e) { console.error(e); }
     }
@@ -1305,7 +1413,7 @@ const ArtistDashboard = () => {
     const params = new URLSearchParams(location.search);
     const chatId = params.get('chatId');
     if (chatId) {
-      setActiveTab('messages');
+      handleTabChange('messages');
       chatAPI.getChat(chatId).then(res => {
         if (res.success && res.data) {
           const chat = res.data;
@@ -1335,27 +1443,55 @@ const ArtistDashboard = () => {
     }
   }, [location.search, user]);
 
-  useEffect(() => {
-    if (!user) return;
-    const onMessage = (incoming) => {
-      if (!currentChat) return;
-      setChatMessages(prev => [...prev, {
-        id: incoming.id,
-        sender: incoming.senderId,
-        text: incoming.message,
-        createdAt: new Date().toISOString(),
-      }]);
-    };
-    const onTyping = ({ userId, isTyping }) => {
-      // optional: typing state
-    };
-    socket.on('message', onMessage);
-    socket.on('typing', onTyping);
-    return () => {
-      socket.off('message', onMessage);
-      socket.off('typing', onTyping);
-    };
-  }, [user, currentChat]);
+  // useEffect(() => {
+  //   if (!user) return;
+  //   const onMessage = (incoming) => {
+  //     if (!currentChat) return;
+  //     setChatMessages(prev => [...prev, {
+  //       id: incoming.id,
+  //       sender: incoming.senderId,
+  //       text: incoming.message,
+  //       createdAt: new Date().toISOString(),
+  //     }]);
+  //   };
+  //   const onTyping = ({ userId, isTyping }) => {
+  //     // optional: typing state
+  //   };
+  //   socket.on('message', onMessage);
+  //   socket.on('typing', onTyping);
+  //   return () => {
+  //     socket.off('message', onMessage);
+  //     socket.off('typing', onTyping);
+  //   };
+  // }, [user, currentChat]);
+
+  // The FIXED code
+useEffect(() => {
+  if (!user) return;
+  const onMessage = (incoming) => {
+    // If there's no chat open OR if the incoming message is from the current user,
+    // ignore it to prevent the duplicate.
+    if (!currentChat || String(incoming.senderId) === String(user?._id)) {
+      return;
+    }
+    
+    setChatMessages(prev => [...prev, {
+      id: incoming.id,
+      sender: incoming.senderId,
+      text: incoming.message,
+      createdAt: new Date().toISOString(),
+    }]);
+  };
+  const onTyping = ({ userId, isTyping }) => {
+    // optional: typing state
+  };
+  socket.on('message', onMessage);
+  socket.on('typing', onTyping);
+  return () => {
+    socket.off('message', onMessage);
+    socket.off('typing', onTyping);
+  };
+}, [user, currentChat]);
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -1723,8 +1859,7 @@ const ArtistDashboard = () => {
                       <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
                         <button 
                           onClick={() => {
-                            setActiveTab('applications');
-                            navigate('/artist-dashboard/applications');
+                            handleTabChange('applications');
                           }}
                           style={{
                             padding: '12px 28px',
@@ -1771,28 +1906,209 @@ const ArtistDashboard = () => {
 
                   {/* Requests Near You */}
                   <div className="nearby-requests">
-                    <div className="nearby-header">
-                      <span className="nearby-icon">📍</span>
-                      <h3 className="section-title">Requests Near You</h3>
+                    <div className="nearby-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span className="nearby-icon">📍</span>
+                        <h3 className="section-title" style={{ margin: '0', marginLeft: '8px' }}>Requests Near You</h3>
+                      </div>
+                      <button 
+                        className="refresh-btn"
+                        onClick={fetchNearbyBookings}
+                        disabled={nearbyLoading}
+                        style={{ 
+                          padding: '8px 16px', 
+                          fontSize: '13px', 
+                          background: nearbyLoading ? '#e0e0e0' : '#d4a574',
+                          color: nearbyLoading ? '#999' : 'white',
+                          border: 'none', 
+                          borderRadius: '6px',
+                          cursor: nearbyLoading ? 'not-allowed' : 'pointer',
+                          fontWeight: '500',
+                          transition: 'all 0.2s ease',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!nearbyLoading) {
+                            e.target.style.background = '#b8945f';
+                            e.target.style.transform = 'translateY(-1px)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!nearbyLoading) {
+                            e.target.style.background = '#d4a574';
+                            e.target.style.transform = 'translateY(0)';
+                          }
+                        }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="23,4 23,10 17,10"/>
+                          <polyline points="1,20 1,14 7,14"/>
+                          <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+                        </svg>
+                        {nearbyLoading ? 'Loading...' : 'Refresh'}
+                      </button>
                     </div>
                     <div className="nearby-list">
-                      {nearbyRequests.map(r => (
-                        <div key={r.id} className="request-card">
-                          <div className="request-info">
-                            <h4 className="request-title">{r.title}</h4>
-                            <p className="request-meta">Budget: {r.budget} · Location: {r.location}</p>
-                          </div>
-                          <button
-                            className="apply-now-btn"
-                            onClick={() => handleSendProposal({ id: r.id, title: r.title, client: 'Client', location: r.location, budget: r.budget })}
-                          >
-                            Apply Now
-                          </button>
+                      {nearbyLoading ? (
+                        <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                          Loading nearby requests...
                         </div>
-                      ))}
+                      ) : nearbyRequests.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                          No requests found within 3km
+                        </div>
+                      ) : (
+                        nearbyRequests.map(r => (
+                          <div key={r.id} className="request-card" style={{ 
+                            background: 'white',
+                            borderRadius: '12px',
+                            padding: '16px',
+                            marginBottom: '12px',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                            border: '1px solid #f0f0f0',
+                            transition: 'all 0.2s ease'
+                          }}>
+                            <div className="request-info" style={{ flex: 1, marginRight: '16px' }}>
+                              <h4 className="request-title" style={{ 
+                                margin: '0 0 8px 0', 
+                                fontSize: '16px', 
+                                fontWeight: '600', 
+                                color: '#333',
+                                lineHeight: '1.4'
+                              }}>
+                                {r.title}
+                              </h4>
+                              <p className="request-meta" style={{ 
+                                margin: '0 0 6px 0', 
+                                fontSize: '14px', 
+                                color: '#666',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                              }}>
+                                <span style={{ 
+                                  background: '#e8f5e8', 
+                                  color: '#2e7d32', 
+                                  padding: '2px 8px', 
+                                  borderRadius: '12px', 
+                                  fontSize: '12px',
+                                  fontWeight: '500'
+                                }}>
+                                  {r.budget}
+                                </span>
+                                <span style={{ color: '#888' }}>•</span>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                                    <circle cx="12" cy="10" r="3"/>
+                                  </svg>
+                                  {r.location}
+                                </span>
+                              </p>
+                              <p className="request-client" style={{ 
+                                margin: '0', 
+                                fontSize: '13px', 
+                                color: '#888',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                  <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                                {r.client}
+                              </p>
+                            </div>
+                            <div className="request-actions" style={{ 
+                              display: 'flex', 
+                              gap: '10px', 
+                              flexDirection: 'column',
+                              minWidth: '120px'
+                            }}>
+                              <button
+                                className="view-detail-btn"
+                                onClick={() => openViewBooking(r.id)}
+                                style={{
+                                  padding: '10px 16px',
+                                  fontSize: '13px',
+                                  fontWeight: '500',
+                                  background: 'white',
+                                  color: '#d4a574',
+                                  border: '2px solid #d4a574',
+                                  borderRadius: '8px',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '6px'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.target.style.background = '#d4a574';
+                                  e.target.style.color = 'white';
+                                  e.target.style.transform = 'translateY(-1px)';
+                                  e.target.style.boxShadow = '0 4px 12px rgba(212, 165, 116, 0.3)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.target.style.background = 'white';
+                                  e.target.style.color = '#d4a574';
+                                  e.target.style.transform = 'translateY(0)';
+                                  e.target.style.boxShadow = 'none';
+                                }}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                  <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                                View Detail
+                              </button>
+                              <button
+                                className="apply-now-btn"
+                                onClick={() => openApplyModal(r.id)}
+                                style={{
+                                  padding: '10px 16px',
+                                  fontSize: '13px',
+                                  fontWeight: '500',
+                                  background: 'linear-gradient(135deg, #d4a574, #b8945f)',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '8px',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '6px',
+                                  boxShadow: '0 2px 8px rgba(212, 165, 116, 0.3)'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.target.style.background = 'linear-gradient(135deg, #b8945f, #a0854a)';
+                                  e.target.style.transform = 'translateY(-1px)';
+                                  e.target.style.boxShadow = '0 4px 16px rgba(212, 165, 116, 0.4)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.target.style.background = 'linear-gradient(135deg, #d4a574, #b8945f)';
+                                  e.target.style.transform = 'translateY(0)';
+                                  e.target.style.boxShadow = '0 2px 8px rgba(212, 165, 116, 0.3)';
+                                }}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                  <circle cx="8.5" cy="7" r="4"/>
+                                  <polyline points="17,11 19,13 23,9"/>
+                                </svg>
+                                Apply Now
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
                     <div className="browse-row">
-                      <button className="browse-requests-btn" onClick={() => setActiveTab('proposals')}>Browse All Client Requests</button>
+                      <button className="browse-requests-btn" onClick={() => handleTabChange('applications')}>Browse All Client Requests</button>
                     </div>
                   </div>
 
@@ -2005,8 +2321,7 @@ const ArtistDashboard = () => {
                         e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
                       }}
                       onClick={() => {
-                        setActiveTab('earnings');
-                        navigate('/artist-dashboard/earnings');
+                        handleTabChange('earnings');
                       }}
                       >
                         <div style={{
@@ -2061,8 +2376,7 @@ const ArtistDashboard = () => {
                         e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
                       }}
                       onClick={() => {
-                        setActiveTab('messages');
-                        navigate('/artist-dashboard/messages');
+                        handleTabChange('messages');
                       }}
                       >
                         <div style={{

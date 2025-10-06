@@ -23,6 +23,8 @@ const createBooking = async (req, res) => {
       fullAddress,
       city,
       postalCode,
+      latitude,
+      longitude,
       venueName,
       minimumBudget,
       maximumBudget,
@@ -133,6 +135,8 @@ const createBooking = async (req, res) => {
       fullAddress,
       city,
       postalCode,
+      latitude: latitude ? parseFloat(latitude) : undefined,
+      longitude: longitude ? parseFloat(longitude) : undefined,
       venueName: venueName || undefined,
       minimumBudget,
       maximumBudget,
@@ -1038,9 +1042,83 @@ const processRefund = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Server error while processing refund',
+    })
+  }
+}
+// @desc    Get nearby bookings within 3km radius
+// @route   GET /api/bookings/nearby
+// @access  Private (Artist only)
+const getNearbyBookings = async (req, res) => {
+  try {
+    const { latitude, longitude, radius = 3 } = req.query;
+
+    if (!latitude || !longitude) {
+      return res.status(400).json({
+        success: false,
+        message: 'Latitude and longitude are required'
+      });
+    }
+
+    const userLat = parseFloat(latitude);
+    const userLng = parseFloat(longitude);
+    const radiusKm = parseFloat(radius);
+
+    // Get all pending bookings with latitude and longitude
+    const bookings = await Booking.find({
+      status: 'pending',
+      latitude: { $exists: true, $ne: null },
+      longitude: { $exists: true, $ne: null }
+    }).populate('clientId', 'firstName lastName email');
+
+    // Filter bookings within radius using Haversine formula
+    const nearbyBookings = bookings.filter(booking => {
+      if (!booking.latitude || !booking.longitude) return false;
+      
+      const R = 6371; // Earth's radius in kilometers
+      const dLat = (booking.latitude - userLat) * Math.PI / 180;
+      const dLng = (booking.longitude - userLng) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(userLat * Math.PI / 180) * Math.cos(booking.latitude * Math.PI / 180) *
+                Math.sin(dLng/2) * Math.sin(dLng/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      const distance = R * c;
+
+      return distance <= radiusKm;
+    });
+
+    // Sort by distance (closest first)
+    nearbyBookings.sort((a, b) => {
+      const distA = calculateDistance(userLat, userLng, a.latitude, a.longitude);
+      const distB = calculateDistance(userLat, userLng, b.latitude, b.longitude);
+      return distA - distB;
+    });
+
+    res.status(200).json({
+      success: true,
+      data: nearbyBookings,
+      count: nearbyBookings.length
+    });
+
+  } catch (error) {
+    console.error('Get nearby bookings error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching nearby bookings',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
     });
   }
+};
+
+// Helper function to calculate distance between two coordinates
+const calculateDistance = (lat1, lng1, lat2, lng2) => {
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLng/2) * Math.sin(dLng/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
 };
 
 module.exports = {
@@ -1055,6 +1133,7 @@ module.exports = {
   getPendingBookings,
   cancelBooking,
   updateBookingPaymentStatus,
-  processRefund
+  processRefund,
+  getNearbyBookings
 };
 

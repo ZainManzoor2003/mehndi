@@ -3,7 +3,8 @@ const router = express.Router();
 
 // Auth routes
 const { signup, login, me, updateProfile, googleAuth } = require('../controllers/authController');
-const { createBooking, getClientBookings, getAllBookings, getBookingById, updateBookingStatus, updateBooking, deleteBooking, getPendingBookings, completeBooking, cancelBooking, updateBookingPaymentStatus, processRefund } = require('../controllers/bookingController');
+const { createBooking, getClientBookings, getAllBookings, getBookingById, updateBookingStatus, updateBooking, deleteBooking, getPendingBookings, completeBooking, cancelBooking, updateBookingPaymentStatus, processRefund,getNearbyBookings} = require('../controllers/bookingController');
+const { createBooking, getClientBookings, getAllBookings, getBookingById, updateBookingStatus, updateBooking, deleteBooking, getPendingBookings, completeBooking, cancelBooking, updateBookingPaymentStatus, getNearbyBookings } = require('../controllers/bookingController');
 
 const { applyToBooking, getMyAppliedBookings, getApplicationsForBooking, updateApplicationStatus, withdrawApplication, notifyCancellationByArtist, completeApplication, addApplicationNote, getApplicationNotes } = require('../controllers/applicationController');
 
@@ -29,6 +30,7 @@ router.post('/api/bookings', protect, createBooking);
 router.get('/api/bookings', protect, getClientBookings);
 router.get('/api/bookings/all', protect, getAllBookings);
 router.get('/api/bookings/pending', protect, getPendingBookings);
+router.get('/api/bookings/nearby', protect, getNearbyBookings);
 // Completed bookings list for client should be defined before :id to avoid conflicts
 router.get('/api/bookings/completed', protect, reviewController.listCompletedBookingsForClient);
 router.get('/api/bookings/:id', protect, getBookingById);

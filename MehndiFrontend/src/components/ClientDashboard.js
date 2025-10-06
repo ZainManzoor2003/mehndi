@@ -806,27 +806,55 @@ const ClientDashboard = () => {
     return () => clearInterval(interval);
   }, [user, activeTab]);
 
-  useEffect(() => {
-    if (!user) return;
-    const onMessage = (incoming) => {
-      if (!currentChat) return;
-      setChatMessages(prev => [...prev, {
-        id: incoming.id,
-        sender: incoming.senderId,
-        text: incoming.message,
-        createdAt: new Date().toISOString(),
-      }]);
-    };
-    const onTyping = ({ userId, isTyping }) => {
-      setTypingUserId(isTyping ? userId : null);
-    };
-    socket.on('message', onMessage);
-    socket.on('typing', onTyping);
-    return () => {
-      socket.off('message', onMessage);
-      socket.off('typing', onTyping);
-    };
-  }, [user, currentChat]);
+  // useEffect(() => {
+  //   if (!user) return;
+  //   const onMessage = (incoming) => {
+  //     if (!currentChat) return;
+  //     setChatMessages(prev => [...prev, {
+  //       id: incoming.id,
+  //       sender: incoming.senderId,
+  //       text: incoming.message,
+  //       createdAt: new Date().toISOString(),
+  //     }]);
+  //   };
+  //   const onTyping = ({ userId, isTyping }) => {
+  //     setTypingUserId(isTyping ? userId : null);
+  //   };
+  //   socket.on('message', onMessage);
+  //   socket.on('typing', onTyping);
+  //   return () => {
+  //     socket.off('message', onMessage);
+  //     socket.off('typing', onTyping);
+  //   };
+  // }, [user, currentChat]);
+
+  // This is the FIXED code
+useEffect(() => {
+  if (!user) return;
+  const onMessage = (incoming) => {
+    // If there's no chat selected OR if the incoming message is from the current user, do nothing.
+    // This prevents the echo of your own message from being added again.
+    if (!currentChat || String(incoming.senderId) === String(user?._id)) {
+      return;
+    }
+
+    setChatMessages(prev => [...prev, {
+      id: incoming.id,
+      sender: incoming.senderId,
+      text: incoming.message,
+      createdAt: new Date().toISOString(),
+    }]);
+  };
+  const onTyping = ({ userId, isTyping }) => {
+    setTypingUserId(isTyping ? userId : null);
+  };
+  socket.on('message', onMessage);
+  socket.on('typing', onTyping);
+  return () => {
+    socket.off('message', onMessage);
+    socket.off('typing', onTyping);
+  };
+}, [user, currentChat]);
 
   return (
     <>

@@ -1,5 +1,5 @@
-const API_BASE_URL = 'http://localhost:5001/api';
-// const API_BASE_URL = 'https://mehndi-server.vercel.app/api';
+//const API_BASE_URL = 'http://localhost:5001/api';
+ const API_BASE_URL = 'https://mehndi-server.vercel.app/api';
 
 // API utility functions
 const handleResponse = async (response) => {
@@ -437,6 +437,16 @@ export const bookingsAPI = {
   // Get pending bookings (for artists/admin)
   getPendingBookings: async () => {
     return apiRequest('/bookings/pending');
+  },
+
+  // Get nearby bookings within radius (for artists)
+  getNearbyBookings: async (latitude, longitude, radius = 3) => {
+    const queryParams = new URLSearchParams({
+      latitude: latitude.toString(),
+      longitude: longitude.toString(),
+      radius: radius.toString()
+    });
+    return apiRequest(`/bookings/nearby?${queryParams}`);
   },
 
   // Get single booking
