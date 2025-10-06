@@ -498,6 +498,14 @@ export const bookingsAPI = {
       body: JSON.stringify({ isPaid, remainingPayment, bookingId,artistId }),
     });
   },
+
+  // Process refund for booking
+  processRefund: async ({ bookingId, userId, artistId }) => {
+    return apiRequest('/bookings/refund', {
+      method: 'POST',
+      body: JSON.stringify({ bookingId, userId, artistId }),
+    });
+  },
 };
 
 // Proposals API
@@ -653,6 +661,12 @@ export const walletAPI = {
   getAllWallets: async () => {
     return apiRequest('/wallet/all', {
       method: 'GET'
+    });
+  },
+  withdrawFunds: async ({ amount }) => {
+    return apiRequest('/wallet/withdraw', {
+      method: 'POST',
+      body: JSON.stringify({ amount })
     });
   }
 };

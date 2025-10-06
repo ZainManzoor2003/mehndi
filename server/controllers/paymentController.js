@@ -8,7 +8,6 @@ exports.createCheckoutSession = async (req, res) => {
     const { amount, currency = 'gbp', bookingId, applicationId, successUrl, cancelUrl,
       description, isPaid, remainingAmount } = req.body || {};
 
-
     if (!process.env.STRIPE_SECRET_KEY) {
       return res.status(500).json({ success: false, message: 'Stripe not configured on server' });
     }
@@ -25,6 +24,32 @@ exports.createCheckoutSession = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Only clients can create payments' });
     }
 
+    // Check if booking is half paid and adjust payment logic
+    const Booking = require('../schemas/Booking');
+    const booking = await Booking.findById(bookingId);
+    
+    if (booking && booking.isPaid === 'half' && isPaid === 'full') {
+      // Booking is half paid, use artist's proposed budget as full amount
+      const Application = require('../schemas/Application');
+      const application = await Application.findById(applicationId);
+      
+      if (application) {
+        const entry = application.Booking.find(b => b.booking_id.toString() === bookingId.toString());
+        if (entry && entry.artistDetails?.proposedBudget) {
+          const proposedBudget = entry.artistDetails.proposedBudget;
+          // Update the amount to be the artist's proposed budget
+          req.body.amount = proposedBudget;
+          req.body.isPaid = 'full';
+          req.body.remainingAmount = 0;
+        }
+      }
+    }
+
+    // Use updated values after potential adjustment
+    const finalAmount = req.body.amount || amount;
+    const finalIsPaid = req.body.isPaid || isPaid;
+    const finalRemainingAmount = req.body.remainingAmount || remainingAmount;
+
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       payment_method_types: ['card'],
@@ -32,7 +57,7 @@ exports.createCheckoutSession = async (req, res) => {
         {
           price_data: {
             currency,
-            unit_amount: Math.round(Number(amount) * 100),
+            unit_amount: Math.round(Number(finalAmount) * 100),
             product_data: {
               name: 'Booking upfront payment',
               description: description || `Booking ${bookingId} upfront payment`,
@@ -44,11 +69,11 @@ exports.createCheckoutSession = async (req, res) => {
       metadata: {
         bookingId: String(bookingId),
         applicationId: String(applicationId),
-        paidAmount: String(amount),
-        remainingAmount: String(remainingAmount),
-        isPaid: String(isPaid || 'none'),
+        paidAmount: String(finalAmount),
+        remainingAmount: String(finalRemainingAmount),
+        isPaid: String(finalIsPaid || 'none'),
       },
-      success_url: `http://localhost:3000/payment-success?checkout=success&bookingId=${encodeURIComponent(bookingId)}&applicationId=${encodeURIComponent(applicationId)}&paidAmount=${encodeURIComponent(amount)}&isPaid=${encodeURIComponent(isPaid || 'none')}&remaining=${encodeURIComponent(remainingAmount || '0')}`,
+      success_url: `http://localhost:3000/payment-success?checkout=success&bookingId=${encodeURIComponent(bookingId)}&applicationId=${encodeURIComponent(applicationId)}&paidAmount=${encodeURIComponent(finalAmount)}&isPaid=${encodeURIComponent(finalIsPaid || 'none')}&remaining=${encodeURIComponent(finalRemainingAmount || '0')}`,
       cancel_url: `http://localhost:3000/payment-cancel?checkout=canceled&bookingId=${encodeURIComponent(bookingId)}&applicationId=${encodeURIComponent(applicationId)}`,
     });
 

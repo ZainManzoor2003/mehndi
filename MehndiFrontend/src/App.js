@@ -71,7 +71,7 @@ function App() {
             <Route path="/booking" element={<BookingForm />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
             <Route path="/payment-cancel" element={<PaymentCancel />} />
-            <Route path="/payment-reschedule-booking/:bookingId" element={
+            <Route path="/payment-reschedule-booking/:action/:bookingId/:artistId/:userId" element={
               <RoleProtectedRoute allowedRoles={["client"]}>
                 <PaymentRescheduleBooking />
               </RoleProtectedRoute>

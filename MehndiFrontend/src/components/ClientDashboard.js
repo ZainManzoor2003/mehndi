@@ -46,7 +46,7 @@ const ClientDashboard = () => {
   const [allBookings, setAllBookings] = useState([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
   const [bookingsError, setBookingsError] = useState('');
-  
+
   // Transaction data
   const [transactions, setTransactions] = useState([]);
   const [transactionsLoading, setTransactionsLoading] = useState(false);
@@ -81,6 +81,9 @@ const ClientDashboard = () => {
   const [viewReviewData, setViewReviewData] = useState(null);
   const [walletData, setWalletData] = useState({ totalPaid: 0, remainingBalance: 0 });
   const [walletLoading, setWalletLoading] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawLoading, setWithdrawLoading] = useState(false);
   // Load completed bookings for reviews
   useEffect(() => {
     const loadReviewsData = async () => {
@@ -373,7 +376,7 @@ const ClientDashboard = () => {
     try {
       setTransactionsLoading(true);
       console.log('=== FETCHING USER TRANSACTIONS ===');
-      
+
       const response = await transactionAPI.getMyTransactions();
       console.log('getMyTransactions API response:', response);
 
@@ -588,7 +591,7 @@ const ClientDashboard = () => {
       const response = await bookingsAPI.createRemainingPayment({
         bookingId: bookingId,
         remainingAmount: remainingAmount,
-        artistId:artistId
+        artistId: artistId
       });
 
       if (response.success && response.data.url) {
@@ -606,6 +609,54 @@ const ClientDashboard = () => {
 
   const handlePaymentMethodChange = (method) => {
     setSelectedPaymentMethod(method);
+  };
+
+  const handleWithdraw = async () => {
+    try {
+      setWithdrawLoading(true);
+
+      const amount = parseFloat(withdrawAmount);
+      if (amount <= 0 || amount > walletData.remainingBalance) {
+        alert('Invalid withdrawal amount');
+        return;
+      }
+
+      const response = await walletAPI.withdrawFunds({ amount });
+
+      if (response.success) {
+        // Check if onboarding is required
+        if (response.data && response.data.onboardingUrl) {
+          // Show message and redirect after 3 seconds
+          alert('Redirecting to Stripe onboarding first to withdraw. Please complete the setup process.');
+
+          window.location.href = response.data.onboardingUrl;
+          return;
+        }
+
+        // Normal withdrawal success
+        alert('Withdrawal processed successfully! Funds will be available in your bank account within 2-7 business days.');
+
+        // Refresh wallet data
+        const walletResponse = await walletAPI.getWalletSummary();
+        if (walletResponse.success && walletResponse.data) {
+          setWalletData({
+            totalPaid: walletResponse.data.totalPaid || 0,
+            remainingBalance: walletResponse.data.remainingBalance || 0
+          });
+        }
+
+        // Close modal and reset form
+        setShowWithdrawModal(false);
+        setWithdrawAmount('');
+      } else {
+        alert(response.message || 'Failed to process withdrawal request');
+      }
+    } catch (error) {
+      console.error('Error processing withdrawal:', error);
+      alert('Failed to process withdrawal request. Please try again.');
+    } finally {
+      setWithdrawLoading(false);
+    }
   };
 
   const handleTabChange = (tab) => {
@@ -1165,6 +1216,19 @@ const ClientDashboard = () => {
                       <div className="wallet-card remaining-balance">
                         <h3 className="wallet-card-title">Remaining Balance</h3>
                         <p className="wallet-card-amount orange">£{walletData.remainingBalance.toFixed(2)}</p>
+                        {walletData.remainingBalance > 0 && (
+                          <button
+                            className="withdraw-btn modern-withdraw-btn"
+                            onClick={() => setShowWithdrawModal(true)}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M12 2L22 7L12 12L2 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+                              <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+                              <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+                            </svg>
+                            Withdraw Funds
+                          </button>
+                        )}
                       </div>
 
                       {/* <div className="wallet-card next-payment">
@@ -2105,6 +2169,146 @@ const ClientDashboard = () => {
                       </div>
                     </div>
                   )}
+                </div>
+              </div>
+            )}
+
+            {/* Withdraw Modal */}
+            {showWithdrawModal && (
+              <div className="modal-overlay modern-modal-overlay">
+                <div className="modal-content modern-withdraw-modal">
+                  <div className="modal-header modern-modal-header">
+                    <div className="modal-title-section">
+                      <div className="withdraw-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M12 2L22 7L12 12L2 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+                          <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+                          <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h2 className="modal-title">Withdraw Funds</h2>
+                        <p className="modal-subtitle">Transfer money to your bank account</p>
+                      </div>
+                    </div>
+                    <button className="close-btn modern-close-btn" onClick={() => setShowWithdrawModal(false)}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div className="modal-body modern-modal-body">
+                    <div className="balance-display">
+                      <div className="balance-info">
+                        <span className="balance-label">Available Balance</span>
+                        <span className="balance-amount">£{walletData.remainingBalance.toFixed(2)}</span>
+                      </div>
+                    </div>
+
+                    <div className="withdraw-form">
+                      <div className="form-group modern-form-group">
+                        <label htmlFor="withdrawAmount" className="modern-label">Withdrawal Amount</label>
+                        <div className="amount-input-container">
+                          <span className="currency-symbol">£</span>
+                          <input
+                            type="number"
+                            id="withdrawAmount"
+                            step="0.01"
+                            min="1"
+                            max={walletData.remainingBalance}
+                            value={withdrawAmount}
+                            onChange={(e) => setWithdrawAmount(e.target.value)}
+                            placeholder="0.00"
+                            className="modern-amount-input"
+                          />
+                        </div>
+                        <div className="quick-amounts">
+                          <button
+                            type="button"
+                            className="quick-amount-btn"
+                            onClick={() => setWithdrawAmount((walletData.remainingBalance * 0.25).toFixed(2))}
+                          >
+                            25%
+                          </button>
+                          <button
+                            type="button"
+                            className="quick-amount-btn"
+                            onClick={() => setWithdrawAmount((walletData.remainingBalance * 0.5).toFixed(2))}
+                          >
+                            50%
+                          </button>
+                          <button
+                            type="button"
+                            className="quick-amount-btn"
+                            onClick={() => setWithdrawAmount((walletData.remainingBalance * 0.75).toFixed(2))}
+                          >
+                            75%
+                          </button>
+                          <button
+                            type="button"
+                            className="quick-amount-btn"
+                            onClick={() => setWithdrawAmount(walletData.remainingBalance.toFixed(2))}
+                          >
+                            Max
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="withdraw-info-card">
+                      <div className="info-item">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                          <path d="M12 16V12M12 8H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        <span>Funds will be transferred to your bank account via Stripe</span>
+                      </div>
+                      <div className="info-item">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                          <polyline points="12,6 12,12 16,14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        <span>Processing time: 2-3 business days</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="modal-actions modern-modal-actions">
+                    <button
+                      className="cancel-btn modern-cancel-btn"
+                      onClick={() => {
+                        setShowWithdrawModal(false);
+                        setWithdrawAmount('');
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className="confirm-withdraw-btn modern-confirm-btn"
+                      onClick={handleWithdraw}
+                      disabled={!withdrawAmount || parseFloat(withdrawAmount) <= 0 || parseFloat(withdrawAmount) > walletData.remainingBalance || withdrawLoading}
+                    >
+                      {withdrawLoading ? (
+                        <>
+                          <svg className="spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" opacity="0.3" />
+                            <path d="M12 2C13.3132 2 14.6136 2.25866 15.8268 2.7612C17.0401 3.26375 18.1425 4.00035 19.0711 4.92893C19.9997 5.85752 20.7362 6.95991 21.2388 8.17317C21.7413 9.38642 22 10.6868 22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                          </svg>
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2L22 7L12 12L2 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+                            <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+                            <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+                          </svg>
+                          Withdraw £{withdrawAmount || '0.00'}
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

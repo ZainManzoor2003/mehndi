@@ -158,10 +158,22 @@ const ProposalsPage = () => {
       const now = new Date();
       const diffDays = eventDate ? Math.ceil((eventDate - now) / (1000 * 60 * 60 * 24)) : 0;
       const proposed = Number(selectedRow?.artistDetails?.proposedBudget) || 0;
-      const percent = diffDays >= 14 ? 0.5 : 1;
-      const paidAmount = Math.round(proposed * percent);
-      const remainingAmount = Math.max(proposed - paidAmount, 0);
-      const isPaid = diffDays >= 14 ? 'half' : 'full';
+      
+      // Check if booking is already half paid - if so, use artist's proposed budget as full amount
+      let paidAmount, remainingAmount, isPaid;
+      
+      if (selectedRow.bookingDetails?.isPaid === 'half') {
+        // Booking is already half paid, use artist's proposed budget as the full amount
+        paidAmount = proposed;
+        remainingAmount = 0;
+        isPaid = 'full';
+      } else {
+        // Regular logic based on 14-day rule
+        const percent = diffDays >= 14 ? 0.5 : 1;
+        paidAmount = Math.round(proposed * percent);
+        remainingAmount = Math.max(proposed - paidAmount, 0);
+        isPaid = diffDays >= 14 ? 'half' : 'full';
+      }
 
       // Create Stripe Checkout session for paidAmount
       const successUrl = `${window.location.origin}?checkout=success&bookingId=${encodeURIComponent(selectedRow.bookingId)}

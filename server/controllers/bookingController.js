@@ -342,6 +342,9 @@ const updateBooking = async (req, res) => {
       booking.eventDate = eventDateObj;
     }
 
+    // Set status to pending when booking is updated
+    booking.status = 'pending';
+
     await booking.save();
 
     res.status(200).json({ success: true, message: 'Booking updated successfully', data: booking });
@@ -728,11 +731,43 @@ const cancelBooking = async (req, res) => {
         daysUntilEvent: diffDays
       });
     } else {
-      console.log('No refund processed:', {
-        daysUntilEvent: diffDays,
-        paidAmount: paidAmount,
-        reason: diffDays < 7 ? 'Less than 7 days' : 'No payment made'
-      });
+      // Less than 7 days: No refund, create admin fee transaction
+      if (diffDays < 7 && paidAmount > 0) {
+        // Find admin user
+        const adminUser = await User.findOne({ userType: 'admin' });
+        if (adminUser) {
+          let adminWallet = await Wallet.findOne({ userId: adminUser._id });
+          if (!adminWallet) {
+            adminWallet = new Wallet({ userId: adminUser._id, walletAmount: 0 });
+          }
+
+          // Add full amount to admin wallet as fee
+          adminWallet.walletAmount += paidAmount;
+          await adminWallet.save();
+
+          // Create admin fee transaction
+          const adminTransaction = new Transaction({
+            sender: req.user.id,
+            receiver: adminUser._id,
+            bookingId: bookingId,
+            amount: paidAmount,
+            transactionType: 'admin-fee'
+          });
+          await adminTransaction.save();
+
+          console.log('Admin fee processed (less than 7 days):', {
+            totalPaid: paidAmount,
+            adminFee: paidAmount,
+            daysUntilEvent: diffDays
+          });
+        }
+      } else {
+        console.log('No refund processed:', {
+          daysUntilEvent: diffDays,
+          paidAmount: paidAmount,
+          reason: diffDays < 7 ? 'Less than 7 days' : 'No payment made'
+        });
+      }
     }
 
     // TODO: Notify assigned artists about cancellation
@@ -763,6 +798,12 @@ const cancelBooking = async (req, res) => {
       responseData.adminFee = paidAmount * 0.5;
       responseData.daysUntilEvent = diffDays;
       responseData.refundType = '50% refund';
+    } else if (diffDays < 7 && paidAmount > 0) {
+      responseData.refundProcessed = false;
+      responseData.refundAmount = 0;
+      responseData.adminFee = paidAmount;
+      responseData.daysUntilEvent = diffDays;
+      responseData.refundType = 'No refund - admin fee';
     }
 
     return res.status(200).json({
@@ -841,7 +882,7 @@ const updateBookingPaymentStatus = async (req, res) => {
     booking.paymentPaid = String(totalPaidAmount);
     
     if (remainingPayment !== undefined) {
-      booking.remainingPayment = String(remainingPayment);
+      booking.remainingPayment = String(0);
     }
     booking.updatedAt = new Date();
 
@@ -904,6 +945,104 @@ const updateBookingPaymentStatus = async (req, res) => {
   }
 };
 
+// @desc    Process refund for booking
+// @route   POST /api/bookings/refund
+// @access  Private (Client only)
+const processRefund = async (req, res) => {
+  try {
+    const { bookingId, userId, artistId } = req.body;
+
+    if (!bookingId || !userId || !artistId) {
+      return res.status(400).json({
+        success: false,
+        message: 'bookingId, userId, and artistId are required'
+      });
+    }
+
+    // Find the booking
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    // Verify ownership
+    if (booking.clientId.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to process refund for this booking'
+      });
+    }
+
+    // Find the transaction to update
+    const transaction = await Transaction.findOne({
+      sender: userId,
+      receiver: artistId,
+      bookingId: bookingId
+    });
+
+    if (!transaction) {
+      return res.status(404).json({
+        success: false,
+        message: 'Transaction not found'
+      });
+    }
+
+    // Update transaction status to refund
+    transaction.transactionType = 'refund';
+    transaction.updatedAt = new Date();
+    await transaction.save();
+
+    // Add refund amount to user's wallet
+    let userWallet = await Wallet.findOne({ userId: userId });
+    if (!userWallet) {
+      userWallet = new Wallet({ userId: userId, walletAmount: 0 });
+    }
+
+    const refundAmount = Number(booking.paymentPaid) || 0;
+    userWallet.walletAmount += refundAmount;
+    await userWallet.save();
+
+    // Reset booking status and payment fields
+    booking.status = 'pending';
+    booking.paymentPaid = '0';
+    booking.remainingPayment = '0';
+    booking.isPaid = 'none';
+    booking.assignedArtist = []; // Clear assigned artists array
+    booking.appliedArtists = []; // Clear applied artists array
+    await booking.save();
+
+    console.log('Refund processed:', {
+      bookingId: bookingId,
+      userId: userId,
+      artistId: artistId,
+      refundAmount: refundAmount,
+      newWalletBalance: userWallet.walletAmount
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Refund processed successfully',
+      data: {
+        bookingId: booking._id,
+        refundAmount: refundAmount,
+        newWalletBalance: userWallet.walletAmount,
+        bookingStatus: booking.status
+      }
+    });
+
+  } catch (error) {
+    console.error('Process refund error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while processing refund',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+};
+
 module.exports = {
   createBooking,
   getClientBookings,
@@ -915,6 +1054,7 @@ module.exports = {
   deleteBooking,
   getPendingBookings,
   cancelBooking,
-  updateBookingPaymentStatus
+  updateBookingPaymentStatus,
+  processRefund
 };
 

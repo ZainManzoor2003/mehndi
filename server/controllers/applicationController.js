@@ -8,11 +8,11 @@ const Transaction = require('../schemas/Transaction');
 // @access  Private (Artist only)
 exports.applyToBooking = async (req, res) => {
   try {
-    const { 
+    const {
       bookingId,
-      artistDetails 
+      artistDetails
     } = req.body;
-    
+
     if (!bookingId) {
       return res.status(400).json({ success: false, message: 'bookingId is required' });
     }
@@ -59,7 +59,7 @@ exports.applyToBooking = async (req, res) => {
     }
 
     // Only allow applying to pending bookings
-    if (booking.status !== 'pending' && booking.status!=='in_progress') {
+    if (booking.status !== 'pending' && booking.status !== 'in_progress') {
       return res.status(400).json({ success: false, message: 'You can only apply to bookings with pending or in_progress status' });
     }
 
@@ -112,7 +112,7 @@ exports.applyToBooking = async (req, res) => {
     // Add artist to booking.appliedArtists (no duplicates) and update status to in_progress
     await Booking.updateOne(
       { _id: bookingId },
-      { 
+      {
         $addToSet: { appliedArtists: req.user.id },
         $set: { status: 'in_progress' }
       }
@@ -137,7 +137,7 @@ exports.applyToBooking = async (req, res) => {
 //       bookingId,
 //       artistDetails 
 //     } = req.body;
-    
+
 //     // Validate required fields
 //     if (!bookingId || !artistDetails) {
 //       return res.status(400).json({ success: false, message: 'bookingId and artistDetails are required' });
@@ -432,7 +432,7 @@ exports.updateApplicationStatus = async (req, res) => {
   try {
     const { applicationId } = req.params;
     const { bookingId, status, paymentPaid, remainingPayment, isPaid } = req.body;
-    console.log(isPaid,remainingPayment)
+    console.log(isPaid, remainingPayment)
 
     if (!applicationId || !bookingId || !status) {
       return res.status(400).json({ success: false, message: 'applicationId, bookingId and status are required' });
@@ -474,25 +474,41 @@ exports.updateApplicationStatus = async (req, res) => {
           booking.assignedArtist = [...(booking.assignedArtist || []), artistId];
         }
         booking.status = 'confirmed';
-        // Update payment fields if provided by frontend
-        if (typeof paymentPaid !== 'undefined') {
-          booking.paymentPaid = String(paymentPaid);
-        }
-        if (typeof remainingPayment !== 'undefined') {
-          booking.remainingPayment = String(remainingPayment);
-        }
+        
+        // Handle payment fields - check if booking is half paid and use artist's proposed budget
         if (typeof isPaid !== 'undefined') {
-          booking.isPaid = isPaid;
+          if (booking.isPaid === 'half' && isPaid === 'full') {
+            // Booking is half paid, add artist's proposed budget to existing payment
+            const proposedBudget = bookingEntry.artistDetails?.proposedBudget || 0;
+            const currentPaymentPaid = Number(booking.paymentPaid) || 0;
+            booking.paymentPaid = String(currentPaymentPaid + proposedBudget);
+            booking.remainingPayment = '0';
+            booking.isPaid = 'full';
+          } else {
+            // Regular payment logic
+            if (typeof paymentPaid !== 'undefined') {
+              booking.paymentPaid = String(paymentPaid);
+            }
+            if (typeof remainingPayment !== 'undefined') {
+              booking.remainingPayment = String(remainingPayment);
+            }
+            booking.isPaid = isPaid;
+          }
         }
+        
         await booking.save();
 
         // Create transaction record
+        const transactionAmount = (booking.isPaid === 'half' && isPaid === 'full') 
+          ? (bookingEntry.artistDetails?.proposedBudget || 0) 
+          : (Number(booking.paymentPaid) || 0);
+          
         const transaction = new Transaction({
           sender: req.user.id,
           receiver: artistId,
           bookingId: bookingId,
-          amount: Number(booking.paymentPaid) || 0,
-          transactionType: isPaid
+          amount: transactionAmount,
+          transactionType: booking.isPaid || isPaid
         });
         await transaction.save();
       }
@@ -528,12 +544,12 @@ exports.notifyCancellationByArtist = async (req, res) => {
 
     const updateResult = await Application.updateOne(
       { 'Booking.booking_id': bookingId, 'Booking.artist_id': req.user.id },
-      { $set: { 'Booking.$[elem].status': 'expired' } },
+      { $set: { 'Booking.$[elem].status': 'cancelled' } },
       { arrayFilters: [{ 'elem.booking_id': bookingId }] }
     );
 
     if (updateResult.modifiedCount === 0) {
-        return res.status(404).json({ success: false, message: 'No application found for this booking and artist to cancel.' });
+      return res.status(404).json({ success: false, message: 'No application found for this booking and artist to cancel.' });
     }
 
     // Get booking and client
@@ -559,12 +575,12 @@ exports.notifyCancellationByArtist = async (req, res) => {
     const eventType = Array.isArray(booking.eventType) ? booking.eventType.join(', ') : (booking.eventType || 'Mehndi');
     const eventDate = booking.eventDate ? new Date(booking.eventDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
     const eventTime = Array.isArray(booking.preferredTimeSlot) ? booking.preferredTimeSlot.join(', ') : 'Not specified';
-    
+
     // Base URL for frontend (adjust as needed)
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    const relistUrl = `${frontendUrl}/client-dashboard?action=relist&bookingId=${bookingId}`;
-    const refundUrl = `${frontendUrl}/client-dashboard?action=refund&bookingId=${bookingId}`;
-    
+    const relistUrl = `${frontendUrl}/payment-reschedule-booking/relist/${bookingId}/${req.user.id}/${booking.clientId}`;
+    const refundUrl = `${frontendUrl}/payment-reschedule-booking/refund/${bookingId}/${req.user.id}/${booking.clientId}`;
+
     const html = `
       <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,sans-serif;font-size:15px;color:#333;max-width:600px;margin:0 auto;padding:20px;background-color:#f9f9f9;">
         <div style="background-color:white;padding:40px 35px;border-radius:12px;box-shadow:0 2px 15px rgba(0,0,0,0.08);">
@@ -671,17 +687,17 @@ exports.completeApplication = async (req, res) => {
 
     // Update the specific booking entry within the application
     const updateResult = await Application.updateOne(
-      { 
+      {
         _id: application._id,
         'Booking.booking_id': bookingId,
         'Booking.artist_id': req.user.id
       },
-      { 
-        $set: { 
+      {
+        $set: {
           'Booking.$.status': 'completed',
           'Booking.$.images': Array.isArray(images) ? images.slice(0, 3) : [],
           'Booking.$.video': typeof video === 'string' ? video : ''
-        } 
+        }
       }
     );
 
@@ -689,15 +705,15 @@ exports.completeApplication = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Failed to update application' });
     }
 
-    return res.status(200).json({ 
-      success: true, 
+    return res.status(200).json({
+      success: true,
       message: 'Application marked as completed successfully',
       data: { bookingId, images, video }
     });
   } catch (error) {
     console.error('Complete application error:', error);
-    return res.status(500).json({ 
-      success: false, 
+    return res.status(500).json({
+      success: false,
       message: 'Server error while completing application',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
     });
@@ -756,15 +772,15 @@ exports.addApplicationNote = async (req, res) => {
 
     await application.save();
 
-    return res.status(200).json({ 
-      success: true, 
-      message: 'Note added successfully', 
-      data: bookingEntry.notes 
+    return res.status(200).json({
+      success: true,
+      message: 'Note added successfully',
+      data: bookingEntry.notes
     });
   } catch (error) {
     console.error('Add application note error:', error);
-    return res.status(500).json({ 
-      success: false, 
+    return res.status(500).json({
+      success: false,
       message: 'Server error while adding note',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
     });
@@ -805,14 +821,14 @@ exports.getApplicationNotes = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Booking entry not found' });
     }
 
-    return res.status(200).json({ 
-      success: true, 
-      data: bookingEntry.notes || [] 
+    return res.status(200).json({
+      success: true,
+      data: bookingEntry.notes || []
     });
   } catch (error) {
     console.error('Get application notes error:', error);
-    return res.status(500).json({ 
-      success: false, 
+    return res.status(500).json({
+      success: false,
       message: 'Server error while fetching notes',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
     });

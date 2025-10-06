@@ -14,7 +14,7 @@ const transactionSchema = new mongoose.Schema({
   bookingId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Booking',
-    required: true
+    required: false // Not required for withdrawals
   },
   amount: {
     type: Number,
@@ -24,7 +24,7 @@ const transactionSchema = new mongoose.Schema({
   transactionType: {
     type: String,
     required: true,
-    enum: ['half', 'full', 'refund','admin-fee']
+    enum: ['half', 'full', 'refund', 'admin-fee', 'withdrawal']
   }
 }, {
   timestamps: true

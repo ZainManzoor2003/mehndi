@@ -3,7 +3,7 @@ const router = express.Router();
 
 // Auth routes
 const { signup, login, me, updateProfile, googleAuth } = require('../controllers/authController');
-const { createBooking, getClientBookings, getAllBookings, getBookingById, updateBookingStatus, updateBooking, deleteBooking, getPendingBookings, completeBooking, cancelBooking, updateBookingPaymentStatus } = require('../controllers/bookingController');
+const { createBooking, getClientBookings, getAllBookings, getBookingById, updateBookingStatus, updateBooking, deleteBooking, getPendingBookings, completeBooking, cancelBooking, updateBookingPaymentStatus, processRefund } = require('../controllers/bookingController');
 
 const { applyToBooking, getMyAppliedBookings, getApplicationsForBooking, updateApplicationStatus, withdrawApplication, notifyCancellationByArtist, completeApplication, addApplicationNote, getApplicationNotes } = require('../controllers/applicationController');
 
@@ -14,7 +14,7 @@ const { createCheckoutSession, createRemainingCheckoutSession } = require('../co
 const reviewController = require('../controllers/reviewController');
 const chatController = require('../controllers/chatController');
 const portfolioController = require('../controllers/portfolioController');
-const { getWallet, updateWallet, getAllWallets, getWalletSummary } = require('../controllers/walletController');
+const { getWallet, updateWallet, getAllWallets, getWalletSummary, withdrawFunds } = require('../controllers/walletController');
 const { getAllTransactions, getMyTransactions } = require('../controllers/transactionController');
 
 // Auth routes
@@ -36,6 +36,7 @@ router.put('/api/bookings/:id/status', protect, updateBookingStatus);
 router.put('/api/bookings/:id/complete', protect, completeBooking);
 router.put('/api/bookings/payment-status', protect, updateBookingPaymentStatus);
 router.put('/api/bookings/cancel', protect, cancelBooking);
+router.post('/api/bookings/refund', protect, processRefund);
 
 // Reviews
 router.post('/api/reviews', protect, reviewController.createReview);
@@ -78,6 +79,7 @@ router.get('/api/wallet', protect, getWallet);
 router.get('/api/wallet/summary', protect, getWalletSummary);
 router.put('/api/wallet/update', protect, updateWallet);
 router.get('/api/wallet/all', protect, getAllWallets);
+router.post('/api/wallet/withdraw', protect, withdrawFunds);
 
 // Transaction routes
 router.get('/api/transactions', protect, getAllTransactions);
@@ -102,3 +104,4 @@ router.get('/api/admin/analytics/requests-by-status', protect, adminOnly, adminC
 router.get('/api/admin/analytics/applications-by-status', protect, adminOnly, adminController.getApplicationsByStatus);
 router.get('/api/admin/analytics/growth-over-time', protect, adminOnly, adminController.getGrowthOverTime);
 router.get('/api/admin/analytics/activity-by-city', protect, adminOnly, adminController.getActivityByCity);
+module.exports = router;

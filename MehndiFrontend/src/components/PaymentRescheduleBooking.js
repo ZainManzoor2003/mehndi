@@ -7,7 +7,7 @@ import './PaymentRescheduleBooking.css';
 const { bookingsAPI } = apiService;
 
 const PaymentRescheduleBooking = () => {
-    const { bookingId } = useParams();
+    const { bookingId, action, artistId, userId } = useParams();
     const navigate = useNavigate();
     const { user, isAuthenticated } = useAuth();
 
@@ -47,8 +47,11 @@ const PaymentRescheduleBooking = () => {
     });
 
     useEffect(() => {
-        if (bookingId) {
+        if (action==='relist') {
             fetchBookingDetails();
+        }
+        else if (action==='refund'){
+            processRefund();
         }
     }, [bookingId]);
 
@@ -103,7 +106,7 @@ const PaymentRescheduleBooking = () => {
             }
         } catch (error) {
             console.error('Error fetching booking details:', error);
-            setError('Failed to load booking details. Please try again.');
+            setError('Failed to load booking details. You are not authenticated user to access this booking.');
         } finally {
             setLoading(false);
         }
@@ -218,6 +221,31 @@ const PaymentRescheduleBooking = () => {
     const handleCloseModal = () => {
         setShowModal(false);
         navigate('/dashboard/bookings');
+    };
+
+    const processRefund = async () => {
+        try {
+            setLoading(true);
+            setError('');
+
+            const response = await bookingsAPI.processRefund({
+                bookingId,
+                userId,
+                artistId
+            });
+
+            if (response.success) {
+                alert('Refund processed successfully!');
+                navigate('/dashboard/bookings');
+            } else {
+                setError(response.message || 'Failed to process refund');
+            }
+        } catch (error) {
+            console.error('Error processing refund:', error);
+            setError('Failed to process refund. Please try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     if (loading && !booking) {

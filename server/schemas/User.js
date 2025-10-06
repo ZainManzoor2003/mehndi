@@ -42,6 +42,11 @@ const UserSchema = new mongoose.Schema(
       required: [true, 'User type is required'],
       default: 'client'
     },
+    stripeAccountId: {
+      type: String,
+      required: false,
+      trim: true
+    },
     chatIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Chat' }],
     createdAt: {
       type: Date,
