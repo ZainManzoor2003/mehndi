@@ -439,6 +439,16 @@ export const bookingsAPI = {
     return apiRequest('/bookings/pending');
   },
 
+  // Get nearby bookings within radius (for artists)
+  getNearbyBookings: async (latitude, longitude, radius = 3) => {
+    const queryParams = new URLSearchParams({
+      latitude: latitude.toString(),
+      longitude: longitude.toString(),
+      radius: radius.toString()
+    });
+    return apiRequest(`/bookings/nearby?${queryParams}`);
+  },
+
   // Get single booking
   getBooking: async (bookingId) => {
     return apiRequest(`/bookings/${bookingId}`);
