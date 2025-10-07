@@ -1,5 +1,5 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || '');
-
+const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 // @desc    Create Stripe Checkout Session for upfront payment
 // @route   POST /api/payments/create-checkout
 // @access  Private (Client only)
@@ -73,8 +73,8 @@ exports.createCheckoutSession = async (req, res) => {
         remainingAmount: String(finalRemainingAmount),
         isPaid: String(finalIsPaid || 'none'),
       },
-      success_url: `http://localhost:3000/payment-success?checkout=success&bookingId=${encodeURIComponent(bookingId)}&applicationId=${encodeURIComponent(applicationId)}&paidAmount=${encodeURIComponent(finalAmount)}&isPaid=${encodeURIComponent(finalIsPaid || 'none')}&remaining=${encodeURIComponent(finalRemainingAmount || '0')}`,
-      cancel_url: `http://localhost:3000/payment-cancel?checkout=canceled&bookingId=${encodeURIComponent(bookingId)}&applicationId=${encodeURIComponent(applicationId)}`,
+      success_url: `${frontendUrl}/payment-success?checkout=success&bookingId=${encodeURIComponent(bookingId)}&applicationId=${encodeURIComponent(applicationId)}&paidAmount=${encodeURIComponent(finalAmount)}&isPaid=${encodeURIComponent(finalIsPaid || 'none')}&remaining=${encodeURIComponent(finalRemainingAmount || '0')}`,
+      cancel_url: `${frontendUrl}/payment-cancel?checkout=canceled&bookingId=${encodeURIComponent(bookingId)}&applicationId=${encodeURIComponent(applicationId)}`,
     });
 
     return res.status(200).json({ success: true, data: { id: session.id, url: session.url } });
@@ -143,9 +143,9 @@ exports.createRemainingCheckoutSession = async (req, res) => {
         isPaid: 'full',
         artistId: String(artistId)
       },
-      success_url: `http://localhost:3000/payment-success?checkout=success&bookingId=
+      success_url: `${frontendUrl}/payment-success?checkout=success&bookingId=
       ${encodeURIComponent(bookingId)}&paymentType=remaining&isPaid=full&amount=${encodeURIComponent(remainingAmount)}&artistId=${encodeURIComponent(artistId)}`,
-      cancel_url: `http://localhost:3000/payment-cancel?checkout=canceled&bookingId=${encodeURIComponent(bookingId)}&paymentType=remaining`,
+      cancel_url: `${frontendUrl}/payment-cancel?checkout=canceled&bookingId=${encodeURIComponent(bookingId)}&paymentType=remaining`,
     });
 
     console.log('Remaining Payment Controller - Session created successfully:', { id: session.id, url: session.url });
