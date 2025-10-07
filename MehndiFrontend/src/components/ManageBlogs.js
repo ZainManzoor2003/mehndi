@@ -260,10 +260,64 @@ const ManageBlogs = () => {
                       </div>
                     )}
                     <h3 className="blog-title">{b.title}</h3>
-                    <p className="blog-desc">{b.description}</p>
-                    <div className="blog-actions">
-                      <button className="btn btn-outline" onClick={() => handleEdit(b)}>Edit</button>
-                      <button className="btn danger" onClick={() => handleDelete(b._id)}>Delete</button>
+                    <p className="blog-desc" style={{ margin: 0, color: '#6e5f50', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      {b.description}
+                    </p>
+                    <div className="blog-actions" style={{ display: 'flex', gap: '10px', marginTop: '.6rem' }}>
+                      <button
+                        className="btn btn-outline"
+                        onClick={() => handleEdit(b)}
+                        style={{
+                          border: '2px solid #d4a574',
+                          color: '#d4a574',
+                          padding: '8px 14px',
+                          borderRadius: '8px',
+                          fontWeight: 700,
+                          background: 'transparent',
+                          transition: 'all .2s ease',
+                          boxShadow: '0 2px 8px rgba(212,165,116,0.15)'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = '#d4a574';
+                          e.currentTarget.style.color = 'white';
+                          e.currentTarget.style.boxShadow = '0 6px 16px rgba(212,165,116,0.35)';
+                          e.currentTarget.style.transform = 'translateY(-1px)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'transparent';
+                          e.currentTarget.style.color = '#d4a574';
+                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(212,165,116,0.15)';
+                          e.currentTarget.style.transform = 'translateY(0)';
+                        }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="btn danger"
+                        onClick={() => handleDelete(b._id)}
+                        style={{
+                          background: '#b94b3c',
+                          color: 'white',
+                          padding: '8px 14px',
+                          borderRadius: '8px',
+                          fontWeight: 700,
+                          border: 'none',
+                          transition: 'all .2s ease',
+                          boxShadow: '0 2px 8px rgba(185,75,60,0.25)'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = '#a63f34';
+                          e.currentTarget.style.boxShadow = '0 6px 16px rgba(185,75,60,0.4)';
+                          e.currentTarget.style.transform = 'translateY(-1px)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = '#b94b3c';
+                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(185,75,60,0.25)';
+                          e.currentTarget.style.transform = 'translateY(0)';
+                        }}
+                      >
+                        Delete
+                      </button>
                     </div>
                   </div>
                 ))}

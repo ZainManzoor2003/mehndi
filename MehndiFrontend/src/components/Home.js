@@ -78,7 +78,7 @@ const Home = () => {
           </div>
           
           <div className="home__actions">
-            <Link to="/choose-your-path" className="home__cta-button" ref={buttonRef}>Request an Artist</Link>
+            <Link to="/choose-path" className="home__cta-button" ref={buttonRef}>Request an Artist</Link>
           </div>
         </div>
       </div>

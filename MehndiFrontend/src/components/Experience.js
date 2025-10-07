@@ -11,8 +11,10 @@ const Experience = () => {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
+      if (!sectionRef.current) return;
       // Animate title
-      gsap.fromTo(titleRef.current,
+      if (titleRef.current) {
+        gsap.fromTo(titleRef.current,
         { opacity: 0, y: 50 },
         {
           opacity: 1,
@@ -25,9 +27,12 @@ const Experience = () => {
             toggleActions: "play none none reverse"
           }
         }
-      );
+        );
+      }
 
       // Animate numbers with counter effect
+      // Ensure we only process valid elements
+      numbersRef.current = (numbersRef.current || []).filter(Boolean);
       numbersRef.current.forEach((numberElement, index) => {
         if (numberElement) {
           const finalNumber = numberElement.textContent;
@@ -57,7 +62,9 @@ const Experience = () => {
                   duration: 2,
                   ease: "power2.out",
                   onUpdate: () => {
-                    numberElement.textContent = Math.round(obj.number) + suffix;
+                    if (numberElement) {
+                      numberElement.textContent = Math.round(obj.number) + suffix;
+                    }
                   }
                 });
               }
@@ -68,7 +75,14 @@ const Experience = () => {
 
     }, sectionRef);
 
-    return () => ctx.revert();
+    return () => {
+      // Kill animations and scroll triggers to avoid targeting unmounted nodes
+      try { ctx.revert(); } catch (_) {}
+      try {
+        ScrollTrigger.getAll().forEach(t => t.kill());
+      } catch (_) {}
+      numbersRef.current = [];
+    };
   }, []);
 
   const addToNumbersRef = (el) => {
@@ -78,7 +92,7 @@ const Experience = () => {
   };
 
   return (
-    <section className="experience section" ref={sectionRef}>
+    <section className="experience section" id="experience" ref={sectionRef}>
       <h2 className="section__title" ref={titleRef}>With Our Platform <br /> We Connect You Perfectly</h2>
 
       <div className="experience__container container grid">

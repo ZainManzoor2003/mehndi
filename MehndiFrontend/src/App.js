@@ -1,18 +1,21 @@
 import React from 'react';
 import './App.css';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute, RoleProtectedRoute, PublicRoute } from './components/RouteGuards';
 import LogoutButton from './components/LogoutButton';
 import Header from './components/Header';
 import Home from './components/Home';
+import Blogs from './components/Blogs';
+import BlogDetail from './components/BlogDetail';
 import HowItWorks from './components/HowItWorks';
 import About from './components/About';
 import Discover from './components/Discover';
 import Experience from './components/Experience';
 import Subscribe from './components/Subscribe';
 import Footer from './components/Footer';
+import { useAuth } from './contexts/AuthContext';
 import ChoosePathForm from './components/ChoosePathForm';
 import Login from './components/Login';
 import Signup from './components/Signup';
@@ -49,6 +52,24 @@ const LandingPage = () => (
   </>
 );
 
+// Redirect authenticated users to their dashboard when they try to access public pages
+const RedirectIfAuthenticated = ({ children }) => {
+  const { isAuthenticated, user, loading } = useAuth();
+  if (loading) return children; // avoid flicker; let child render until auth known
+  if (isAuthenticated && user) {
+    const userType = (user.userType || '').toLowerCase();
+    const target = userType === 'client'
+      ? '/dashboard'
+      : userType === 'artist'
+        ? '/artist-dashboard'
+        : userType === 'admin'
+          ? '/admin-dashboard/users'
+          : '/';
+    return <Navigate to={target} replace />;
+  }
+  return children;
+};
+
 function App() {
   return (
     <GoogleOAuthProvider clientId="262818084611-h1hqd4vvma7otjo0cvo9drb4la9fe8p0.apps.googleusercontent.com">
@@ -57,19 +78,21 @@ function App() {
           <div className="App">
           {/* Logout button moved into sidebar */}
           <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/choose-path" element={<ChoosePathForm />} />
+            <Route path="/" element={<RedirectIfAuthenticated><LandingPage /></RedirectIfAuthenticated>} />
+            <Route path="/blogs" element={<RedirectIfAuthenticated><><Header /><main className="main"><Blogs /></main><Footer /></></RedirectIfAuthenticated>} />
+            <Route path="/blogs/:id" element={<RedirectIfAuthenticated><><Header /><main className="main"><BlogDetail /></main><Footer /></></RedirectIfAuthenticated>} />
+            <Route path="/choose-path" element={<RedirectIfAuthenticated><ChoosePathForm /></RedirectIfAuthenticated>} />
             <Route path="/login" element={
               <PublicRoute>
-                <Login />
+                <RedirectIfAuthenticated><Login /></RedirectIfAuthenticated>
               </PublicRoute>
             } />
             <Route path="/signup" element={
               <PublicRoute>
-                <Signup />
+                <RedirectIfAuthenticated><Signup /></RedirectIfAuthenticated>
               </PublicRoute>
             } />
-            <Route path="/booking" element={<BookingForm />} />
+            <Route path="/booking" element={<RedirectIfAuthenticated><BookingForm /></RedirectIfAuthenticated>} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
             <Route path="/payment-cancel" element={<PaymentCancel />} />
             <Route path="/payment-reschedule-booking/:action/:bookingId/:artistId/:userId" element={

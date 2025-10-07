@@ -404,6 +404,39 @@ exports.getMyAppliedBookings = async (req, res) => {
   }
 };
 
+
+exports.getMyApplicationStats = async (req, res) => {
+  try {
+    const artistId = req.user.id;
+
+    const pipeline = [
+      { $unwind: '$Booking' },
+      { $match: { 'Booking.artist_id': new (require('mongoose').Types.ObjectId)(artistId) } },
+      { $group: { _id: '$Booking.status', count: { $sum: 1 } } }
+    ];
+
+    const result = await Application.aggregate(pipeline);
+    const statsMap = result.reduce((acc, { _id, count }) => { acc[_id] = count; return acc; }, {});
+
+    const applied = statsMap.applied || 0;
+    const accepted = statsMap.accepted || 0;
+    const declined = statsMap.declined || 0;
+    const withdrawn = statsMap.withdrawn || 0;
+    const expired = statsMap.expired || 0;
+    const pending = statsMap.pending || 0;
+    const total = applied + accepted + declined + withdrawn + expired + pending;
+    const acceptanceRate = total > 0 ? +(accepted / total * 100).toFixed(1) : 0;
+
+    return res.status(200).json({
+      success: true,
+      data: { applied, accepted, declined, withdrawn, expired, pending, total, acceptanceRate }
+    });
+  } catch (error) {
+    console.error('Get my application stats error:', error);
+    return res.status(500).json({ success: false, message: 'Server error while fetching application stats' });
+  }
+};
+
 // @desc    Get all applications for a booking (for client to review)
 // @route   GET /api/applications/booking/:bookingId
 // @access  Private (Client owner of booking)
