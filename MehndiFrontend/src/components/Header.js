@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 
 const Header = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDarkTheme, setIsDarkTheme] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -69,21 +71,33 @@ const Header = () => {
 
   const handleNavClick = (e, targetId) => {
     e.preventDefault();
+    // Always close the menu first (with its built-in animation timing)
     closeMenu();
-    
-    // Wait for menu to close before scrolling
-    setTimeout(() => {
+
+    const headerHeight = 80; // Account for fixed header
+
+    const tryScroll = (retries = 20) => {
       const target = document.querySelector(targetId);
       if (target) {
-        const headerHeight = 80; // Account for fixed header
-        const targetPosition = target.offsetTop - headerHeight;
-        
-        window.scrollTo({
-          top: targetPosition,
-          behavior: 'smooth'
-        });
+        const targetPosition = target.getBoundingClientRect().top + window.pageYOffset - headerHeight;
+        window.scrollTo({ top: targetPosition, behavior: 'smooth' });
+        return;
       }
-    }, 700);
+      if (retries > 0) setTimeout(() => tryScroll(retries - 1), 75);
+    };
+
+    const proceed = () => {
+      // Small delay to allow layout to settle after route/menu animation
+      setTimeout(() => tryScroll(), 350);
+    };
+
+    if (location.pathname !== '/') {
+      // Navigate to home first, then scroll to the section
+      navigate('/');
+      proceed();
+    } else {
+      proceed();
+    }
   };
 
   return (
@@ -92,20 +106,62 @@ const Header = () => {
         <nav className="nav container">
           {/* Left: Hamburger Menu */}
           <div className="nav__toggle" id="nav-toggle" onClick={toggleMenu}>
-            <div className={`henna-burger ${isMenuOpen ? 'active' : ''}`}>
-              <div className="henna-line henna-line-1"></div>
-              <div className="henna-line henna-line-2"></div>
-              <div className="henna-line henna-line-3"></div>
-              <div className="henna-pattern">
-                <div className="henna-dot henna-dot-1"></div>
-                <div className="henna-dot henna-dot-2"></div>
-                <div className="henna-dot henna-dot-3"></div>
-                <div className="henna-curve henna-curve-1"></div>
-                <div className="henna-curve henna-curve-2"></div>
-                <div className="henna-leaf henna-leaf-1"></div>
-                <div className="henna-leaf henna-leaf-2"></div>
-              </div>
-            </div>
+            <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" width="60" height="60" className={`burger-svg ${isMenuOpen ? 'active' : ''}`}> 
+              <style> 
+                {`
+                  .burger line { 
+                    stroke: #EA7C25; 
+                    stroke-width: 3.2; 
+                    stroke-linecap: round; 
+                    transition: opacity .3s ease; 
+                  } 
+                  .flower path, .flower circle { 
+                    stroke: #EA7C25; 
+                    fill: none; 
+                    stroke-width: 1.8; 
+                    opacity: 0; 
+                    stroke-linecap: round; 
+                    stroke-linejoin: round; 
+                  } 
+                  @keyframes draw { to { stroke-dashoffset: 0; opacity: 1; } }
+                  .burger-svg.active .burger line {
+                    opacity: 0;
+                  }
+                  .burger-svg.active .flower path,
+                  .burger-svg.active .flower circle {
+                    animation: draw .5s ease-out forwards;
+                  }
+                  .burger-svg.active .flower circle {
+                    animation-delay: 0s;
+                  }
+                  .burger-svg.active .flower path:nth-child(2) {
+                    animation-delay: 0.1s;
+                  }
+                  .burger-svg.active .flower path:nth-child(3) {
+                    animation-delay: 0.2s;
+                  }
+                  .burger-svg.active .flower path:nth-child(4) {
+                    animation-delay: 0.3s;
+                  }
+                  .burger-svg.active .flower path:nth-child(5) {
+                    animation-delay: 0.4s;
+                  }
+                `}
+              </style> 
+              
+              <g className="burger"> 
+                <line x1="7" y1="10" x2="25" y2="10"/> 
+                <line x1="7" y1="16" x2="25" y2="16"/> 
+                <line x1="7" y1="22" x2="25" y2="22"/> 
+              </g> 
+              <g className="flower"> 
+                <circle cx="16" cy="16" r="3"/> 
+                <path d="M16 6 Q18 10 16 12 Q14 10 16 6"/> 
+                <path d="M16 26 Q18 22 16 20 Q14 22 16 26"/> 
+                <path d="M6 16 Q10 18 12 16 Q10 14 6 16"/> 
+                <path d="M26 16 Q22 18 20 16 Q22 14 26 16"/> 
+              </g> 
+            </svg>
           </div>
 
           {/* Center: Logo */}
@@ -122,10 +178,61 @@ const Header = () => {
           <div className="nav__overlay-header">
             <div className="nav__overlay-logo">Mehndi Me</div>
             <div className="nav__overlay-close" onClick={closeMenu}>
-              <div className={`henna-close ${isMenuOpen ? 'active' : ''}`}>
-                <div className="henna-close-line henna-close-line-1"></div>
-                <div className="henna-close-line henna-close-line-2"></div>
-              </div>
+              <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" width="40" height="40" className={`close-svg ${isMenuOpen ? 'active' : ''}`}> 
+                <style> 
+                  {`
+                    .close-x line { 
+                      stroke: #EA7C25; 
+                      stroke-width: 3.2; 
+                      stroke-linecap: round; 
+                      transition: opacity .3s ease; 
+                    } 
+                    .close-flower path, .close-flower circle { 
+                      stroke: #EA7C25; 
+                      fill: none; 
+                      stroke-width: 1.8; 
+                      opacity: 0; 
+                      stroke-linecap: round; 
+                      stroke-linejoin: round; 
+                    } 
+                    @keyframes drawClose { to { stroke-dashoffset: 0; opacity: 1; } }
+                    .close-svg.active .close-x line {
+                      opacity: 0;
+                    }
+                    .close-svg.active .close-flower path,
+                    .close-svg.active .close-flower circle {
+                      animation: drawClose .5s ease-out forwards;
+                    }
+                    .close-svg.active .close-flower circle {
+                      animation-delay: 0s;
+                    }
+                    .close-svg.active .close-flower path:nth-child(2) {
+                      animation-delay: 0.1s;
+                    }
+                    .close-svg.active .close-flower path:nth-child(3) {
+                      animation-delay: 0.2s;
+                    }
+                    .close-svg.active .close-flower path:nth-child(4) {
+                      animation-delay: 0.3s;
+                    }
+                    .close-svg.active .close-flower path:nth-child(5) {
+                      animation-delay: 0.4s;
+                    }
+                  `}
+                </style> 
+                
+                <g className="close-x"> 
+                  <line x1="8" y1="8" x2="24" y2="24"/> 
+                  <line x1="24" y1="8" x2="8" y2="24"/> 
+                </g> 
+                <g className="close-flower"> 
+                  <circle cx="16" cy="16" r="3"/> 
+                  <path d="M16 6 Q18 10 16 12 Q14 10 16 6"/> 
+                  <path d="M16 26 Q18 22 16 20 Q14 22 16 26"/> 
+                  <path d="M6 16 Q10 18 12 16 Q10 14 6 16"/> 
+                  <path d="M26 16 Q22 18 20 16 Q22 14 26 16"/> 
+                </g> 
+              </svg>
             </div>
           </div>
           
@@ -168,8 +275,14 @@ const Header = () => {
                 </a>
               </li>
               <li className="nav__overlay-item">
-                <Link to="/booking" className="nav__overlay-link" onClick={closeMenu}>
+                <Link to="/blogs" className="nav__overlay-link" onClick={closeMenu}>
                   <span className="nav__overlay-number">07</span>
+                  <span className="nav__overlay-text">Blogs</span>
+                </Link>
+              </li>
+              <li className="nav__overlay-item">
+                <Link to="/booking" className="nav__overlay-link" onClick={closeMenu}>
+                  <span className="nav__overlay-number">08</span>
                   <span className="nav__overlay-text">Book Now</span>
                 </Link>
               </li>
@@ -186,7 +299,7 @@ const Header = () => {
             </div>
             
             <div className="nav__overlay-cta">
-              <button className="nav__overlay-button">Get Started</button>
+              <button className="nav__overlay-button" onClick={() => { closeMenu(); navigate('/choose-path'); }}>Get Started</button>
             </div>
           </div>
         </div>

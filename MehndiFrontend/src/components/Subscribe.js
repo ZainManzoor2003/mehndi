@@ -12,7 +12,7 @@ const Subscribe = () => {
   return (
     <section className="subscribe section" id="subscribe">
       <div className="subscribe__container container">
-        <h2 className="section__title">Subscribe Our <br /> Newsletter</h2>
+        <h2 className="section__title" style={{color: 'var(--first-color)'}}>Subscribe Our <br /> Newsletter</h2>
         <p className="subscribe__description">
           Subscribe to our newsletter and get special offers, mehndi tips, artist spotlights, and updates 
           about the latest trends in mehndi designs and our platform.

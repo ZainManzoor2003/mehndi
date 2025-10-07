@@ -41,6 +41,22 @@ const ArtistDashboard = () => {
     document.addEventListener('visibilitychange', onVisibility);
     return () => { if (off) off(); document.removeEventListener('visibilitychange', onVisibility); };
   }, [user, isAuthenticated]);
+
+  // Fetch application stats for tiles
+  useEffect(() => {
+    if (!isAuthenticated || !user || user.userType !== 'artist') return;
+    applicationsAPI.getMyStats().then(resp => {
+      if (resp && resp.success && resp.data) {
+        const { applied = 0, accepted = 0, declined = 0, withdrawn = 0, expired = 0 } = resp.data;
+        const setText = (id, val) => { try { const el = document.getElementById(id); if (el) el.textContent = String(val); } catch(_){} };
+        setText('stat-applied', applied);
+        setText('stat-accepted', accepted);
+        setText('stat-declined', declined);
+        setText('stat-withdrawn', withdrawn);
+        setText('stat-expired', expired);
+      }
+    }).catch(() => {});
+  }, [isAuthenticated, user]);
   const [proposalData, setProposalData] = useState({
     message: '',
     price: '',
@@ -2503,9 +2519,7 @@ useEffect(() => {
                         fontSize: '32px', 
                         fontWeight: '700',
                         color: '#333'
-                      }}>
-                        1
-                      </div>
+                      }} id="stat-applied">0</div>
                       <div style={{ 
                         fontSize: '14px', 
                         fontWeight: '600',
@@ -2554,9 +2568,7 @@ useEffect(() => {
                         fontSize: '32px', 
                         fontWeight: '700',
                         color: '#333'
-                      }}>
-                        1
-                      </div>
+                      }} id="stat-accepted">0</div>
                       <div style={{ 
                         fontSize: '14px', 
                         fontWeight: '600',
@@ -2605,9 +2617,7 @@ useEffect(() => {
                         fontSize: '32px', 
                         fontWeight: '700',
                         color: '#333'
-                      }}>
-                        1
-                      </div>
+                      }} id="stat-declined">0</div>
                       <div style={{ 
                         fontSize: '14px', 
                         fontWeight: '600',
@@ -2656,9 +2666,7 @@ useEffect(() => {
                         fontSize: '32px', 
                         fontWeight: '700',
                         color: '#333'
-                      }}>
-                        0
-                      </div>
+                      }} id="stat-withdrawn">0</div>
                       <div style={{ 
                         fontSize: '14px', 
                         fontWeight: '600',
@@ -2704,9 +2712,7 @@ useEffect(() => {
                         fontSize: '32px', 
                         fontWeight: '700',
                         color: '#333'
-                      }}>
-                        1
-                      </div>
+                      }} id="stat-expired">0</div>
                       <div style={{ 
                         fontSize: '14px', 
                         fontWeight: '600',

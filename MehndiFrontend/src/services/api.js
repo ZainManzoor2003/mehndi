@@ -1,5 +1,5 @@
-//const API_BASE_URL = 'http://localhost:5001/api';
- const API_BASE_URL = 'https://mehndi-server.vercel.app/api';
+const API_BASE_URL = 'http://localhost:5001/api';
+//  const API_BASE_URL = 'https://mehndi-server.vercel.app/api';
 
 // API utility functions
 const handleResponse = async (response) => {
@@ -306,6 +306,12 @@ export const adminAPI = {
   },
 };
 
+// Public Blogs API
+export const blogsAPI = {
+  list: async () => apiRequest('/blogs'),
+  getById: async (id) => apiRequest(`/blogs/${id}`)
+};
+
 // Upload API functions
 export const uploadAPI = {
   // Upload single image
@@ -600,6 +606,9 @@ export const applicationsAPI = {
   getMyAppliedBookings: async () => {
     return apiRequest('/applications/my-applied');
   },
+  getMyStats: async () => {
+    return apiRequest('/applications/stats/my');
+  },
   getMyApplicationsByStatus: async (status) => {
     const qs = new URLSearchParams({ status }).toString();
     return apiRequest(`/applications/my-applied?${qs}`);
@@ -712,7 +721,8 @@ const apiExports = {
   notificationsAPI,
   portfoliosAPI,
   walletAPI,
-  transactionAPI
+  transactionAPI,
+  blogsAPI
 };
 
 export default apiExports; 

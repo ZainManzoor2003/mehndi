@@ -4185,6 +4185,7 @@ input {
   visibility: hidden;
   transform: translateY(-20px);
   transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  overflow-y: auto; /* allow scrolling when content exceeds viewport */
 }
 
 .nav__overlay--active {
@@ -4203,8 +4204,8 @@ input {
 .nav__overlay-content {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  padding: 2rem;
+  min-height: 100%;
+  padding: 0rem 2rem;
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -4213,7 +4214,7 @@ input {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 3rem;
+  margin-bottom: 1rem;
 }
 
 .nav__overlay-logo {
@@ -4233,6 +4234,7 @@ input {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 1rem 0 2rem; /* breathing room for scroll end */
 }
 
 .nav__overlay-list {
@@ -4241,7 +4243,7 @@ input {
 }
 
 .nav__overlay-item {
-  margin-bottom: 2rem;
+  /* margin-bottom: 1rem; */
   opacity: 0;
   transform: translateY(30px);
   transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -4265,7 +4267,7 @@ input {
   gap: 2rem;
   text-decoration: none;
   color: var(--title-color);
-  font-size: 3rem;
+  font-size: 2.5rem;
   font-weight: var(--font-semi-bold);
   font-family: var(--title-font);
   transition: all 0.3s ease;
@@ -5114,7 +5116,7 @@ input {
   text-align: center;
   max-width: 900px;
   margin: 0 auto;
-  padding: 0 2rem;
+  padding: 0 2rem 2rem;
 }
 
 /*=============== HOME MEHNDI CONTENT ===============*/
@@ -5548,12 +5550,12 @@ input {
 .footer {
   background: linear-gradient(135deg, var(--first-color-second) 0%, var(--secondary-brown) 100%);
   color: var(--white-color);
+  padding: 4rem 0 2rem;
 }
 
 .footer__container {
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 3rem;
-  padding: 4rem 0 2rem;
 }
 
 .footer__brand {
@@ -5574,7 +5576,6 @@ input {
   color: rgba(255, 255, 255, 0.8);
   line-height: 1.6;
   margin-bottom: 1.5rem;
-  max-width: 400px;
 }
 
 .footer__contact {
@@ -5706,10 +5707,6 @@ input {
 .footer__card-description {
   color: rgba(255, 255, 255, 0.7);
   font-size: var(--small-font-size);
-}
-
-.footer__bottom {
-  padding: 2rem 0;
 }
 
 .footer__legal {
@@ -5883,7 +5880,7 @@ input {
     height: calc(var(--header-height) + 1.5rem);
   }
   .nav__overlay-link {
-    font-size: 4rem;
+    font-size: 2rem;
   }
   .nav__overlay-content {
     padding: 3rem;
@@ -6464,8 +6461,8 @@ body.dark-theme .scroll-header .henna-line {
 
 /*=============== HOW IT WORKS SECTION ===============*/
 .how-it-works {
-  padding: 12rem 0 6rem 0;
-  margin-top: 12rem;
+  padding: 6rem 0;
+  /* margin-top: 12rem; */
   background: linear-gradient(135deg, var(--body-color) 0%, var(--container-color) 100%);
   position: relative;
   overflow: hidden;

@@ -4,8 +4,9 @@ const router = express.Router();
 // Auth routes
 const { signup, login, me, updateProfile, googleAuth } = require('../controllers/authController');
 const { createBooking, getClientBookings, getAllBookings, getBookingById, updateBookingStatus, updateBooking, deleteBooking, getPendingBookings, completeBooking, cancelBooking, updateBookingPaymentStatus, processRefund,getNearbyBookings} = require('../controllers/bookingController');
+const { listBlogs, getBlogById } = require('../controllers/blogController');
 
-const { applyToBooking, getMyAppliedBookings, getApplicationsForBooking, updateApplicationStatus, withdrawApplication, notifyCancellationByArtist, completeApplication, addApplicationNote, getApplicationNotes } = require('../controllers/applicationController');
+const { applyToBooking, getMyAppliedBookings, getApplicationsForBooking, updateApplicationStatus, withdrawApplication, notifyCancellationByArtist, completeApplication, addApplicationNote, getApplicationNotes, getMyApplicationStats } = require('../controllers/applicationController');
 
 const { protect } = require('../middleware/auth');
 const { adminOnly } = require('../middleware/auth');
@@ -39,6 +40,10 @@ router.put('/api/bookings/payment-status', protect, updateBookingPaymentStatus);
 router.put('/api/bookings/cancel', protect, cancelBooking);
 router.post('/api/bookings/refund', protect, processRefund);
 
+// Public Blogs routes
+router.get('/api/blogs', listBlogs);
+router.get('/api/blogs/:id', getBlogById);
+
 // Reviews
 router.post('/api/reviews', protect, reviewController.createReview);
 router.get('/api/reviews/booking/:bookingId', protect, reviewController.getMyReviewForBooking);
@@ -49,6 +54,7 @@ router.delete('/api/bookings/:id', protect, deleteBooking);
 router.post('/api/applications/apply', protect, applyToBooking);
 router.put('/api/applications/withdraw', protect, withdrawApplication);
 router.get('/api/applications/my-applied', protect, getMyAppliedBookings);
+router.get('/api/applications/stats/my', protect, getMyApplicationStats);
 router.get('/api/applications/booking/:bookingId', protect, getApplicationsForBooking);
 router.put('/api/applications/:applicationId/status', protect, updateApplicationStatus);
 router.post('/api/applications/cancel', protect, notifyCancellationByArtist); //Newly added by MA
