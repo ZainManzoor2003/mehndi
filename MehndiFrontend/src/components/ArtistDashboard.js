@@ -1572,8 +1572,6 @@ const ArtistDashboard = () => {
 useEffect(() => {
   if (!user) return;
   const onMessage = (incoming) => {
-    // If there's no chat open OR if the incoming message is from the current user,
-    // ignore it to prevent the duplicate.
     if (!currentChat || String(incoming.senderId) === String(user?._id)) {
       return;
     }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import Header from './Header';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../contexts/AuthContext';
@@ -104,6 +105,7 @@ const Signup = () => {
 
   return (
     <>
+      <Header />
       <div className="auth-container">
         <div className="auth-card">
           <div className="auth-header">
