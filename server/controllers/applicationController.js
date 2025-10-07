@@ -2,6 +2,7 @@ const Application = require('../schemas/Application');
 const Booking = require('../schemas/Booking');
 const User = require('../schemas/User');
 const Transaction = require('../schemas/Transaction');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || '');
 
 // @desc    Artist applies to a booking with full application details
 // @route   POST /api/applications/apply
@@ -20,6 +21,44 @@ exports.applyToBooking = async (req, res) => {
     // Validate required artist details
     if (!artistDetails) {
       return res.status(400).json({ success: false, message: 'Artist details are required' });
+    }
+
+    // Check if user has Stripe account, if not create one
+    const user = await User.findById(req.user.id);
+    if (!user.stripeAccountId) {
+      // Create Stripe Express account
+      const account = await stripe.accounts.create({
+        type: "express",
+        country: "SG",
+        email: user.email,
+        business_type: "individual", // or "company"
+        default_currency: "sgd",
+        capabilities: {
+          transfers: { requested: true },
+          card_payments: { requested: true },
+        },
+      });
+
+      // Create account onboarding link
+      const accountLink = await stripe.accountLinks.create({
+        account: account.id,
+        refresh_url: `${process.env.FRONTEND_URL || "http://localhost:3000"}/reauth`,
+        return_url: `${process.env.FRONTEND_URL || "http://localhost:3000"}/dashboard/wallet`,
+        type: "account_onboarding",
+      });
+
+      // Save the Stripe account ID to user profile
+      user.stripeAccountId = account.id;
+      await user.save();
+
+      console.log("Onboarding link:", accountLink.url);
+      
+      return res.status(200).json({ 
+        success: false, 
+        message: 'Stripe account setup required', 
+        requiresOnboarding: true,
+        onboardingUrl: accountLink.url 
+      });
     }
 
     const {

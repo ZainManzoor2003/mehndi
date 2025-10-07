@@ -3,6 +3,7 @@ const User = require('../schemas/User');
 const Transaction = require('../schemas/Transaction');
 const Wallet = require('../schemas/Wallet');
 const Application = require('../schemas/Application');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || '');
 
 // @desc    Create a new booking
 // @route   POST /api/bookings
@@ -348,6 +349,7 @@ const updateBooking = async (req, res) => {
 
     // Set status to pending when booking is updated
     booking.status = 'pending';
+    booking.assignedArtist = [];
 
     await booking.save();
 
@@ -447,6 +449,54 @@ const completeBooking = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Not authorized to complete this booking' });
     }
 
+    // Ensure an artist has been assigned before completion
+    const hasAssignedArtist = Array.isArray(booking.assignedArtist) && booking.assignedArtist.length > 0;
+    if (!hasAssignedArtist) {
+      return res.status(400).json({ success: false, message: 'Cannot complete booking: no artist assigned' });
+    }
+
+    // Fetch assigned artist's Stripe account ID (first assigned artist)
+    const assignedArtistId = booking.assignedArtist[0];
+    let assignedArtistStripeAccountId = null;
+    try {
+      const assignedArtist = await User.findById(assignedArtistId);
+      assignedArtistStripeAccountId = assignedArtist && assignedArtist.stripeAccountId ? assignedArtist.stripeAccountId : null;
+    } catch (_) {}
+
+    if (!assignedArtistStripeAccountId) {
+      return res.status(400).json({ success: false, message: 'Assigned artist is missing Stripe account' });
+    }
+
+    // Amount to transfer = total payment paid for the booking
+    const amountPaid = Number(booking.paymentPaid) || 0;
+    if (!(amountPaid > 0)) {
+      return res.status(400).json({ success: false, message: 'No payment recorded for this booking' });
+    }
+
+    // Credit assigned artist wallet instead of Stripe transfer
+    try {
+      let artistWallet = await Wallet.findOne({ userId: assignedArtistId });
+      if (!artistWallet) {
+        artistWallet = new Wallet({ userId: assignedArtistId, walletAmount: 0 });
+      }
+      artistWallet.walletAmount += amountPaid;
+      await artistWallet.save();
+
+      // Record transaction of type 'full' with admin as sender
+      const adminUser = await User.findOne({ userType: 'admin' });
+      const tx = new Transaction({
+        sender: adminUser && adminUser._id,
+        receiver: assignedArtistId,
+        bookingId: booking._id,
+        amount: amountPaid,
+        transactionType: 'full'
+      });
+      await tx.save();
+    } catch (walletErr) {
+      console.error('Wallet credit error:', walletErr);
+      return res.status(500).json({ success: false, message: 'Failed to credit artist wallet', error: walletErr.message });
+    }
+
     // Accept up to 3 images
     const imgArray = Array.isArray(images) ? images.slice(0, 3) : [];
     booking.images = imgArray;
@@ -455,7 +505,7 @@ const completeBooking = async (req, res) => {
 
     await booking.save();
 
-    return res.status(200).json({ success: true, message: 'Booking marked as completed', data: booking });
+    return res.status(200).json({ success: true, message: 'Booking marked as completed', data: booking, assignedArtistStripeAccountId });
   } catch (error) {
     console.error('Complete booking error:', error);
     return res.status(500).json({ success: false, message: 'Server error while completing booking' });

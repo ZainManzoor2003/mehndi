@@ -28,6 +28,7 @@ import ManageBlogs from './components/ManageBlogs';
 import AdminUpdateProfile from './components/AdminUpdateProfile';
 import ManageBookings from './components/ManageBookings';
 import ViewAnalytics from './components/ViewAnalytics';
+import AdminWallet from './components/AdminWallet';
 import PaymentSuccess from './components/PaymentSuccess';
 import PaymentCancel from './components/PaymentCancel';
 import PaymentRescheduleBooking from './components/PaymentRescheduleBooking';
@@ -127,6 +128,11 @@ function App() {
             <Route path="/admin-dashboard/analytics" element={
               <RoleProtectedRoute allowedRoles={["admin"]}>
                 <ViewAnalytics />
+              </RoleProtectedRoute>
+            } />
+            <Route path="/admin-dashboard/wallet" element={
+              <RoleProtectedRoute allowedRoles={["admin"]}>
+                <AdminWallet />
               </RoleProtectedRoute>
             } />
             <Route path="/admin-dashboard/update-profile" element={

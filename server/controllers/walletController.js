@@ -212,11 +212,13 @@ const withdrawFunds = async (req, res) => {
         },
       });
 
-      // Create account onboarding link
+      // Create account onboarding link with role-based return URL
+      const baseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+      const returnPath = user.userType === 'client' ? '/dashboard/wallet' : '/artist-dashboard/applications';
       const accountLink = await stripe.accountLinks.create({
         account: account.id,
-        refresh_url: `${process.env.FRONTEND_URL || "http://localhost:3000"}/reauth`,
-        return_url: `${process.env.FRONTEND_URL || "http://localhost:3000"}/dashboard/wallet`,
+        refresh_url: `${baseUrl}/reauth`,
+        return_url: `${baseUrl}${returnPath}`,
         type: "account_onboarding",
       });
 

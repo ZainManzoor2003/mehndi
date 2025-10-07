@@ -904,6 +904,16 @@
   box-shadow: none;
 }
 
+/* Wallet section table tweaks */
+.wallet-section table th,
+.wallet-section table td {
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.wallet-section .section-title {
+  font-weight: 700;
+}
+
 .spinner {
   animation: spin 1s linear infinite;
 }

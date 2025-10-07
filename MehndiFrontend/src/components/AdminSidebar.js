@@ -17,6 +17,7 @@ const AdminSidebar = ({ isOpen, onClose }) => {
         </svg>
       )
     },
+    
     {
       id: 'applications',
       title: 'Manage Applications',
@@ -58,6 +59,17 @@ const AdminSidebar = ({ isOpen, onClose }) => {
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M3 3v18h18"/>
           <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/>
+        </svg>
+      )
+    },
+    {
+      id: 'transactions',
+      title: 'Transactions',
+      path: '/admin-dashboard/wallet',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <rect x="2" y="6" width="20" height="12" rx="2" ry="2"/>
+          <circle cx="16" cy="12" r="2"/>
         </svg>
       )
     },
