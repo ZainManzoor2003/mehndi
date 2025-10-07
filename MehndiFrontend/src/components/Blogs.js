@@ -45,15 +45,70 @@ const Blogs = () => {
   };
 
   return (
-    <section className="blogs" id="blogs" style={{ paddingTop: '6rem' }}>
-      <div className="container">
-        <header className="blogs__hero" style={{ textAlign: 'center', marginBottom: '2.5rem', padding: '3rem 1rem 2rem', borderRadius: 24, background: 'linear-gradient(135deg,#f6e7da,#ecd4bd)', boxShadow: '0 10px 30px rgba(139,115,85,0.06)', border: '1px solid rgba(139,115,85,0.12)' }}>
-          <h1 className="home__title" style={{ marginBottom: '0.5rem' }}>Our blog</h1>
-          <p className="home__subtitle" style={{ color: '#8B7355', marginBottom: '1.25rem' }}>Insights, stories, and updates from the Mehndi Me team</p>
-          <div className="home__actions" style={{ justifyContent: 'center' }}>
-            <input value={search} onChange={(e) => setSearch(e.target.value)} className="blogs__search" placeholder="Search by title" style={{ maxWidth: 560, width: '100%', padding: '0.95rem 1.15rem', borderRadius: 999, border: '1px solid rgba(139,115,85,0.25)', background: '#f0dcc6', color: '#4a3f35', boxShadow: '0 8px 26px rgba(139,115,85,0.08)', outline: 'none' }} />
+    <section className="blogs" id="blogs" style={{ paddingTop: '4.7rem' }}>
+      {/* Full-width hero header */}
+      <header className="blogs__hero" style={{ width: '100%', margin: '0 auto 2.5rem', padding: '3.2rem 1.2rem', background: '#DEB887' }}>
+        <div style={{
+          maxWidth: 1200,
+          margin: '0 auto',
+          display: 'grid',
+          gridTemplateColumns: '1.25fr 1fr',
+          gap: '2rem',
+          alignItems: 'center'
+        }}>
+          <div>
+            <h1 style={{
+              margin: 0,
+              color: '#3f2c1e',
+              fontSize: 'clamp(28px, 3.6vw, 44px)',
+              lineHeight: 1.15,
+              fontWeight: 800,
+              marginBottom: '.65rem'
+            }}>
+              The Mehndi Me Journal
+            </h1>
+            <p style={{
+              margin: 0,
+              color: '#7a5e46',
+              fontSize: 'clamp(15px, 1.6vw, 18px)',
+              lineHeight: 1.55,
+              maxWidth: 560
+            }}>
+              Trends, tips, and ideas for everyone in the mehndi circle — from clients booking to artists creating.
+            </p>
+            {/* Pills row */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '1rem' }}>
+              {['Client Tips','Artist Tips','Success Stories','Platform Updates'].map((label) => (
+                <button key={label} type="button" style={{
+                  background: 'transparent',
+                  color: '#3f2c1e',
+                  border: '1px solid #cf7f3a',
+                  borderRadius: 999,
+                  padding: '8px 14px',
+                  fontSize: 14,
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.08)'
+                }}>{label}</button>
+              ))}
+            </div>
+            <div className="home__actions" style={{ justifyContent: 'flex-start', marginTop: '1.25rem' }}>
+              <input value={search} onChange={(e) => setSearch(e.target.value)} className="blogs__search" placeholder="Search by title" style={{ maxWidth: 520, width: '100%', padding: '0.9rem 1.15rem', borderRadius: 999, border: '1px solid rgba(139,115,85,0.25)', background: '#f0dcc6', color: '#4a3f35', boxShadow: '0 8px 26px rgba(139,115,85,0.08)', outline: 'none' }} />
+            </div>
           </div>
-        </header>
+          <div>
+            <div style={{
+              height: 360,
+              width: '100%',
+              objectFit: 'cover',
+              borderRadius: 18,
+              boxShadow: '0 20px 50px rgba(0,0,0,0.35)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              overflow: 'hidden',
+              background: `url(https://images.unsplash.com/photo-1680490964820-7afb13f2e35c?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.1.0) center/cover`
+            }} aria-label="Mehndi artist working" />
+          </div>
+        </div>
+      </header>
+      <div className="container">
 
         <div className="blogs__grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
           {loading ? (

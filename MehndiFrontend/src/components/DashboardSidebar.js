@@ -142,13 +142,13 @@ const DashboardSidebar = ({ activeTab, onTabChange, isOpen, onClose, bookingCoun
       <div className={`dashboard-sidebar ${isOpen ? 'sidebar-open' : ''}`}>
         {/* Sidebar Header */}
         <div className="sidebar-header">
-          <div className="sidebar-logo">
-            <div className="logo-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-              </svg>
+          <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div className="logo-icon" style={{ background: 'transparent', border: 'none', boxShadow: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img src="/assets/logo icon.png" alt="Mehndi Me" style={{ width: 'auto', height: 'auto', display: 'block', borderRadius: '50%' }} />
             </div>
-            <span className="logo-text">Mehndi Me</span>
+            <span className="logo-text" style={{ display: 'inline-block' }}>
+              <img src="/assets/logo text.png" alt="Mehndi Me" style={{ height: 22, display: 'block' }} />
+            </span>
           </div>
         </div>
 

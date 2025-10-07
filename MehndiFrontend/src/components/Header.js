@@ -165,7 +165,9 @@ const Header = () => {
           </div>
 
           {/* Center: Logo */}
-          <a href="#home" className="nav__logo" onClick={(e) => handleNavClick(e, '#home')}>Mehndi Me</a>
+          <a href="#home" className="nav__logo" onClick={(e) => handleNavClick(e, '#home')}>
+            <img src="/assets/logo text.png" alt="Mehndi Me" style={{ height: 32, display: 'block' }} />
+          </a>
 
           {/* Right: Get Started Button */}
           <Link to="/choose-path" className="nav__cta-button">Get Started</Link>
@@ -176,7 +178,9 @@ const Header = () => {
       <div className="nav__overlay">
         <div className="nav__overlay-content">
           <div className="nav__overlay-header">
-            <div className="nav__overlay-logo">Mehndi Me</div>
+            <div className="nav__overlay-logo">
+              <img src="/assets/logo text.png" alt="Mehndi Me" style={{ height: 28, display: 'block' }} />
+            </div>
             <div className="nav__overlay-close" onClick={closeMenu}>
               <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" width="40" height="40" className={`close-svg ${isMenuOpen ? 'active' : ''}`}> 
                 <style> 

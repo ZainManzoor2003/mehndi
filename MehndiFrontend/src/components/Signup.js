@@ -109,15 +109,14 @@ const Signup = () => {
       <div className="auth-container">
         <div className="auth-card">
           <div className="auth-header">
-            <div className="auth-logo">
-              <div className="auth-logo-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M9 12l2 2 4-4"/>
-                  <circle cx="12" cy="12" r="9"/>
-                </svg>
+            <div className="auth-logo" style={{ background: 'transparent', marginBottom: '0rem' }}>
+              <div className="auth-logo-icon" style={{ background: 'transparent', border: 'none', boxShadow: 'none', padding: 0, width: 110, height: 110 }}>
+                <img src="/assets/logo icon.png" alt="Mehndi Me" style={{ height: 'auto', width: 'auto',}} />
               </div>
             </div>
-            <h1 className="auth-title">Create your account</h1>
+            <h1 className="auth-title">
+              <img src="/assets/logo text.png" alt="Mehndi Me" style={{ height: 26 }} />
+            </h1>
             <p className="auth-subtitle">Book faster. Earn more. Stress less.</p>
           </div>
 

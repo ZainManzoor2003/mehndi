@@ -92,6 +92,7 @@ const ChoosePathForm = () => {
 const styles = {
   container: {
     minHeight: '100vh',
+    marginTop: '80px',
     background: 'linear-gradient(135deg, #F8E1B8 0%, #F0CFA1 50%, #EBC792 100%)',
     display: 'flex',
     alignItems: 'center',

@@ -1040,6 +1040,11 @@
   --img-scale: scale(1.1);
 }
 
+/* Adjust header height on small screens */
+@media screen and (max-width: 768px) {
+  :root { --header-height: 68px; }
+}
+
 /*========== Authentication Pages Styles ==========*/
 .auth-container {
   min-height: calc(100vh - 80px);
@@ -5548,7 +5553,7 @@ input {
 
 /*=============== FOOTER ===============*/
 .footer {
-  background: linear-gradient(135deg, var(--first-color-second) 0%, var(--secondary-brown) 100%);
+  background: linear-gradient(135deg, #A0522D 0%, #A0522D 100%);
   color: var(--white-color);
   padding: 4rem 0 2rem;
 }

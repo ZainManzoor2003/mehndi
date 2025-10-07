@@ -21,7 +21,8 @@ const ArtistIcon = ({ size = 18 }) => (
 
 const HowItWorks = () => {
   const [activeTab, setActiveTab] = useState('artists');
-  const mainRef = useRef(null); // A single main ref for GSAP context
+  const [leafDecorations, setLeafDecorations] = useState([]);
+  const mainRef = useRef(null);
   const sectionRef = useRef(null);
   const headerRef = useRef(null);
   const tabsRef = useRef(null);
@@ -29,17 +30,42 @@ const HowItWorks = () => {
   const stepsRef = useRef([]);
   const storyRef = useRef(null);
 
+  // Effect for calculating leaf positions once the path is rendered
   useEffect(() => {
-    // GSAP context for safe animation cleanup
+    if (pathRef.current) {
+      const path = pathRef.current;
+      const pathLength = path.getTotalLength();
+      const decorations = [];
+      
+      // 1. Increased the number of leaves to 10 for a fuller look
+      const leafPositions = [0.08, 0.18, 0.28, 0.38, 0.48, 0.58, 0.68, 0.78, 0.88, 0.95];
+
+      leafPositions.forEach((pos, index) => {
+        const pointLength = pathLength * pos;
+        const point = path.getPointAtLength(pointLength);
+        const nextPoint = path.getPointAtLength(pointLength + 1);
+
+        const angle = Math.atan2(nextPoint.y - point.y, nextPoint.x - point.x) * (180 / Math.PI);
+        
+        // 2. Changed rotation from 90 to 55 degrees for a more natural angle
+        const rotation = angle + (index % 2 === 0 ? 55 : -55);
+
+        decorations.push({
+          x: point.x,
+          y: point.y,
+          rotation: rotation
+        });
+      });
+      
+      setLeafDecorations(decorations);
+    }
+  }, []);
+
+  useEffect(() => {
     const ctx = gsap.context(() => {
-      // Reset stepsRef for new activeTab
       stepsRef.current = [];
 
-      // --- "HOW IT WORKS" SECTION ANIMATION (As provided by you, unchanged) ---
-      gsap.set([headerRef.current, tabsRef.current], {
-        opacity: 0,
-        y: 50
-      });
+      gsap.set([headerRef.current], { opacity: 0, y: 50 });
 
       gsap.timeline({
         scrollTrigger: {
@@ -49,7 +75,6 @@ const HowItWorks = () => {
           toggleActions: "play none none reverse",
           onEnter: () => {
             gsap.to(headerRef.current, { opacity: 1, y: 0, duration: 1, ease: "power3.out" });
-            gsap.to(tabsRef.current, { opacity: 1, y: 0, duration: 0.8, ease: "power3.out", delay: 0.3 });
             if (pathRef.current) {
               const pathLength = pathRef.current.getTotalLength();
               gsap.set(pathRef.current, { strokeDasharray: pathLength, strokeDashoffset: pathLength, opacity: 0 });
@@ -67,52 +92,47 @@ const HowItWorks = () => {
             }, 1200);
           },
           onLeave: () => {
-            gsap.to([headerRef.current, tabsRef.current], { opacity: 0, y: -30, duration: 0.5, ease: "power2.in" });
+            gsap.to([headerRef.current], { opacity: 0, y: -30, duration: 0.5, ease: "power2.in" });
           },
           onEnterBack: () => {
-            gsap.to([headerRef.current, tabsRef.current], { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" });
+            gsap.to([headerRef.current], { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" });
           }
         }
       });
-
-      // --- TEXT HIGHLIGHT ANIMATION (Corrected Logic) ---
+      
       if (storyRef.current) {
-        // Target each paragraph with the 'story-line' class
         const storyLines = gsap.utils.toArray('.story-line');
         storyLines.forEach((lineEl) => {
           if (!lineEl) return;
           
-          // Split the text content of the line into character spans
           const originalText = lineEl.textContent || '';
-          lineEl.innerHTML = ''; // Clear original text to replace with spans
+          lineEl.innerHTML = ''; 
           for (let char of originalText) {
             const span = document.createElement('span');
-            span.textContent = char === ' ' ? '\u00A0' : char; // Handle spaces
-            span.style.display = 'inline-block'; // Make each character animatable
+            span.textContent = char === ' ' ? '\u00A0' : char;
+            span.style.display = 'inline-block';
             lineEl.appendChild(span);
           }
           
           const chars = Array.from(lineEl.querySelectorAll('span'));
 
-          // Animate this specific line's characters on scroll
           gsap.fromTo(chars,
-            { color: 'var(--ad-muted, #6b5544)' }, // Starting color
+            { color: 'var(--ad-muted, #6b5544)' },
             {
-              color: 'var(--ad-text, #3f2c1e)', // Ending color
+              color: 'var(--ad-text, #3f2c1e)',
               ease: 'none',
-              stagger: { each: 0.02, from: 'start' }, // Stagger animation character by character
+              stagger: { each: 0.02, from: 'start' },
               scrollTrigger: {
-                trigger: lineEl, // Each line triggers its own animation
+                trigger: lineEl,
                 start: 'top 85%',
                 end: 'bottom 60%',
-                scrub: 0.5, // Link animation progress smoothly to scrollbar
+                scrub: 0.5,
               }
             }
           );
         });
       }
 
-      // Hover animations for steps (UNCHANGED)
       stepsRef.current.forEach((step) => {
         if (step) {
           step.addEventListener('mouseenter', () => {
@@ -136,7 +156,7 @@ const HowItWorks = () => {
         }
       });
 
-    }, mainRef); // Main ref for cleanup
+    }, mainRef);
 
     return () => ctx.revert();
   }, [activeTab]);
@@ -175,7 +195,6 @@ const HowItWorks = () => {
         <div className="container" style={{ maxWidth: 980, margin: "0 auto", padding: "0 1.2rem" }}>
           <div className="origin-story__text" style={{ fontSize: "clamp(16px, 2.4vw, 26px)", lineHeight: 1.35, letterSpacing: "0.2px" }}>
             <p style={{ margin: 0, fontWeight: 700, color: 'var(--ad-text)' }}>A Global First, Born from Chaos</p>
-            {/* Each paragraph is a story-line to be animated one-by-one */}
             <p className="story-line" style={{ margin: "8px 0 0", fontSize: "clamp(16px, 2.4vw, 26px)" }}>In a world where plans can fall apart overnight, we built something to make sure yours don’t.</p>
             <p className="story-line" style={{ margin: "8px 0 0", fontSize: "clamp(16px, 2.4vw, 26px)" }}>Three days before my wedding, my mehndi artist cancelled.</p>
             <p className="story-line" style={{ margin: "8px 0 0", fontSize: "clamp(16px, 2.4vw, 26px)" }}>No design. No backup. No time.</p>
@@ -265,15 +284,14 @@ const HowItWorks = () => {
                 strokeWidth="2.5"
                 strokeLinecap="round"
               />
-              <g className="vine-decorations" filter="url(#leafShadow)">
-                <path d="M300 115 c8 -6 18 -6 26 0 c-8 16 -18 16 -26 0" fill="#CD853F" stroke="#A4693D" strokeWidth="0.5"/>
-                <path d="M430 125 c-8 6 -18 6 -26 0 c8 -16 18 -16 26 0" fill="#CD853F" stroke="#A4693D" strokeWidth="0.5"/>
-                <path d="M810 190 c10 -8 22 -8 32 0 c-10 20 -22 20 -32 0" fill="#CD853F" stroke="#A4693D" strokeWidth="0.5"/>
-                <path d="M760 240 c-10 8 -22 8 -32 0 c10 -20 22 -20 32 0" fill="#CD853F" stroke="#A4693D" strokeWidth="0.5"/>
-                <path d="M620 350 c-9 -7 -19 -7 -28 0 c9 18 19 18 28 0" fill="#CD853F" stroke="#A4693D" strokeWidth="0.5"/>
-                <path d="M480 430 c8 -6 18 -6 26 0 c-8 16 -18 16 -26 0" fill="#CD853F" stroke="#A4693D" strokeWidth="0.5"/>
-                <path d="M540 520 c8 -6 18 -6 26 0 c-8 16 -18 16 -26 0" fill="#CD853F" stroke="#A4693D" strokeWidth="0.5"/>
-                <path d="M700 600 c-10 7 -20 7 -30 0 c10 -18 20 -18 30 0" fill="#CD853F" stroke="#A4693D" strokeWidth="0.5"/>
+              <g className="vine-decorations" filter="url(#leafShadow)" stroke="#A4693D" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                {leafDecorations.map((deco, index) => (
+                  <g key={index} transform={`translate(${deco.x}, ${deco.y}) rotate(${deco.rotation})`}>
+                    <line x1="0" y1="0" x2="0" y2="15" />
+                    {/* 3. Increased leaf size by adjusting the SVG path data */}
+                    <path d="M0 15 q 12 12 0 24 q -12 -12 0 -24 Z" fill="#F0E6D8"/>
+                  </g>
+                ))}
               </g>
             </svg>
 
