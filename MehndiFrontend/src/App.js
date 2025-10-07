@@ -3,8 +3,7 @@ import './App.css';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider } from './contexts/AuthContext';
-import { ProtectedRoute, RoleProtectedRoute, PublicRoute } from './components/RouteGuards';
-import LogoutButton from './components/LogoutButton';
+import { RoleProtectedRoute, PublicRoute } from './components/RouteGuards';
 import Header from './components/Header';
 import Home from './components/Home';
 import Blogs from './components/Blogs';
@@ -92,7 +91,11 @@ function App() {
                 <RedirectIfAuthenticated><Signup /></RedirectIfAuthenticated>
               </PublicRoute>
             } />
-            <Route path="/booking" element={<RedirectIfAuthenticated><BookingForm /></RedirectIfAuthenticated>} />
+            <Route path="/booking" element={
+              <RoleProtectedRoute allowedRoles={["client"]}>
+                <BookingForm />
+              </RoleProtectedRoute>
+            } />
             <Route path="/payment-success" element={<PaymentSuccess />} />
             <Route path="/payment-cancel" element={<PaymentCancel />} />
             <Route path="/payment-reschedule-booking/:action/:bookingId/:artistId/:userId" element={

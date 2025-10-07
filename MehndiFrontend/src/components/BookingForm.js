@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import Header from './Header';
+// import Header from './Header';
 import apiService from '../services/api';
 import GetLocationModal from './modals/GetLocationModal';
 
@@ -246,7 +246,7 @@ const BookingForm = () => {
 
   return (
     <>
-      <Header />
+      {/* <Header /> */}
       <div className="booking-container">
 
         <div className="booking-form-container">
