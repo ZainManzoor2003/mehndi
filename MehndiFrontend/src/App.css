@@ -6990,13 +6990,14 @@ body.dark-theme .scroll-header .henna-line {
   padding: 3rem 2rem;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
-  border: 2px solid transparent;
+  border: 1px solid rgba(242, 133, 48, 0.3);
 }
 
 .choose-path__card:hover {
   transform: translateY(-5px);
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
-  border-color: #E67E22;
+  border-color: #F28530;
+  border-width: 2px;
 }
 
 .choose-path__card-icon {
@@ -7052,9 +7053,9 @@ body.dark-theme .scroll-header .henna-line {
 }
 
 .choose-path__card-button:hover {
-  background: #D35400;
+  background: #804018;
   transform: translateY(-2px);
-  box-shadow: 0 6px 24px rgba(230, 126, 34, 0.4);
+  box-shadow: 0 6px 24px rgba(128, 64, 24, 0.4);
 }
 
 .choose-path__footer {
@@ -7135,6 +7136,45 @@ body.dark-theme .scroll-header .henna-line {
     padding: 0.875rem 2rem;
     font-size: 1rem;
   }
+}
+
+/*=============== CHOOSE PATH FORM HOVER EFFECTS ===============*/
+.choose-path-form__card {
+  transition: all 0.3s ease;
+  border: 1px solid rgba(242, 133, 48, 0.3);
+}
+
+.choose-path-form__card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
+  border-color: #F28530;
+  border-width: 2px;
+}
+
+.choose-path-form__button {
+  transition: all 0.3s ease;
+}
+
+.choose-path-form__button:hover {
+  background: #804018 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(128, 64, 24, 0.4);
+}
+
+/*=============== Social Login Layout ===============*/
+.social-login {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+.google-btn-wrap {
+  width: 100%;
+  max-width: 520px;
+  padding: 0 20px 12px; /* increased horizontal padding and bottom spacing */
+}
+.google-btn-wrap > div,
+.google-btn-wrap iframe {
+  width: 100% !important; /* force full width for Google iframe */
 }
 
 /*========== Proposals View ==========*/

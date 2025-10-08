@@ -46,7 +46,7 @@ const ChoosePathForm = () => {
             {/* Cards Section */}
             <div style={styles.cardsContainer}>
               {/* Client Card */}
-              <div style={styles.card}>
+              <div className="choose-path-form__card" style={styles.card}>
                 <div style={styles.iconContainer}>
                   <FiUsers size={60} color="#DC7828" />
                 </div>
@@ -54,13 +54,13 @@ const ChoosePathForm = () => {
                 <p style={styles.cardDescription}>
                   Post a request, compare offers, and book with confidence.
                 </p>
-                <button style={styles.continueButton} onClick={handleClientContinue}>
+                <button className="choose-path-form__button" style={styles.continueButton} onClick={handleClientContinue}>
                   Continue
                 </button>
               </div>
 
               {/* Artist Card */}
-              <div style={styles.card}>
+              <div className="choose-path-form__card" style={styles.card}>
                 <div style={styles.iconContainer}>
                   <LuPalette size={60} color="#DC7828" />
                 </div>
@@ -68,7 +68,7 @@ const ChoosePathForm = () => {
                 <p style={styles.cardDescription}>
                   Create a profile, apply to bookings, and get paid securely.
                 </p>
-                <button style={styles.continueButton} onClick={handleArtistContinue}>
+                <button className="choose-path-form__button" style={styles.continueButton} onClick={handleArtistContinue}>
                   Continue
                 </button>
               </div>
