@@ -10,7 +10,7 @@ const cookieParser = require('cookie-parser');
 const db = require('./config/db')
 
 const corsOptions = {
-  origin: ['http://localhost:3000','https://mehndi-client.vercel.app','http://localhost:5001'],
+  origin: ['http://localhost:3000', 'https://mehndi-client.vercel.app', 'http://localhost:5001'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -27,6 +27,9 @@ app.use('/uploads', express.static('uploads'));
 app.use('/', router)
 
 db().then(() => {
+  server.listen(5001, () => {
+    console.log('Server Connected: http://localhost:5001')
+  })
   const io = new Server(server, {
     cors: {
       origin: corsOptions.origin,
@@ -85,9 +88,7 @@ db().then(() => {
     })
   })
 
-  server.listen(5001, () => {
-    console.log('Server Connected: http://localhost:5001')
-  })
+
 })
 
 module.exports = app
