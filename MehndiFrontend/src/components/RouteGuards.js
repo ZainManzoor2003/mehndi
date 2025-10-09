@@ -32,8 +32,15 @@ export const RoleProtectedRoute = ({ children, allowedRoles = [] }) => {
 
   if (!isAllowed) {
     // Redirect to the correct dashboard based on user type
-    const fallback = userType === 'artist' ? '/artist-dashboard' : '/dashboard';
+    const fallback =
+      userType === 'artist'
+        ? '/artist-dashboard'
+        : userType === 'admin'
+          ? '/admin-dashboard'
+          : '/dashboard';
+
     return <Navigate to={fallback} replace />;
+
   }
 
   return children;
