@@ -1598,7 +1598,6 @@ useEffect(() => {
                 <div className="reviews-section">
                   <div className="reviews-header">
                     <h2 className="section-title">Your Reviews</h2>
-                    <p className="reviews-subtitle">Review your completed bookings and help other clients</p>
                   </div>
 
                   {/* <div className="reviews-stats">
