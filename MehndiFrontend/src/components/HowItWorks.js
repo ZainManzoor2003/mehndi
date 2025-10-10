@@ -73,6 +73,7 @@ const HowItWorks = () => {
           start: "top 80%",
           end: "bottom 20%",
           toggleActions: "play none none reverse",
+          invalidateOnRefresh: true,
           onEnter: () => {
             gsap.to(headerRef.current, { opacity: 1, y: 0, duration: 1, ease: "power3.out" });
             if (pathRef.current) {
@@ -127,6 +128,7 @@ const HowItWorks = () => {
                 start: 'top 85%',
                 end: 'bottom 60%',
                 scrub: 0.5,
+                invalidateOnRefresh: true,
               }
             }
           );
@@ -184,53 +186,8 @@ const HowItWorks = () => {
   const currentSteps = activeTab === 'artists' ? artistsSteps : clientsSteps;
 
   return (
-    <div ref={mainRef}>
-      {/* Origin Story Section */}
-      <section className="origin-story" id="origin-story" ref={storyRef} style={{
-        background: "#F5DEB3",
-        color: "var(--ad-text)",
-        padding: "6rem 0 3rem",
-        borderBottom: "1px solid var(--ad-border)"
-      }}>
-        <div className="container" style={{ maxWidth: 980, margin: "0 auto", padding: "0 1.2rem" }}>
-          <div className="origin-story__text" style={{ fontSize: "clamp(16px, 2.4vw, 26px)", lineHeight: 1.35, letterSpacing: "0.2px" }}>
-            <p style={{ margin: 0, fontWeight: 700, color: 'var(--ad-text)' }}>A Global First, Born from Chaos</p>
-            <p className="story-line" style={{ margin: "8px 0 0", fontSize: "clamp(16px, 2.4vw, 26px)" }}>In a world where plans can fall apart overnight, we built something to make sure yours don’t.</p>
-            <p className="story-line" style={{ margin: "8px 0 0", fontSize: "clamp(16px, 2.4vw, 26px)" }}>Three days before my wedding, my mehndi artist cancelled.</p>
-            <p className="story-line" style={{ margin: "8px 0 0", fontSize: "clamp(16px, 2.4vw, 26px)" }}>No design. No backup. No time.</p>
-            <p className="story-line" style={{ margin: "8px 0 0", fontSize: "clamp(16px, 2.4vw, 26px)" }}>I thought it was just my bad luck—until I learned it happens to brides, families, planners, and even artists everywhere.</p>
-            <p className="story-line" style={{ margin: "8px 0 0", fontSize: "clamp(16px, 2.6vw, 26px)" }}>That moment of panic became the spark for something the mehndi world had never seen before…</p>
-            <div style={{ marginTop: "1.6rem" }}>
-              <button type="button" className="origin-story__cta" style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-                padding: "10px 16px",
-                borderRadius: "999px",
-                border: "1.5px solid var(--ad-primary)",
-                color: "var(--ad-primary-600)",
-                background: "radial-gradient(120% 120% at 0% 0%, rgba(207,127,58,0.10) 0%, rgba(207,127,58,0.06) 55%, rgba(207,127,58,0.02) 100%)",
-                boxShadow: "0 0 0 0 rgba(207,127,58,0.25)",
-                transition: "all .25s ease",
-                cursor: 'pointer'
-              }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.boxShadow = "0 10px 35px rgba(207,127,58,0.28)";
-                  e.currentTarget.style.borderColor = "var(--ad-primary-600)";
-                  e.currentTarget.style.background = "linear-gradient(180deg, rgba(207,127,58,0.18), rgba(207,127,58,0.10))";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.boxShadow = "0 0 0 0 rgba(207,127,58,0.25)";
-                  e.currentTarget.style.borderColor = "var(--ad-primary)";
-                  e.currentTarget.style.background = "radial-gradient(120% 120% at 0% 0%, rgba(207,127,58,0.10) 0%, rgba(207,127,58,0.06) 55%, rgba(207,127,58,0.02) 100%)";
-                }}
-              >
-                <span>Read what happened next →</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
+    <div ref={mainRef} style={{background: "#8B7355 !important"}}>
+      {/* Origin story moved to AboutUs component */}
 
       <section className="how-it-works" id="how-it-works" ref={sectionRef}>
         <div className="how-it-works__container container">

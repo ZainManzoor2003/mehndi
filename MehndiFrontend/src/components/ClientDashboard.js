@@ -945,8 +945,8 @@ useEffect(() => {
                       <div className="no-upcoming-events">
                         <div className="no-events-icon">📅</div>
                         <h3>No Upcoming Events</h3>
-                        <p>You don't have any confirmed upcoming bookings.</p>
-                        <Link to="/booking" className="btn-primary">Book Your Next Event</Link>
+                        <p>No confirmed bookings yet — your next mehndi experience awaits.</p>
+                        <Link to="/booking" className="btn-primary">Post a New Request</Link>
                       </div>
                     )}
                   </div>
@@ -956,12 +956,12 @@ useEffect(() => {
                     <div className="bookings-section">
                       <div className="section-header">
                         <h3 className="section-title">📅 Upcoming & Confirmed Bookings</h3>
-                        <Link to="/dashboard/bookings" className="view-all-btn">
+                        {/* <Link to="/dashboard/bookings" className="view-all-btn">
                           View All Bookings
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M9 18L15 12L9 6" />
                           </svg>
-                        </Link>
+                        </Link> */}
                       </div>
 
                       {/* First upcoming booking */}
@@ -1227,7 +1227,10 @@ useEffect(() => {
               {/* Wallet View */}
               {activeTab === 'wallet' && (
                 <div className="wallet-section">
-                  <h2 className="wallet-title">Your Wallet</h2>
+                  <div style={{textAlign: 'center'}}>
+                    <h2 className="wallet-title" style={{margin: '1rem 0'}}>Payemnts & Receipts</h2>
+                    <p className="wallet-subtitle" style={{width: '75%', margin: '0 auto 2rem', fontSize: '1.1rem'}}>Track your deposits and upcoming balances. Remaining payments are due 14 days before each event.</p>
+                  </div>
 
                   {/* Wallet Overview Cards */}
                   {walletLoading ? (
@@ -1364,7 +1367,7 @@ useEffect(() => {
                             const pdfContent = `
                               <html>
                                 <head>
-                                  <title>Receipt - ${transaction.eventName}</title>
+                                  <title>Receipt - ${transaction.eventName === 'Unknown Event' ? 'Event' : transaction.eventName}</title>
                                   <style>
                                     body { font-family: Arial, sans-serif; padding: 20px; }
                                     .header { text-align: center; margin-bottom: 30px; }
@@ -1381,7 +1384,7 @@ useEffect(() => {
                                   <div class="receipt-details">
                                     <div class="detail-row">
                                       <span>Event:</span>
-                                      <span>${transaction.eventName}</span>
+                                      <span>${transaction.eventName === 'Unknown Event' ? 'Event' : transaction.eventName}</span>
                                     </div>
                                     <div class="detail-row">
                                       <span>Transaction Type:</span>
@@ -1417,7 +1420,7 @@ useEffect(() => {
                             const url = window.URL.createObjectURL(blob);
                             const link = document.createElement('a');
                             link.href = url;
-                            link.download = `receipt-${transaction.eventName.replace(/\s+/g, '-')}-${formatDate(transaction.createdAt).replace(/\s+/g, '-')}.html`;
+                            link.download = `receipt-${transaction.eventName ? transaction.eventName.replace(/\s+/g, '-') : 'Event'.replace(/\s+/g, '-')}-${formatDate(transaction.createdAt).replace(/\s+/g, '-')}.html`;
                             document.body.appendChild(link);
                             link.click();
                             document.body.removeChild(link);
@@ -1426,7 +1429,7 @@ useEffect(() => {
 
                           return (
                             <div key={transaction._id} className="table-row">
-                              <span className="col-event">{transaction.eventName}</span>
+                              <span className="col-event">{transaction.eventName === 'Unknown Event' ? 'Event' : transaction.eventName}</span>
                               <span className="col-type">{getTransactionType(transaction.transactionType)}</span>
                               <span className="col-date">{formatDate(transaction.createdAt)}</span>
                               <span className="col-amount">£{transaction.amount.toFixed(2)}</span>

@@ -24,7 +24,9 @@ const Experience = () => {
           scrollTrigger: {
             trigger: sectionRef.current,
             start: "top 80%",
-            toggleActions: "play none none reverse"
+            end: "bottom 20%",
+            toggleActions: "play none none reverse",
+            invalidateOnRefresh: true
           }
         }
         );
@@ -48,7 +50,9 @@ const Experience = () => {
               scrollTrigger: {
                 trigger: numberElement,
                 start: "top 85%",
-                toggleActions: "play none none reverse"
+                end: "bottom 20%",
+                toggleActions: "play none none reverse",
+                invalidateOnRefresh: true
               },
               delay: index * 0.2,
               onComplete: () => {
@@ -92,7 +96,7 @@ const Experience = () => {
   };
 
   return (
-    <section className="experience section" id="experience" ref={sectionRef}>
+    <section className="experience section" id="experience" ref={sectionRef} style={{background: "#8B7355 !important"}}>
       <h2 className="section__title" ref={titleRef}>With Our Platform <br /> We Connect You Perfectly</h2>
 
       <div className="experience__container container grid">

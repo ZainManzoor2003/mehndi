@@ -15,7 +15,7 @@ const DashboardSidebar = ({ activeTab, onTabChange, isOpen, onClose, bookingCoun
     },
     {
       id: 'bookings',
-      title: 'View All Bookings',
+      title: 'My Bookings',
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
@@ -26,7 +26,7 @@ const DashboardSidebar = ({ activeTab, onTabChange, isOpen, onClose, bookingCoun
     },
     {
       id: 'proposals',
-      title: 'Proposals',
+      title: 'Artist Offers',
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -38,7 +38,7 @@ const DashboardSidebar = ({ activeTab, onTabChange, isOpen, onClose, bookingCoun
     },
     {
       id: 'wallet',
-      title: 'Wallet & Payments',
+      title: 'Payments',
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
@@ -142,7 +142,7 @@ const DashboardSidebar = ({ activeTab, onTabChange, isOpen, onClose, bookingCoun
       <div className={`dashboard-sidebar ${isOpen ? 'sidebar-open' : ''}`}>
         {/* Sidebar Header */}
         <div className="sidebar-header">
-          <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={() => navigate('/')}>
             <div className="logo-icon" style={{ background: 'transparent', border: 'none', boxShadow: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <img src="/assets/logo icon.png" alt="Mehndi Me" style={{ width: 'auto', height: 'auto', display: 'block', borderRadius: '50%' }} />
             </div>
@@ -171,18 +171,6 @@ const DashboardSidebar = ({ activeTab, onTabChange, isOpen, onClose, bookingCoun
 
         {/* Sidebar Footer */}
         <div className="sidebar-footer">
-          <div className="user-info">
-            <div className="user-avatar">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-              </svg>
-            </div>
-            <div className="user-details">
-              <span className="user-name">Client</span>
-              <span className="user-role">Dashboard</span>
-            </div>
-          </div>
           <div className="sidebar-logout">
             <Link to="/login" className="sidebar-logout-btn" onClick={handleLogoutClick}>Logout</Link>
           </div>

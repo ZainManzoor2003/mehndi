@@ -144,7 +144,7 @@ const ArtistSidebar = ({ activeTab, onTabChange, isOpen, onClose }) => {
       <div className={`dashboard-sidebar ${isOpen ? 'sidebar-open' : ''}`}>
         {/* Sidebar Header */}
         <div className="sidebar-header">
-          <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={() => navigate('/')}>
             <div className="logo-icon" style={{ background: 'transparent', border: 'none', boxShadow: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <img src="/assets/logo icon.png" alt="Mehndi Me" style={{ width: 'auto', height: 'auto', display: 'block', borderRadius: '50%' }} />
             </div>
@@ -173,7 +173,7 @@ const ArtistSidebar = ({ activeTab, onTabChange, isOpen, onClose }) => {
 
         {/* Sidebar Footer */}
         <div className="sidebar-footer">
-          <div className="user-info">
+          {/* <div className="user-info">
             <div className="user-avatar">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -184,7 +184,7 @@ const ArtistSidebar = ({ activeTab, onTabChange, isOpen, onClose }) => {
               <span className="user-name">Artist</span>
               <span className="user-role">Dashboard</span>
             </div>
-          </div>
+          </div> */}
           <div className="sidebar-logout">
             <Link to="/login" className="sidebar-logout-btn" onClick={handleLogoutClick}>Logout</Link>
           </div>

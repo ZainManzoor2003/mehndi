@@ -61,7 +61,7 @@ const Home = () => {
   }, []);
 
   return (
-    <section className="home" id="home" ref={homeRef}>
+    <section className="home" id="home" ref={homeRef} style={{paddingTop: '100px', background: "#8B7355 !important"}}>
       <div className="home__container container">
         <div className="home__content">
           <h1 className="home__title" ref={titleRef}>

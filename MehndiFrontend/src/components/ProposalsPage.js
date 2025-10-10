@@ -383,35 +383,57 @@ const ProposalsPage = () => {
   return (
     <>
       <div className="proposals-page">
-        {/* Search Bar */}
-        <div className="proposals-filters">
-          <div className="filter-controls">
-            <div className="search-box">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
-                <path d="M21 21L16.65 16.65" stroke="currentColor" strokeWidth="2"/>
-              </svg>
-              <input 
-                type="text" 
-                placeholder="Search by event type, location, or artist name" 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+        {(() => {
+          const hasAnyApplications = Object.values(applicationsByBooking || {}).some(list => (list || []).length > 0);
+
+          // Loader state
+          if (loading) {
+            return (
+              <div className="loading-state" style={{ background: '#fff', borderRadius: 12, border: '1px solid var(--ad-border)', padding: '2rem', textAlign: 'center', boxShadow: '0 6px 18px rgba(139,115,85,0.08)' }}>
+                <div className="loading-spinner" style={{ margin: '0 auto .75rem' }} />
+                <h2 className="loading-title" style={{ margin: 0, color: 'var(--ad-text)' }}>Loading your offers...</h2>
+                <p className="loading-sub" style={{ margin: '.35rem 0 0', color: 'var(--ad-muted)' }}>Please wait while we fetch your offers information.</p>
+              </div>
+            );
+          }
+
+          // Empty state (no applications fetched)
+          if (!hasAnyApplications) {
+            return (
+              <div className="loading-state" style={{ background: '#fff', borderRadius: 12, border: '1px solid var(--ad-border)', padding: '2rem', textAlign: 'center', boxShadow: '0 6px 18px rgba(139,115,85,0.08)' }}>
+                <h2 className="loading-title" style={{ margin: 0, color: 'var(--ad-text)' }}>No artist offers yet</h2>
+                <p className="loading-sub" style={{ margin: '.35rem 0 0', color: 'var(--ad-muted)' }}>You will see artist offers here as they arrive.</p>
+              </div>
+            );
+          }
+
+          // Filters (only when we have applications)
+          return (
+            <div className="proposals-filters">
+              <div className="filter-controls">
+                <div className="search-box">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M21 21L16.65 16.65" stroke="currentColor" strokeWidth="2"/>
+                  </svg>
+                  <input 
+                    type="text" 
+                    placeholder="Search by event type, location, or artist name" 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <div className="booking-count">
+                  Total Bookings: {totalBookings}
+                </div>
+              </div>
             </div>
-            <div className="booking-count">
-              Total Bookings: {totalBookings}
-            </div>
-          </div>
-        </div>
+          );
+        })()}
 
         {/* Requests List */}
         <div className="requests-container">
-          {error && (
-            <div className="error-text">{error}</div>
-          )}
-          {loading && (
-            <div className="loading-text">Loading...</div>
-          )}
+          {error && (<div className="error-text">{error}</div>)}
           {filteredBookings.map(request => {
             const proposals = applicationsByBooking[request._id] || [];
             const appliedOnly = proposals.filter(p => p.status === 'applied');

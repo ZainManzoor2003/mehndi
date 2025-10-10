@@ -45,7 +45,7 @@ const Blogs = () => {
   };
 
   return (
-    <section className="blogs" id="blogs" style={{ paddingTop: '4.7rem' }}>
+    <section className="blogs" id="blogs" style={{ paddingTop: '6.5rem' }}>
       {/* Full-width hero header */}
       <header className="blogs__hero" style={{ width: '100%', margin: '0 auto 2.5rem', padding: '3.2rem 1.2rem', background: '#DEB887' }}>
         <div style={{
@@ -108,8 +108,8 @@ const Blogs = () => {
           </div>
         </div>
       </header>
-      <div className="container">
 
+      <div className="container">
         <div className="blogs__grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
           {loading ? (
             <div>Loading...</div>

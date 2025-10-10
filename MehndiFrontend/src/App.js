@@ -12,6 +12,8 @@ import HowItWorks from './components/HowItWorks';
 import About from './components/About';
 import Discover from './components/Discover';
 import Experience from './components/Experience';
+import FAQ from './components/FAQ';
+import AboutUs from './components/AboutUs';
 import Subscribe from './components/Subscribe';
 import Footer from './components/Footer';
 import { useAuth } from './contexts/AuthContext';
@@ -39,33 +41,22 @@ import PaymentRescheduleBooking from './components/PaymentRescheduleBooking';
 const LandingPage = () => (
   <>
     <Header />
-          <main className="main">
-        <Home />
-        <HowItWorks />
-        <About />
-        <Discover />
-        <Experience />
-        <Subscribe />
-      </main>
+    <main className="main" style={{ overflowY: 'hidden' }}>
+      <Home />
+      <HowItWorks />
+      {/* <About /> */}
+      {/* <Discover /> */}
+      <Experience />
+      <FAQ />
+      <AboutUs />
+      {/* <Subscribe /> */}
+    </main>
     <Footer />
   </>
 );
 
-// Redirect authenticated users to their dashboard when they try to access public pages
-const RedirectIfAuthenticated = ({ children }) => {
-  const { isAuthenticated, user, loading } = useAuth();
-  if (loading) return children; // avoid flicker; let child render until auth known
-  if (isAuthenticated && user) {
-    const userType = (user.userType || '').toLowerCase();
-    const target = userType === 'client'
-      ? '/dashboard'
-      : userType === 'artist'
-        ? '/artist-dashboard'
-        : userType === 'admin'
-          ? '/admin-dashboard/users'
-          : '/';
-    return <Navigate to={target} replace />;
-  }
+// Allow all users to access public pages
+const PublicWrapper = ({ children }) => {
   return children;
 };
 
@@ -77,18 +68,18 @@ function App() {
           <div className="App">
           {/* Logout button moved into sidebar */}
           <Routes>
-            <Route path="/" element={<RedirectIfAuthenticated><LandingPage /></RedirectIfAuthenticated>} />
-            <Route path="/blogs" element={<RedirectIfAuthenticated><><Header /><main className="main"><Blogs /></main><Footer /></></RedirectIfAuthenticated>} />
-            <Route path="/blogs/:id" element={<RedirectIfAuthenticated><><Header /><main className="main"><BlogDetail /></main><Footer /></></RedirectIfAuthenticated>} />
-            <Route path="/choose-path" element={<RedirectIfAuthenticated><ChoosePathForm /></RedirectIfAuthenticated>} />
+            <Route path="/" element={<PublicWrapper><LandingPage /></PublicWrapper>} />
+            <Route path="/blogs" element={<PublicWrapper><><Header /><main className="main"><Blogs /></main><Footer /></></PublicWrapper>} />
+            <Route path="/blogs/:id" element={<PublicWrapper><><Header /><main className="main"><BlogDetail /></main><Footer /></></PublicWrapper>} />
+            <Route path="/choose-path" element={<PublicWrapper><ChoosePathForm /></PublicWrapper>} />
             <Route path="/login" element={
               <PublicRoute>
-                <RedirectIfAuthenticated><Login /></RedirectIfAuthenticated>
+                <Login />
               </PublicRoute>
             } />
             <Route path="/signup" element={
               <PublicRoute>
-                <RedirectIfAuthenticated><Signup /></RedirectIfAuthenticated>
+                <Signup />
               </PublicRoute>
             } />
             <Route path="/booking" element={

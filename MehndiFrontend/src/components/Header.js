@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isAuthenticated, user } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDarkTheme, setIsDarkTheme] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -113,7 +115,8 @@ const Header = () => {
                     stroke: #EA7C25; 
                     stroke-width: 3.2; 
                     stroke-linecap: round; 
-                    transition: opacity .3s ease; 
+                    opacity: 1;
+                    transition: opacity .6s ease-in; 
                   } 
                   .flower path, .flower circle { 
                     stroke: #EA7C25; 
@@ -122,10 +125,14 @@ const Header = () => {
                     opacity: 0; 
                     stroke-linecap: round; 
                     stroke-linejoin: round; 
+                    transition: opacity .4s ease-out;
                   } 
                   @keyframes draw { to { stroke-dashoffset: 0; opacity: 1; } }
+                  @keyframes fadeOut { to { opacity: 0; } }
+                  
                   .burger-svg.active .burger line {
                     opacity: 0;
+                    transition: opacity .3s ease-out;
                   }
                   .burger-svg.active .flower path,
                   .burger-svg.active .flower circle {
@@ -166,11 +173,20 @@ const Header = () => {
 
           {/* Center: Logo */}
           <a href="#home" className="nav__logo" onClick={(e) => handleNavClick(e, '#home')}>
-            <img src="/assets/logo text.png" alt="Mehndi Me" style={{ height: 32, display: 'block' }} />
+            <img src="/assets/logo icon.png" alt="Mehndi Me" style={{ height: 96, margin: "10px 0", display: 'block' }} />
           </a>
 
-          {/* Right: Get Started Button */}
-          <Link to="/choose-path" className="nav__cta-button">Get Started</Link>
+          {/* Right: Dashboard Button or Get Started */}
+          {isAuthenticated && user ? (
+            <Link 
+              to={user.userType === 'artist' ? '/artist-dashboard' : '/dashboard'} 
+              className="nav__cta-button"
+            >
+              Go To Dashboard
+            </Link>
+          ) : (
+            <Link to="/choose-path" className="nav__cta-button">Get Started</Link>
+          )}
         </nav>
       </header>
 
@@ -240,70 +256,104 @@ const Header = () => {
             </div>
           </div>
           
-          <nav className="nav__overlay-menu">
-            <ul className="nav__overlay-list">
+          <nav className="nav__overlay-menu" style={{ textAlign: 'left' }}>
+            <ul
+              className="nav__overlay-list"
+              style={{
+                alignItems: 'flex-start',
+                justifyContent: 'flex-start',
+                width: '100%',
+                maxWidth: 420,
+                marginLeft: 0,
+                textAlign: 'left'
+              }}
+            >
+              {/* Section heading: Clients */}
+              <li className="nav__overlay-item" style={{opacity: 1, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 800, color: '#2b2118', width: '100%'}}>
+                <span className="nav__overlay-number"><strong>Clients</strong></span>
+              </li>
+              {/* Home - real link */}
               <li className="nav__overlay-item">
                 <a href="#home" className="nav__overlay-link" onClick={(e) => handleNavClick(e, '#home')}>
                   <span className="nav__overlay-number">01</span>
                   <span className="nav__overlay-text">Home</span>
                 </a>
               </li>
+              {/* Request a Mehndi Artist - temp -> home */}
               <li className="nav__overlay-item">
-                <a href="#how-it-works" className="nav__overlay-link" onClick={(e) => handleNavClick(e, '#how-it-works')}>
+                <a href="#home" className="nav__overlay-link" onClick={(e) => handleNavClick(e, '#home')}>
                   <span className="nav__overlay-number">02</span>
-                  <span className="nav__overlay-text">How It Works</span>
+                  <span className="nav__overlay-text">Request a Mehndi Artist</span>
                 </a>
               </li>
+
+              {/* Section heading: Artists */}
+              <li className="nav__overlay-item" style={{opacity: 1, letterSpacing: '.08em', textTransform: 'uppercase', marginTop: '1.25rem', fontWeight: 800, color: '#2b2118', width: '100%'}}>
+                <span className="nav__overlay-number"><strong>Artists</strong></span>
+              </li>
+              {/* Browse Requests - temp -> home */}
               <li className="nav__overlay-item">
-                <a href="#about" className="nav__overlay-link" onClick={(e) => handleNavClick(e, '#about')}>
+                <a href="#home" className="nav__overlay-link" onClick={(e) => handleNavClick(e, '#home')}>
                   <span className="nav__overlay-number">03</span>
-                  <span className="nav__overlay-text">About</span>
+                  <span className="nav__overlay-text">Browse Requests</span>
                 </a>
               </li>
+              {/* Earn as an Artist - temp -> home */}
               <li className="nav__overlay-item">
-                <a href="#discover" className="nav__overlay-link" onClick={(e) => handleNavClick(e, '#discover')}>
+                <a href="#home" className="nav__overlay-link" onClick={(e) => handleNavClick(e, '#home')}>
                   <span className="nav__overlay-number">04</span>
-                  <span className="nav__overlay-text">Discover</span>
+                  <span className="nav__overlay-text">Earn as an Artist</span>
                 </a>
               </li>
-              <li className="nav__overlay-item">
-                <a href="#experience" className="nav__overlay-link" onClick={(e) => handleNavClick(e, '#experience')}>
-                  <span className="nav__overlay-number">05</span>
-                  <span className="nav__overlay-text">Experience</span>
-                </a>
+
+              {/* Section heading: Discover */}
+              <li className="nav__overlay-item" style={{opacity: 1, letterSpacing: '.08em', textTransform: 'uppercase', marginTop: '1.25rem', fontWeight: 800, color: '#2b2118', width: '100%'}}>
+                <span className="nav__overlay-number"><strong>Discover</strong></span>
               </li>
-              <li className="nav__overlay-item">
-                <a href="#subscribe" className="nav__overlay-link" onClick={(e) => handleNavClick(e, '#subscribe')}>
-                  <span className="nav__overlay-number">06</span>
-                  <span className="nav__overlay-text">Subscribe</span>
-                </a>
-              </li>
+              {/* Blog - real link */}
               <li className="nav__overlay-item">
                 <Link to="/blogs" className="nav__overlay-link" onClick={closeMenu}>
-                  <span className="nav__overlay-number">07</span>
-                  <span className="nav__overlay-text">Blogs</span>
+                  <span className="nav__overlay-number">05</span>
+                  <span className="nav__overlay-text">Blog</span>
                 </Link>
               </li>
+              {/* FAQ - scroll to FAQ section */}
               <li className="nav__overlay-item">
-                <Link to="/booking" className="nav__overlay-link" onClick={closeMenu}>
-                  <span className="nav__overlay-number">08</span>
-                  <span className="nav__overlay-text">Book Now</span>
-                </Link>
+                <a href="#faq" className="nav__overlay-link" onClick={(e) => handleNavClick(e, '#faq')}>
+                  <span className="nav__overlay-number">06</span>
+                  <span className="nav__overlay-text">FAQ</span>
+                </a>
               </li>
-              
+              {/* About Us - scroll to section */}
+              <li className="nav__overlay-item">
+                <a href="#aboutus" className="nav__overlay-link" onClick={(e) => handleNavClick(e, '#aboutus')}>
+                  <span className="nav__overlay-number">07</span>
+                  <span className="nav__overlay-text">About Us</span>
+                </a>
+              </li>
             </ul>
           </nav>
 
-          <div className="nav__overlay-footer">
-            <div className="nav__overlay-theme">
-              <span className="nav__overlay-theme-text">Dark mode</span>
-              <div className="nav__overlay-theme-toggle" onClick={toggleTheme}>
-                <i className="ri-moon-line"></i>
-              </div>
-            </div>
-            
+          <div className="nav__overlay-footer">            
             <div className="nav__overlay-cta">
-              <button className="nav__overlay-button" onClick={() => { closeMenu(); navigate('/choose-path'); }}>Get Started</button>
+              {isAuthenticated && user ? (
+                <button 
+                  className="nav__overlay-button" 
+                  onClick={() => { 
+                    closeMenu(); 
+                    navigate(user.userType === 'artist' ? '/artist-dashboard' : '/dashboard'); 
+                  }}
+                >
+                  Go To Dashboard
+                </button>
+              ) : (
+                <button 
+                  className="nav__overlay-button" 
+                  onClick={() => { closeMenu(); navigate('/choose-path'); }}
+                >
+                  Get Started
+                </button>
+              )}
             </div>
           </div>
         </div>

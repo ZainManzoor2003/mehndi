@@ -1,10 +1,13 @@
 import React from 'react';
 
+// Make sure your CSS file is imported
+// import './App.css'; 
+
 const Footer = () => {
   return (
-    <footer className="footer">
+    <footer className="footer" style={{backgroundColor: 'var(--first-color)'}}>
       <div className="footer__container container" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-        {/* Top row: brand left, contact + social right */}
+        {/* === Top Row === */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '2rem', flexWrap: 'wrap' }}>
           <div className="footer__content footer__brand" style={{ flex: '1 1 320px', minWidth: '280px' }}>
             <a href="/" className="footer__logo">
@@ -39,8 +42,8 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* Middle row: 3 link sections centered in one row */}
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', gap: '3rem', flexWrap: 'wrap', padding: '2rem 0', borderTop: '1px solid rgba(255, 255, 255, 0.1)', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
+        {/* === Middle Row (Now Fully Responsive) === */}
+        <div className="footer-middle-row">
           <div className="footer__content" style={{ textAlign: 'center', minWidth: '220px' }}>
             <h3 className="footer__title">For Mehndi Artists</h3>
             <ul className="footer__list">
@@ -71,49 +74,8 @@ const Footer = () => {
           </div>
         </div>
       </div>
-
-      {/* <div className="footer__info container">
-        <div className="footer__card">
-          <div className="footer__card-box">
-            <i className="ri-customer-service-2-line"></i>
-            <div>
-              <h3 className="footer__card-title">24/7 Support</h3>
-              <p className="footer__card-description">Always here to help</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="footer__card">
-          <div className="footer__card-box">
-            <i className="ri-shield-check-line"></i>
-            <div>
-              <h3 className="footer__card-title">Verified Artists</h3>
-              <p className="footer__card-description">Trusted professionals</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="footer__card">
-          <div className="footer__card-box">
-            <i className="ri-secure-payment-line"></i>
-            <div>
-              <h3 className="footer__card-title">Secure Payment</h3>
-              <p className="footer__card-description">Safe transactions</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="footer__card">
-          <div className="footer__card-box">
-            <i className="ri-medal-line"></i>
-            <div>
-              <h3 className="footer__card-title">Quality Guarantee</h3>
-              <p className="footer__card-description">100% satisfaction</p>
-            </div>
-          </div>
-        </div>
-      </div> */}
-        
+      
+      {/* === Bottom Row === */}
       <div className="footer__bottom container" style={{ textAlign: 'center', paddingTop: '2rem' }}>
           <div className="footer__copy">
             <p>&copy; 2024 Mehndi Me. All rights reserved</p>
@@ -123,4 +85,4 @@ const Footer = () => {
   );
 };
 
-export default Footer; 
+export default Footer;
