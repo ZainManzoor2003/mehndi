@@ -10,7 +10,7 @@ import socket, { buildDirectRoomId, joinRoom, sendRoomMessage, sendTyping, signa
 import { ToastContainer, useToast } from './Toast';
 import { FaCalendarAlt, FaCheckCircle, FaClock, FaStickyNote, FaEye, FaWallet, FaCommentDots, FaStar, FaMoneyBillWave, FaCalendarCheck, FaHourglassHalf, FaArrowCircleUp, FaExclamationTriangle, FaEnvelope, FaTimes, FaArrowLeft } from 'react-icons/fa';
 
-  const { jobsAPI, proposalsAPI, authAPI, bookingsAPI, applicationsAPI, portfoliosAPI, walletAPI, transactionAPI } = apiService;
+  const { proposalsAPI, authAPI, bookingsAPI, applicationsAPI, portfoliosAPI, walletAPI, transactionAPI } = apiService;
 
 const ArtistDashboard = () => {
   const navigate = useNavigate();
@@ -996,72 +996,6 @@ const ArtistDashboard = () => {
     }
   }, [isAuthenticated, user]);
 
-  // Fetch available jobs from backend
-  const fetchAvailableJobs = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError('');
-
-      console.log('Fetching available jobs...');
-      const response = await jobsAPI.getAllJobs();
-
-      console.log('Jobs response:', response);
-      console.log('Jobs data array:', response.data);
-      console.log('Jobs data length:', response.data ? response.data.length : 'No data');
-
-      // Check if response has data
-      if (!response.data || !Array.isArray(response.data)) {
-        console.error('Invalid response data:', response);
-        setAvailableJobs([]);
-        return;
-      }
-
-      // Transform the data to match the component's expected format
-      const transformedJobs = response.data.map((job, index) => {
-        console.log(`Transforming job ${index}:`, job);
-
-        try {
-          return {
-            id: job._id,
-            title: job.title || 'Untitled Job',
-            client: job.client ? `${job.client.firstName || ''} ${job.client.lastName || ''}`.trim() : 'Client',
-            location: job.location?.city || 'Location not specified',
-            date: job.eventDetails?.eventDate ? new Date(job.eventDetails.eventDate).toLocaleDateString('en-GB', {
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric'
-            }) : 'Date TBD',
-            time: job.eventDetails?.eventTime || 'Time TBD',
-            budget: job.budget ? `£${job.budget.min || 0}-${job.budget.max || 0}` : 'Budget TBD',
-            description: job.description || 'No description available',
-            requirements: job.requirements?.designStyle || ['Traditional designs'],
-            postedDate: getTimeAgo(job.createdAt),
-            proposalsCount: job.applicationsCount || 0,
-            status: job.status || 'open',
-            rawData: job // Keep original data for proposal submission
-          };
-        } catch (transformError) {
-          console.error(`Error transforming job ${index}:`, transformError, job);
-          return null;
-        }
-      }).filter(job => job !== null); // Remove any failed transformations
-
-      console.log('Transformed jobs:', transformedJobs);
-      console.log('Setting available jobs to:', transformedJobs.length, 'items');
-      setAvailableJobs(transformedJobs);
-
-    } catch (error) {
-      console.error('Error fetching jobs:', error);
-      console.error('Error details:', {
-        message: error.message,
-        stack: error.stack,
-        response: error.response
-      });
-      setError(`Failed to load available jobs: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   // Fetch available jobs and proposals when component mounts and user is authenticated
   useEffect(() => {
@@ -1155,7 +1089,6 @@ const ArtistDashboard = () => {
      if (isAuthenticated) {
       console.log('User is authenticated, fetching jobs and proposals...');
       setTimeout(() => {
-        fetchAvailableJobs();
         fetchSentProposals();
          fetchPendingBookings();
          fetchArtistUpcomingEvents();
@@ -1168,7 +1101,7 @@ const ArtistDashboard = () => {
       console.log('User not authenticated');
       setLoading(false);
     }
-  }, [isAuthenticated, user, fetchAvailableJobs, fetchSentProposals, fetchPendingBookings, fetchArtistUpcomingEvents, fetchNearbyBookings]);
+  }, [isAuthenticated, user, fetchSentProposals, fetchPendingBookings, fetchArtistUpcomingEvents, fetchNearbyBookings]);
 
   // Derive overview data when proposals change
   useEffect(() => {
@@ -1429,7 +1362,6 @@ const ArtistDashboard = () => {
         setTimeout(async () => {
           console.log('Refreshing data after successful proposal submission...');
           await fetchSentProposals();
-          await fetchAvailableJobs();
           await fetchNearbyBookings();
           
           // Refresh current tab data

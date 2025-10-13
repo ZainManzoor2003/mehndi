@@ -9,7 +9,7 @@ import ProposalsPage from './ProposalsPage';
 import ClientProfile from './ClientProfile';
 import { FaCalendarAlt, FaClock, FaWallet } from 'react-icons/fa';
 
-const { jobsAPI, proposalsAPI, bookingsAPI, walletAPI, transactionAPI } = apiService;
+const {proposalsAPI, bookingsAPI, walletAPI, transactionAPI } = apiService;
 
 const ClientDashboard = () => {
   const { user, isAuthenticated } = useAuth();
@@ -183,40 +183,6 @@ const ClientDashboard = () => {
     }
   ]);
 
-
-
-
-
-  // Fetch client's jobs
-  const fetchClientJobs = useCallback(async () => {
-    if (!isAuthenticated || !user || user.userType !== 'client') {
-      console.log('Skipping job fetch - user not authenticated or not a client:', { isAuthenticated, userType: user?.userType });
-      return;
-    }
-
-    try {
-      setJobsLoading(true);
-      console.log('=== FETCHING CLIENT JOBS ===');
-      console.log('User:', { id: user._id, userType: user.userType, name: `${user.firstName} ${user.lastName}` });
-
-      const response = await jobsAPI.getMyJobs();
-      console.log('getMyJobs API response:', response);
-
-      if (response.success && response.data) {
-        console.log('Setting client jobs:', response.data.length, 'jobs found');
-        console.log('Job titles:', response.data.map(job => job.title));
-        setClientJobs(response.data);
-      } else {
-        console.log('No jobs data or unsuccessful response:', response);
-        setClientJobs([]);
-      }
-    } catch (error) {
-      console.error('Error fetching client jobs:', error);
-      console.error('Error details:', error.message, error.stack);
-    } finally {
-      setJobsLoading(false);
-    }
-  }, [isAuthenticated, user]);
 
   // Fetch proposals for a specific job
   const fetchJobProposals = useCallback(async (jobId) => {
@@ -482,11 +448,10 @@ const ClientDashboard = () => {
   useEffect(() => {
     if (tab) setActiveTab(tab);
     if (isAuthenticated && user && user.userType === 'client') {
-      fetchClientJobs();
       fetchBookings();
       fetchTransactions();
     }
-  }, [isAuthenticated, user, fetchClientJobs, fetchBookings, fetchTransactions, tab]);
+  }, [isAuthenticated, user, fetchBookings, fetchTransactions, tab]);
 
   // Presence: signal that this user is online while on dashboard; listen for updates
   useEffect(() => {
@@ -547,7 +512,6 @@ const ClientDashboard = () => {
     const handleVisibilityChange = () => {
       if (!document.hidden && isAuthenticated && user && user.userType === 'client') {
         console.log('Page became visible, refreshing client jobs...');
-        fetchClientJobs();
       }
     };
 
@@ -556,7 +520,7 @@ const ClientDashboard = () => {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isAuthenticated, user, fetchClientJobs]);
+  }, [isAuthenticated, user]);
 
   // Fetch proposals when jobs are loaded
   useEffect(() => {
