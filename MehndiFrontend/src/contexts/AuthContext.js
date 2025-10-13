@@ -42,9 +42,9 @@ export const AuthProvider = ({ children }) => {
   });
 
   // Check if user is already logged in on app start
-  useEffect(() => {
-    checkAuthStatus();
-  }, []);
+  // useEffect(() => {
+  //   checkAuthStatus();
+  // }, []);
 
   const checkAuthStatus = async () => {
     try {
