@@ -13,7 +13,7 @@ const Header = () => {
   // Add scroll event listener
   useEffect(() => {
     const handleScroll = () => {
-      const scrolled = window.scrollY > 100;
+      const scrolled = window.scrollY > 30;
       setIsScrolled(scrolled);
     };
 
@@ -179,7 +179,7 @@ const Header = () => {
           {/* Right: Dashboard Button or Get Started */}
           {isAuthenticated && user ? (
             <Link 
-              to={user.userType === 'artist' ? '/artist-dashboard' : '/dashboard'} 
+              to={user.userType === 'artist' ? '/artist-dashboard' : user.userType === 'admin' ? '/admin-dashboard/users' : '/dashboard'} 
               className="nav__cta-button"
             >
               Go To Dashboard
@@ -262,8 +262,8 @@ const Header = () => {
               style={{
                 alignItems: 'flex-start',
                 justifyContent: 'flex-start',
-                width: '100%',
-                maxWidth: 420,
+                width: 'auto',
+                // maxWidth: 420,
                 marginLeft: 0,
                 textAlign: 'left'
               }}
@@ -275,14 +275,18 @@ const Header = () => {
               {/* Home - real link */}
               <li className="nav__overlay-item">
                 <a href="#home" className="nav__overlay-link" onClick={(e) => handleNavClick(e, '#home')}>
-                  <span className="nav__overlay-number">01</span>
+                  <span className="nav__overlay-number">
+                    <img src="/images/1.png" alt="01" width="64" height="64" />
+                  </span>
                   <span className="nav__overlay-text">Home</span>
                 </a>
               </li>
               {/* Request a Mehndi Artist - temp -> home */}
               <li className="nav__overlay-item">
                 <a href="#home" className="nav__overlay-link" onClick={(e) => handleNavClick(e, '#home')}>
-                  <span className="nav__overlay-number">02</span>
+                  <span className="nav__overlay-number">
+                    <img src="/images/2.png" alt="02" width="64" height="64" />
+                  </span>
                   <span className="nav__overlay-text">Request a Mehndi Artist</span>
                 </a>
               </li>
@@ -294,14 +298,18 @@ const Header = () => {
               {/* Browse Requests - temp -> home */}
               <li className="nav__overlay-item">
                 <a href="#home" className="nav__overlay-link" onClick={(e) => handleNavClick(e, '#home')}>
-                  <span className="nav__overlay-number">03</span>
+                  <span className="nav__overlay-number">
+                    <img src="/images/3.png" alt="03" width="64" height="64" />
+                  </span>
                   <span className="nav__overlay-text">Browse Requests</span>
                 </a>
               </li>
               {/* Earn as an Artist - temp -> home */}
               <li className="nav__overlay-item">
                 <a href="#home" className="nav__overlay-link" onClick={(e) => handleNavClick(e, '#home')}>
-                  <span className="nav__overlay-number">04</span>
+                  <span className="nav__overlay-number">
+                    <img src="/images/4.png" alt="04" width="64" height="64" />
+                  </span>
                   <span className="nav__overlay-text">Earn as an Artist</span>
                 </a>
               </li>
@@ -313,21 +321,27 @@ const Header = () => {
               {/* Blog - real link */}
               <li className="nav__overlay-item">
                 <Link to="/blogs" className="nav__overlay-link" onClick={closeMenu}>
-                  <span className="nav__overlay-number">05</span>
+                  <span className="nav__overlay-number">
+                    <img src="/images/5.png" alt="05" width="64" height="64" />
+                  </span>
                   <span className="nav__overlay-text">Blog</span>
                 </Link>
               </li>
               {/* FAQ - scroll to FAQ section */}
               <li className="nav__overlay-item">
                 <a href="#faq" className="nav__overlay-link" onClick={(e) => handleNavClick(e, '#faq')}>
-                  <span className="nav__overlay-number">06</span>
+                  <span className="nav__overlay-number">
+                    <img src="/images/6.png" alt="06" width="64" height="64" />
+                  </span>
                   <span className="nav__overlay-text">FAQ</span>
                 </a>
               </li>
               {/* About Us - scroll to section */}
               <li className="nav__overlay-item">
                 <a href="#aboutus" className="nav__overlay-link" onClick={(e) => handleNavClick(e, '#aboutus')}>
-                  <span className="nav__overlay-number">07</span>
+                  <span className="nav__overlay-number">
+                    <img src="/images/7.png" alt="07" width="64" height="64" />
+                  </span>
                   <span className="nav__overlay-text">About Us</span>
                 </a>
               </li>

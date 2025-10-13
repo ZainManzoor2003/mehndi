@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import LogoutButton from './LogoutButton';
 
 const AdminSidebar = ({ isOpen, onClose }) => {
@@ -88,12 +88,14 @@ const AdminSidebar = ({ isOpen, onClose }) => {
 
   const isActive = (path) => location.pathname.startsWith(path);
 
+  const navigate = useNavigate();
+
   return (
     <>
       {isOpen && <div className="sidebar-overlay" onClick={onClose} />}
       <div className={`dashboard-sidebar admin-sidebar ${isOpen ? 'sidebar-open' : ''}`}>
         <div className="sidebar-header">
-          <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={() => navigate('/')}>
             <div className="logo-icon" style={{ background: 'transparent', border: 'none', boxShadow: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <img src="/assets/logo icon.png" alt="Mehndi Me" style={{ width: 'auto', height: 'auto', display: 'block', borderRadius: '50%' }} />
             </div>

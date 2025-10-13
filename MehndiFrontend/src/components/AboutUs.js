@@ -32,14 +32,14 @@ const AboutUs = () => {
       const tl = gsap.timeline({ defaults: { ease: 'none' } });
       linesAsChars.forEach((chars) => {
         if (!chars || chars.length === 0) return;
-        tl.to(chars, { color: 'var(--ad-text, #3f2c1e)', stagger: 0.02, duration: 0.8 }, '+=0');
+        tl.to(chars, { color: 'var(--ad-text, #3f2c1e)', stagger: 0.008, duration: 0.4 }, '+=0');
       });
 
       ScrollTrigger.create({
         trigger: storyRef.current,
-        start: 'top 85%',
-        end: 'bottom 20%',
-        scrub: 0.6,
+        start: 'top 70%',
+        end: 'bottom 50%',
+        scrub: 0.4,
         animation: tl,
         invalidateOnRefresh: true,
       });

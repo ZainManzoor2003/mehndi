@@ -7,6 +7,7 @@ import apiService, { chatAPI, reviewsAPI } from '../services/api';
 import socket, { buildDirectRoomId, joinRoom, sendRoomMessage, sendTyping, signalOnline, onPresenceUpdate } from '../services/socket';
 import ProposalsPage from './ProposalsPage';
 import ClientProfile from './ClientProfile';
+import { FaCalendarAlt, FaClock, FaWallet } from 'react-icons/fa';
 
 const { jobsAPI, proposalsAPI, bookingsAPI, walletAPI, transactionAPI } = apiService;
 
@@ -572,6 +573,21 @@ const ClientDashboard = () => {
     setShowPaymentModal(true);
   };
 
+  const handleMessageArtist = async (row) => {
+    try {
+      if (!user || !user._id) return;
+      const clientId = user._id;
+      const artistId = row.artist?._id || row.artistId;
+      if (!artistId) return;
+      const res = await chatAPI.ensureChat(clientId, artistId);
+      if (res.success && res.data && res.data._id) {
+        navigate(`/dashboard/messages?chatId=${res.data._id}`);
+      }
+    } catch (e) {
+      console.error('Failed to ensure chat:', e);
+    }
+  };
+
   const handleClosePaymentModal = () => {
     setShowPaymentModal(false);
     setSelectedBookingForPayment(null);
@@ -898,22 +914,25 @@ useEffect(() => {
                     {nextEvent ? (
                       <div className="next-event-card">
                         <div className="event-header">
-                          <span className="event-icon">📅</span>
+                          <FaCalendarAlt className="event-icon" />
                           <h3>Next Event: {nextEvent.title} – {nextEvent.date}</h3>
                         </div>
 
                         <div className="event-details">
                           <div className="event-left">
                             <p><strong>Date & Time:</strong> {nextEvent.date} · {nextEvent.time}</p>
-                            <p className="event-countdown">⏰ Event in {nextEvent.daysLeft} days</p>
+                            <p className="event-countdown">
+                              <FaClock className="countdown-icon" />
+                              Event in {nextEvent.daysLeft} days
+                            </p>
                             <p><strong>Location:</strong> {nextEvent.location}</p>
                             <p><strong>Artist:</strong> {nextEvent.artist}</p>
                           </div>
 
                           <div className="event-right">
-                            <div className={`status-badge ${nextEvent.isPaid === 'full' ? 'deposit-paid' : 'payment-pending'}`}>
-                              {nextEvent.isPaid === 'full' ? '📋 Fully Paid' :
-                                nextEvent.isPaid === 'half' ? '📋 Deposit Paid' : '📋 Payment Pending'}
+                            <div className="payment-status-header">
+                              <FaWallet className="wallet-icon" />
+                              <span>Deposit Paid</span>
                             </div>
                             <div className="payment-progress">
                               <div className="progress-bar">
@@ -927,18 +946,27 @@ useEffect(() => {
                               </div>
                               <p className="payment-text">
                                 {nextEvent.isPaid === 'full' ? 'Payment Complete' :
-                                  nextEvent.isPaid === 'half' ? `Final 50% Payment Dues (£${nextEvent.remainingPayment})` :
+                                  nextEvent.isPaid === 'half' ? `Final 50% Payment Due in ${nextEvent.daysLeft || 14} days` :
                                     `Payment Required (£${nextEvent.remainingPayment || '0'})`}
                               </p>
                             </div>
                             {nextEvent.isPaid === 'full' ? (
-                              <p className="all-set">You're all set 🎉</p>
-                            ) : (
-                              <button className="pay-remaining-btn" onClick={() => handlePayRemaining(nextEvent)}>
-                                Pay Remaining Dues
-                              </button>
-                            )}
+                              <p className="all-set">
+                                You're all set 🎉
+                              </p>
+                            ) : null}
                           </div>
+                        </div>
+                        
+                        <div className="event-buttons">
+                          <button className="view-full-booking-btn" onClick={() => navigate('/dashboard/bookings')}>
+                            View Full Booking
+                          </button>
+                          {nextEvent.isPaid !== 'full' && (
+                            <button className="pay-remaining-btn" onClick={() => handlePayRemaining(nextEvent)}>
+                              Pay Remaining Dues
+                            </button>
+                          )}
                         </div>
                       </div>
                     ) : (
@@ -969,49 +997,42 @@ useEffect(() => {
 
                       {/* Second upcoming booking */}
                       {secondEvent && (
-                        <div className="next-event-card">
-                          <div className="event-header">
-                            <span className="event-icon">📅</span>
-                            <h3>Second Event: {secondEvent.title} – {secondEvent.date}</h3>
+                        <div className="second-event-card">
+                          {/* Top Section */}
+                          <div className="event-top-section">
+                            <div className="event-main-info">
+                              <h3 className="event-title">{secondEvent.title}</h3>
+                              <p className="artist-info">With Henna by {secondEvent.artist}</p>
+                              <p className="event-datetime">{secondEvent.date} · {secondEvent.time}</p>
+                              <div className="countdown-badge">
+                                {secondEvent.daysLeft} days left
+                              </div>
+                            </div>
+                            <div className="event-action-buttons">
+                              <button className="message-artist-btn" onClick={() => handleMessageArtist({ artist: { _id: secondEvent.artistId } })}>
+                                Message
+                              </button>
+                            </div>
                           </div>
 
-                          <div className="event-details">
-                            <div className="event-left">
-                              <p><strong>Date & Time:</strong> {secondEvent.date} · {secondEvent.time}</p>
-                              <p className="event-countdown">⏰ Event in {secondEvent.daysLeft} days</p>
-                              <p><strong>Location:</strong> {secondEvent.location}</p>
-                              <p><strong>Artist:</strong> {secondEvent.artist}</p>
-                            </div>
-
-                            <div className="event-right">
-                              <div className={`status-badge ${secondEvent.isPaid === 'full' ? 'deposit-paid' : 'payment-pending'}`}>
-                                {secondEvent.isPaid === 'full' ? '📋 Fully Paid' :
-                                  secondEvent.isPaid === 'half' ? '📋 Deposit Paid' : '📋 Payment Pending'}
+                          {/* Payment Status Section */}
+                          <div className="payment-status-container">
+                            <div className="payment-status-row">
+                              <div className="payment-status-left">
+                                <FaWallet className="wallet-icon" />
+                                <span>Deposit Secured</span>
                               </div>
-                              <div className="payment-progress">
-                                <div className="progress-bar">
-                                  <div
-                                    className="progress-fill"
-                                    style={{
-                                      width: secondEvent.isPaid === 'full' ? '100%' :
-                                        secondEvent.isPaid === 'half' ? '50%' : '0%'
-                                    }}
-                                  ></div>
-                                </div>
-                                <p className="payment-text">
-                                  {secondEvent.isPaid === 'full' ? 'Payment Complete' :
-                                    secondEvent.isPaid === 'half' ? `Final 50% Payment Dues (£${secondEvent.remainingPayment})` :
-                                      `Payment Required (£${secondEvent.remainingPayment || '0'})`}
-                                </p>
+                              <div className="payment-separator"></div>
+                              <div className="payment-due-info">
+                                Final 50% due {secondEvent.paymentDueDate || secondEvent.date}
                               </div>
-                              {secondEvent.isPaid === 'full' ? (
-                                <p className="all-set">You're all set 🎉</p>
-                              ) : (
-                                <button className="pay-remaining-btn" onClick={() => handlePayRemaining(secondEvent)}>
-                                  Pay Remaining Dues
-                                </button>
-                              )}
+                              <button className="pay-remaining-btn" onClick={() => handlePayRemaining(secondEvent)}>
+                                Pay Remaining
+                              </button>
                             </div>
+                          </div>
+                          <div className="payment-footer">
+                            Final payment scheduled — due soon ⏳
                           </div>
                         </div>
                       )}
