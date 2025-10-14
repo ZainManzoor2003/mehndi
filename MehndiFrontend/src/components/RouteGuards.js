@@ -56,7 +56,7 @@ export const PublicRoute = ({ children }) => {
     const target = user?.userType === 'artist' 
       ? '/artist-dashboard' 
       : user?.userType === 'admin'
-        ? '/admin-dashboard/users'
+        ? '/admin-dashboard/manage-clients'
         : '/dashboard';
     return <Navigate to={target} replace />;
   }
