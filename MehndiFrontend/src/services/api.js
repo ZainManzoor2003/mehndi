@@ -711,6 +711,30 @@ export const transactionAPI = {
   }
 };
 
+// Notification API
+export const notificationAPI = {
+  getNotifications: async () => {
+    return apiRequest('/notifications', {
+      method: 'GET'
+    });
+  },
+  markAsRead: async (notificationId) => {
+    return apiRequest(`/notifications/${notificationId}/read`, {
+      method: 'PUT'
+    });
+  },
+  markAllAsRead: async () => {
+    return apiRequest('/notifications/mark-all-read', {
+      method: 'PUT'
+    });
+  },
+  deleteNotification: async (notificationId) => {
+    return apiRequest(`/notifications/${notificationId}`, {
+      method: 'DELETE'
+    });
+  }
+};
+
 
 const apiExports = {
   authAPI,
@@ -729,6 +753,7 @@ const apiExports = {
   portfoliosAPI,
   walletAPI,
   transactionAPI,
+  notificationAPI,
   blogsAPI
 };
 

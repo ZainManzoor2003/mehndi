@@ -10,7 +10,7 @@ import socket, { buildDirectRoomId, joinRoom, sendRoomMessage, sendTyping, signa
 import { ToastContainer, useToast } from './Toast';
 import { FaCalendarAlt, FaCheckCircle, FaClock, FaStickyNote, FaEye, FaWallet, FaCommentDots, FaStar, FaMoneyBillWave, FaCalendarCheck, FaHourglassHalf, FaArrowCircleUp, FaExclamationTriangle, FaEnvelope, FaTimes, FaArrowLeft } from 'react-icons/fa';
 
-  const { proposalsAPI, authAPI, bookingsAPI, applicationsAPI, portfoliosAPI, walletAPI, transactionAPI } = apiService;
+  const { proposalsAPI, authAPI, bookingsAPI, applicationsAPI, portfoliosAPI, walletAPI, transactionAPI, notificationAPI } = apiService;
 
 const ArtistDashboard = () => {
   const navigate = useNavigate();
@@ -94,6 +94,7 @@ const ArtistDashboard = () => {
   const [secondEvent, setSecondEvent] = useState(null);
   const [upcomingBookings, setUpcomingBookings] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [nearbyRequests, setNearbyRequests] = useState([]);
   const [userLocation, setUserLocation] = useState(null); // Used in getCurrentLocation
   const [nearbyLoading, setNearbyLoading] = useState(false);
@@ -225,6 +226,38 @@ const ArtistDashboard = () => {
       setPortfoliosLoading(false);
     }
   }, [isAuthenticated, user, portfoliosAPI]);
+
+  // Fetch notifications for the current user
+  const fetchNotifications = useCallback(async () => {
+    if (!isAuthenticated) return;
+    
+    try {
+      setNotificationsLoading(true);
+      const response = await notificationAPI.getNotifications();
+      if (response.success) {
+        setNotifications(response.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      setNotifications([]);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  }, [isAuthenticated]);
+
+  // Delete a notification
+  const deleteNotification = async (notificationId) => {
+    try {
+      const response = await notificationAPI.deleteNotification(notificationId);
+      if (response.success) {
+        // Remove the notification from the local state
+        setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      }
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
+  };
+
   const fetchAppliedBookings = useCallback(async () => {
     if (!isAuthenticated || !user || user.userType !== 'artist') return;
     try {
@@ -1093,6 +1126,7 @@ const ArtistDashboard = () => {
       // Also get pending bookings for Applications tab
       fetchPendingBookings();
       fetchNearbyBookings();
+      fetchNotifications();
       if (tab === 'profile') {
         fetchMyPortfolios();
       }
@@ -1111,6 +1145,7 @@ const ArtistDashboard = () => {
          fetchPendingBookings();
          fetchArtistUpcomingEvents();
          fetchNearbyBookings();
+         fetchNotifications();
         if (tab === 'profile') {
           fetchMyPortfolios();
         }
@@ -1119,7 +1154,7 @@ const ArtistDashboard = () => {
       console.log('User not authenticated');
       setLoading(false);
     }
-  }, [isAuthenticated, user, fetchSentProposals, fetchPendingBookings, fetchArtistUpcomingEvents, fetchNearbyBookings]);
+  }, [isAuthenticated, user, fetchSentProposals, fetchPendingBookings, fetchArtistUpcomingEvents, fetchNearbyBookings, fetchNotifications]);
 
   // Derive overview data when proposals change
   useEffect(() => {
@@ -1938,21 +1973,101 @@ useEffect(() => {
                     </div>
 
                     {/* Right Column - Notifications */}
-                    {/* <div className="notifications-section">
+                    <div className="notifications-section">
                       <h3 className="section-title">🔔 Notifications</h3>
                       <div className="notifications-list">
-                        {notifications.length === 0 ? (
-                          <div className="notification-item default"><span className="notification-icon">ℹ️</span><p className="notification-text">No notifications</p></div>
+                        {notificationsLoading ? (
+                          <div className="notification-item default">
+                            <span className="notification-icon">⏳</span>
+                            <p className="notification-text">Loading notifications...</p>
+                          </div>
                         ) : (
-                          notifications.map(n => (
-                            <div key={n.id} className={`notification-item ${n.type}`}>
-                              <span className="notification-icon">{n.type === 'success' ? '✅' : n.type === 'warning' ? '⏰' : n.type === 'danger' ? '⚠️' : '📩'}</span>
-                              <p className="notification-text">{n.text}</p>
-                            </div>
-                          ))
+                          <>
+                            {/* Next Event Reminder */}
+                            {nextEvent && (
+                              <div 
+                                className="notification-item reminder"
+                                style={{
+                                  backgroundColor: nextEvent.daysLeft <= 7 ? '#ffebee' : '#e3f2fd'
+                                }}
+                              >
+                                <span className="notification-icon">📅</span>
+                                <div className="notification-content">
+                                  <p className="notification-title">Upcoming Booking</p>
+                                  <p className="notification-text">
+                                    Your {nextEvent.title} with {nextEvent.client} is in {nextEvent.daysLeft} days
+                                  </p>
+                                  <span className="notification-time">
+                                    {nextEvent.date} at {nextEvent.timeSlot}
+                                    {nextEvent.location && ` • ${nextEvent.location}`}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Second Event Reminder */}
+                            {secondEvent && (
+                              <div 
+                                className="notification-item reminder"
+                                style={{
+                                  backgroundColor: secondEvent.daysLeft <= 7 ? '#ffebee' : '#e3f2fd'
+                                }}
+                              >
+                                <span className="notification-icon">📅</span>
+                                <div className="notification-content">
+                                  <p className="notification-title">Upcoming Booking</p>
+                                  <p className="notification-text">
+                                    Your {secondEvent.title} with {secondEvent.client} is in {secondEvent.daysLeft} days
+                                  </p>
+                                  <span className="notification-time">
+                                    {secondEvent.date} at {secondEvent.timeSlot}
+                                    {secondEvent.location && ` • ${secondEvent.location}`}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Regular Notifications */}
+                            {notifications.length === 0 && !nextEvent && !secondEvent ? (
+                              <div className="notification-item default">
+                                <span className="notification-icon">ℹ️</span>
+                                <p className="notification-text">No notifications</p>
+                              </div>
+                            ) : (
+                              notifications.map(notification => (
+                                <div 
+                                  key={notification.id} 
+                                  className={`notification-item ${notification.type} ${!notification.isRead ? 'unread' : ''}`}
+                                  style={{
+                                    backgroundColor: '#e8f5e8',
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  <span className="notification-icon">{notification.icon}</span>
+                                  <div className="notification-content">
+                                    <p className="notification-title">{notification.title}</p>
+                                    <p className="notification-text">{notification.message}</p>
+                                    <span className="notification-time">
+                                      {new Date(notification.createdAt).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                  <button 
+                                    className="notification-delete-btn"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      deleteNotification(notification.id);
+                                    }}
+                                    title="Delete notification"
+                                  >
+                                    🗑️
+                                  </button>
+                                </div>
+                              ))
+                            )}
+                          </>
                         )}
                       </div>
-                    </div> */}
+                    </div>
                   </div>
 
                   {/* Requests Near You */}
