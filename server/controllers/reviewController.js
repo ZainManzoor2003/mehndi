@@ -1,12 +1,13 @@
 const Review = require('../schemas/Review');
 const Booking = require('../schemas/Booking');
+const User = require('../schemas/User');
 
 // Create a review and mark booking as rated=true
 // POST /api/reviews
 // Private (Client only)
 const createReview = async (req, res) => {
   try {
-    const { bookingId, rating, comment } = req.body;
+    const { bookingId, rating, comment, artistId } = req.body;
 
     if (!bookingId || !rating || !comment) {
       return res.status(400).json({ success: false, message: 'bookingId, rating and comment are required' });
@@ -30,6 +31,28 @@ const createReview = async (req, res) => {
 
     const review = await Review.create({ userId: req.user.id, bookingId, rating, comment });
 
+    // Determine artist to update ratings for
+    let targetArtistId = artistId;
+
+    if (targetArtistId) {
+      try {
+        const artistDoc = await User.findOne({_id: targetArtistId, userType: 'artist'});
+        console.log(artistDoc)
+        if (artistDoc) {
+          const prevCount = Number(artistDoc.ratingsCount || 0);
+          const prevAvg = Number(artistDoc.ratingsAverage || 0);
+          const newCount = prevCount + 1;
+          const newAvg = ((prevAvg * prevCount) + Number(rating)) / newCount;
+          await User.updateOne({ _id: targetArtistId, userType: 'artist' }, {
+            $set: { ratingsAverage: Number(newAvg.toFixed(2)) },
+            $inc: { ratingsCount: 1 }
+          });
+        }
+      } catch (e) {
+        console.warn('Failed to update artist ratings:', e?.message || e);
+      }
+    }
+
     // Mark booking rated
     booking.rated = true;
     await booking.save();
@@ -49,7 +72,10 @@ const listCompletedBookingsForClient = async (req, res) => {
     const onlyNotRated = req.query.onlyNotRated === 'true';
     const query = { clientId: req.user.id, status: 'completed' };
     if (onlyNotRated) query.rated = false;
-    const bookings = await Booking.find(query).sort({ updatedAt: -1 });
+    // Populate assigned artist basic profile fields for UI cards
+    const bookings = await Booking.find(query)
+      .populate('assignedArtist', 'firstName lastName userProfileImage email')
+      .sort({ updatedAt: -1 });
     return res.status(200).json({ success: true, count: bookings.length, data: bookings });
   } catch (err) {
     console.error('List completed bookings error:', err);

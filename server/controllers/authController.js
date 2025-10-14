@@ -279,6 +279,53 @@ const googleAuth = async (req, res) => {
   }
 };
 
-module.exports = { signup, login, me, updateProfile, googleAuth };
+// GET /api/auth/artist-rating/:id
+const getArtistRating = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!id) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Artist ID is required' 
+      });
+    }
+
+    // Find the artist by ID and userType
+    const artist = await User.findOne({ 
+      _id: id, 
+      userType: 'artist' 
+    })
+
+    if (!artist) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Artist not found' 
+      });
+    }
+
+    // Return the rating average, defaulting to 0 if no ratings
+    const rating = artist.ratingsAverage || 0;
+    const count = artist.ratingsCount || 0;
+    console.log('rating',rating)
+    console.log('count',count)
+
+    return res.status(200).json({ 
+      success: true, 
+      data: { 
+        rating:Number(rating.toFixed(2)), 
+        count :artist.ratingsCount
+      } 
+    });
+  } catch (err) {
+    console.error('Get artist rating error:', err);
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Server error while fetching artist rating' 
+    });
+  }
+};
+
+module.exports = { signup, login, me, updateProfile, googleAuth, getArtistRating };
 
 

@@ -24,6 +24,7 @@ const ClientDashboard = () => {
   const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [proposalsFilter, setProposalsFilter] = useState('active'); // all, active, completed
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewsFilter, setReviewsFilter] = useState('pending'); // pending | completed
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [reviewData, setReviewData] = useState({
     rating: 0,
@@ -134,7 +135,8 @@ const ClientDashboard = () => {
   };
   const submitReview = async () => {
     try {
-      await reviewsAPI.createReview({ bookingId: reviewTarget._id, rating: reviewRating, comment: reviewComment });
+      await reviewsAPI.createReview({ bookingId: reviewTarget._id, rating: reviewRating, comment: reviewComment,
+        artistId:reviewTarget.assignedArtist[0]?._id });
       // refresh
       const all = await reviewsAPI.getCompletedBookingsToReview(false);
       const pending = await reviewsAPI.getCompletedBookingsToReview(true);
@@ -1015,7 +1017,7 @@ useEffect(() => {
                     </div>
 
                     {/* Right Column - Notifications */}
-                    {/* <div className="notifications-section">
+                    <div className="notifications-section">
                   <h3 className="section-title">🔔 Notifications</h3>
                   
                   <div className="notifications-list">
@@ -1026,7 +1028,7 @@ useEffect(() => {
                       </div>
                     ))}
                   </div>
-                </div> */}
+                </div>
                   </div>
 
                   {/* My Requests Section */}
@@ -1585,7 +1587,22 @@ useEffect(() => {
               {activeTab === 'reviews' && (
                 <div className="reviews-section">
                   <div className="reviews-header">
-                    <h2 className="section-title">Your Reviews</h2>
+                    <h2 className="reviews-title">Your Mehndi Reviews</h2>
+                    <p className="reviews-subtitle">Share your experience and help others book their perfect artist with confidence.</p>
+                    <div className="review-filters">
+                      <button
+                        className={`review-filter ${reviewsFilter === 'pending' ? 'active' : ''}`}
+                        onClick={() => setReviewsFilter('pending')}
+                      >
+                        Pending
+                      </button>
+                      <button
+                        className={`review-filter ${reviewsFilter === 'completed' ? 'active' : ''}`}
+                        onClick={() => setReviewsFilter('completed')}
+                      >
+                        Completed
+                      </button>
+                    </div>
                   </div>
 
                   {/* <div className="reviews-stats">
@@ -1600,56 +1617,32 @@ useEffect(() => {
               </div> */}
 
                   <div className="completed-bookings">
-                    <h3 className="section-subtitle">Completed Bookings</h3>
+                    {completedBookings
+                      .filter(b => reviewsFilter === 'pending' ? !b.rated : b.rated)
+                      .map(booking => (
+                        <div key={booking._id} className="review-card">
+                          <div className="review-card__content">
+                            <h4 className="review-card__title">Henna By {booking.assignedArtist[0] && booking.assignedArtist[0].firstName + ' ' + booking.assignedArtist[0].lastName}</h4>
+                            <p className="review-card__date">{new Date(booking.eventDate).toLocaleDateString('en-GB')}</p>
+                            {booking.rated ? (
+                              <p className="review-card__text">{getEventTitleGlobal(booking.eventType, booking.otherEventType)} booking reviewed on {new Date(booking.updatedAt || booking.eventDate).toLocaleDateString('en-GB')}.</p>
+                            ) : (
+                              <p className="review-card__text">{getEventTitleGlobal(booking.eventType, booking.otherEventType)} package completed — awaiting your review.</p>
+                            )}
 
-                    {completedBookings.map(booking => (
-                      <div key={booking._id} className="completed-booking-card">
-                        <div className="booking-main-info">
-                          <div className="artist-section">
-                            <div className="artist-avatar">
-                              <img src={booking.assignedArtist?.userProfileImage || 'https://via.placeholder.com/60x60'} alt="Artist" />
-                            </div>
-                            <div className="artist-details">
-                              <h4 className="artist-name">{booking.assignedArtist ? `${booking.assignedArtist.firstName || ''} ${booking.assignedArtist.lastName || ''}` : 'Artist'}</h4>
-                              <p className="booking-title">{getEventTitleGlobal(booking.eventType, booking.otherEventType)}</p>
-                              <p className="booking-date">{new Date(booking.eventDate).toLocaleDateString('en-GB')} • {(booking.preferredTimeSlot || []).join(', ')}</p>
-                            </div>
-                          </div>
-
-                          <div className="booking-price" />
-                        </div>
-
-                        <div className="review-section">
-                          {booking.rated ? (
-                            <div className="review-completed">
-                              <span className="review-status">Review Completed</span>
-                              <button className="view-review-btn" onClick={async () => {
-                                try {
-                                  const res = await reviewsAPI.getMyReviewForBooking(booking._id);
-                                  setViewReviewData({
-                                    ...res.data,
-                                    booking: booking
-                                  });
-                                  setViewReviewModal(true);
-                                } catch (e) {
-                                  alert(e.message || 'Review not found');
-                                }
-                              }}>View Details</button>
-                            </div>
-                          ) : (
-                            <div className="review-pending">
-                              <span className="review-status">Review Pending</span>
+                            {booking.rated ? (
+                              <span className="review-card__status">Reviewed</span>
+                            ) : (
                               <button
-                                className="write-review-btn"
+                                className="leave-review-btn"
                                 onClick={() => openReviewModal(booking)}
                               >
-                                Write Review
+                                Leave a Review
                               </button>
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
 
                   {reviewModalOpen && (

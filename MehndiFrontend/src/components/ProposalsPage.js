@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 
 // Header removed for standalone use inside dashboard and route
 
-const { bookingsAPI, applicationsAPI, paymentsAPI } = apiService;
+const { bookingsAPI, applicationsAPI, paymentsAPI, authAPI } = apiService;
 
 const ProposalsPage = () => {
   const { isAuthenticated, user } = useAuth();
@@ -24,6 +24,37 @@ const ProposalsPage = () => {
   const [applicationsByBooking, setApplicationsByBooking] = useState({}); // { bookingId: Application[] }
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [artistRatings, setArtistRatings] = useState({}); // { artistId: rating }
+
+  // Function to get artist rating from state or fetch it
+  const getArtistRating = (artistId) => {
+    if (!artistId) return '—';
+    console.log('artistRatings',artistRatings)
+    return artistRatings[artistId] || '—';
+  };
+
+  // Function to fetch artist rating
+  const fetchArtistRating = async (artistId) => {
+    if (!artistId || artistRatings[artistId] !== undefined) return;
+    
+    try {
+      const response = await authAPI.getArtistRating(artistId);
+      if (response.success && response.data) {
+        console.log('response.data',response.data)
+        setArtistRatings(prev => ({
+          ...prev,
+          [artistId]: response.data.rating,
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching artist rating:', error);
+      // Set to '—' on error
+      setArtistRatings(prev => ({
+        ...prev,
+        [artistId]: '—'
+      }));
+    }
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -59,6 +90,33 @@ const ProposalsPage = () => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
+
+  // Fetch artist ratings when applications are loaded
+  useEffect(() => {
+    const fetchAllArtistRatings = async () => {
+      const allArtistIds = new Set();
+      
+      // Collect all unique artist IDs from applications
+      Object.values(applicationsByBooking).forEach(applications => {
+        applications.forEach(app => {
+          if (app.artist?._id) {
+            allArtistIds.add(app.artist._id);
+          }
+        });
+      });
+
+      // Fetch ratings for all artists
+      const ratingPromises = Array.from(allArtistIds).map(artistId => 
+        fetchArtistRating(artistId)
+      );
+      
+      await Promise.all(ratingPromises);
+    };
+
+    if (Object.keys(applicationsByBooking).length > 0) {
+      fetchAllArtistRatings();
+    }
+  }, [applicationsByBooking]);
 
   // Handle Stripe redirect success/cancel
   // useEffect(() => {
@@ -511,7 +569,7 @@ const ProposalsPage = () => {
                             <div className="artist-details">
                               <span className="artist-name">{app.artist ? `${app.artist.firstName} ${app.artist.lastName}` : 'Artist'}</span>
                               <div className="artist-meta">
-                                <span className="rating">⭐ {app.artist?.rating || '—'}</span>
+                                <span className="rating">⭐ {getArtistRating(app.artist?._id) || '—'}</span>
                                 <span className="location">• {request.city || request.location}</span>
                               </div>
                             </div>
@@ -615,7 +673,7 @@ const ProposalsPage = () => {
                       }
                     </h4>
                     <div className="artist-rating">
-                      <span className="rating">⭐ {selectedArtistDetails.artist?.rating || '—'}</span>
+                      <span className="rating">⭐ {getArtistRating(selectedArtistDetails.artist?._id) || '—'}</span>
                     </div>
                   </div>
                 </div>
