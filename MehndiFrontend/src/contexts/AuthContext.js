@@ -31,19 +31,41 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
-    // Initialize user from localStorage
-    const savedUser = localStorage.getItem('user');
-    return savedUser ? JSON.parse(savedUser) : null;
+    // Initialize user from localStorage with error handling
+    try {
+      const savedUser = localStorage.getItem('user');
+      if (savedUser && savedUser !== 'undefined' && savedUser !== 'null') {
+        return JSON.parse(savedUser);
+      }
+      return null;
+    } catch (error) {
+      console.error('Error parsing saved user from localStorage:', error);
+      // Clear corrupted data
+      localStorage.removeItem('user');
+      return null;
+    }
   });
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    // Initialize auth state from localStorage
-    return localStorage.getItem('isAuthenticated') === 'true';
+    // Initialize auth state from localStorage with validation
+    try {
+      const savedAuth = localStorage.getItem('isAuthenticated');
+      const savedToken = localStorage.getItem('token');
+      // Only consider authenticated if both auth flag and token exist
+      return savedAuth === 'true' && savedToken && savedToken !== 'undefined' && savedToken !== 'null';
+    } catch (error) {
+      console.error('Error reading auth state from localStorage:', error);
+      return false;
+    }
   });
 
   // Check if user is already logged in on app start
   useEffect(() => {
-    checkAuthStatus();
+    // If checkAuthStatus is not called, we still need to set loading to false
+    // Otherwise routes will be stuck in loading state
+    setLoading(false);
+    // Uncomment below to enable auth check on app start
+    // checkAuthStatus();
   }, []);
 
   const checkAuthStatus = async () => {

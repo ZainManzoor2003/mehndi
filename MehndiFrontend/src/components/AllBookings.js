@@ -621,7 +621,21 @@ const AllBookings = () => {
                                   <button className="btn-secondary" onClick={() => openCancelModal(booking)} style={{marginLeft:'8px', background: '#e74c3c', color: 'white', border: 'none', padding: '14px 20px', fontSize: '0.95rem'}}>Cancel</button>
                               )}
                               {booking.status === 'confirmed' && booking.isPaid==='full' && (
-                              <button className="btn-primary" onClick={() => openCompleteModal(booking)} style={{marginLeft:'8px'}}>Mark as complete</button>
+                              <button
+                                className="btn-primary"
+                                onClick={() => {
+                                  const today = new Date();
+                                  const eventDate = new Date(booking.eventDate);
+                                  if (eventDate <= today) {
+                                    openCompleteModal(booking);
+                                  } else {
+                                    alert('You can only mark as complete once the event date has passed.');
+                                  }
+                                }}
+                                style={{marginLeft:'8px'}}
+                              >
+                                Mark as complete
+                              </button>
                                )}
                               {booking.status == 'pending' &&
                                 <>

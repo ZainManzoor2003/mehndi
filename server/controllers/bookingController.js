@@ -187,7 +187,7 @@ const createBooking = async (req, res) => {
 const getClientBookings = async (req, res) => {
   try {
     const bookings = await Booking.find({ clientId: req.user.id })
-      .populate('assignedArtist', 'firstName lastName email')
+      .populate('assignedArtist', 'firstName lastName userProfileImage email')
       .sort({ createdAt: -1 });
 
     res.status(200).json({

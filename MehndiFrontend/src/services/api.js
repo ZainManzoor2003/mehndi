@@ -124,6 +124,11 @@ export const authAPI = {
       body: JSON.stringify({ credential }),
     });
   },
+
+  // Get artist rating by ID
+  getArtistRating: async (artistId) => {
+    return apiRequest(`/auth/artist-rating/${artistId}`);
+  },
 };
 
 // Jobs API functions

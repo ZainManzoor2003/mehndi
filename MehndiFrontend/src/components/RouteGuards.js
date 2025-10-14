@@ -53,7 +53,11 @@ export const PublicRoute = ({ children }) => {
   if (loading) return null;
 
   if (isAuthenticated) {
-    const target = user?.userType === 'artist' ? '/artist-dashboard' : '/dashboard';
+    const target = user?.userType === 'artist' 
+      ? '/artist-dashboard' 
+      : user?.userType === 'admin'
+        ? '/admin-dashboard/users'
+        : '/dashboard';
     return <Navigate to={target} replace />;
   }
 

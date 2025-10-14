@@ -414,6 +414,108 @@
   z-index: 1000;
 }
 
+/* Reviews header and filters */
+.reviews-section .reviews-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px 12px 8px;
+  background: linear-gradient(135deg, #F8E1B8 0%, #F0CFA1 45%, #EBC792 100%);
+  border-radius: 16px;
+  margin-bottom: 18px;
+}
+
+.reviews-section .reviews-title {
+  margin: 0 0 8px 0;
+  font-size: 32px;
+  font-weight: 800;
+  color: #5D4037;
+}
+
+.reviews-section .reviews-subtitle {
+  margin: 0 0 16px 0;
+  color: #6B5B4E;
+}
+
+.reviews-section .review-filters {
+  display: inline-flex;
+  gap: 16px;
+}
+
+.reviews-section .review-filter {
+  background: #ffffff;
+  color: #5D4037;
+  border: 1px solid #eadfcc;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.reviews-section .review-filter.active {
+  background: #c0792e;
+  color: #fff;
+  border-color: #c0792e;
+}
+
+.reviews-section .review-filter:not(.active):hover {
+  border-color: #c0792e;
+}
+
+/* Review cards */
+.reviews-section .review-card {
+  background: #fff;
+  border: 1px solid rgba(242, 133, 48, 0.3);
+  border-radius: 14px;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.06);
+  padding: 18px 20px;
+  margin: 12px 0;
+}
+
+.reviews-section .review-card__title {
+  margin: 0 0 6px 0;
+  font-size: 18px;
+  font-weight: 500;
+  color: #46321E;
+}
+
+.reviews-section .review-card__date {
+  margin: 0 0 12px 0;
+  color: #6B5B4E;
+  font-size: 14px;
+}
+
+.reviews-section .review-card__text {
+  margin: 0 0 14px 0;
+  color: #6B5B4E;
+}
+
+.reviews-section .leave-review-btn {
+  background: #c0792e;
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 6px 18px rgba(192, 121, 46, 0.28);
+}
+
+.reviews-section .leave-review-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(192, 121, 46, 0.36);
+}
+
+.reviews-section .review-card__status {
+  display: inline-block;
+  color: #7b7b7b;
+  font-style: italic;
+}
+
 .reviews-section .modal {
   width: 100%;
   max-width: 600px;
