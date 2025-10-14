@@ -1092,29 +1092,6 @@ const updateBookingPaymentStatus = async (req, res) => {
 
     await booking.save();
 
-    // Create transaction record for remaining payment
-    if (artistId && isPaid === 'full') {
-      const transactionAmount = Number(remainingPayment) || 0;
-      
-      const transaction = new Transaction({
-        sender: req.user.id,
-        receiver: artistId,
-        bookingId: trimmedBookingId,
-        amount: transactionAmount,
-        transactionType: 'full'
-      });
-      
-      await transaction.save();
-      
-      console.log('Transaction created for remaining payment:', {
-        sender: req.user.id,
-        receiver: artistId,
-        bookingId: trimmedBookingId,
-        amount: transactionAmount,
-        transactionType: 'full'
-      });
-    }
-
     console.log('Booking payment status updated:', {
       bookingId: trimmedBookingId,
       isPaid: isPaid,

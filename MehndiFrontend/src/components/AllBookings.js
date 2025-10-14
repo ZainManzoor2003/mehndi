@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import Header from './Header';
 import DashboardSidebar from './DashboardSidebar';
 import apiService from '../services/api';
+import { FaCalendarAlt, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 
 const { bookingsAPI } = apiService;
 
@@ -601,7 +602,7 @@ const AllBookings = () => {
               {/* Upcoming Bookings */}
               {upcomingBookings.length > 0 && (
                 <div className="bookings-section">
-                  <h2 className="section-title">📅 Upcoming Bookings</h2>
+                  <h2 className="section-title"><FaCalendarAlt /> Upcoming Bookings</h2>
                   <div className="bookings-grid">
                     {upcomingBookings.map(booking => {
                       const daysLeft = getDaysUntilEvent(booking.eventDate);
@@ -709,7 +710,7 @@ const AllBookings = () => {
               {/* Completed Bookings */}
               {completedBookings.length > 0 && (
                 <div className="bookings-section">
-                  <h2 className="section-title">✅ Completed Bookings</h2>
+                  <h2 className="section-title">  <FaCheckCircle /> Completed Bookings</h2>
                   <div className="bookings-grid">
                     {completedBookings.map(booking => (
                       <div key={booking._id} className="booking-card compact completed">
@@ -766,7 +767,7 @@ const AllBookings = () => {
               {/* Cancelled Bookings */}
               {cancelledBookings.length > 0 && (
                 <div className="bookings-section">
-                  <h2 className="section-title">❌ Cancelled Bookings</h2>
+                  <h2 className="section-title"><FaTimesCircle /> Cancelled Bookings</h2>
                   <div className="bookings-grid">
                     {cancelledBookings.map(booking => (
                       <div key={booking._id} className="booking-card compact cancelled">

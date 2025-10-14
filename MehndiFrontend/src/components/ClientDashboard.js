@@ -7,7 +7,7 @@ import apiService, { chatAPI, reviewsAPI } from '../services/api';
 import socket, { buildDirectRoomId, joinRoom, sendRoomMessage, sendTyping, signalOnline, onPresenceUpdate } from '../services/socket';
 import ProposalsPage from './ProposalsPage';
 import ClientProfile from './ClientProfile';
-import { FaCalendarAlt, FaClock, FaWallet } from 'react-icons/fa';
+import { FaCalendarAlt, FaClock, FaWallet, FaHeart, FaLeaf, FaMoon, FaGlassCheers, FaPalette, FaFileAlt, FaHandPeace, FaHourglassHalf, FaCheckCircle, FaTrash, FaInbox, FaEnvelope, FaCreditCard, FaPen } from 'react-icons/fa';
 
 const {proposalsAPI, bookingsAPI, walletAPI, transactionAPI, notificationAPI } = apiService;
 
@@ -48,6 +48,9 @@ const ClientDashboard = () => {
   const [allBookings, setAllBookings] = useState([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
   const [bookingsError, setBookingsError] = useState('');
+  
+  // State for managing expanded event type sections
+  const [expandedEventTypes, setExpandedEventTypes] = useState({});
 
   // Transaction data
   const [transactions, setTransactions] = useState([]);
@@ -189,6 +192,14 @@ const ClientDashboard = () => {
     }
   };
 
+  // Toggle expanded state for event type sections
+  const toggleEventTypeExpanded = (eventType) => {
+    setExpandedEventTypes(prev => ({
+      ...prev,
+      [eventType]: !prev[eventType]
+    }));
+  };
+
   // Fetch proposals for a specific job
   const fetchJobProposals = useCallback(async (jobId) => {
     try {
@@ -279,7 +290,7 @@ const ClientDashboard = () => {
           };
 
           setNextEvent({
-            id: latestBooking._id,
+            _id: latestBooking._id,
             artistId: latestBooking.assignedArtist[0]?._id,
             title: getEventTitle(latestBooking.eventType, latestBooking.otherEventType),
             date: formatDate(latestBooking.eventDate),
@@ -300,7 +311,7 @@ const ClientDashboard = () => {
             const secondDaysLeft = Math.ceil((secondEventDate - today) / (1000 * 60 * 60 * 24));
 
             setSecondEvent({
-              id: secondBooking._id,
+              _id: secondBooking._id,
               artistId: latestBooking.assignedArtist[0]?._id,
               title: getEventTitle(secondBooking.eventType, secondBooking.otherEventType),
               date: formatDate(secondBooking.eventDate),
@@ -568,7 +579,7 @@ const ClientDashboard = () => {
 
     try {
       const remainingAmount = selectedBookingForPayment.remainingPayment;
-      const bookingId = selectedBookingForPayment.id;
+      const bookingId = selectedBookingForPayment._id;
       const artistId = selectedBookingForPayment.artistId;
 
       console.log('Creating remaining payment for booking:', bookingId, 'amount:', remainingAmount, artistId);
@@ -877,7 +888,7 @@ useEffect(() => {
                   {/* Welcome Section */}
                   <div className="welcome-section">
                     <h2 className="welcome-message">
-                      Hi {userName} 👋, {nextEvent ? `your ${nextEvent.title.toLowerCase()} is coming up soon!` : 'welcome to your dashboard!'}
+                      Hi {userName} <FaHandPeace style={{ color: '#F59E0B', marginLeft: '8px', marginRight: '8px' }} />, {nextEvent ? `your ${nextEvent.title.toLowerCase()} is coming up soon!` : 'welcome to your dashboard!'}
                     </h2>
 
                     {/* Next Event Card */}
@@ -953,7 +964,7 @@ useEffect(() => {
                     {/* Left Column - Bookings */}
                     <div className="bookings-section">
                       <div className="section-header">
-                        <h3 className="section-title">📅 Upcoming & Confirmed Bookings</h3>
+                        <h3 className="section-title"><FaCalendarAlt></FaCalendarAlt> Upcoming & Confirmed Bookings</h3>
                         {/* <Link to="/dashboard/bookings" className="view-all-btn">
                           View All Bookings
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -990,19 +1001,29 @@ useEffect(() => {
                             <div className="payment-status-row">
                               <div className="payment-status-left">
                                 <FaWallet className="wallet-icon" />
-                                <span>Deposit Secured</span>
+                                <span>{secondEvent.isPaid === 'full' ? 'Payment Complete' : 'Deposit Secured'}</span>
                               </div>
                               <div className="payment-separator"></div>
                               <div className="payment-due-info">
-                                Final 50% due {secondEvent.paymentDueDate || secondEvent.date}
+                                {secondEvent.isPaid === 'full' ? (
+                                  <span className="payment-complete">All payments completed ✅</span>
+                                ) : (
+                                  <span>Final 50% due {secondEvent.paymentDueDate || secondEvent.date}</span>
+                                )}
                               </div>
-                              <button className="pay-remaining-btn" onClick={() => handlePayRemaining(secondEvent)}>
-                                Pay Remaining
-                              </button>
+                              {secondEvent.isPaid !== 'full' && (
+                                <button className="pay-remaining-btn" onClick={() => handlePayRemaining(secondEvent)}>
+                                  Pay Remaining
+                                </button>
+                              )}
                             </div>
                           </div>
                           <div className="payment-footer">
-                            Final payment scheduled — due soon ⏳
+                            {secondEvent.isPaid === 'full' ? (
+                              <span className="payment-complete-footer">You're all set! <FaCheckCircle style={{ color: '#10B981', marginLeft: '4px' }} /></span>
+                            ) : (
+                              <span>Final payment scheduled — due soon <FaHourglassHalf style={{ color: '#F59E0B', marginLeft: '4px' }} /></span>
+                            )}
                           </div>
                         </div>
                       )}
@@ -1022,12 +1043,12 @@ useEffect(() => {
 
                     {/* Right Column - Notifications */}
                     <div className="notifications-section">
-                      <h3 className="section-title">🔔 Notifications</h3>
+                      <h3 className="section-title"><FaClock style={{ marginRight: '8px' }} /> Notifications</h3>
                       
                       <div className="notifications-list">
                         {notificationsLoading ? (
                           <div className="notification-item default">
-                            <span className="notification-icon">⏳</span>
+                            <span className="notification-icon"><FaHourglassHalf /></span>
                             <p className="notification-text">Loading notifications...</p>
                           </div>
                         ) : (
@@ -1040,7 +1061,7 @@ useEffect(() => {
                                   backgroundColor: nextEvent.daysLeft <= 7 ? '#ffebee' : '#e3f2fd'
                                 }}
                               >
-                                <span className="notification-icon">📅</span>
+                                <span className="notification-icon"><FaCalendarAlt /></span>
                                 <div className="notification-content">
                                   <p className="notification-title">Upcoming Event</p>
                                   <p className="notification-text">
@@ -1064,7 +1085,7 @@ useEffect(() => {
                                   backgroundColor: secondEvent.daysLeft <= 7 ? '#ffebee' : '#e3f2fd'
                                 }}
                               >
-                                <span className="notification-icon">📅</span>
+                                <span className="notification-icon"><FaCalendarAlt /></span>
                                 <div className="notification-content">
                                   <p className="notification-title">Upcoming Event</p>
                                   <p className="notification-text">
@@ -1097,7 +1118,7 @@ useEffect(() => {
                                   }}
                                   onClick={() => navigate('/dashboard/proposals')}
                                 >
-                                  <span className="notification-icon">{notification.icon}</span>
+                                  <span className="notification-icon"><FaEnvelope  ></FaEnvelope ></span>
                                   <div className="notification-content">
                                     <p className="notification-title">{notification.title}</p>
                                     <p className="notification-text">{notification.message}</p>
@@ -1113,7 +1134,7 @@ useEffect(() => {
                                     }}
                                     title="Delete notification"
                                   >
-                                    🗑️
+                                    <FaTrash color="green" />
                                   </button>
                                 </div>
                               ))
@@ -1308,11 +1329,9 @@ useEffect(() => {
               {activeTab === 'wallet' && (
                 <div className="wallet-section">
                   <div style={{textAlign: 'center'}}>
-                    <h2 className="wallet-title" style={{margin: '1rem 0'}}>Payemnts & Receipts</h2>
+                    <h2 className="wallet-title" style={{margin: '1rem 0'}}>Payments & Receipts</h2>
                     <p className="wallet-subtitle" style={{width: '75%', margin: '0 auto 2rem', fontSize: '1.1rem'}}>Track your deposits and upcoming balances. Remaining payments are due 14 days before each event.</p>
                   </div>
-
-                  {/* Wallet Overview Cards */}
                   {walletLoading ? (
                     <div className="loading-state" style={{ padding: '2rem', textAlign: 'center' }}>
                       <p>Loading wallet data...</p>
@@ -1341,11 +1360,224 @@ useEffect(() => {
                           </button>
                         )}
                       </div>
+                    </div>
+                  )}
 
-                      {/* <div className="wallet-card next-payment">
-                    <h3 className="wallet-card-title">Next Payment Due</h3>
-                    <p className="wallet-card-amount blue">1 Sep 2025</p>
-                  </div> */}
+                  {/* Bookings by Event Type */}
+                  {bookingsLoading ? (
+                    <div className="loading-state" style={{ padding: '2rem', textAlign: 'center' }}>
+                      <p>Loading bookings...</p>
+                    </div>
+                  ) : (
+                    <div className="bookings-by-event-type">
+                      {(() => {
+                        // Filter confirmed and completed bookings
+                        const confirmedAndCompletedBookings = allBookings.filter(booking => 
+                          booking.status === 'confirmed' || booking.status === 'completed'
+                        );
+
+                        // Group bookings by event type
+                        const bookingsByEventType = {};
+                        confirmedAndCompletedBookings.forEach(booking => {
+                          const eventType = getEventTitleGlobal(booking.eventType, booking.otherEventType);
+                          if (!bookingsByEventType[eventType]) {
+                            bookingsByEventType[eventType] = [];
+                          }
+                          bookingsByEventType[eventType].push(booking);
+                        });
+
+                        // Get event type icons
+                        const getEventTypeIcon = (eventType) => {
+                          if (eventType.toLowerCase().includes('bridal')) return <FaHeart style={{ color: '#8B5CF6' }} />;
+                          if (eventType.toLowerCase().includes('casual')) return <FaLeaf style={{ color: '#10B981' }} />;
+                          if (eventType.toLowerCase().includes('eid')) return <FaMoon style={{ color: '#F59E0B' }} />;
+                          if (eventType.toLowerCase().includes('party')) return <FaGlassCheers style={{ color: '#EF4444' }} />;
+                          return <FaPalette style={{ color: '#6B7280' }} />;
+                        };
+
+                        if (Object.keys(bookingsByEventType).length === 0) {
+                          return (
+                            <div className="no-bookings-message">
+                              <div className="no-bookings-icon"><FaFileAlt style={{ fontSize: '48px', opacity: 0.6 }} /></div>
+                              <h3 className="no-bookings-title">No Confirmed Bookings</h3>
+                              <p className="no-bookings-text">You don't have any confirmed or completed bookings yet.</p>
+                            </div>
+                          );
+                        }
+
+                        return Object.entries(bookingsByEventType).map(([eventType, bookings]) => (
+                          <div key={eventType} className="event-type-section">
+                            <div className="event-type-header">
+                              <span className="event-type-icon">{getEventTypeIcon(eventType)}</span>
+                              <h3 className="event-type-title">{eventType}</h3>
+                            </div>
+                            
+                            {bookings.length === 0 ? (
+                              <div className="no-bookings-for-event">
+                                <p>No bookings yet.</p>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="bookings-list">
+                                  {bookings.slice(0, expandedEventTypes[eventType] ? bookings.length : 1).map(booking => {
+                                  const artistName =  booking.assignedArtist?.[0] 
+                                    ? `${booking.assignedArtist[0].firstName} ${booking.assignedArtist[0].lastName}`
+                                    : 'Artist';
+                                  
+                                  const paymentPaid = parseFloat(booking.paymentPaid) || 0;
+                                  const remainingPayment = parseFloat(booking.remainingPayment) || 0;
+                                  const isPaid = booking.isPaid || 'none';
+                                  
+                                  const formatDate = (dateString) => {
+                                    const date = new Date(dateString);
+                                    return date.toLocaleDateString('en-GB', {
+                                      day: 'numeric',
+                                      month: 'short',
+                                      year: 'numeric'
+                                    });
+                                  };
+
+                                  const getStatusInfo = () => {
+                                    if (booking.isPaid === 'full') {
+                                      return { text: 'Paid in Full', class: 'paid-full' };
+                                    }
+                                    if (isPaid === 'half' && remainingPayment > 0) {
+                                      const eventDate = new Date(booking.eventDate);
+                                      const today = new Date();
+                                      const daysUntilEvent = Math.ceil((eventDate - today) / (1000 * 60 * 60 * 24));
+                                      return { 
+                                        text: `Due Soon (${formatDate(booking.eventDate)})`, 
+                                        class: 'due-soon' 
+                                      };
+                                    }
+                                    return { text: 'Confirmed', class: 'confirmed' };
+                                  };
+
+                                  const statusInfo = getStatusInfo();
+
+                                  const handlePayRemaining = () => {
+                                    setSelectedBookingForPayment(booking);
+                                    setShowPaymentModal(true);
+                                  };
+
+                                  const handleDownloadReceipt = () => {
+                                    // Create receipt content
+                                    const receiptContent = `
+                                      <html>
+                                        <head>
+                                          <title>Receipt - ${eventType}</title>
+                                          <style>
+                                            body { font-family: Arial, sans-serif; padding: 20px; }
+                                            .header { text-align: center; margin-bottom: 30px; }
+                                            .receipt-details { margin: 20px 0; }
+                                            .detail-row { display: flex; justify-content: space-between; margin: 10px 0; }
+                                            .total { border-top: 2px solid #333; padding-top: 10px; font-weight: bold; }
+                                          </style>
+                                        </head>
+                                        <body>
+                                          <div class="header">
+                                            <h1>Payment Receipt</h1>
+                                            <p>Mehndi Booking Platform</p>
+                                          </div>
+                                          <div class="receipt-details">
+                                            <div class="detail-row">
+                                              <span>Event Type:</span>
+                                              <span>${eventType}</span>
+                                            </div>
+                                            <div class="detail-row">
+                                              <span>Artist:</span>
+                                              <span>${artistName}</span>
+                                            </div>
+                                            <div class="detail-row">
+                                              <span>Event Date:</span>
+                                              <span>${formatDate(booking.eventDate)}</span>
+                                            </div>
+                                            <div class="detail-row">
+                                              <span>Deposit Paid:</span>
+                                              <span>£${paymentPaid.toFixed(2)}</span>
+                                            </div>
+                                            ${remainingPayment > 0 ? `
+                                            <div class="detail-row">
+                                              <span>Remaining Payment:</span>
+                                              <span>£${remainingPayment.toFixed(2)}</span>
+                                            </div>
+                                            ` : ''}
+                                            <div class="detail-row total">
+                                              <span>Total Amount:</span>
+                                              <span>£${(paymentPaid + remainingPayment).toFixed(2)}</span>
+                                            </div>
+                                            <div class="detail-row">
+                                              <span>Status:</span>
+                                              <span>${statusInfo.text}</span>
+                                            </div>
+                                          </div>
+                                        </body>
+                                      </html>
+                                    `;
+
+                                    // Create blob and download
+                                    const blob = new Blob([receiptContent], { type: 'text/html' });
+                                    const url = window.URL.createObjectURL(blob);
+                                    const link = document.createElement('a');
+                                    link.href = url;
+                                    link.download = `receipt-${eventType.replace(/\s+/g, '-')}-${formatDate(booking.eventDate).replace(/\s+/g, '-')}.html`;
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                    window.URL.revokeObjectURL(url);
+                                  };
+
+                                  return (
+                                    <div key={booking._id} className="booking-item">
+                                      <div className="booking-status">
+                                        <span className={`status-badge ${statusInfo.class}`}>
+                                          {statusInfo.text}
+                                        </span>
+                                      </div>
+                                      <div className="booking-info">
+                                        <h4 className="booking-artist">{artistName}</h4>
+                                        <div className="payment-details">
+                                          <span className="payment-breakdown">
+                                            Deposit £{paymentPaid.toFixed(0)} | Remaining £{remainingPayment.toFixed(0)}
+                                          </span>
+                                        </div>
+                                        <div className="booking-actions">
+                                          {booking.status === 'completed' || isPaid === 'full' ? (
+                                            <button 
+                                              className="action-btn download-receipt"
+                                              onClick={handleDownloadReceipt}
+                                            >
+                                              Download Receipt
+                                            </button>
+                                          ) : isPaid === 'half' && remainingPayment > 0 ? (
+                                            <button 
+                                              className="action-btn pay-remaining"
+                                              onClick={handlePayRemaining}
+                                            >
+                                              Pay Remaining Balance
+                                            </button>
+                                          ) : null}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                                </div>
+                                {bookings.length > 1 && (
+                                  <div className="show-more-less-container">
+                                    <button 
+                                      className="show-more-less-btn"
+                                      onClick={() => toggleEventTypeExpanded(eventType)}
+                                    >
+                                      {expandedEventTypes[eventType] ? 'Show Less' : `Show More (${bookings.length - 1} more)`}
+                                    </button>
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        ));
+                      })()}
                     </div>
                   )}
 
@@ -1378,6 +1610,17 @@ useEffect(() => {
                     </button>
                   </div> */}
 
+                  <div className="no-more-bookings">
+                        <div className="plus-icon">+</div>
+                        <p>No more upcoming bookings</p>
+                        <div className="action-buttons">
+                          <Link to="/booking" className="post-new-request-btn">
+                            Post a New Request
+                          </Link>
+
+                        </div>
+                      </div>
+
                   {/* Transaction History */}
                   <div className="transaction-history">
                     <h3 className="section-title">Transaction History</h3>
@@ -1394,7 +1637,7 @@ useEffect(() => {
                       </div>
                     ) : transactions.length === 0 ? (
                       <div className="empty-state">
-                        <div className="empty-icon">💳</div>
+                        <FaCreditCard size={'30px'}/>
                         <h3>No Transactions Yet</h3>
                         <p>Your transaction history will appear here once you make payments.</p>
                       </div>
@@ -1536,6 +1779,7 @@ useEffect(() => {
                       </div>
                     )}
                   </div>
+                  
 
                   {/* Invoices & Receipts */}
                   {/* <div className="invoices-receipts">
@@ -1716,7 +1960,7 @@ useEffect(() => {
                       if (filteredBookings.length === 0) {
                         return (
                           <div className="no-reviews-message">
-                            <div className="no-reviews-icon">📝</div>
+                             <div className="no-reviews-icon"><FaPen/></div>
                             <h3 className="no-reviews-title">
                               {reviewsFilter === 'pending' ? 'No Pending Reviews' : 'No Completed Reviews'}
                             </h3>

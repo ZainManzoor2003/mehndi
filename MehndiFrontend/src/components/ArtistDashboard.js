@@ -8,7 +8,7 @@ import CancelAcceptedModal from './modals/CancelAcceptedModal';
 import MarkCompleteProofModal from './modals/MarkCompleteProofModal';
 import socket, { buildDirectRoomId, joinRoom, sendRoomMessage, sendTyping, signalOnline, onPresenceUpdate } from '../services/socket';
 import { ToastContainer, useToast } from './Toast';
-import { FaCalendarAlt, FaCheckCircle, FaClock, FaStickyNote, FaEye, FaWallet, FaCommentDots, FaStar, FaMoneyBillWave, FaCalendarCheck, FaHourglassHalf, FaArrowCircleUp, FaExclamationTriangle, FaEnvelope, FaTimes, FaArrowLeft } from 'react-icons/fa';
+import { FaCalendarAlt, FaCheckCircle, FaClock, FaStickyNote, FaEye, FaWallet, FaCommentDots, FaStar, FaMoneyBillWave, FaCalendarCheck, FaHourglassHalf, FaArrowCircleUp, FaExclamationTriangle, FaEnvelope, FaTimes, FaArrowLeft, FaHandPeace, FaTrash } from 'react-icons/fa';
 
   const { proposalsAPI, authAPI, bookingsAPI, applicationsAPI, portfoliosAPI, walletAPI, transactionAPI, notificationAPI } = apiService;
 
@@ -1662,7 +1662,7 @@ useEffect(() => {
                 <>
                   {/* Welcome Section */}
                   <div className="welcome-section">
-                    <h2 className="welcome-message">Hi {artistName.split(' ')[0]} 👋, here are your upcoming mehndi events!</h2>
+                    <h2 className="welcome-message">Hi {artistName.split(' ')[0]} <FaHandPeace/>, here are your upcoming mehndi events!</h2>
 
                     {/* Next Event Card */}
                     <div className="next-event-card">
@@ -1974,7 +1974,7 @@ useEffect(() => {
 
                     {/* Right Column - Notifications */}
                     <div className="notifications-section">
-                      <h3 className="section-title">🔔 Notifications</h3>
+                      <h3 className="section-title"><FaClock /> Notifications</h3>
                       <div className="notifications-list">
                         {notificationsLoading ? (
                           <div className="notification-item default">
@@ -1991,7 +1991,7 @@ useEffect(() => {
                                   backgroundColor: nextEvent.daysLeft <= 7 ? '#ffebee' : '#e3f2fd'
                                 }}
                               >
-                                <span className="notification-icon">📅</span>
+                                <span className="notification-icon"><FaCalendarAlt /></span>
                                 <div className="notification-content">
                                   <p className="notification-title">Upcoming Booking</p>
                                   <p className="notification-text">
@@ -2013,7 +2013,7 @@ useEffect(() => {
                                   backgroundColor: secondEvent.daysLeft <= 7 ? '#ffebee' : '#e3f2fd'
                                 }}
                               >
-                                <span className="notification-icon">📅</span>
+                                <span className="notification-icon"><FaCalendarAlt /></span>
                                 <div className="notification-content">
                                   <p className="notification-title">Upcoming Booking</p>
                                   <p className="notification-text">
@@ -2043,7 +2043,7 @@ useEffect(() => {
                                     cursor: 'pointer'
                                   }}
                                 >
-                                  <span className="notification-icon">{notification.icon}</span>
+                                  <span className="notification-icon"><FaEnvelope  ></FaEnvelope ></span>
                                   <div className="notification-content">
                                     <p className="notification-title">{notification.title}</p>
                                     <p className="notification-text">{notification.message}</p>
@@ -2059,7 +2059,7 @@ useEffect(() => {
                                     }}
                                     title="Delete notification"
                                   >
-                                    🗑️
+                                    <FaTrash color="green" />
                                   </button>
                                 </div>
                               ))
@@ -3251,7 +3251,7 @@ useEffect(() => {
 
                   <div className="calendar-card">
                     <div className="calendar-header">
-                      <span className="cal-icon">📅</span>
+                      <span className="cal-icon"><FaCalendarAlt/></span>
                       <h3>Calendar</h3>
                     </div>
                     <div className="calendar-body">
@@ -3312,11 +3312,16 @@ useEffect(() => {
                 </div>
               )}
 
-              {/* Wallet (UI only) */}
-              {activeTab === 'wallet' && (
-                <div className="wallet-section">
-                  {/* Summary cards */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+
+              {/* Earnings (placeholder) */}
+              {activeTab === 'earnings' && (
+                <div className="earnings-section">
+                  <div className="section-header">
+                    <h2>Wallet</h2>
+                  </div>
+
+                  {/* Remaining Balance Section - Moved from Wallet */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '30px' }}>
                     <div style={{
                       background: 'linear-gradient(180deg,#fff5e6, #ffffff)',
                       border: '1px solid #ffddb3',
@@ -3335,107 +3340,7 @@ useEffect(() => {
                     </div>
                   </div>
 
-                  {/* Transactions */}
-                  <div className="transactions-card" style={{ background: '#fff', border: '1px solid #eee', borderRadius: '12px', overflow: 'hidden' }}>
-                    <div style={{ padding: '16px 20px', borderBottom: '1px solid #f0f0f0', background: '#fff' }}>
-                      <h3 className="section-title" style={{ margin: 0 }}>Transaction History</h3>
-                    </div>
-                    <div style={{ overflowX: 'auto' }}>
-                      <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
-                        <thead>
-                          <tr style={{ background: '#fbfbfb', color: '#555' }}>
-                            <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 600 }}>Event</th>
-                            <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 600 }}>Method</th>
-                            <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 600 }}>Status</th>
-                            <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 600 }}>Date</th>
-                            <th style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 600 }}>Amount</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {walletTransactions.map((tx) => (
-                            <tr key={tx.id} style={{ borderTop: '1px solid #f3f4f6' }}>
-                              <td style={{ padding: '16px' }}>{tx.event}</td>
-                              <td style={{ padding: '16px' }}>{tx.method}</td>
-                              <td style={{ padding: '16px' }}>
-                                <span className="status-badge" style={{ background: '#e7f9ef', color: '#1f7a3f', border: '1px solid #c9efd9', padding: '6px 10px', borderRadius: '999px', fontSize: '12px', fontWeight: 700, textTransform: 'capitalize' }}>{tx.type}</span>
-                              </td>
-                              <td style={{ padding: '16px' }}>{new Date(tx.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
-                              <td style={{ padding: '16px', textAlign: 'right', fontWeight: 700 }}>{formatGBP(tx.amount)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-
-                  {/* Withdraw Modal */}
-                  {withdrawOpen && (
-                    <div className="modern-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) closeWithdraw(); }}>
-                      <div className="modern-withdraw-modal">
-                        <div className="modern-modal-header">
-                          <div className="modal-title-section">
-                            <div className="withdraw-icon">
-                              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>
-                            </div>
-                            <div>
-                              <h3 className="modal-title">Withdraw funds</h3>
-                              <div className="modal-subtitle">Available balance: {formatGBP(walletSummary.remainingBalance)}</div>
-                            </div>
-                          </div>
-                          <button className="modern-close-btn" onClick={closeWithdraw} aria-label="Close">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                          </button>
-                        </div>
-                        <div className="modern-modal-body">
-                          <div className="balance-display">
-                            <div className="balance-info">
-                              <div>
-                                <div className="balance-label">Remaining Balance</div>
-                                <div className="balance-amount">{formatGBP(walletSummary.remainingBalance)}</div>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="withdraw-form">
-                            <div className="modern-form-group">
-                              <label className="modern-label">Amount</label>
-                              <div className="amount-input-container">
-                                <span className="currency-symbol">£</span>
-                                <input className="modern-amount-input" placeholder="0.00" inputMode="decimal" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} />
-                              </div>
-                              <div className="quick-amounts">
-                                {[10, 25, 50, 100].map((q) => (
-                                  <button key={q} className="quick-amount-btn" type="button" onClick={() => setWithdrawAmount(String(q))}>£{q}</button>
-                                ))}
-                              </div>
-                            </div>
-                            <div className="withdraw-info-card">
-                              <div className="info-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16"/></svg> This is a demo UI. No real withdrawal will be made.</div>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="modern-modal-actions">
-                          <button className="modern-cancel-btn" onClick={closeWithdraw}>Cancel</button>
-                          <button className="modern-confirm-btn" onClick={confirmWalletWithdraw} disabled={!canConfirmWithdraw() || withdrawLoading}>
-                            {withdrawLoading && (
-                              <svg className="spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/></svg>
-                            )}
-                            {withdrawLoading ? 'Processing…' : 'Confirm Withdraw'}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Earnings (placeholder) */}
-              {activeTab === 'earnings' && (
-                <div className="earnings-section">
-                  <div className="section-header">
-                    <h2>Earnings page</h2>
-                  </div>
-
-                  <h3 className="section-title" style={{ marginBottom: '10px' }}>Wallet & Earnings</h3>
+                  <h3 className="section-title" style={{ marginBottom: '10px' }}>Earnings</h3>
                   <div style={{ 
                     display: 'grid', 
                     gridTemplateColumns: 'repeat(4, 1fr)', 
@@ -3615,68 +3520,9 @@ useEffect(() => {
                     </div>
                   </div>
 
-                  {/* Notification Cards */}
-                  <div style={{ 
-                    display: 'flex',
-                    gap: '20px',
-                    marginBottom: '30px'
-                  }}>
-                    {/* Success Notice */}
-                    <div style={{
-                      flex: 1,
-                      backgroundColor: '#f0fdf4',
-                      border: '1px solid #86efac',
-                      borderRadius: '8px',
-                      padding: '16px 20px',
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: '12px'
-                    }}>
-                      <FaCheckCircle style={{ 
-                        fontSize: '20px', 
-                        color: '#16a34a',
-                        flexShrink: 0,
-                        marginTop: '2px'
-                      }} />
-                      <p style={{ 
-                        margin: 0, 
-                        fontSize: '14px', 
-                        color: '#166534',
-                        lineHeight: '1.5'
-                      }}>
-                        £250 will be released once the event is marked complete or automatically in 24 hours.
-                      </p>
-                    </div>
+                 
 
-                    {/* Warning Notice */}
-                    <div style={{
-                      flex: 1,
-                      backgroundColor: '#fffbeb',
-                      border: '1px solid #fde047',
-                      borderRadius: '8px',
-                      padding: '16px 20px',
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: '12px'
-                    }}>
-                      <FaExclamationTriangle style={{ 
-                        fontSize: '20px', 
-                        color: '#d97706',
-                        flexShrink: 0,
-                        marginTop: '2px'
-                      }} />
-                      <p style={{ 
-                        margin: 0, 
-                        fontSize: '14px', 
-                        color: '#92400e',
-                        lineHeight: '1.5'
-                      }}>
-                        Your payout to Barclays Bank is processing — expected by Sep 3.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="payout-methods">
+                  {/* <div className="payout-methods">
                     <h3 className="section-title">Payout Methods</h3>
                     <div className="payout-card">
                       {payoutMethods.map(m => (
@@ -3690,7 +3536,7 @@ useEffect(() => {
                       ))}
                       <button className="browse-requests-btn" style={{ marginTop: '10px' }}>+ Add New Payout Method</button>
                     </div>
-                  </div>
+                  </div> */}
 
                   {/* <div className="transactions-section">
                     <div className="transactions-header">
@@ -3720,6 +3566,97 @@ useEffect(() => {
                         ))}
                     </div>
                   </div> */}
+
+                  {/* Transactions Section - Moved from Wallet */}
+                  <div className="transactions-card" style={{ background: '#fff', border: '1px solid #eee', borderRadius: '12px', overflow: 'hidden', marginTop:'30px' }}>
+                    <div style={{ padding: '16px 20px', borderBottom: '1px solid #f0f0f0', background: '#fff' }}>
+                      <h3 className="section-title" style={{ margin: 0 }}>Transaction History</h3>
+                    </div>
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
+                        <thead>
+                          <tr style={{ background: '#fbfbfb', color: '#555' }}>
+                            <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 600 }}>Event</th>
+                            <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 600 }}>Method</th>
+                            <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 600 }}>Status</th>
+                            <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 600 }}>Date</th>
+                            <th style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 600 }}>Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {walletTransactions.map((tx) => (
+                            <tr key={tx.id} style={{ borderTop: '1px solid #f3f4f6' }}>
+                              <td style={{ padding: '16px' }}>{tx.event}</td>
+                              <td style={{ padding: '16px' }}>{tx.method}</td>
+                              <td style={{ padding: '16px' }}>
+                                <span className="status-badge" style={{ background: '#e7f9ef', color: '#1f7a3f', border: '1px solid #c9efd9', padding: '6px 10px', borderRadius: '999px', fontSize: '12px', fontWeight: 700, textTransform: 'capitalize' }}>{tx.type}</span>
+                              </td>
+                              <td style={{ padding: '16px' }}>{new Date(tx.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+                              <td style={{ padding: '16px', textAlign: 'right', fontWeight: 700 }}>{formatGBP(tx.amount)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Withdraw Modal - Moved from Wallet */}
+                  {withdrawOpen && (
+                    <div className="modern-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) closeWithdraw(); }}>
+                      <div className="modern-withdraw-modal">
+                        <div className="modern-modal-header">
+                          <div className="modal-title-section">
+                            <div className="withdraw-icon">
+                              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>
+                            </div>
+                            <div>
+                              <h3 className="modal-title">Withdraw funds</h3>
+                              <div className="modal-subtitle">Available balance: {formatGBP(walletSummary.remainingBalance)}</div>
+                            </div>
+                          </div>
+                          <button className="modern-close-btn" onClick={closeWithdraw} aria-label="Close">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                          </button>
+                        </div>
+                        <div className="modern-modal-body">
+                          <div className="balance-display">
+                            <div className="balance-info">
+                              <div>
+                                <div className="balance-label">Remaining Balance</div>
+                                <div className="balance-amount">{formatGBP(walletSummary.remainingBalance)}</div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="withdraw-form">
+                            <div className="modern-form-group">
+                              <label className="modern-label">Amount</label>
+                              <div className="amount-input-container">
+                                <span className="currency-symbol">£</span>
+                                <input className="modern-amount-input" placeholder="0.00" inputMode="decimal" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} />
+                              </div>
+                              <div className="quick-amounts">
+                                {[10, 25, 50, 100].map((q) => (
+                                  <button key={q} className="quick-amount-btn" type="button" onClick={() => setWithdrawAmount(String(q))}>£{q}</button>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="withdraw-info-card">
+                              <div className="info-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16"/></svg> This is a demo UI. No real withdrawal will be made.</div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="modern-modal-actions">
+                          <button className="modern-cancel-btn" onClick={closeWithdraw}>Cancel</button>
+                          <button className="modern-confirm-btn" onClick={confirmWalletWithdraw} disabled={!canConfirmWithdraw() || withdrawLoading}>
+                            {withdrawLoading && (
+                              <svg className="spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/></svg>
+                            )}
+                            {withdrawLoading ? 'Processing…' : 'Confirm Withdraw'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

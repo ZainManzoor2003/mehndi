@@ -685,20 +685,6 @@ exports.updateApplicationStatus = async (req, res) => {
         }
         
         await booking.save();
-
-        // Create transaction record
-        const transactionAmount = (booking.isPaid === 'half' && isPaid === 'full') 
-          ? (bookingEntry.artistDetails?.proposedBudget || 0) 
-          : (Number(booking.paymentPaid) || 0);
-          
-        const transaction = new Transaction({
-          sender: req.user.id,
-          receiver: artistId,
-          bookingId: bookingId,
-          amount: transactionAmount,
-          transactionType: booking.isPaid || isPaid
-        });
-        await transaction.save();
       }
     }
 

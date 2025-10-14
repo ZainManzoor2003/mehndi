@@ -2567,7 +2567,8 @@
   background: var(--white-color);
   border-radius: 16px;
   padding: 1.5rem;
-  height: fit-content;
+  height: 400px;
+  overflow-y: scroll;
   box-shadow: 0 4px 12px rgba(139, 115, 85, 0.1);
 }
 

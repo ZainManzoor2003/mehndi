@@ -204,7 +204,7 @@ const Login = () => {
               </div>
             </div>
 
-            <div className="form-group">
+            {/* <div className="form-group">
               <label className="checkbox-label">
                 <input
                   type="checkbox"
@@ -215,7 +215,7 @@ const Login = () => {
                 />
                 <span className="checkbox-text">Remember me</span>
               </label>
-            </div>
+            </div> */}
 
             <button type="submit" className="auth-submit-btn" disabled={isLoading}>
               {isLoading ? (
