@@ -691,6 +691,237 @@
   line-height: 1.5;
 }
 
+/* Wallet Section - Bookings by Event Type */
+.wallet-section .bookings-by-event-type {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  margin-top: 20px;
+}
+
+.wallet-section .event-type-section {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: none;
+  border: none;
+}
+
+.wallet-section .event-type-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #f5f5f5;
+}
+
+.wallet-section .event-type-icon {
+  font-size: 24px;
+}
+
+.wallet-section .event-type-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #5D4037;
+}
+
+.wallet-section .no-bookings-for-event {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6B5B4E;
+  font-style: italic;
+}
+
+.wallet-section .bookings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.wallet-section .booking-item {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #f0f0f0;
+  transition: all 0.2s ease;
+}
+
+.wallet-section .booking-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transform: translateY(-1px);
+}
+
+.wallet-section .booking-info {
+  flex: 1;
+  padding-right: 100px;
+}
+
+.wallet-section .booking-artist {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #46321E;
+}
+
+.wallet-section .payment-details {
+  margin-bottom: 12px;
+}
+
+.wallet-section .payment-breakdown {
+  font-size: 14px;
+  color: #6B5B4E;
+  font-weight: 500;
+}
+
+.wallet-section .booking-actions {
+  margin-top: 12px;
+}
+
+.wallet-section .action-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.wallet-section .action-btn.pay-remaining {
+  background: #d4a574;
+  color: white;
+}
+
+.wallet-section .action-btn.pay-remaining:hover {
+  background: #b8945f;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(212, 165, 116, 0.3);
+}
+
+.wallet-section .action-btn.download-receipt {
+  background: #f5f5f5;
+  color: #5D4037;
+  border: 1px solid #d0d0d0;
+}
+
+.wallet-section .action-btn.download-receipt:hover {
+  background: #e8e8e8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.wallet-section .booking-status {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  align-items: flex-start;
+}
+
+.wallet-section .status-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 10px;
+}
+
+.wallet-section .status-badge.paid-full {
+  background: #e8f5e8;
+  color: #2d5f3f;
+}
+
+.wallet-section .status-badge.due-soon {
+  background: #fff3e0;
+  color: #e67e22;
+}
+
+.wallet-section .status-badge.confirmed {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+/* No bookings message */
+.wallet-section .no-bookings-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 60px 20px;
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 16px;
+  margin: 20px 0;
+}
+
+.wallet-section .no-bookings-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.wallet-section .no-bookings-title {
+  margin: 0 0 12px 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #5D4037;
+}
+
+.wallet-section .no-bookings-text {
+  margin: 0;
+  font-size: 16px;
+  color: #6B5B4E;
+  max-width: 400px;
+  line-height: 1.5;
+}
+
+/* Show More/Less Button */
+.wallet-section .show-more-less-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.wallet-section .show-more-less-btn {
+  background: #f8f8f8;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #5D4037;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.wallet-section .show-more-less-btn:hover {
+  background: #e8e8e8;
+  border-color: #d0d0d0;
+  transform: translateY(-1px);
+}
+
+/* Payment Complete States */
+.payment-complete {
+  color: #2d5f3f;
+  font-weight: 600;
+}
+
+.payment-complete-footer {
+  color: #2d5f3f;
+  font-weight: 500;
+}
+
 /* Star button styles for detailed review modal */
 .rating-stars {
   display: flex;
