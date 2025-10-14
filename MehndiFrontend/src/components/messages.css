@@ -656,6 +656,41 @@
   box-shadow: 0 0 0 3px rgba(212, 165, 116, 0.1);
 }
 
+/* No reviews empty state */
+.reviews-section .no-reviews-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 60px 20px;
+  background: #fff;
+  border: 2px dashed #d4a574;
+  border-radius: 16px;
+  margin: 20px 0;
+}
+
+.reviews-section .no-reviews-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.reviews-section .no-reviews-title {
+  margin: 0 0 12px 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #5D4037;
+}
+
+.reviews-section .no-reviews-text {
+  margin: 0;
+  font-size: 16px;
+  color: #6B5B4E;
+  max-width: 400px;
+  line-height: 1.5;
+}
+
 /* Star button styles for detailed review modal */
 .rating-stars {
   display: flex;

@@ -323,8 +323,6 @@ const getArtistRating = async (req, res) => {
     // Return the rating average, defaulting to 0 if no ratings
     const rating = artist.ratingsAverage || 0;
     const count = artist.ratingsCount || 0;
-    console.log('rating',rating)
-    console.log('count',count)
 
     return res.status(200).json({ 
       success: true, 

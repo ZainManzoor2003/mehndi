@@ -17,6 +17,7 @@ const chatController = require('../controllers/chatController');
 const portfolioController = require('../controllers/portfolioController');
 const { getWallet, updateWallet, getAllWallets, getWalletSummary, withdrawFunds } = require('../controllers/walletController');
 const { getAllTransactions, getMyTransactions } = require('../controllers/transactionController');
+const notificationController = require('../controllers/notificationController');
 
 // Auth routes
 router.post('/api/auth/register', signup);
@@ -92,6 +93,12 @@ router.post('/api/wallet/withdraw', protect, withdrawFunds);
 // Transaction routes
 router.get('/api/transactions', protect, getAllTransactions);
 router.get('/api/transactions/my-transactions', protect, getMyTransactions);
+
+// Notification routes
+router.get('/api/notifications', protect, notificationController.getNotifications);
+router.put('/api/notifications/:id/read', protect, notificationController.markAsRead);
+router.put('/api/notifications/mark-all-read', protect, notificationController.markAllAsRead);
+router.delete('/api/notifications/:id', protect, notificationController.deleteNotification);
 
 module.exports = router;
 // Admin routes

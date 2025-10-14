@@ -9,7 +9,7 @@ import ProposalsPage from './ProposalsPage';
 import ClientProfile from './ClientProfile';
 import { FaCalendarAlt, FaClock, FaWallet } from 'react-icons/fa';
 
-const {proposalsAPI, bookingsAPI, walletAPI, transactionAPI } = apiService;
+const {proposalsAPI, bookingsAPI, walletAPI, transactionAPI, notificationAPI } = apiService;
 
 const ClientDashboard = () => {
   const { user, isAuthenticated } = useAuth();
@@ -155,36 +155,39 @@ const ClientDashboard = () => {
 
   const DEFAULT_AVATAR = 'https://www.gravatar.com/avatar/?d=mp&s=80';
 
-  const [notifications] = useState([
-    {
-      id: 1,
-      type: 'applications',
-      message: '3 artists have applied to your request — check them out!',
-      icon: '🎨'
-    },
-    {
-      id: 2,
-      type: 'reminder',
-      message: 'Your booking is tomorrow at 4 PM — don\'t forget to confirm details',
-      icon: '⏰',
-      color: 'orange'
-    },
-    {
-      id: 3,
-      type: 'payment',
-      message: 'Final 50% payment due in 14 days — complete to secure your event',
-      icon: '💰',
-      color: 'red'
-    },
-    {
-      id: 4,
-      type: 'reminder',
-      message: 'Reminder: 7 days left to complete your final payment',
-      icon: '📅',
-      color: 'blue'
-    }
-  ]);
+  const [notifications, setNotifications] = useState([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
 
+  // Fetch notifications for the current user
+  const fetchNotifications = useCallback(async () => {
+    if (!isAuthenticated) return;
+    
+    try {
+      setNotificationsLoading(true);
+      const response = await notificationAPI.getNotifications();
+      if (response.success) {
+        setNotifications(response.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      setNotifications([]);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  }, [isAuthenticated]);
+
+  // Delete a notification
+  const deleteNotification = async (notificationId) => {
+    try {
+      const response = await notificationAPI.deleteNotification(notificationId);
+      if (response.success) {
+        // Remove the notification from the local state
+        setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      }
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
+  };
 
   // Fetch proposals for a specific job
   const fetchJobProposals = useCallback(async (jobId) => {
@@ -452,8 +455,9 @@ const ClientDashboard = () => {
     if (isAuthenticated && user && user.userType === 'client') {
       fetchBookings();
       fetchTransactions();
+      fetchNotifications();
     }
-  }, [isAuthenticated, user, fetchBookings, fetchTransactions, tab]);
+  }, [isAuthenticated, user, fetchBookings, fetchTransactions, fetchNotifications, tab]);
 
   // Presence: signal that this user is online while on dashboard; listen for updates
   useEffect(() => {
@@ -1018,17 +1022,106 @@ useEffect(() => {
 
                     {/* Right Column - Notifications */}
                     <div className="notifications-section">
-                  <h3 className="section-title">🔔 Notifications</h3>
-                  
-                  <div className="notifications-list">
-                    {notifications.map(notification => (
-                      <div key={notification.id} className={`notification-item ${notification.color || 'default'}`}>
-                        <span className="notification-icon">{notification.icon}</span>
-                        <p className="notification-text">{notification.message}</p>
+                      <h3 className="section-title">🔔 Notifications</h3>
+                      
+                      <div className="notifications-list">
+                        {notificationsLoading ? (
+                          <div className="notification-item default">
+                            <span className="notification-icon">⏳</span>
+                            <p className="notification-text">Loading notifications...</p>
+                          </div>
+                        ) : (
+                          <>
+                            {/* Next Event Reminder */}
+                            {nextEvent && (
+                              <div 
+                                className="notification-item reminder"
+                                style={{
+                                  backgroundColor: nextEvent.daysLeft <= 7 ? '#ffebee' : '#e3f2fd'
+                                }}
+                              >
+                                <span className="notification-icon">📅</span>
+                                <div className="notification-content">
+                                  <p className="notification-title">Upcoming Event</p>
+                                  <p className="notification-text">
+                                    Your {nextEvent.title} is in {nextEvent.daysLeft} days
+                                    {nextEvent.isPaid !== 'full' && nextEvent.remainingPayment && nextEvent.remainingPayment !== '0' && (
+                                      <span className="payment-reminder"> • Remaining payment: £{nextEvent.remainingPayment}</span>
+                                    )}
+                                  </p>
+                                  <span className="notification-time">
+                                    {nextEvent.date} at {nextEvent.time}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Second Event Reminder */}
+                            {secondEvent && (
+                              <div 
+                                className="notification-item reminder"
+                                style={{
+                                  backgroundColor: secondEvent.daysLeft <= 7 ? '#ffebee' : '#e3f2fd'
+                                }}
+                              >
+                                <span className="notification-icon">📅</span>
+                                <div className="notification-content">
+                                  <p className="notification-title">Upcoming Event</p>
+                                  <p className="notification-text">
+                                    Your {secondEvent.title} is in {secondEvent.daysLeft} days
+                                    {secondEvent.isPaid !== 'full' && secondEvent.remainingPayment && secondEvent.remainingPayment !== '0' && (
+                                      <span className="payment-reminder"> • Remaining payment: £{secondEvent.remainingPayment}</span>
+                                    )}
+                                  </p>
+                                  <span className="notification-time">
+                                    {secondEvent.date} at {secondEvent.time}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Regular Notifications */}
+                            {notifications.length === 0 && !nextEvent && !secondEvent ? (
+                              <div className="notification-item default">
+                                <span className="notification-icon">ℹ️</span>
+                                <p className="notification-text">No notifications</p>
+                              </div>
+                            ) : (
+                              notifications.map(notification => (
+                                <div 
+                                  key={notification.id} 
+                                  className={`notification-item ${notification.type} ${!notification.isRead ? 'unread' : ''}`}
+                                  style={{
+                                    backgroundColor: '#e8f5e8',
+                                    cursor: 'pointer'
+                                  }}
+                                  onClick={() => navigate('/dashboard/proposals')}
+                                >
+                                  <span className="notification-icon">{notification.icon}</span>
+                                  <div className="notification-content">
+                                    <p className="notification-title">{notification.title}</p>
+                                    <p className="notification-text">{notification.message}</p>
+                                    <span className="notification-time">
+                                      {new Date(notification.createdAt).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                  <button 
+                                    className="notification-delete-btn"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      deleteNotification(notification.id);
+                                    }}
+                                    title="Delete notification"
+                                  >
+                                    🗑️
+                                  </button>
+                                </div>
+                              ))
+                            )}
+                          </>
+                        )}
                       </div>
-                    ))}
-                  </div>
-                </div>
+                    </div>
                   </div>
 
                   {/* My Requests Section */}
@@ -1445,7 +1538,7 @@ useEffect(() => {
                   </div>
 
                   {/* Invoices & Receipts */}
-                  <div className="invoices-receipts">
+                  {/* <div className="invoices-receipts">
                     <h3 className="section-title">Invoices & Receipts</h3>
 
                     <div className="receipts-list">
@@ -1512,7 +1605,7 @@ useEffect(() => {
                         <span className="security-text">Refunds and cancellations follow our <span className="policy-link">policy</span>.</span>
                       </div>
                     </div>
-                  </div>
+                  </div> */}
 
                   {/* Saved Payment Methods */}
                   {/* <div className="saved-payment-methods">
@@ -1617,9 +1710,26 @@ useEffect(() => {
               </div> */}
 
                   <div className="completed-bookings">
-                    {completedBookings
-                      .filter(b => reviewsFilter === 'pending' ? !b.rated : b.rated)
-                      .map(booking => (
+                    {(() => {
+                      const filteredBookings = completedBookings.filter(b => reviewsFilter === 'pending' ? !b.rated : b.rated);
+                      
+                      if (filteredBookings.length === 0) {
+                        return (
+                          <div className="no-reviews-message">
+                            <div className="no-reviews-icon">📝</div>
+                            <h3 className="no-reviews-title">
+                              {reviewsFilter === 'pending' ? 'No Pending Reviews' : 'No Completed Reviews'}
+                            </h3>
+                            <p className="no-reviews-text">
+                              {reviewsFilter === 'pending' 
+                                ? 'You don\'t have any completed bookings waiting for your review yet.' 
+                                : 'You haven\'t completed any reviews yet. Reviews will appear here once you submit them.'}
+                            </p>
+                          </div>
+                        );
+                      }
+                      
+                      return filteredBookings.map(booking => (
                         <div key={booking._id} className="review-card">
                           <div className="review-card__content">
                             <h4 className="review-card__title">Henna By {booking.assignedArtist[0] && booking.assignedArtist[0].firstName + ' ' + booking.assignedArtist[0].lastName}</h4>
@@ -1642,7 +1752,8 @@ useEffect(() => {
                             )}
                           </div>
                         </div>
-                      ))}
+                      ));
+                    })()}
                   </div>
 
                   {reviewModalOpen && (

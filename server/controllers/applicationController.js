@@ -2,7 +2,64 @@ const Application = require('../schemas/Application');
 const Booking = require('../schemas/Booking');
 const User = require('../schemas/User');
 const Transaction = require('../schemas/Transaction');
+const Notification = require('../schemas/Notification');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || '');
+
+// Helper function to create notifications
+const createNotification = async (type, targetUserId, triggeredByUserId, targetUserType, bookingId, applicationId, data) => {
+  try {
+    const notificationData = {
+      targetUserId,
+      triggeredByUserId,
+      targetUserType,
+      type,
+      bookingId,
+      applicationId,
+      data
+    };
+
+    // Set title and message based on type
+    switch (type) {
+      case 'booking_created':
+        notificationData.title = 'New Booking Created';
+        notificationData.message = `${data.clientName} has created a new ${data.eventType?.join(', ') || 'mehndi'} booking for ${data.bookingDate ? new Date(data.bookingDate).toLocaleDateString() : 'your area'}`;
+        break;
+      case 'booking_cancelled':
+        notificationData.title = 'Booking Cancelled';
+        notificationData.message = `${data.clientName} has cancelled the ${data.eventType?.join(', ') || 'mehndi'} booking scheduled for ${data.bookingDate ? new Date(data.bookingDate).toLocaleDateString() : 'your area'}`;
+        break;
+      case 'booking_completed':
+        notificationData.title = 'Booking Completed';
+        notificationData.message = `Your ${data.eventType?.join(', ') || 'mehndi'} booking with ${data.clientName} has been completed successfully`;
+        break;
+      case 'application_submitted':
+        notificationData.title = 'New Application Received';
+        notificationData.message = `${data.artistName} has applied for your ${data.eventType?.join(', ') || 'mehndi'} booking`;
+        break;
+      case 'application_accepted':
+        notificationData.title = 'Application Accepted';
+        notificationData.message = `Your application for ${data.clientName}'s ${data.eventType?.join(', ') || 'mehndi'} booking has been accepted`;
+        break;
+      case 'application_declined':
+        notificationData.title = 'Application Declined';
+        notificationData.message = `Your application for ${data.clientName}'s ${data.eventType?.join(', ') || 'mehndi'} booking has been declined`;
+        break;
+      case 'application_withdrawn':
+        notificationData.title = 'Application Withdrawn';
+        notificationData.message = `${data.artistName} has withdrawn their application for your ${data.eventType?.join(', ') || 'mehndi'} booking`;
+        break;
+      default:
+        notificationData.title = 'Notification';
+        notificationData.message = 'You have a new notification';
+    }
+
+    const notification = await Notification.create(notificationData);
+    return notification;
+  } catch (error) {
+    console.error('Error creating notification:', error);
+    return null;
+  }
+};
 
 // @desc    Artist applies to a booking with full application details
 // @route   POST /api/applications/apply
@@ -162,6 +219,36 @@ exports.applyToBooking = async (req, res) => {
       { _id: req.user.id },
       { $addToSet: { 'artist.appliedApplications': application._id } }
     );
+
+    // Create notification for the client about new application
+    try {
+      const artistName = `${req.user.firstName} ${req.user.lastName}`;
+      const booking = await Booking.findById(bookingId);
+      const client = await User.findById(booking.clientId);
+      
+      const notificationData = {
+        artistName,
+        clientName: `${client.firstName} ${client.lastName}`,
+        bookingName: `${booking.eventType?.join(', ') || 'Mehndi'} - ${booking.city}`,
+        eventType: booking.eventType,
+        bookingDate: booking.eventDate,
+        location: booking.city,
+        proposedBudget
+      };
+
+      await createNotification(
+        'application_submitted',
+        booking.clientId,
+        req.user.id,
+        'client',
+        bookingId,
+        application._id,
+        notificationData
+      );
+    } catch (notificationError) {
+      console.error('Error creating application notification:', notificationError);
+      // Don't fail the application if notifications fail
+    }
 
     return res.status(201).json({ success: true, message: 'Application submitted successfully', data: application });
   } catch (error) {
@@ -359,6 +446,35 @@ exports.withdrawApplication = async (req, res) => {
       { _id: bookingId },
       { $pull: { appliedArtists: req.user.id } }
     );
+
+    // Create notification for the client about application withdrawal
+    try {
+      const booking = await Booking.findById(bookingId);
+      const client = await User.findById(booking.clientId);
+      const artistName = `${req.user.firstName} ${req.user.lastName}`;
+      
+      const notificationData = {
+        artistName,
+        clientName: `${client.firstName} ${client.lastName}`,
+        bookingName: `${booking.eventType?.join(', ') || 'Mehndi'} - ${booking.city}`,
+        eventType: booking.eventType,
+        bookingDate: booking.eventDate,
+        location: booking.city
+      };
+
+      await createNotification(
+        'application_withdrawn',
+        booking.clientId,
+        req.user.id,
+        'client',
+        bookingId,
+        application._id,
+        notificationData
+      );
+    } catch (notificationError) {
+      console.error('Error creating withdrawal notification:', notificationError);
+      // Don't fail the withdrawal if notifications fail
+    }
 
     return res.status(200).json({ success: true, message: 'Application withdrawn successfully' });
   } catch (error) {
@@ -584,6 +700,39 @@ exports.updateApplicationStatus = async (req, res) => {
         });
         await transaction.save();
       }
+    }
+
+    // Create notification for the artist about application status change
+    try {
+      const application = await Application.findById(applicationId);
+      const bookingEntry = application.Booking.find(b => b.booking_id.toString() === bookingId.toString());
+      const artistId = bookingEntry && bookingEntry.artist_id;
+      
+      if (artistId) {
+        const clientName = `${req.user.firstName} ${req.user.lastName}`;
+        const notificationData = {
+          clientName,
+          artistName: `${req.user.firstName} ${req.user.lastName}`,
+          bookingName: `${booking.eventType?.join(', ') || 'Mehndi'} - ${booking.city}`,
+          eventType: booking.eventType,
+          bookingDate: booking.eventDate,
+          location: booking.city,
+          proposedBudget: bookingEntry.artistDetails?.proposedBudget
+        };
+
+        await createNotification(
+          status === 'accepted' ? 'application_accepted' : 'application_declined',
+          artistId,
+          req.user.id,
+          'artist',
+          bookingId,
+          applicationId,
+          notificationData
+        );
+      }
+    } catch (notificationError) {
+      console.error('Error creating application status notification:', notificationError);
+      // Don't fail the status update if notifications fail
     }
 
     // Return refreshed list for this booking

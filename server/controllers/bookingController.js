@@ -3,7 +3,64 @@ const User = require('../schemas/User');
 const Transaction = require('../schemas/Transaction');
 const Wallet = require('../schemas/Wallet');
 const Application = require('../schemas/Application');
+const Notification = require('../schemas/Notification');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || '');
+
+// Helper function to create notifications
+const createNotification = async (type, targetUserId, triggeredByUserId, targetUserType, bookingId, applicationId, data) => {
+  try {
+    const notificationData = {
+      targetUserId,
+      triggeredByUserId,
+      targetUserType,
+      type,
+      bookingId,
+      applicationId,
+      data
+    };
+
+    // Set title and message based on type
+    switch (type) {
+      case 'booking_created':
+        notificationData.title = 'New Booking Created';
+        notificationData.message = `${data.clientName} has created a new ${data.eventType?.join(', ') || 'mehndi'} booking for ${data.bookingDate ? new Date(data.bookingDate).toLocaleDateString() : 'your area'}`;
+        break;
+      case 'booking_cancelled':
+        notificationData.title = 'Booking Cancelled';
+        notificationData.message = `${data.clientName} has cancelled the ${data.eventType?.join(', ') || 'mehndi'} booking scheduled for ${data.bookingDate ? new Date(data.bookingDate).toLocaleDateString() : 'your area'}`;
+        break;
+      case 'booking_completed':
+        notificationData.title = 'Booking Completed';
+        notificationData.message = `Your ${data.eventType?.join(', ') || 'mehndi'} booking with ${data.clientName} has been completed successfully`;
+        break;
+      case 'application_submitted':
+        notificationData.title = 'New Application Received';
+        notificationData.message = `${data.artistName} has applied for your ${data.eventType?.join(', ') || 'mehndi'} booking`;
+        break;
+      case 'application_accepted':
+        notificationData.title = 'Application Accepted';
+        notificationData.message = `Your application for ${data.clientName}'s ${data.eventType?.join(', ') || 'mehndi'} booking has been accepted`;
+        break;
+      case 'application_declined':
+        notificationData.title = 'Application Declined';
+        notificationData.message = `Your application for ${data.clientName}'s ${data.eventType?.join(', ') || 'mehndi'} booking has been declined`;
+        break;
+      case 'application_withdrawn':
+        notificationData.title = 'Application Withdrawn';
+        notificationData.message = `${data.artistName} has withdrawn their application for your ${data.eventType?.join(', ') || 'mehndi'} booking`;
+        break;
+      default:
+        notificationData.title = 'Notification';
+        notificationData.message = 'You have a new notification';
+    }
+
+    const notification = await Notification.create(notificationData);
+    return notification;
+  } catch (error) {
+    console.error('Error creating notification:', error);
+    return null;
+  }
+};
 
 // @desc    Create a new booking
 // @route   POST /api/bookings
@@ -154,6 +211,41 @@ const createBooking = async (req, res) => {
 
     // Populate client information
     await booking.populate('clientId', 'firstName lastName email');
+
+    // Create notification for all artists about new booking
+    try {
+      const clientName = `${req.user.firstName} ${req.user.lastName}`;
+      const notificationData = {
+        clientName,
+        bookingName: `${eventType.join(', ')} - ${city}`,
+        eventType,
+        bookingDate: eventDateObj,
+        location: city,
+        minimumBudget,
+        maximumBudget
+      };
+
+      // Find all artists to notify them about the new booking
+      const artists = await User.find({ userType: 'artist' }).select('_id');
+      
+      // Create notifications for all artists
+      const notificationPromises = artists.map(artist => 
+        createNotification(
+          'booking_created',
+          artist._id,
+          req.user.id,
+          'artist',
+          booking._id,
+          null,
+          notificationData
+        )
+      );
+
+      await Promise.all(notificationPromises);
+    } catch (notificationError) {
+      console.error('Error creating booking notifications:', notificationError);
+      // Don't fail the booking creation if notifications fail
+    }
 
     res.status(201).json({
       success: true,
@@ -504,6 +596,31 @@ const completeBooking = async (req, res) => {
     booking.status = 'completed';
 
     await booking.save();
+
+    // Create notification for the artist about booking completion
+    try {
+      const clientName = `${req.user.firstName} ${req.user.lastName}`;
+      const notificationData = {
+        clientName,
+        bookingName: `${booking.eventType?.join(', ') || 'Mehndi'} - ${booking.city}`,
+        eventType: booking.eventType,
+        bookingDate: booking.eventDate,
+        location: booking.city
+      };
+
+      await createNotification(
+        'booking_completed',
+        assignedArtistId,
+        req.user.id,
+        'artist',
+        booking._id,
+        null,
+        notificationData
+      );
+    } catch (notificationError) {
+      console.error('Error creating completion notification:', notificationError);
+      // Don't fail the completion if notifications fail
+    }
 
     return res.status(200).json({ success: true, message: 'Booking marked as completed', data: booking, assignedArtistStripeAccountId });
   } catch (error) {
@@ -858,6 +975,32 @@ const cancelBooking = async (req, res) => {
       responseData.adminFee = paidAmount;
       responseData.daysUntilEvent = diffDays;
       responseData.refundType = 'No refund - admin fee';
+    }
+
+    // Create notification for the artist about booking cancellation
+    try {
+      const clientName = `${req.user.firstName} ${req.user.lastName}`;
+      const notificationData = {
+        clientName,
+        bookingName: `${booking.eventType?.join(', ') || 'Mehndi'} - ${booking.city}`,
+        eventType: booking.eventType,
+        bookingDate: booking.eventDate,
+        location: booking.city,
+        cancellationReason
+      };
+
+      await createNotification(
+        'booking_cancelled',
+        artistId,
+        req.user.id,
+        'artist',
+        bookingId,
+        null,
+        notificationData
+      );
+    } catch (notificationError) {
+      console.error('Error creating cancellation notification:', notificationError);
+      // Don't fail the cancellation if notifications fail
     }
 
     return res.status(200).json({
