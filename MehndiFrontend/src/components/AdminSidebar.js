@@ -7,13 +7,37 @@ const AdminSidebar = ({ isOpen, onClose }) => {
 
   const items = [
     {
-      id: 'users',
-      title: 'Manage Users',
-      path: '/admin-dashboard/users',
+      id: 'clients',
+      title: 'Manage Clients',
+      path: '/admin-dashboard/manage-clients',
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
           <circle cx="12" cy="7" r="4"/>
+        </svg>
+      )
+    },
+    {
+      id: 'artists',
+      title: 'Manage Artists',
+      path: '/admin-dashboard/manage-artists',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+          <path d="M2 17l10 5 10-5"/>
+          <path d="M2 12l10 5 10-5"/>
+        </svg>
+      )
+    },
+    {
+      id: 'admins',
+      title: 'Manage Admins',
+      path: '/admin-dashboard/manage-admins',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M12 15l-3-3 3-3"/>
+          <path d="M8 12h8"/>
+          <circle cx="12" cy="12" r="10"/>
         </svg>
       )
     },

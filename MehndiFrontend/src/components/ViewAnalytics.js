@@ -28,6 +28,15 @@ const ViewAnalytics = () => {
   const [applicationsByStatus, setApplicationsByStatus] = useState([]);
   const [growthOverTime, setGrowthOverTime] = useState([]);
   const [activityByCity, setActivityByCity] = useState([]);
+  
+  // State to track if data is empty
+  const [hasData, setHasData] = useState({
+    analytics: true,
+    requests: true,
+    applications: true,
+    growth: true,
+    activity: true
+  });
 
   // Use the new color theme for charts
   const CHART_COLORS = [
@@ -99,6 +108,18 @@ const cityOptions = [
     return Math.round(((current - previous) / previous) * 100);
   };
 
+  const getNoDataMessage = (type) => {
+    const timeRange = selectedTimeRange.label.toLowerCase();
+    const city = selectedCity?.label || 'all cities';
+    return `No ${type} data available for ${timeRange} in ${city}.`;
+  };
+
+  const getCurrentFiltersInfo = () => {
+    const timeRange = selectedTimeRange.label;
+    const city = selectedCity?.label || 'All Cities';
+    return `Showing data for ${timeRange} in ${city}`;
+  };
+
   useEffect(() => {
     const loadAnalyticsData = async () => {
       setLoading(true);
@@ -106,21 +127,50 @@ const cityOptions = [
       try {
         const dateRange = getDateRange();
         if (selectedTimeRange.value === 'custom' && (!dateRange.from || !dateRange.to)) {
-          setLoading(false); return;
+          setLoading(false); 
+          return;
         }
-        const params = { from: dateRange.from, to: dateRange.to, city: selectedCity?.value || '' };
+        
+        const params = { 
+          from: dateRange.from, 
+          to: dateRange.to, 
+          city: selectedCity?.value || '' 
+        };
+        
         const [analyticsResponse, requestsResponse, applicationsResponse, growthResponse, activityResponse] = await Promise.all([
-          adminAPI.getAnalytics(params), adminAPI.getRequestsByStatus(params),
-          adminAPI.getApplicationsByStatus(params), adminAPI.getGrowthOverTime(params),
+          adminAPI.getAnalytics(params), 
+          adminAPI.getRequestsByStatus(params),
+          adminAPI.getApplicationsByStatus(params), 
+          adminAPI.getGrowthOverTime(params),
           adminAPI.getActivityByCity(params)
         ]);
+        
+        // Set data
         setAnalyticsData(analyticsResponse.data);
         setRequestsByStatus(requestsResponse.data);
         setApplicationsByStatus(applicationsResponse.data);
         setGrowthOverTime(growthResponse.data);
         setActivityByCity(activityResponse.data);
+        
+        // Check if data is empty for each category
+        setHasData({
+          analytics: Object.values(analyticsResponse.data).some(value => value > 0),
+          requests: requestsResponse.data.length > 0,
+          applications: applicationsResponse.data.length > 0,
+          growth: growthResponse.data.length > 0,
+          activity: activityResponse.data.length > 0
+        });
+        
       } catch (err) {
         setError(err.message || 'Failed to load analytics data.');
+        // Reset data state on error
+        setHasData({
+          analytics: false,
+          requests: false,
+          applications: false,
+          growth: false,
+          activity: false
+        });
       } finally {
         setLoading(false);
       }
@@ -207,77 +257,130 @@ const cityOptions = [
             </div>
 
             {loading ? <p>Loading analytics...</p> : (<>
-              {/* Analytics Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-                {[{label: 'Total Clients', value: analyticsData.totalClients, change: calculatePercentageChange(analyticsData.totalClients, analyticsData.prevTotalClients)},
-                  {label: 'Total Artists', value: analyticsData.totalArtists, change: calculatePercentageChange(analyticsData.totalArtists, analyticsData.prevTotalArtists)},
-                  {label: 'Total Requests', value: analyticsData.totalRequests, change: calculatePercentageChange(analyticsData.totalRequests, analyticsData.prevTotalRequests)},
-                  {label: 'Completed Requests', value: analyticsData.completedRequests, change: calculatePercentageChange(analyticsData.completedRequests, analyticsData.prevCompletedRequests)},
-                  {label: 'Active Applications', value: analyticsData.activeApplications, change: calculatePercentageChange(analyticsData.activeApplications, analyticsData.prevActiveApplications)},
-                  {label: 'Cancellation Rate', value: `${analyticsData.cancellationRate}%`, change: calculatePercentageChange(analyticsData.cancellationRate, analyticsData.prevCancellationRate), reverseColor: true},
-                ].map(stat => (
-                  <div key={stat.label} style={cardBaseStyle}>
-                    <h3 style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--ad-muted)', textTransform: 'uppercase' }}>{stat.label}</h3>
-                    <div style={{ fontSize: '2.25rem', fontWeight: '700', color: 'var(--ad-text)', margin: '0.5rem 0' }}>{stat.value}</div>
-                    <div style={{ color: stat.change >= 0 ? (stat.reverseColor ? 'var(--ad-danger)' : 'var(--ad-success)') : (stat.reverseColor ? 'var(--ad-success)' : 'var(--ad-danger)'), fontWeight: '600' }}>
-                      {stat.change >= 0 ? '▲' : '▼'} {Math.abs(stat.change)}%
-                    </div>
-                  </div>
-                ))}
+              {/* Current Filters Info */}
+              <div style={{ ...cardBaseStyle, marginBottom: '1.5rem', textAlign: 'center' }}>
+                <p style={{ color: 'var(--ad-muted)', fontSize: '0.9rem', margin: 0 }}>
+                  {getCurrentFiltersInfo()}
+                </p>
               </div>
+
+              {/* Analytics Cards */}
+              {hasData.analytics ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+                  {[{label: 'Total Clients', value: analyticsData.totalClients, change: calculatePercentageChange(analyticsData.totalClients, analyticsData.prevTotalClients)},
+                    {label: 'Total Artists', value: analyticsData.totalArtists, change: calculatePercentageChange(analyticsData.totalArtists, analyticsData.prevTotalArtists)},
+                    {label: 'Total Requests', value: analyticsData.totalRequests, change: calculatePercentageChange(analyticsData.totalRequests, analyticsData.prevTotalRequests)},
+                    {label: 'Completed Requests', value: analyticsData.completedRequests, change: calculatePercentageChange(analyticsData.completedRequests, analyticsData.prevCompletedRequests)},
+                    {label: 'Active Applications', value: analyticsData.activeApplications, change: calculatePercentageChange(analyticsData.activeApplications, analyticsData.prevActiveApplications)},
+                    {label: 'Cancellation Rate', value: `${analyticsData.cancellationRate}%`, change: calculatePercentageChange(analyticsData.cancellationRate, analyticsData.prevCancellationRate), reverseColor: true},
+                  ].map(stat => (
+                    <div key={stat.label} style={cardBaseStyle}>
+                      <h3 style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--ad-muted)', textTransform: 'uppercase' }}>{stat.label}</h3>
+                      <div style={{ fontSize: '2.25rem', fontWeight: '700', color: 'var(--ad-text)', margin: '0.5rem 0' }}>{stat.value}</div>
+                      <div style={{ color: stat.change >= 0 ? (stat.reverseColor ? 'var(--ad-danger)' : 'var(--ad-success)') : (stat.reverseColor ? 'var(--ad-success)' : 'var(--ad-danger)'), fontWeight: '600' }}>
+                        {stat.change >= 0 ? '▲' : '▼'} {Math.abs(stat.change)}%
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ ...cardBaseStyle, marginBottom: '2rem', textAlign: 'center', padding: '3rem' }}>
+                  <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📊</div>
+                  <h3 style={{ color: 'var(--ad-text)', marginBottom: '0.5rem' }}>No Analytics Data</h3>
+                  <p style={{ color: 'var(--ad-muted)', fontSize: '0.9rem', margin: 0 }}>
+                    {getNoDataMessage('analytics')}
+                  </p>
+                </div>
+              )}
 
               {/* Charts Section */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
                 <div style={cardBaseStyle}>
                   <h3 style={chartTitleStyle}>Requests by Status</h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie data={requestsByStatus} dataKey="count" nameKey="status" cx="50%" cy="50%" outerRadius={90} label>
-                        {requestsByStatus.map((entry, index) => <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />)}
-                      </Pie>
-                      <Tooltip /> <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  {hasData.requests ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Pie data={requestsByStatus} dataKey="count" nameKey="status" cx="50%" cy="50%" outerRadius={90} label>
+                          {requestsByStatus.map((entry, index) => <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />)}
+                        </Pie>
+                        <Tooltip /> <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div style={{ height: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--ad-muted)' }}>
+                      <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>📈</div>
+                      <p style={{ fontSize: '0.9rem', margin: 0, textAlign: 'center' }}>
+                        {getNoDataMessage('request')}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div style={cardBaseStyle}>
                   <h3 style={chartTitleStyle}>Applications by Status</h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie data={applicationsByStatus} dataKey="count" nameKey="status" cx="50%" cy="50%" outerRadius={90} label>
-                        {applicationsByStatus.map((entry, index) => <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />)}
-                      </Pie>
-                      <Tooltip /> <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  {hasData.applications ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Pie data={applicationsByStatus} dataKey="count" nameKey="status" cx="50%" cy="50%" outerRadius={90} label>
+                          {applicationsByStatus.map((entry, index) => <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />)}
+                        </Pie>
+                        <Tooltip /> <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div style={{ height: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--ad-muted)' }}>
+                      <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>📋</div>
+                      <p style={{ fontSize: '0.9rem', margin: 0, textAlign: 'center' }}>
+                        {getNoDataMessage('application')}
+                      </p>
+                    </div>
+                  )}
                 </div>
                 
                 <div style={{...cardBaseStyle, gridColumn: '1 / -1'}}>
                   <h3 style={chartTitleStyle}>Client & Artist Growth Over Time</h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={growthOverTime}>
-                      <CartesianGrid stroke="var(--ad-border)" />
-                      <XAxis dataKey="month" stroke="var(--ad-muted)" />
-                      <YAxis stroke="var(--ad-muted)" />
-                      <Tooltip /> <Legend />
-                      <Line type="monotone" dataKey="clients" stroke="var(--ad-primary)" strokeWidth={2} activeDot={{ r: 8 }} />
-                      <Line type="monotone" dataKey="artists" stroke="var(--ad-accent)" strokeWidth={2} />
-                    </LineChart>
-                  </ResponsiveContainer>
+                  {hasData.growth ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart data={growthOverTime}>
+                        <CartesianGrid stroke="var(--ad-border)" />
+                        <XAxis dataKey="month" stroke="var(--ad-muted)" />
+                        <YAxis stroke="var(--ad-muted)" />
+                        <Tooltip /> <Legend />
+                        <Line type="monotone" dataKey="clients" stroke="var(--ad-primary)" strokeWidth={2} activeDot={{ r: 8 }} />
+                        <Line type="monotone" dataKey="artists" stroke="var(--ad-accent)" strokeWidth={2} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div style={{ height: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--ad-muted)' }}>
+                      <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>📈</div>
+                      <p style={{ fontSize: '0.9rem', margin: 0, textAlign: 'center' }}>
+                        {getNoDataMessage('growth')}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div style={{...cardBaseStyle, gridColumn: '1 / -1'}}>
                   <h3 style={chartTitleStyle}>Activity by City (Top 10)</h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={activityByCity.slice(0, 10)}>
-                      <CartesianGrid stroke="var(--ad-border)" />
-                      <XAxis dataKey="city" stroke="var(--ad-muted)" />
-                      <YAxis stroke="var(--ad-muted)" />
-                      <Tooltip /> <Legend />
-                      <Bar dataKey="requests" fill="var(--ad-primary)" />
-                      <Bar dataKey="applications" fill="var(--ad-accent)" />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  {hasData.activity ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={activityByCity.slice(0, 10)}>
+                        <CartesianGrid stroke="var(--ad-border)" />
+                        <XAxis dataKey="city" stroke="var(--ad-muted)" />
+                        <YAxis stroke="var(--ad-muted)" />
+                        <Tooltip /> <Legend />
+                        <Bar dataKey="requests" fill="var(--ad-primary)" />
+                        <Bar dataKey="applications" fill="var(--ad-accent)" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div style={{ height: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--ad-muted)' }}>
+                      <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🏙️</div>
+                      <p style={{ fontSize: '0.9rem', margin: 0, textAlign: 'center' }}>
+                        {getNoDataMessage('activity')}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </>)}

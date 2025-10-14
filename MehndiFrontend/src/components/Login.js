@@ -59,7 +59,7 @@ const Login = () => {
         if (response.data.user.userType === 'artist') {
           navigate('/artist-dashboard');
         } else if (response.data.user.userType === 'admin') {
-          navigate('/admin-dashboard/users');
+          navigate('/admin-dashboard/manage-clients');
         }
         else {
           navigate('/dashboard');

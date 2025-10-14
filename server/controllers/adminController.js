@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const User = require('../schemas/User');
 const Blog = require('../schemas/Blog');
 const Application = require('../schemas/Application');
@@ -16,7 +17,7 @@ exports.listUsers = async (req, res) => {
 exports.updateUser = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { firstName, lastName, email, userType, password } = req.body || {};
+    const { firstName, lastName, email, userType, password, status } = req.body || {};
 
     const user = await User.findById(userId).select('+password');
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
@@ -32,6 +33,7 @@ exports.updateUser = async (req, res) => {
     if (typeof firstName !== 'undefined') user.firstName = String(firstName).trim();
     if (typeof lastName !== 'undefined') user.lastName = String(lastName).trim();
     if (typeof userType !== 'undefined') user.userType = userType;
+    if (typeof status !== 'undefined') user.status = status;
 
     if (password && String(password).length >= 6) {
       user.password = String(password);
@@ -52,6 +54,33 @@ exports.deleteUser = async (req, res) => {
     const user = await User.findByIdAndDelete(userId);
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
     return res.status(200).json({ success: true, message: 'User deleted' });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// Get user bookings (for clients)
+exports.getUserBookings = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const bookings = await Booking.find({ clientId: userId }).sort({ createdAt: -1 });
+    return res.status(200).json({ success: true, count: bookings.length, data: bookings });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// Get user applications (for artists)
+exports.getUserApplications = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const applications = await Application.aggregate([
+      { $unwind: '$Booking' },
+      { $match: { 'Booking.artist_id': new mongoose.Types.ObjectId(userId) } },
+      { $count: 'total' }
+    ]);
+    const count = applications.length > 0 ? applications[0].total : 0;
+    return res.status(200).json({ success: true, count, data: Array(count).fill({}) });
   } catch (err) {
     return res.status(500).json({ success: false, message: 'Server error' });
   }

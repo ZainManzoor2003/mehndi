@@ -36,7 +36,7 @@ export const RoleProtectedRoute = ({ children, allowedRoles = [] }) => {
       userType === 'artist'
         ? '/artist-dashboard'
         : userType === 'admin'
-          ? '/admin-dashboard'
+          ? '/admin-dashboard/manage-clients'
           : '/dashboard';
 
     return <Navigate to={fallback} replace />;

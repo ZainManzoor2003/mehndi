@@ -42,6 +42,11 @@ const UserSchema = new mongoose.Schema(
       required: [true, 'User type is required'],
       default: 'client'
     },
+    status: {
+      type: String,
+      enum: ['active', 'suspended'],
+      default: 'active'
+    },
     stripeAccountId: {
       type: String,
       required: false,

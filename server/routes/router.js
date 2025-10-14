@@ -97,6 +97,8 @@ module.exports = router;
 router.get('/api/admin/users', protect, adminOnly, adminController.listUsers);
 router.put('/api/admin/users/:userId', protect, adminOnly, adminController.updateUser);
 router.delete('/api/admin/users/:userId', protect, adminOnly, adminController.deleteUser);
+router.get('/api/admin/users/:userId/bookings', protect, adminOnly, adminController.getUserBookings);
+router.get('/api/admin/users/:userId/applications', protect, adminOnly, adminController.getUserApplications);
 
 router.get('/api/admin/applications/status', protect, adminOnly, adminController.getApplicationsStatus);
 router.get('/api/admin/applications', protect, adminOnly, adminController.listAllApplications);

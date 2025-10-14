@@ -42,20 +42,38 @@ const ArtistDashboard = () => {
     return () => { if (off) off(); document.removeEventListener('visibilitychange', onVisibility); };
   }, [user, isAuthenticated]);
 
+  // Application stats state
+  const [applicationStats, setApplicationStats] = useState({
+    applied: 0,
+    accepted: 0,
+    declined: 0,
+    withdrawn: 0,
+    expired: 0,
+    pending: 0,
+    total: 0,
+    acceptanceRate: 0
+  });
+
   // Fetch application stats for tiles
   useEffect(() => {
     if (!isAuthenticated || !user || user.userType !== 'artist') return;
     applicationsAPI.getMyStats().then(resp => {
       if (resp && resp.success && resp.data) {
-        const { applied = 0, accepted = 0, declined = 0, withdrawn = 0, expired = 0 } = resp.data;
-        const setText = (id, val) => { try { const el = document.getElementById(id); if (el) el.textContent = String(val); } catch(_){} };
-        setText('stat-applied', applied);
-        setText('stat-accepted', accepted);
-        setText('stat-declined', declined);
-        setText('stat-withdrawn', withdrawn);
-        setText('stat-expired', expired);
+        const { applied = 0, accepted = 0, declined = 0, withdrawn = 0, expired = 0, pending = 0, total = 0, acceptanceRate = 0 } = resp.data;
+        setApplicationStats({
+          applied,
+          accepted,
+          declined,
+          withdrawn,
+          expired,
+          pending,
+          total,
+          acceptanceRate
+        });
       }
-    }).catch(() => {});
+    }).catch((error) => {
+      console.error('Failed to fetch application stats:', error);
+    });
   }, [isAuthenticated, user]);
   const [proposalData, setProposalData] = useState({
     message: '',
@@ -2604,7 +2622,7 @@ useEffect(() => {
                         fontSize: '32px', 
                         fontWeight: '700',
                         color: '#333'
-                      }} id="stat-applied">0</div>
+                      }}>{applicationStats.applied}</div>
                       <div style={{ 
                         fontSize: '14px', 
                         fontWeight: '600',
@@ -2620,7 +2638,7 @@ useEffect(() => {
                         alignItems: 'center',
                         gap: '4px'
                       }}>
-                        <span>▲</span> +1 this week
+                        <span>▲</span> {applicationStats.total > 0 ? `${applicationStats.applied} total` : 'No applications'}
                       </div>
                     </div>
 
@@ -2653,7 +2671,7 @@ useEffect(() => {
                         fontSize: '32px', 
                         fontWeight: '700',
                         color: '#333'
-                      }} id="stat-accepted">0</div>
+                      }}>{applicationStats.accepted}</div>
                       <div style={{ 
                         fontSize: '14px', 
                         fontWeight: '600',
@@ -2669,7 +2687,7 @@ useEffect(() => {
                         alignItems: 'center',
                         gap: '4px'
                       }}>
-                        <span>▲</span> +1 this week
+                        <span>▲</span> {applicationStats.acceptanceRate}% rate
                       </div>
                     </div>
 
@@ -2702,7 +2720,7 @@ useEffect(() => {
                         fontSize: '32px', 
                         fontWeight: '700',
                         color: '#333'
-                      }} id="stat-declined">0</div>
+                      }}>{applicationStats.declined}</div>
                       <div style={{ 
                         fontSize: '14px', 
                         fontWeight: '600',
@@ -2718,7 +2736,7 @@ useEffect(() => {
                         alignItems: 'center',
                         gap: '4px'
                       }}>
-                        <span>▼</span> -1 this week
+                        <span>▼</span> {applicationStats.declined > 0 ? `${applicationStats.declined} declined` : 'No declines'}
                       </div>
                     </div>
 
@@ -2751,7 +2769,7 @@ useEffect(() => {
                         fontSize: '32px', 
                         fontWeight: '700',
                         color: '#333'
-                      }} id="stat-withdrawn">0</div>
+                      }}>{applicationStats.withdrawn}</div>
                       <div style={{ 
                         fontSize: '14px', 
                         fontWeight: '600',
@@ -2764,7 +2782,7 @@ useEffect(() => {
                         color: '#999',
                         fontWeight: '500'
                       }}>
-                        No change
+                        {applicationStats.withdrawn > 0 ? `${applicationStats.withdrawn} withdrawn` : 'No withdrawals'}
                       </div>
                     </div>
 
@@ -2797,7 +2815,7 @@ useEffect(() => {
                         fontSize: '32px', 
                         fontWeight: '700',
                         color: '#333'
-                      }} id="stat-expired">0</div>
+                      }}>{applicationStats.expired}</div>
                       <div style={{ 
                         fontSize: '14px', 
                         fontWeight: '600',
@@ -2813,7 +2831,7 @@ useEffect(() => {
                         alignItems: 'center',
                         gap: '4px'
                       }}>
-                        <span>▲</span> +1 this week
+                        <span>⏰</span> {applicationStats.expired > 0 ? `${applicationStats.expired} expired` : 'No expired'}
                       </div>
                     </div>
                   </div>
@@ -2906,9 +2924,43 @@ useEffect(() => {
                                 </div>
                               );
                             })()}
-                            {applicationsFilter === 'accepted' && (
-                                <button className="app-btn" style={{ background: '#e24d0c', color: '#fff', borderColor: '#e24d0c' }} onClick={() => { setMarkTargetBookingId(a.id); setMarkProofOpen(true); }}>Mark Complete</button>
-                              )}
+                            {applicationsFilter === 'accepted' && (() => {
+                              // Check if current date is greater than or equal to event date
+                              const eventDate = new Date(a.eventDate);
+                              const today = new Date();
+                              
+                              // Set both dates to midnight for accurate comparison
+                              eventDate.setHours(0, 0, 0, 0);
+                              today.setHours(0, 0, 0, 0);
+                              
+                              const canMarkComplete = today.getTime() >= eventDate.getTime();
+                              const tooltipMsg = "You can only mark as complete on or after the event date";
+
+                              return (
+                                <button 
+                                  className="app-btn" 
+                                  style={{ 
+                                    background: canMarkComplete ? '#e24d0c' : '#d1d5db', 
+                                    color: '#fff', 
+                                    borderColor: canMarkComplete ? '#e24d0c' : '#d1d5db',
+                                    cursor: canMarkComplete ? 'pointer' : 'not-allowed',
+                                    opacity: canMarkComplete ? 1 : 0.6
+                                  }} 
+                                  onClick={() => { 
+                                    if (canMarkComplete) {
+                                      setMarkTargetBookingId(a.id); 
+                                      setMarkProofOpen(true); 
+                                    } else {
+                                      showError(tooltipMsg);
+                                    }
+                                  }}
+                                  disabled={!canMarkComplete}
+                                  title={!canMarkComplete ? tooltipMsg : 'Mark as complete'}
+                                >
+                                  Mark Complete
+                                </button>
+                              );
+                            })()}
                           </div>
                         </div>
                       ))}

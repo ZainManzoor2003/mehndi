@@ -60,6 +60,14 @@ const login = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
+    // Check if user is suspended
+    if (user.status === 'suspended') {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Your Account is Suspended. Can\'t Logged-in. Contact Support Team.' 
+      });
+    }
+
     const token = user.generateToken();
     const safeUser = user.toObject();
     delete safeUser.password;
@@ -215,6 +223,14 @@ const googleAuth = async (req, res) => {
     let user = await User.findOne({ email });
     
     if (user) {
+      // Check if existing user is suspended
+      if (user.status === 'suspended') {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'Your Account is Suspended. Can\'t Logged-in. Contact Support Team.' 
+        });
+      }
+      
       // User exists, do not auto-login; inform frontend email already exists
       return res.status(409).json({ 
         success: false, 

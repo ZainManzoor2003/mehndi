@@ -272,6 +272,8 @@ export const adminAPI = {
   listUsers: async () => apiRequest('/admin/users'),
   updateUser: async (userId, updates) => apiRequest(`/admin/users/${userId}`, { method: 'PUT', body: JSON.stringify(updates) }),
   deleteUser: async (userId) => apiRequest(`/admin/users/${userId}`, { method: 'DELETE' }),
+  getUserBookings: async (userId) => apiRequest(`/admin/users/${userId}/bookings`),
+  getUserApplications: async (userId) => apiRequest(`/admin/users/${userId}/applications`),
 
   // Applications status summary
   getApplicationStatusSummary: async () => apiRequest('/admin/applications/status'),

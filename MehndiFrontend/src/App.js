@@ -27,6 +27,9 @@ import ArtistDashboard from './components/ArtistDashboard';
 import JobDetails from './components/JobDetails';
 import AllBookings from './components/AllBookings';
 import ManageUsers from './components/ManageUsers';
+import ManageClients from './components/ManageClients';
+import ManageArtists from './components/ManageArtists';
+import ManageAdmins from './components/ManageAdmins';
 import ManageApplications from './components/ManageApplications';
 import ManageBlogs from './components/ManageBlogs';
 import AdminUpdateProfile from './components/AdminUpdateProfile';
@@ -122,9 +125,26 @@ function App() {
               </RoleProtectedRoute>
             } />
             <Route path="/job/:jobId" element={<JobDetails />} />
-            <Route path="/admin-dashboard/users" element={
+            <Route path="/admin-dashboard" element={<Navigate to="/admin-dashboard/manage-clients" replace />} />
+            <Route path="/admin-dashboard/users" element={<Navigate to="/admin-dashboard/manage-clients" replace />} />
+            {/* <Route path="/admin-dashboard/users" element={
               <RoleProtectedRoute allowedRoles={["admin"]}>
                 <ManageUsers />
+              </RoleProtectedRoute>
+            } /> */}
+            <Route path="/admin-dashboard/manage-clients" element={
+              <RoleProtectedRoute allowedRoles={["admin"]}>
+                <ManageClients />
+              </RoleProtectedRoute>
+            } />
+            <Route path="/admin-dashboard/manage-artists" element={
+              <RoleProtectedRoute allowedRoles={["admin"]}>
+                <ManageArtists />
+              </RoleProtectedRoute>
+            } />
+            <Route path="/admin-dashboard/manage-admins" element={
+              <RoleProtectedRoute allowedRoles={["admin"]}>
+                <ManageAdmins />
               </RoleProtectedRoute>
             } />
             <Route path="/admin-dashboard/applications" element={
