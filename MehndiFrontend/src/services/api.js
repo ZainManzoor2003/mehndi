@@ -117,6 +117,13 @@ export const authAPI = {
     });
   },
 
+  // Verify email
+  verifyEmail: async (token) => {
+    return apiRequest(`/auth/verify-email/${token}`, {
+      method: 'GET',
+    });
+  },
+
   // Google OAuth authentication
   googleAuth: async (credential) => {
     return apiRequest('/auth/google', {

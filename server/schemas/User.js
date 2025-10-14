@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
 // Base user schema
 const UserSchema = new mongoose.Schema(
@@ -47,6 +48,12 @@ const UserSchema = new mongoose.Schema(
       enum: ['active', 'suspended'],
       default: 'active'
     },
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    emailVerificationToken: String,
+    emailVerificationExpires: Date,
     stripeAccountId: {
       type: String,
       required: false,
@@ -82,6 +89,20 @@ UserSchema.methods.generateToken = function () {
   const secret = process.env.JWT_SECRET || 'dev_secret_change_me';
   const expiresIn = process.env.JWT_EXPIRES_IN || '30d';
   return jwt.sign({ id: this._id, userType: this.userType }, secret, { expiresIn });
+};
+
+// Generate email verification token
+UserSchema.methods.generateEmailVerificationToken = function () {
+  const verificationToken = crypto.randomBytes(20).toString('hex');
+
+  this.emailVerificationToken = crypto
+    .createHash('sha256')
+    .update(verificationToken)
+    .digest('hex');
+
+  this.emailVerificationExpires = Date.now() + 10 * 60 * 1000; // Token expires in 10 minutes
+
+  return verificationToken;
 };
 
 // Create base model first

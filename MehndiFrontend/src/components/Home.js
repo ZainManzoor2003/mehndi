@@ -61,7 +61,7 @@ const Home = () => {
   }, []);
 
   return (
-    <section className="home" id="home" ref={homeRef} style={{background: "#8B7355 !important"}}>
+    <section className="home" id="home" ref={homeRef} style={{background: "#E4C293 !important"}}>
       <div className="home__container container">
         <div className="home__content">
           <h1 className="home__title" ref={titleRef}>

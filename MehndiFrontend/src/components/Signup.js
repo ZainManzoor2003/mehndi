@@ -47,11 +47,19 @@ const Signup = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrors({}); // Clear previous errors
+    setSuccess(''); // Clear previous success message
+    
     if (!validateForm()) return;
     setIsLoading(true);
+    
     try {
-      await register(formData);
-      navigate('/login');
+      // The register function now doesn't log the user in automatically
+      const response = await register(formData);
+      
+      // Show the success message from the backend (email verification sent)
+      setSuccess(response.message || 'Registration successful! Please check your email to verify your account.');
+      
     } catch (error) {
       setErrors({ submit: error.message || 'Registration failed. Please try again.' });
     } finally {
@@ -222,12 +230,40 @@ const Signup = () => {
             {errors.submit && <div className="error-message">{errors.submit}</div>}
             
             {success && (
-              <div className="success-message">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                  <polyline points="22,4 12,14.01 9,11.01"/>
-                </svg>
-                {success}
+              <div className="success-message" style={{
+                backgroundColor: '#f0fdf4',
+                border: '1px solid #86efac',
+                borderRadius: '8px',
+                padding: '1rem',
+                marginBottom: '1rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem'
+              }}>
+                <div style={{
+                  width: '24px',
+                  height: '24px',
+                  backgroundColor: '#dcfce7',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22,4 12,14.01 9,11.01"/>
+                  </svg>
+                </div>
+                <p style={{
+                  color: '#166534',
+                  margin: 0,
+                  fontSize: '0.95rem',
+                  fontWeight: '500',
+                  lineHeight: '1.4'
+                }}>
+                  {success}
+                </p>
               </div>
             )}
 

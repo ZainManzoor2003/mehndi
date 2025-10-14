@@ -999,7 +999,7 @@
   --text-color: #8B7355;
   --text-color-light: #A0522D;
   --input-color: #FAF0E6;
-  --body-color: #F5DEB3;
+  --body-color: #E4C293;
   --container-color: #FAEBD7;
   --white-color: #FFF;
   --scroll-bar-color: #DEB887;
@@ -1245,7 +1245,7 @@
 .auth-submit-btn {
   width: 100%;
   padding: 1rem 2rem;
-  background: linear-gradient(135deg, var(--secondary-brown) 0%, var(--primary-brown) 100%);
+  background: #EA7C25;
   color: var(--white-color);
   border: none;
   border-radius: 12px;
@@ -4308,7 +4308,7 @@ input {
 /*=============== REUSABLE CSS CLASSES ===============*/
 .section {
   padding: 4.5rem 0 2.5rem;
-  background-color: var(--container-color);
+  /* background-color: var(--container-color); */
 }
 
 .section:nth-child(even) {
@@ -4379,7 +4379,7 @@ input {
 }
 
 .nav__cta-button {
-  background: var(--first-color);
+  background: #EA7C25;
   color: var(--white-color);
   border: none;
   padding: 0.75rem 1.5rem;
@@ -4398,7 +4398,7 @@ input {
 }
 
 .nav__cta-button:hover {
-  background: var(--first-color-alt);
+  background: #804018;
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(205, 133, 63, 0.4);
 }
@@ -4414,7 +4414,7 @@ input {
 }
 
 .scroll-header .nav__cta-button:hover {
-  background: #D35400;
+  background: #804018;
   box-shadow: 0 6px 20px rgba(230, 126, 34, 0.4);
 }
 
@@ -4801,6 +4801,18 @@ input {
   margin: 0.5rem;
   margin-top: 0;
   flex-shrink: 0;
+}
+
+.save-portfolio-btn {
+  background: var(--ad-primary-600);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 24px;
+  transition: all 0.5s ease;
+}
+
+.save-portfolio-btn:hover {
+  scale: 1.05;
 }
 
 .user-info {
@@ -5329,10 +5341,11 @@ input {
 
 /* Change background header */
 .scroll-header {
-  background-color: rgba(255, 255, 255, 0.95);
+  background-color: #E4C293;
+  /* background-color: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(15px);
   box-shadow: 0 2px 20px rgba(139, 115, 85, 0.1);
-  border-bottom: 1px solid rgba(205, 133, 63, 0.1);
+  border-bottom: 1px solid rgba(205, 133, 63, 0.1); */
 }
 
 .scroll-header .nav__logo,
@@ -5364,7 +5377,7 @@ input {
 .home {
   position: relative;
   height: 110vh;
-  background: linear-gradient(135deg, #F5DEB3 0%, #DEB887 100%);
+  /* background: linear-gradient(135deg, #F5DEB3 0%, #DEB887 100%); */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -6729,9 +6742,9 @@ body.dark-theme .scroll-header .henna-line {
 
 /*=============== HOW IT WORKS SECTION ===============*/
 .how-it-works {
-  padding: 6rem 0;
+  padding: 6rem 0 3rem;
   /* margin-top: 12rem; */
-  background: linear-gradient(135deg, var(--body-color) 0%, var(--container-color) 100%);
+  /* background: linear-gradient(135deg, var(--body-color) 0%, var(--container-color) 100%); */
   position: relative;
   overflow: hidden;
 }

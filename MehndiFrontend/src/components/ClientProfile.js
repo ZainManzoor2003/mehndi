@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { authAPI } from '../services/api';
-import { FaEye, FaEyeSlash, FaUser, FaEnvelope, FaLock, FaEdit, FaSave, FaTimes } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaUser, FaSignOutAlt, FaEnvelope, FaLock, FaEdit, FaSave, FaTimes } from 'react-icons/fa';
+import { Link, useNavigate } from 'react-router-dom';
 
 const ClientProfile = () => {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, logout } = useAuth();
+  const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -85,6 +87,31 @@ const ClientProfile = () => {
       return false;
     }
     return true;
+  };
+
+  const handleLogoutClick = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    try {
+      try { await logout(); } catch {}
+      localStorage.clear();
+      const deleteCookieEverywhere = (name) => {
+        try {
+          const hostname = window.location.hostname;
+          const parts = hostname.split('.');
+          for (let i = 0; i < parts.length; i++) {
+            const domain = parts.slice(i).join('.');
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${domain};`;
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain};`;
+          }
+        } catch (e) {}
+      };
+      deleteCookieEverywhere('token');
+      deleteCookieEverywhere('refreshToken');
+      navigate('/login');
+    } catch (e) {
+      console.error('Logout error:', e);
+      navigate('/login');
+    }
   };
 
   const handleUpdateProfile = async (e) => {
@@ -370,6 +397,70 @@ const ClientProfile = () => {
               )}
             </div>
           </form>
+          {/* Logout Banner Section */}
+          <div style={{
+                    backgroundColor: '#F8F2E6',
+                    padding: '2rem 0',
+                    marginBottom: '20px',
+                    // borderTop: '1px solid rgba(0,0,0,0.1)'
+                  }}>
+                    <div style={{ 
+                      maxWidth: 980, 
+                      margin: '0 auto', 
+                      padding: '0 0.2rem',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <div style={{
+                        color: '#666',
+                        fontSize: '1rem',
+                        fontWeight: 400
+                      }}>
+                        Need a break?
+                      </div>
+                      
+                      <Link 
+                        to="/login"
+                        onClick={handleLogoutClick}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          cursor: 'pointer',
+                          color: '#A0522D',
+                          fontSize: '1rem',
+                          fontWeight: 500,
+                          position: 'relative',
+                          padding: '8px 0',
+                          textDecoration: 'none'
+                        }}
+                        onMouseEnter={(e) => {
+                          const underline = e.currentTarget.querySelector('.logout-underline');
+                          underline.style.width = '100%';
+                        }}
+                        onMouseLeave={(e) => {
+                          const underline = e.currentTarget.querySelector('.logout-underline');
+                          underline.style.width = '0%';
+                        }}
+                      >
+                        <FaSignOutAlt style={{ fontSize: '1.1rem' }} />
+                        <span>Logout</span>
+                        <div 
+                          className="logout-underline"
+                          style={{
+                            position: 'absolute',
+                            bottom: '0',
+                            left: '0',
+                            height: '2px',
+                            backgroundColor: '#A0522D',
+                            width: '0%',
+                            transition: 'width 0.5s ease-in-out'
+                          }}
+                        />
+                      </Link>
+                    </div>
+                  </div>
         </div>
       </div>
     </div>

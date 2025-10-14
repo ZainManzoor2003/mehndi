@@ -39,6 +39,7 @@ import AdminWallet from './components/AdminWallet';
 import PaymentSuccess from './components/PaymentSuccess';
 import PaymentCancel from './components/PaymentCancel';
 import PaymentRescheduleBooking from './components/PaymentRescheduleBooking';
+import EmailVerification from './components/EmailVerification';
 
 // Main Landing Page Component
 const LandingPage = () => (
@@ -49,7 +50,7 @@ const LandingPage = () => (
       <HowItWorks />
       {/* <About /> */}
       {/* <Discover /> */}
-      <Experience />
+      {/* <Experience /> */}
       <FAQ />
       <AboutUs />
       {/* <Subscribe /> */}
@@ -83,6 +84,11 @@ function App() {
             <Route path="/signup" element={
               <PublicRoute>
                 <Signup />
+              </PublicRoute>
+            } />
+            <Route path="/verify-email/:token" element={
+              <PublicRoute>
+                <EmailVerification />
               </PublicRoute>
             } />
             <Route path="/booking" element={
