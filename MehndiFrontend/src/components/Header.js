@@ -25,29 +25,29 @@ const Header = () => {
     console.log('Hamburger clicked! Current state:', isMenuOpen, 'New state:', !isMenuOpen);
     
     if (!isMenuOpen) {
-      // First show the henna pattern animation
-      setIsMenuOpen(true); // This triggers the henna pattern
+      // Open menu and trigger burger to flower animation
+      setIsMenuOpen(true);
       
-      // Then open the overlay menu after the henna animation completes (1.2 seconds)
+      // Show overlay after burger animation completes
       setTimeout(() => {
         const overlay = document.querySelector('.nav__overlay');
         if (overlay) {
           overlay.classList.add('nav__overlay--active');
         }
         document.body.style.overflow = 'hidden';
-      }, 1200);
+      }, 500); // Reduced time to match animation
     } else {
-      // Close the menu smoothly
+      // Close overlay first
       const overlay = document.querySelector('.nav__overlay');
       if (overlay) {
         overlay.classList.remove('nav__overlay--active');
       }
       
-      // Wait for overlay to close, then reset henna pattern
+      // Reset burger state after overlay closes
       setTimeout(() => {
         setIsMenuOpen(false);
         document.body.style.overflow = 'auto';
-      }, 600); // Wait for overlay transition to complete
+      }, 300); // Reduced time for smoother transition
     }
   };
 
@@ -64,11 +64,11 @@ const Header = () => {
       overlay.classList.remove('nav__overlay--active');
     }
     
-    // Wait for overlay to close, then reset henna pattern
+    // Reset burger state after overlay closes
     setTimeout(() => {
       setIsMenuOpen(false);
       document.body.style.overflow = 'auto';
-    }, 600);
+    }, 300); // Reduced time for smoother transition
   };
 
   const handleNavClick = (e, targetId) => {
@@ -116,7 +116,7 @@ const Header = () => {
                     stroke-width: 3.2; 
                     stroke-linecap: round; 
                     opacity: 1;
-                    transition: opacity .6s ease-in; 
+                    transition: opacity 0.3s ease-out; 
                   } 
                   .flower path, .flower circle { 
                     stroke: #EA7C25; 
@@ -125,33 +125,52 @@ const Header = () => {
                     opacity: 0; 
                     stroke-linecap: round; 
                     stroke-linejoin: round; 
-                    transition: opacity .4s ease-out;
+                    stroke-dasharray: 20;
+                    stroke-dashoffset: 20;
+                    transition: opacity 0.2s ease-out;
                   } 
-                  @keyframes draw { to { stroke-dashoffset: 0; opacity: 1; } }
-                  @keyframes fadeOut { to { opacity: 0; } }
                   
                   .burger-svg.active .burger line {
                     opacity: 0;
-                    transition: opacity .3s ease-out;
+                    transition: opacity 0.2s ease-out;
                   }
                   .burger-svg.active .flower path,
                   .burger-svg.active .flower circle {
-                    animation: draw .5s ease-out forwards;
+                    animation: drawFlower 0.4s ease-out forwards;
                   }
                   .burger-svg.active .flower circle {
                     animation-delay: 0s;
                   }
                   .burger-svg.active .flower path:nth-child(2) {
-                    animation-delay: 0.1s;
+                    animation-delay: 0.05s;
                   }
                   .burger-svg.active .flower path:nth-child(3) {
-                    animation-delay: 0.2s;
+                    animation-delay: 0.1s;
                   }
                   .burger-svg.active .flower path:nth-child(4) {
-                    animation-delay: 0.3s;
+                    animation-delay: 0.15s;
                   }
                   .burger-svg.active .flower path:nth-child(5) {
-                    animation-delay: 0.4s;
+                    animation-delay: 0.2s;
+                  }
+                  
+                  .burger-svg:not(.active) .flower path,
+                  .burger-svg:not(.active) .flower circle {
+                    animation: hideFlower 0.3s ease-out forwards;
+                  }
+                  
+                  @keyframes drawFlower { 
+                    to { 
+                      stroke-dashoffset: 0; 
+                      opacity: 1; 
+                    } 
+                  }
+                  
+                  @keyframes hideFlower { 
+                    to { 
+                      stroke-dashoffset: 20; 
+                      opacity: 0; 
+                    } 
                   }
                 `}
               </style> 
@@ -336,14 +355,14 @@ const Header = () => {
                   <span className="nav__overlay-text">FAQ</span>
                 </a>
               </li>
-              {/* About Us - scroll to section */}
+              {/* About Us - navigate to page */}
               <li className="nav__overlay-item">
-                <a href="#aboutus" className="nav__overlay-link" onClick={(e) => handleNavClick(e, '#aboutus')}>
+                <Link to="/about-us" className="nav__overlay-link" onClick={closeMenu}>
                   <span className="nav__overlay-number">
                     <img src="/images/7.png" alt="07" width="64" height="64" />
                   </span>
                   <span className="nav__overlay-text">About Us</span>
-                </a>
+                </Link>
               </li>
             </ul>
           </nav>
