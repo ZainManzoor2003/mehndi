@@ -695,14 +695,14 @@
 .wallet-section .bookings-by-event-type {
   display: flex;
   flex-direction: column;
-  gap: 30px;
+  gap: 20px;
   margin-top: 20px;
 }
 
 .wallet-section .event-type-section {
   background: #fff;
   border-radius: 16px;
-  padding: 24px;
+  padding: 16px;
   box-shadow: none;
   border: none;
 }
@@ -737,7 +737,7 @@
 .wallet-section .bookings-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
 }
 
 .wallet-section .booking-item {
@@ -745,7 +745,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 20px;
+  padding: 12px;
   background: #fff;
   border-radius: 12px;
   border: 1px solid #f0f0f0;
@@ -759,18 +759,18 @@
 
 .wallet-section .booking-info {
   flex: 1;
-  padding-right: 100px;
+  padding-right: 80px;
 }
 
 .wallet-section .booking-artist {
   margin: 0 0 8px 0;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: #46321E;
 }
 
 .wallet-section .payment-details {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .wallet-section .payment-breakdown {
@@ -780,7 +780,7 @@
 }
 
 .wallet-section .booking-actions {
-  margin-top: 12px;
+  margin-top: 8px;
 }
 
 .wallet-section .action-btn {
@@ -818,20 +818,20 @@
 
 .wallet-section .booking-status {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 12px;
+  right: 12px;
   display: flex;
   align-items: flex-start;
 }
 
 .wallet-section .status-badge {
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 16px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin: 10px;
+  margin: 8px;
 }
 
 .wallet-section .status-badge.paid-full {
