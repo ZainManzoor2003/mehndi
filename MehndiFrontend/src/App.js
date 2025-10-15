@@ -40,6 +40,7 @@ import PaymentSuccess from './components/PaymentSuccess';
 import PaymentCancel from './components/PaymentCancel';
 import PaymentRescheduleBooking from './components/PaymentRescheduleBooking';
 import EmailVerification from './components/EmailVerification';
+import AboutUsPage from './components/AboutUsPage';
 
 // Main Landing Page Component
 const LandingPage = () => (
@@ -90,6 +91,11 @@ function App() {
               <PublicRoute>
                 <EmailVerification />
               </PublicRoute>
+            } />
+            <Route path="/about-us" element={
+              <PublicWrapper>
+                <AboutUsPage />
+              </PublicWrapper>
             } />
             <Route path="/booking" element={
               <RoleProtectedRoute allowedRoles={["client"]}>

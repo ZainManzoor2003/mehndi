@@ -17,6 +17,7 @@ const ManageArtists = () => {
   const [userStats, setUserStats] = useState({});
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedApplicationRange, setSelectedApplicationRange] = useState('all');
+  const [selectedRatingRange, setSelectedRatingRange] = useState('all');
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -69,9 +70,30 @@ const ManageArtists = () => {
       });
     }
 
+    // Filter by rating range
+    if (selectedRatingRange !== 'all') {
+      filtered = filtered.filter(user => {
+        const rating = user.ratingsAverage || 0;
+        switch (selectedRatingRange) {
+          case '4-5':
+            return rating >= 4.0;
+          case '3-4':
+            return rating >= 3.0 && rating < 4.0;
+          case '2-3':
+            return rating >= 2.0 && rating < 3.0;
+          case '1-2':
+            return rating >= 1.0 && rating < 2.0;
+          case '0-1':
+            return rating >= 0 && rating < 1.0;
+          default:
+            return true;
+        }
+      });
+    }
+
     setFilteredUsers(filtered);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [users, searchTerm, selectedStatus, selectedApplicationRange, userStats]);
+  }, [users, searchTerm, selectedStatus, selectedApplicationRange, selectedRatingRange, userStats]);
 
   // Pagination logic
   useEffect(() => {
@@ -204,6 +226,7 @@ const ManageArtists = () => {
   };
 
   const artists = users.filter(u => u.userType === 'artist');
+  console.log("artists", artists);
 
   return (
     <div className="dashboard-layout">
@@ -272,7 +295,7 @@ const ManageArtists = () => {
             }}>
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: '1fr 1fr 1fr auto',
+                gridTemplateColumns: '1fr 1fr 1fr 1fr auto',
                 gap: '1rem',
                 alignItems: 'end'
               }}>
@@ -405,14 +428,64 @@ const ManageArtists = () => {
                   />
                 </div>
 
+                {/* Rating Filter */}
+                <div className="filter-item">
+                  <label style={{
+                    display: 'block',
+                    marginBottom: '0.5rem',
+                    fontWeight: '600',
+                    color: '#374151',
+                    fontSize: '0.875rem'
+                  }}>
+                    Filter by Rating
+                  </label>
+                  <Select
+                    value={{ value: selectedRatingRange, label: selectedRatingRange === 'all' ? 'All Ratings' : selectedRatingRange + ' Stars' }}
+                    onChange={(option) => setSelectedRatingRange(option.value)}
+                    options={[
+                      { value: 'all', label: 'All Ratings' },
+                      { value: '4-5', label: '4-5 Stars' },
+                      { value: '3-4', label: '3-4 Stars' },
+                      { value: '2-3', label: '2-3 Stars' },
+                      { value: '1-2', label: '1-2 Stars' },
+                      { value: '0-1', label: '0-1 Stars' }
+                    ]}
+                    styles={{
+                      control: (provided) => ({
+                        ...provided,
+                        border: '2px solid #d1d5db',
+                        borderRadius: '8px',
+                        minHeight: '42px',
+                        backgroundColor: '#f9fafb',
+                        boxShadow: 'none',
+                        '&:hover': {
+                          borderColor: '#d4a574'
+                        }
+                      }),
+                      option: (provided, state) => ({
+                        ...provided,
+                        backgroundColor: state.isSelected ? '#d4a574' : state.isFocused ? '#fef7ed' : '#fff',
+                        color: state.isSelected ? '#fff' : '#374151',
+                        fontSize: '0.875rem'
+                      }),
+                      singleValue: (provided) => ({
+                        ...provided,
+                        color: '#374151',
+                        fontSize: '0.875rem'
+                      })
+                    }}
+                  />
+                </div>
+
                 {/* Clear Filters Button */}
-                {(searchTerm || selectedStatus !== 'all' || selectedApplicationRange !== 'all') && (
+                {(searchTerm || selectedStatus !== 'all' || selectedApplicationRange !== 'all' || selectedRatingRange !== 'all') && (
                   <div className="filter-item" style={{ display: 'flex', alignItems: 'end' }}>
                     <button
                       onClick={() => {
                         setSearchTerm('');
                         setSelectedStatus('all');
                         setSelectedApplicationRange('all');
+                        setSelectedRatingRange('all');
                       }}
                       style={{
                         padding: '0.75rem 1rem',
@@ -468,6 +541,7 @@ const ManageArtists = () => {
                       <th>Name</th>
                       <th>Email</th>
                       <th>Total Applications</th>
+                      <th>Rating</th>
                       <th>Status</th>
                       <th>Actions</th>
                     </tr>
@@ -477,7 +551,7 @@ const ManageArtists = () => {
                       <tr key={u._id}>
                         <td>{u.firstName} {u.lastName}</td>
                         <td>{u.email}</td>
-                        <td>
+                        <td style={{ textAlign: 'center' }}>
                           <span className="badge" style={{
                             backgroundColor: '#d4a574',
                             color: '#fff',
@@ -487,6 +561,36 @@ const ManageArtists = () => {
                           }}>
                             {userStats[u._id] || 0}
                           </span>
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{
+                              display: 'inline-block',
+                              padding: '0.25rem 0.5rem',
+                              borderRadius: '4px',
+                              fontSize: '0.75rem',
+                              fontWeight: '600',
+                              backgroundColor: '#fef3c7',
+                              color: '#92400e'
+                            }}>
+                              {u.ratingsAverage ? u.ratingsAverage.toFixed(1) : '0.0'}
+                            </span>
+                            {/* <div style={{ display: 'flex', gap: '2px' }}>
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <svg
+                                  key={star}
+                                  width="12"
+                                  height="12"
+                                  viewBox="0 0 24 24"
+                                  fill={star <= (u.ratingsAverage || 0) ? '#fbbf24' : '#e5e7eb'}
+                                  stroke={star <= (u.ratingsAverage || 0) ? '#fbbf24' : '#d1d5db'}
+                                  strokeWidth="1"
+                                >
+                                  <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
+                                </svg>
+                              ))}
+                            </div> */}
+                          </div>
                         </td>
                         <td>
                           <span style={{
