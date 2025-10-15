@@ -11,7 +11,8 @@
   --ad-border: #eed6b6;
   --ad-success-bg: #e9f8ef; --ad-success: #257b3f;
   --ad-info-bg: #eef5ff; --ad-info: #1e5fa1;
-  --ad-warn-bg: #fff7e6; --ad-warn: #a05a00;
+  --ad-warn-bg: #fff7e6; 
+  --ad-warn: #a05a00;
   --ad-danger-bg: #fff0f0; --ad-danger: #b22c2c;
 }
 
@@ -987,7 +988,7 @@
   --secondary-brown: #A0522D;
   --accent-gold: #CD853F;
   --accent-orange: #D2691E;
-  --warm-beige: #F5DEB3;
+  /* --warm-beige: #F5DEB3; */
   --light-beige: #DEB887;
   --cream: #FAF0E6;
   

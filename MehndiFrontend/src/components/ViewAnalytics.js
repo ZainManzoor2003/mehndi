@@ -223,7 +223,7 @@ const cityOptions = [
             <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
           </svg>
         </button>
-        <div className="dashboard-container">
+        <div className="dashboard-container" style={{backgroundColor:'#E4C293'}}>
           <div className="dashboard-content">
             <div className="bookings-header">
               <h2 className="bookings-title" style={{color: 'var(--ad-text)'}}>Reports & Analytics</h2>
