@@ -1150,24 +1150,6 @@ const processRefund = async (req, res) => {
       });
     }
 
-    // Find the transaction to update
-    const transaction = await Transaction.findOne({
-      sender: userId,
-      receiver: artistId,
-      bookingId: bookingId
-    });
-
-    if (!transaction) {
-      return res.status(404).json({
-        success: false,
-        message: 'Transaction not found'
-      });
-    }
-
-    // Update transaction status to refund
-    transaction.transactionType = 'refund';
-    transaction.updatedAt = new Date();
-    await transaction.save();
 
     // Add refund amount to user's wallet
     let userWallet = await Wallet.findOne({ userId: userId });

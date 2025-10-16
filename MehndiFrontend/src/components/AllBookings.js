@@ -134,6 +134,10 @@ const AllBookings = () => {
   const [cancelDetails, setCancelDetails] = useState('');
   const [cancelError, setCancelError] = useState('');
 
+  // Message modal state
+  const [messageModalOpen, setMessageModalOpen] = useState(false);
+  const [messageModalContent, setMessageModalContent] = useState('');
+
   const openCompleteModal = (booking) => {
     setCompleteTarget(booking);
     setCompleteImages([]);
@@ -215,6 +219,16 @@ const AllBookings = () => {
     setCancelReason('Other');
     setCancelDetails('');
     setCancelError('');
+  };
+
+  const openMessageModal = (message) => {
+    setMessageModalContent(message);
+    setMessageModalOpen(true);
+  };
+
+  const closeMessageModal = () => {
+    setMessageModalOpen(false);
+    setMessageModalContent('');
   };
 
   const handleConfirmCancel = async () => {
@@ -630,7 +644,7 @@ const AllBookings = () => {
                                   if (eventDate <= today) {
                                     openCompleteModal(booking);
                                   } else {
-                                    alert('You can only mark as complete once the event date has passed.');
+                                    openMessageModal('You can only mark as complete once the event date has passed.');
                                   }
                                 }}
                                 style={{marginLeft:'8px'}}
@@ -1602,6 +1616,96 @@ const AllBookings = () => {
                   onMouseOut={(e) => e.target.style.backgroundColor = '#dc2626'}
                 >
                   Confirm Cancellation
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Message Modal */}
+      {messageModalOpen && (
+        <div className="modal-overlay" onClick={closeMessageModal}>
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              maxWidth: '450px',
+              width: '90%',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Modal Header */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '20px 24px',
+              borderBottom: '1px solid #e5e7eb',
+            }}>
+              <h3 style={{
+                margin: 0,
+                fontSize: '1.25rem',
+                fontWeight: '600',
+                color: '#111827',
+              }}>
+                Notice
+              </h3>
+              <button 
+                onClick={closeMessageModal}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  color: '#6b7280',
+                  cursor: 'pointer',
+                  padding: '0',
+                  lineHeight: '1',
+                  transition: 'color 0.2s ease'
+                }}
+                onMouseOver={(e) => e.target.style.color = '#111827'}
+                onMouseOut={(e) => e.target.style.color = '#6b7280'}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: '24px' }}>
+              <p style={{
+                margin: '0 0 24px 0',
+                fontSize: '1rem',
+                color: '#4b5563',
+                lineHeight: '1.5',
+              }}>
+                {messageModalContent}
+              </p>
+
+              {/* Modal Actions */}
+              <div style={{
+                display: 'flex',
+                gap: '12px',
+                justifyContent: 'flex-end',
+              }}>
+                <button 
+                  onClick={closeMessageModal}
+                  style={{
+                    padding: '12px 24px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: 'white',
+                    backgroundColor: 'var(--first-color)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseOver={(e) => e.target.style.opacity = '0.9'}
+                  onMouseOut={(e) => e.target.style.opacity = '1'}
+                >
+                  OK
                 </button>
               </div>
             </div>

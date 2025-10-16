@@ -236,7 +236,7 @@ const PaymentRescheduleBooking = () => {
 
             if (response.success) {
                 alert('Refund processed successfully!');
-                navigate('/dashboard/bookings');
+                navigate('/dashboard/wallet');
             } else {
                 setError(response.message || 'Failed to process refund');
             }
