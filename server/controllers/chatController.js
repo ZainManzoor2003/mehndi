@@ -54,12 +54,26 @@ exports.getChat = async (req, res) => {
 exports.sendMessage = async (req, res) => {
   try {
     const { chatId } = req.params;
-    const { text } = req.body;
-    if (!text) return res.status(400).json({ success: false, message: 'text is required' });
+    const { text, attachments } = req.body;
+    if (!text && (!attachments || attachments.length === 0)) {
+      return res.status(400).json({ success: false, message: 'text or attachments are required' });
+    }
+    
+    const messageData = {
+      sender: req.user.id,
+      text: text || '',
+      createdAt: new Date()
+    };
+    
+    // Add attachments if provided
+    if (attachments && attachments.length > 0) {
+      messageData.attachments = attachments;
+    }
+    
     const chat = await Chat.findByIdAndUpdate(
       chatId,
       {
-        $push: { messages: { sender: req.user.id, text, createdAt: new Date() } },
+        $push: { messages: messageData },
         $set: { lastMessageAt: new Date() }
       },
       { new: true }

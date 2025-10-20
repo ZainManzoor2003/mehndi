@@ -223,10 +223,10 @@ export const chatAPI = {
   getChat: async (chatId) => {
     return apiRequest(`/chats/${chatId}`);
   },
-  sendMessage: async (chatId, text) => {
+  sendMessage: async (chatId, text, attachments = []) => {
     return apiRequest(`/chats/${chatId}/messages`, {
       method: 'POST',
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ text, attachments }),
     });
   },
   markRead: async (chatId) => {

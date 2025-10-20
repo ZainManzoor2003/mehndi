@@ -49,6 +49,272 @@
   flex: 1 1 auto;
 }
 
+/* Attachment Styles */
+.attachments-preview {
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+.attachment-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.attachment-name {
+  font-weight: 500;
+  color: #495057;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attachment-size {
+  color: #6c757d;
+  font-size: 11px;
+}
+
+.remove-attachment {
+  background: none;
+  border: none;
+  color: #dc3545;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.remove-attachment:hover {
+  background-color: #f8d7da;
+}
+
+.attachment-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #6c757d;
+  transition: all 0.2s;
+  margin-right: 8px;
+}
+
+.attachment-btn:hover {
+  background: #e9ecef;
+  color: #495057;
+}
+
+.message-attachments {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.attachment-display {
+  position: relative;
+  display: inline-block;
+}
+
+/* Image Attachments */
+.image-attachment {
+  display: inline-block;
+}
+
+.attachment-image {
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s;
+  display: block;
+}
+
+.attachment-image:hover {
+  transform: scale(1.02);
+}
+
+/* Video Attachments */
+.video-attachment {
+  display: inline-block;
+}
+
+.attachment-video {
+  max-width: 300px;
+  max-height: 200px;
+  border-radius: 8px;
+  display: block;
+}
+
+/* Document Attachments */
+.document-attachment {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 2px solid #d4a574 !important;
+  border-radius: 12px;
+  max-width: 320px;
+  background: #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.document-attachment:hover {
+  border-color: #b8945f;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.document-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.document-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.document-icon svg {
+  color: #6c757d;
+}
+
+.document-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.document-name {
+  color: #212529;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.document-type {
+  color: #6c757d;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* Message bubble background overrides for attachment-only messages */
+.message.sent .message-content:has(.message-attachments):not(:has(p)) {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.message.received .message-content:has(.message-attachments):not(:has(p)) {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Download Button */
+.download-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: white;
+  transition: all 0.2s;
+  opacity: 0;
+}
+
+.attachment-display:hover .download-btn {
+  opacity: 1;
+}
+
+.download-btn:hover {
+  background: rgba(0, 0, 0, 0.9);
+  transform: scale(1.1);
+}
+
+/* For document attachments, download button is inline and always visible */
+.document-attachment .download-btn {
+  position: static !important;
+  opacity: 1 !important;
+  background: #d4a574;
+  color: #ffffff;
+  border: 1px solid #d4a574;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+.document-attachment .download-btn:hover {
+  background: #b8945f;
+  border-color: #b8945f;
+  color: #ffffff;
+  transform: scale(1.05);
+}
+
+.loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 /* Transaction History Styles */
 .transaction-history {
   background: #f8f6f0;

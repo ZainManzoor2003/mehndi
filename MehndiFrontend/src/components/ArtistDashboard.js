@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './messages.css';
 import { useNavigate, useParams, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -23,7 +23,10 @@ const ArtistDashboard = () => {
   const [selectedJob, setSelectedJob] = useState(null);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [newMessage, setNewMessage] = useState('');
+  const [attachments, setAttachments] = useState([]);
+  const [isUploading, setIsUploading] = useState(false);
   const [onlineUserIds, setOnlineUserIds] = useState(new Set());
+  const messagesEndRef = useRef(null);
   const DEFAULT_AVATAR = 'https://www.gravatar.com/avatar/?d=mp&s=80';
 
   useEffect(() => {
@@ -1526,39 +1529,144 @@ const ArtistDashboard = () => {
     const roomId = buildDirectRoomId(user?._id, clientId);
     joinRoom(roomId, { userId: user?._id, userType: 'artist' });
     chatAPI.getChat(conversation._id).then(res => {
-      if (res.success) setChatMessages(res.data.messages || []);
+      if (res.success) {
+        setChatMessages(res.data.messages || []);
+        // Scroll to bottom when conversation is selected
+        setTimeout(scrollToBottom, 100);
+      }
     }).then(() => chatAPI.markRead(conversation._id))
       .catch(console.error);
   };
 
+  // Cloudinary upload function
+  const uploadToCloudinary = async (files) => {
+    const cloudinary = {
+      cloudName: "dstelsc7m",
+      uploadPreset: "mehndi",
+      folder: 'mehndi/messages'
+    };
+
+    const { cloudName, uploadPreset, folder } = cloudinary;
+    if (!cloudName || !uploadPreset) throw new Error('Cloudinary config missing');
+    const base = `https://api.cloudinary.com/v1_1/${cloudName}`;
+
+    const results = [];
+
+    for (const file of files) {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('upload_preset', uploadPreset);
+      if (folder) fd.append('folder', folder);
+
+      // FIX 1: Hamesha 'auto' use karein.
+      // Cloudinary file ko inspect karke khud decide kar lega.
+      const resourceType = 'auto';
+
+      // URL ab hamesha .../auto/upload hoga
+      const r = await fetch(`${base}/${resourceType}/upload`, { method: 'POST', body: fd });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error?.message || 'File upload failed');
+
+      // FIX 2: 'attachmentType' file ke MIME type aur Cloudinary response se set karein.
+      let attachmentType = 'document'; // Default
+      
+      // First check file extension for PDFs (most reliable)
+      if (file.name.toLowerCase().endsWith('.pdf')) {
+        attachmentType = 'document';
+      } else if (file.type.startsWith('image/')) {
+        attachmentType = 'image';
+      } else if (file.type.startsWith('video/')) {
+        attachmentType = 'video';
+      } else if (file.type === 'application/pdf' || 
+                 file.type === 'application/msword' || 
+                 file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+                 file.type === 'text/plain' ||
+                 file.type.startsWith('application/')) {
+        attachmentType = 'document';
+      } else if (data.resource_type === 'image') {
+        attachmentType = 'image';
+      } else if (data.resource_type === 'video') {
+        attachmentType = 'video';
+      } else if (data.resource_type === 'raw') {
+        attachmentType = 'document';
+      }
+      
+      console.log('DEBUG: File type detection:', {
+        fileName: file.name,
+        mimeType: file.type,
+        cloudinaryResourceType: data.resource_type,
+        finalAttachmentType: attachmentType
+      });
+
+      results.push({
+        type: attachmentType, // Yeh ab 100% sahi hoga
+        url: data.secure_url, // Yeh URL ab file type ke hisab se hoga
+        filename: file.name,
+        size: file.size,
+        mimeType: file.type // Ise save karna aadat hai, aage kaam aa sakta hai
+      });
+    }
+
+    return results;
+  };
+
   const handleSendMessage = async () => {
-    if (newMessage.trim() && currentChat) {
+    if ((newMessage.trim() || attachments.length > 0) && currentChat) {
       const clientId = currentChat.client?._id || currentChat.clientId || currentChat.id;
       const roomId = buildDirectRoomId(user?._id, clientId);
       const text = newMessage.trim();
+      
+      setIsUploading(true);
       try {
-        const res = await chatAPI.sendMessage(currentChat._id, text);
-        if (res.success) {
-          const saved = res.data.messages[res.data.messages.length - 1];
-          sendRoomMessage(roomId, {
-            id: saved._id || Date.now(),
-            senderId: saved.sender,
-            senderName: artistName,
-            message: saved.text,
-            timestamp: new Date(saved.createdAt || Date.now()).toLocaleString(),
-            type: 'text'
-          });
-          setChatMessages(res.data.messages);
-          setNewMessage('');
-          
-          // Auto-fetch conversations after sending message
-          if (activeTab === 'messages') {
-            chatAPI.listMyChats().then(res => {
-              if (res.success) setArtistConversations(res.data || []);
-            }).catch(console.error);
+        let uploadedAttachments = [];
+        if (attachments.length > 0) {
+          uploadedAttachments = await uploadToCloudinary(attachments);
+        }
+
+        // Build payloads: one for text (if any), and one per attachment
+        const payloads = [];
+        if (text) payloads.push({ text, attachments: [] });
+        uploadedAttachments.forEach(att => payloads.push({ text: '', attachments: [att] }));
+
+        let latestMessages = null;
+        for (const payload of payloads) {
+          // send sequentially to preserve order
+          const res = await chatAPI.sendMessage(currentChat._id, payload.text, payload.attachments);
+          if (res.success) {
+            latestMessages = res.data.messages;
+            const saved = res.data.messages[res.data.messages.length - 1];
+            sendRoomMessage(roomId, {
+              id: saved._id || Date.now(),
+              senderId: saved.sender,
+              senderName: artistName,
+              message: saved.text,
+              timestamp: new Date(saved.createdAt || Date.now()).toLocaleString(),
+              type: saved.attachments && saved.attachments.length ? 'attachment' : 'text',
+              attachments: saved.attachments || []
+            });
           }
         }
-      } catch (e) { console.error(e); }
+
+        if (latestMessages) {
+          setChatMessages(latestMessages);
+          // Scroll to bottom after messages are updated
+          setTimeout(scrollToBottom, 100);
+        }
+        setNewMessage('');
+        setAttachments([]);
+        
+        // Auto-fetch conversations after sending message
+        if (activeTab === 'messages') {
+          chatAPI.listMyChats().then(res => {
+            if (res.success) setArtistConversations(res.data || []);
+          }).catch(console.error);
+        }
+      } catch (e) { 
+        console.error(e);
+        alert('Failed to send message. Please try again.');
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
@@ -1642,10 +1750,13 @@ useEffect(() => {
       return;
     }
     
+    console.log('DEBUG: Received socket message:', incoming);
+    
     setChatMessages(prev => [...prev, {
       id: incoming.id,
       sender: incoming.senderId,
-      text: incoming.message,
+      text: incoming.message || incoming.text || '',
+      attachments: incoming.attachments || [],
       createdAt: new Date().toISOString(),
     }]);
   };
@@ -1664,6 +1775,70 @@ useEffect(() => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
+    }
+  };
+
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      // Validate file types and sizes
+      const validFiles = files.filter(file => {
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        const allowedTypes = [
+          'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+          'video/mp4', 'video/avi', 'video/mov', 'video/wmv',
+          'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'text/plain', 'application/zip', 'application/x-rar-compressed'
+        ];
+        
+        if (file.size > maxSize) {
+          alert(`File ${file.name} is too large. Maximum size is 10MB.`);
+          return false;
+        }
+        
+        if (!allowedTypes.includes(file.type)) {
+          alert(`File type ${file.type} is not supported.`);
+          return false;
+        }
+        
+        return true;
+      });
+      
+      setAttachments(prev => [...prev, ...validFiles]);
+    }
+    e.target.value = ''; // Reset input
+  };
+
+  const removeAttachment = (index) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
+  };
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (chatMessages.length > 0) {
+      setTimeout(scrollToBottom, 100);
+    }
+  }, [chatMessages]);
+
+  const downloadFile = async (url, filename) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('Failed to download file. Please try again.');
     }
   };
 
@@ -3201,7 +3376,7 @@ useEffect(() => {
                   </div>
                 </div>
               )}
-              {/* Messages */}
+              {/* Artist View Messages */}
               {activeTab === 'messages' && (
                 <div className="messages-section">
                   <div className="messages-container">
@@ -3274,18 +3449,135 @@ useEffect(() => {
                                 className={`message ${String(message.sender) === String(user?._id) || message.senderId === 'artist' ? 'sent' : 'received'}`}
                               >
                                 <div className="message-content">
-                                  <p>{message.text || message.message}</p>
+                                  {message.text && <p>{message.text}</p>}
+                                  {message.attachments && message.attachments.length > 0 && (
+                                    <div className="message-attachments">
+                                      {console.log('DEBUG: All attachments:', message.attachments)}
+                                      {/* Images */}
+                                      {message.attachments.filter(att => att.type === 'image').map((attachment, attIdx) => {
+                                        console.log('DEBUG: Image attachment:', attachment);
+                                        return (
+                                        <div key={`img-${attIdx}`} className="attachment-display image-attachment">
+                                          <img 
+                                            src={attachment.url} 
+                                            alt={attachment.filename}
+                                            className="attachment-image"
+                                            onClick={() => window.open(attachment.url, '_blank')}
+                                          />
+                                          <button 
+                                            className="download-btn"
+                                            onClick={() => downloadFile(attachment.url, attachment.filename)}
+                                            title="Download image"
+                                          >
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" strokeWidth="2" fill="none"/>
+                                              <polyline points="7,10 12,15 17,10" stroke="currentColor" strokeWidth="2" fill="none"/>
+                                              <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" strokeWidth="2"/>
+                                            </svg>
+                                          </button>
+                                        </div>
+                                        );
+                                      })}
+                                      
+                                      {/* Videos */}
+                                      {message.attachments.filter(att => att.type === 'video').map((attachment, attIdx) => (
+                                        <div key={`vid-${attIdx}`} className="attachment-display video-attachment">
+                                          <a 
+                                            href={attachment.url} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="attachment-link"
+                                          >
+                                            <video 
+                                              src={attachment.url} 
+                                              controls
+                                              className="attachment-video"
+                                            />
+                                          </a>
+                                        </div>
+                                      ))}
+                                      
+                                      {/* Documents */}
+                                      {message.attachments.filter(att => att.type === 'document').map((attachment, attIdx) => {
+                                        console.log('DEBUG: Document attachment:', attachment);
+                                        return (
+                                        <div key={`doc-${attIdx}`} className="attachment-display document-attachment">
+                                          <div className="document-content">
+                                            <div className="document-icon">
+                                              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="2" fill="none"/>
+                                                <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2" fill="none"/>
+                                                <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" strokeWidth="2"/>
+                                                <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" strokeWidth="2"/>
+                                                <polyline points="10,9 9,9 8,9" stroke="currentColor" strokeWidth="2"/>
+                                              </svg>
+                                            </div>
+                                            <div className="document-details">
+                                              <span className="document-name">{attachment.filename}</span>
+                                              <span className="document-type">PDF Document</span>
+                                            </div>
+                                          </div>
+                                          <button 
+                                            className="download-btn"
+                                            onClick={() => downloadFile(attachment.url, attachment.filename)}
+                                            title="Download document"
+                                          >
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" strokeWidth="2" fill="none"/>
+                                              <polyline points="7,10 12,15 17,10" stroke="currentColor" strokeWidth="2" fill="none"/>
+                                              <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" strokeWidth="2"/>
+                                            </svg>
+                                          </button>
+                                        </div>);
+                                      })}
+                                    </div>
+                                  )}
                                 </div>
                                 <div className="message-meta">
                                   <span className="message-time">{new Date(message.createdAt || Date.now()).toLocaleString()}</span>
                                 </div>
                               </div>
                             ))}
+                            <div ref={messagesEndRef} />
                           </div>
 
                           {/* Message Input */}
                           <div className="message-input-area">
+                            {/* Attachments Preview */}
+                            {attachments.length > 0 && (
+                              <div className="attachments-preview">
+                                {attachments.map((file, index) => (
+                                  <div key={index} className="attachment-item">
+                                    <div className="attachment-info">
+                                      <span className="attachment-name">{file.name}</span>
+                                      <span className="attachment-size">{(file.size / 1024 / 1024).toFixed(1)}MB</span>
+                                    </div>
+                                    <button 
+                                      className="remove-attachment"
+                                      onClick={() => removeAttachment(index)}
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            
                             <div className="message-input-container">
+                              <input
+                                type="file"
+                                id="file-input"
+                                multiple
+                                accept="image/*,video/*,.pdf,.doc,.docx,.txt,.zip,.rar"
+                                onChange={handleFileSelect}
+                                style={{ display: 'none' }}
+                              />
+                              <label htmlFor="file-input" className="attachment-btn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M21.44 11.05L12.25 20.24a6 6 0 1 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.42 17.41a2 2 0 1 1-2.83-2.83l8.49-8.49" stroke="currentColor" strokeWidth="2" fill="none" />
+                                </svg>
+                              </label>
+
                               <textarea
                                 className="message-input"
                                 placeholder="Type your message..."
@@ -3298,12 +3590,16 @@ useEffect(() => {
                               <button
                                 className="send-btn"
                                 onClick={handleSendMessage}
-                                disabled={!newMessage.trim()}
+                                disabled={(!newMessage.trim() && attachments.length === 0) || isUploading}
                               >
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <line x1="22" y1="2" x2="11" y2="13" stroke="currentColor" strokeWidth="2" />
-                                  <polygon points="22,2 15,22 11,13 2,9 22,2" stroke="currentColor" strokeWidth="2" fill="currentColor" />
-                                </svg>
+                                {isUploading ? (
+                                  <div className="loading-spinner"></div>
+                                ) : (
+                                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <line x1="22" y1="2" x2="11" y2="13" stroke="currentColor" strokeWidth="2" />
+                                    <polygon points="22,2 15,22 11,13 2,9 22,2" stroke="currentColor" strokeWidth="2" fill="currentColor" />
+                                  </svg>
+                                )}
                               </button>
                             </div>
                           </div>
@@ -3323,6 +3619,7 @@ useEffect(() => {
                   </div>
                 </div>
               )}
+
               {/* Schedule (placeholder) */}
               {activeTab === 'schedule' && (
                 <div className="schedule-section">

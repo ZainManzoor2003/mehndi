@@ -192,7 +192,7 @@ const Header = () => {
 
           {/* Center: Logo */}
           <a href="#home" className="nav__logo" onClick={(e) => handleNavClick(e, '#home')}>
-            <img src="/assets/logo icon.png" alt="Mehndi Me" style={{ height: 96, margin: "10px 0", display: 'block' }} />
+            <img src="/assets/logo text.png" alt="Mehndi Me" style={{ height: 36, margin: "10px 0", display: 'block' }} />
           </a>
 
           {/* Right: Dashboard Button or Get Started */}
