@@ -49,6 +49,239 @@
   flex: 1 1 auto;
 }
 
+/* Transaction History Styles */
+.transaction-history {
+  background: #f8f6f0;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.transaction-history .section-title {
+  color: #8b4513;
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+/* Transaction Filters */
+.transaction-filters {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 20px;
+}
+
+.category-filters {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.category-filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #ffffff;
+  border: 2px solid #e0d5c7;
+  border-radius: 20px;
+  color: #8b4513;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.category-filter-btn:hover {
+  border-color: #d4a574;
+  background: #faf8f5;
+}
+
+.category-filter-btn.active {
+  background: #d4a574;
+  border-color: #d4a574;
+  color: #ffffff;
+}
+
+.filter-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  background: transparent;
+  transition: all 0.3s ease;
+}
+
+.category-filter-btn.active .filter-indicator {
+  background: currentColor;
+}
+
+.category-filter-btn span {
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.status-filter {
+  position: relative;
+}
+
+.status-dropdown {
+  padding: 8px 16px;
+  padding-right: 40px;
+  background: #ffffff;
+  border: 2px solid #e0d5c7;
+  border-radius: 8px;
+  color: #8b4513;
+  font-weight: 500;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%238b4513' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 12px center;
+  background-repeat: no-repeat;
+  background-size: 16px;
+}
+
+.status-dropdown:focus {
+  outline: none;
+  border-color: #d4a574;
+}
+
+/* Transaction Table */
+.transaction-table {
+  background: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.table-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1.5fr 1fr 1fr;
+  gap: 16px;
+  padding: 16px 20px;
+  background: #d4a574;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.table-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1.5fr 1fr 1fr;
+  gap: 16px;
+  padding: 16px 20px;
+  background: #f8f6f0;
+  border-bottom: 1px solid #e0d5c7;
+  align-items: center;
+  transition: background-color 0.2s ease;
+}
+
+.table-row:hover {
+  background: #f0ebe3;
+}
+
+.table-row:last-child {
+  border-bottom: none;
+}
+
+.col-date,
+.col-category,
+.col-artist,
+.col-client,
+.col-amount,
+.col-status,
+.col-invoice {
+  font-size: 14px;
+  color: #8b4513;
+}
+
+.col-amount {
+  font-weight: 600;
+}
+
+.col-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+}
+
+.col-status.deposit-paid,
+.col-status.payment-complete {
+  color: #d4a574;
+}
+
+.col-status.refunded {
+  color: #e74c3c;
+}
+
+.col-status.admin-fee {
+  color: #8b4513;
+}
+
+.invoice-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #d4a574;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.invoice-btn:hover {
+  background: #c1965a;
+  transform: translateY(-1px);
+}
+
+.invoice-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .transaction-filters {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  
+  .category-filters {
+    justify-content: center;
+  }
+  
+  .table-header,
+  .table-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    text-align: center;
+  }
+  
+  .table-header span,
+  .table-row span {
+    padding: 4px 0;
+  }
+  
+  .table-header span:before,
+  .table-row span:before {
+    content: attr(data-label) ": ";
+    font-weight: 600;
+    color: #8b4513;
+  }
+  
+  .table-header span:before {
+    color: #ffffff;
+  }
+}
+
 /* Dynamic Booking Card Styles */
 .no-upcoming-events {
   background: #f8f9fa;

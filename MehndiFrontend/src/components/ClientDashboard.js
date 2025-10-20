@@ -56,6 +56,10 @@ const ClientDashboard = () => {
   const [transactions, setTransactions] = useState([]);
   const [transactionsLoading, setTransactionsLoading] = useState(false);
   const [transactionsError, setTransactionsError] = useState('');
+  
+  // Transaction filters
+  const [transactionCategoryFilter, setTransactionCategoryFilter] = useState('all');
+  const [transactionStatusFilter, setTransactionStatusFilter] = useState('all');
 
   // Dynamic booking data from API
   const [nextEvent, setNextEvent] = useState(null);
@@ -699,6 +703,30 @@ const ClientDashboard = () => {
 
   const handleFilterChange = (filter) => {
     setProposalsFilter(filter);
+  };
+
+  // Transaction filter functions
+  const handleTransactionCategoryFilter = (category) => {
+    setTransactionCategoryFilter(category);
+  };
+
+  const handleTransactionStatusFilter = (status) => {
+    setTransactionStatusFilter(status);
+  };
+
+  // Filter transactions based on selected filters
+  const getFilteredTransactions = () => {
+    return transactions.filter(transaction => {
+      // Category filter - use the category field from the controller
+      const categoryMatch = transactionCategoryFilter === 'all' || 
+        (transaction.category && transaction.category.toLowerCase() === transactionCategoryFilter.toLowerCase());
+      
+      // Status filter
+      const statusMatch = transactionStatusFilter === 'all' || 
+        (transaction.transactionType === transactionStatusFilter);
+      
+      return categoryMatch && statusMatch;
+    });
   };
 
   const handleWriteReview = (booking) => {
@@ -1625,6 +1653,64 @@ useEffect(() => {
                   <div className="transaction-history">
                     <h3 className="section-title">Transaction History</h3>
 
+                    {/* Transaction Filters */}
+                    <div className="transaction-filters">
+                      <div className="category-filters">
+                        <button 
+                          className={`category-filter-btn ${transactionCategoryFilter === 'all' ? 'active' : ''}`}
+                          onClick={() => handleTransactionCategoryFilter('all')}
+                        >
+                          <div className="filter-indicator"></div>
+                          All
+                        </button>
+                        <button 
+                          className={`category-filter-btn ${transactionCategoryFilter === 'bridal' ? 'active' : ''}`}
+                          onClick={() => handleTransactionCategoryFilter('bridal')}
+                        >
+                          <div className="filter-indicator"></div>
+                          Bridal
+                        </button>
+                        <button 
+                          className={`category-filter-btn ${transactionCategoryFilter === 'festive' ? 'active' : ''}`}
+                          onClick={() => handleTransactionCategoryFilter('festive')}
+                        >
+                          <div className="filter-indicator"></div>
+                          <span>+</span>
+                          Festive
+                        </button>
+                        <button 
+                          className={`category-filter-btn ${transactionCategoryFilter === 'party' ? 'active' : ''}`}
+                          onClick={() => handleTransactionCategoryFilter('party')}
+                        >
+                          <div className="filter-indicator"></div>
+                          <span>△</span>
+                          Party
+                        </button>
+                        <button 
+                          className={`category-filter-btn ${transactionCategoryFilter === 'casual' ? 'active' : ''}`}
+                          onClick={() => handleTransactionCategoryFilter('casual')}
+                        >
+                          <div className="filter-indicator"></div>
+                          <span>+</span>
+                          Casual
+                        </button>
+                      </div>
+                      
+                      <div className="status-filter">
+                        <select 
+                          value={transactionStatusFilter} 
+                          onChange={(e) => handleTransactionStatusFilter(e.target.value)}
+                          className="status-dropdown"
+                        >
+                          <option value="all">All</option>
+                          <option value="half">Deposit Paid</option>
+                          <option value="full">Payment Complete</option>
+                          <option value="refund">Refunded</option>
+                          <option value="admin-fee">Admin Fee</option>
+                        </select>
+                      </div>
+                    </div>
+
                     {transactionsLoading ? (
                       <div className="loading-state" style={{ padding: '2rem', textAlign: 'center' }}>
                         <p>Loading transaction history...</p>
@@ -1644,16 +1730,15 @@ useEffect(() => {
                     ) : (
                       <div className="transaction-table">
                         <div className="table-header">
-                          <span className="col-event">Event</span>
-                          <span className="col-type">Type</span>
                           <span className="col-date">Date</span>
+                          <span className="col-category">Category</span>
+                          <span className="col-artist">Artist</span>
                           <span className="col-amount">Amount</span>
-                          <span className="col-method">Method</span>
                           <span className="col-status">Status</span>
-                          <span className="col-receipt">Receipt</span>
+                          <span className="col-invoice">Invoice</span>
                         </div>
 
-                        {transactions.map((transaction) => {
+                        {getFilteredTransactions().map((transaction) => {
                           const formatDate = (dateString) => {
                             const date = new Date(dateString);
                             return date.toLocaleDateString('en-GB', {
@@ -1673,17 +1758,28 @@ useEffect(() => {
                             }
                           };
 
-                          const getStatus = (type, isSender) => {
-                            if (type === 'refund') {
-                              return { text: 'Refunded', class: 'refunded' };
-                            }
-                            if (type === 'admin-fee') {
-                              return { text: 'Admin Fee', class: 'admin-fee' };
-                            }
-                            return { text: 'Paid', class: 'paid' };
+                          const getStatus = (transaction) => {
+                            // Use the pre-formatted status from the controller
+                            return {
+                              text: transaction.statusText || 'Paid',
+                              class: transaction.statusClass || 'paid'
+                            };
                           };
 
-                          const status = getStatus(transaction.transactionType, transaction.isSender);
+                          // Use the pre-formatted data from the controller
+                          const getCategoryFromEventName = (transaction) => {
+                            return transaction.category || 'Event';
+                          };
+
+                          const getArtistName = (transaction) => {
+                            return transaction.artistName || 'Unknown Artist';
+                          };
+
+                          const getAmountDisplay = (transaction) => {
+                            return transaction.amountDisplay || `£${transaction.amount.toFixed(0)}`;
+                          };
+
+                          const status = getStatus(transaction);
 
                           const handleDownloadReceipt = () => {
                             // Create PDF content
@@ -1752,26 +1848,21 @@ useEffect(() => {
 
                           return (
                             <div key={transaction._id} className="table-row">
-                              <span className="col-event">{transaction.eventName === 'Unknown Event' ? 'Event' : transaction.eventName}</span>
-                              <span className="col-type">{getTransactionType(transaction.transactionType)}</span>
                               <span className="col-date">{formatDate(transaction.createdAt)}</span>
-                              <span className="col-amount">£{transaction.amount.toFixed(2)}</span>
-                              <span className="col-method">Stripe</span>
-                              <span className={`col-status ${status.class}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <span className="col-category">{getCategoryFromEventName(transaction)}</span>
+                              <span className="col-artist">{getArtistName(transaction)}</span>
+                              <span className="col-amount">{getAmountDisplay(transaction)}</span>
+                              <span className={`col-status ${status.class}`}>
                                 {status.text}
                               </span>
-                              <span className="col-receipt">
-                                <button className="receipt-btn download" onClick={handleDownloadReceipt} title="Download Receipt">
+                              <span className="col-invoice">
+                                <button className="invoice-btn" onClick={handleDownloadReceipt} title="View Invoice">
+                                  <span>View Invoice</span>
                                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M12 15L7 10H10V3H14V10H17L12 15Z" fill="currentColor" />
                                     <path d="M20 18H4V20H20V18Z" fill="currentColor" />
                                   </svg>
                                 </button>
-                                {/* <button className="receipt-btn email" title="Email Receipt">
-                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M20 4H4C2.9 4 2.01 4.9 2.01 6L2 18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4ZM20 8L12 13L4 8V6L12 11L20 6V8Z" fill="currentColor" />
-                                  </svg>
-                                </button> */}
                               </span>
                             </div>
                           );

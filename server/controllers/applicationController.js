@@ -127,7 +127,7 @@ exports.applyToBooking = async (req, res) => {
       terms
     } = artistDetails;
 
-    // Validate required fields
+    // Validate required fields (only budget, duration, message, and terms)
     if (!proposedBudget || proposedBudget <= 0) {
       return res.status(400).json({ success: false, message: 'Valid proposed budget is required' });
     }
@@ -136,11 +136,7 @@ exports.applyToBooking = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Valid estimated duration is required' });
     }
 
-    if (!experience || !experience.relevantExperience || !experience.yearsOfExperience) {
-      return res.status(400).json({ success: false, message: 'Experience details are required' });
-    }
-
-    if (!proposal || !proposal.message) {
+    if (!proposal || !proposal.message || !proposal.message.trim()) {
       return res.status(400).json({ success: false, message: 'Proposal message is required' });
     }
 
@@ -188,9 +184,9 @@ exports.applyToBooking = async (req, res) => {
               travelDistance: availability?.travelDistance || 0
             },
             experience: {
-              relevantExperience: experience.relevantExperience,
-              yearsOfExperience: experience.yearsOfExperience,
-              portfolioHighlights: experience.portfolioHighlights || ''
+              relevantExperience: experience?.relevantExperience || 'N/A',
+              yearsOfExperience: experience?.yearsOfExperience || 0,
+              portfolioHighlights: experience?.portfolioHighlights || ''
             },
             proposal: {
               message: proposal.message,
@@ -735,8 +731,8 @@ exports.updateApplicationStatus = async (req, res) => {
 // @access  Private (Artist only)
 exports.notifyCancellationByArtist = async (req, res) => {
   try {
-    const { bookingId, reason } = req.body || {};
-    console.log('notifyCancellationByArtist payload:', { bookingId, reason, artistId: req.user?.id });
+    const { bookingId, reason, description } = req.body || {};
+    console.log('notifyCancellationByArtist payload:', { bookingId, reason, description, artistId: req.user?.id });
     if (!bookingId) {
       return res.status(400).json({ success: false, message: 'bookingId is required' });
     }
@@ -749,9 +745,16 @@ exports.notifyCancellationByArtist = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Only artists can cancel accepted applications.' });
     }
 
+    // Update application with cancellation details
     const updateResult = await Application.updateOne(
       { 'Booking.booking_id': bookingId, 'Booking.artist_id': req.user.id },
-      { $set: { 'Booking.$[elem].status': 'cancelled' } },
+      { 
+        $set: { 
+          'Booking.$[elem].status': 'cancelled',
+          'Booking.$[elem].cancellationReason': reason,
+          'Booking.$[elem].cancellationDescription': description || null
+        } 
+      },
       { arrayFilters: [{ 'elem.booking_id': bookingId }] }
     );
 

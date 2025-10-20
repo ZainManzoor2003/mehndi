@@ -208,11 +208,11 @@ const PaymentRescheduleBooking = () => {
                 // Optionally navigate back or refresh
                 navigate('/dashboard/bookings');
             } else {
-                setError('Failed to update booking');
+                setError(response.message || 'Failed to update booking');
             }
         } catch (error) {
             console.error('Error updating booking:', error);
-            setError('Failed to update booking. Please try again.');
+            setError(error.message || 'Failed to update booking. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -242,7 +242,7 @@ const PaymentRescheduleBooking = () => {
             }
         } catch (error) {
             console.error('Error processing refund:', error);
-            setError('Failed to process refund. Please try again.');
+            setError(error.message || 'Failed to process refund. Please try again.');
         } finally {
             setLoading(false);
         }

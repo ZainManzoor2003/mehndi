@@ -118,6 +118,7 @@ const ArtistDashboard = () => {
   const [viewForm, setViewForm] = useState(null);
   const [applyOpen, setApplyOpen] = useState(false);
   const [applyBookingId, setApplyBookingId] = useState(null);
+  const [applyBookingData, setApplyBookingData] = useState(null);
   const [applyLoading, setApplyLoading] = useState(false);
   const [withdrawConfirmOpen, setWithdrawConfirmOpen] = useState(false);
   const [withdrawBookingId, setWithdrawBookingId] = useState(null);
@@ -311,13 +312,13 @@ const ArtistDashboard = () => {
     setCancelAcceptedOpen(true);
   };
 
-  const handleConfirmCancelAccepted = async ({ reason }) => {
+  const handleConfirmCancelAccepted = async ({ reason, description }) => {
     try {
-      // Send bookingId only; backend will locate the current artist's application for this booking
+      // Send bookingId, reason, and description; backend will locate the current artist's application for this booking
       const bookingId = cancelTarget?.bookingId;
       if (!bookingId) throw new Error('Missing bookingId for cancellation');
-      console.log('sending notifyCancelAccepted with:', { bookingId, reason });
-      await applicationsAPI.notifyCancelAccepted({ bookingId, reason });
+      console.log('sending notifyCancelAccepted with:', { bookingId, reason, description });
+      await applicationsAPI.notifyCancelAccepted({ bookingId, reason, description });
       showSuccess('Client will be notified by email');
       // Refetch applications in Applications tab
       if (applicationsFilter === 'accepted') {
@@ -347,7 +348,20 @@ const ArtistDashboard = () => {
         appliedOn: new Date(b.createdAt).toLocaleDateString('en-GB'),
         status: 'in_progress' || 'pending',
         eventDate: b.eventDate,
-        assignedCount: Array.isArray(b.assignedArtist) ? b.assignedArtist.length : (b.assignedArtist ? 1 : 0)
+        assignedCount: Array.isArray(b.assignedArtist) ? b.assignedArtist.length : (b.assignedArtist ? 1 : 0),
+        // Additional booking details
+        fullClientName: `${b.firstName} ${b.lastName}`,
+        location: b.location || b.city || '',
+        city: b.city || '',
+        designStyle: b.designStyle || '',
+        designComplexity: b.designComplexity || '',
+        numberOfPeople: b.numberOfPeople || 0,
+        duration: b.duration || 0,
+        preferredTimeSlot: b.preferredTimeSlot || [],
+        fullAddress: b.fullAddress || '',
+        venueName: b.venueName || '',
+        designInspiration: b.designInspiration || '',
+        additionalRequests: b.additionalRequests || ''
       }));
       setApplications(items);
     } catch (e) {
@@ -590,6 +604,11 @@ const ArtistDashboard = () => {
 
   const openApplyModal = (bookingId) => {
     setApplyBookingId(bookingId);
+    
+    // Find the booking data from the applications list
+    const bookingData = applications.find(app => app.id === bookingId);
+    setApplyBookingData(bookingData);
+    
     setApplyOpen(true);
     // Reset form to default values
     setApplicationForm({
@@ -623,7 +642,10 @@ const ArtistDashboard = () => {
   const closeApplyModal = () => {
     setApplyOpen(false);
     setApplyBookingId(null);
+    setApplyBookingData(null);
     setFormErrors({});
+    // Restore body scroll when modal closes
+    document.body.style.overflow = 'auto';
   };
 
   const validateForm = () => {
@@ -639,20 +661,11 @@ const ArtistDashboard = () => {
       errors.estimatedDuration = 'Please enter a valid estimated duration';
     }
 
-    // Validate experience
-    if (!applicationForm.experience.relevantExperience.trim()) {
-      errors.relevantExperience = 'Please describe your relevant experience';
-    }
-
-    if (!applicationForm.experience.yearsOfExperience || applicationForm.experience.yearsOfExperience < 0) {
-      errors.yearsOfExperience = 'Please enter your years of experience';
-    }
-
-    // Validate proposal message
+    // Validate proposal message (minimum 20 characters for simplicity)
     if (!applicationForm.proposal.message.trim()) {
       errors.proposalMessage = 'Please write a proposal message';
-    } else if (applicationForm.proposal.message.trim().length < 50) {
-      errors.proposalMessage = 'Proposal message must be at least 50 characters';
+    } else if (applicationForm.proposal.message.trim().length < 20) {
+      errors.proposalMessage = 'Proposal message must be at least 20 characters';
     }
 
     // Validate terms agreement
@@ -709,19 +722,19 @@ const ArtistDashboard = () => {
           unit: applicationForm.estimatedDuration.unit
         },
         availability: {
-          isAvailableOnDate: applicationForm.availability.isAvailableOnDate,
-          canTravelToLocation: applicationForm.availability.canTravelToLocation,
-          travelDistance: applicationForm.availability.travelDistance ? parseFloat(applicationForm.availability.travelDistance) : 0
+          isAvailableOnDate: true,
+          canTravelToLocation: true,
+          travelDistance: 0
         },
         experience: {
-          relevantExperience: applicationForm.experience.relevantExperience.trim(),
-          yearsOfExperience: parseInt(applicationForm.experience.yearsOfExperience),
-          portfolioHighlights: applicationForm.experience.portfolioHighlights.trim()
+          relevantExperience: 'N/A',
+          yearsOfExperience: 0,
+          portfolioHighlights: ''
         },
         proposal: {
           message: applicationForm.proposal.message.trim(),
-          whyInterested: applicationForm.proposal.whyInterested.trim(),
-          additionalNotes: applicationForm.proposal.additionalNotes.trim()
+          whyInterested: '',
+          additionalNotes: ''
         },
         terms: {
           agreedToTerms: applicationForm.terms.agreedToTerms
@@ -1200,6 +1213,35 @@ const ArtistDashboard = () => {
   const [walletSummary, setWalletSummary] = useState({ totalPaid: 0, remainingBalance: 0 });
   const [walletTransactions, setWalletTransactions] = useState([]);
   const [walletLoading, setWalletLoading] = useState(false);
+  
+  // Transaction filters for artist
+  const [transactionCategoryFilter, setTransactionCategoryFilter] = useState('all');
+  const [transactionStatusFilter, setTransactionStatusFilter] = useState('all');
+
+  // Transaction filter functions
+  const handleTransactionCategoryFilter = (category) => {
+    setTransactionCategoryFilter(category);
+  };
+
+  const handleTransactionStatusFilter = (status) => {
+    setTransactionStatusFilter(status);
+  };
+
+  // Filter transactions based on selected filters
+  const getFilteredTransactions = () => {
+    return walletTransactions.filter(transaction => {
+      // Category filter - use the category field from the controller
+      const categoryMatch = transactionCategoryFilter === 'all' || 
+        (transaction.category && transaction.category.toLowerCase() === transactionCategoryFilter.toLowerCase());
+      
+      // Status filter
+      const statusMatch = transactionStatusFilter === 'all' || 
+        (transaction.transactionType === transactionStatusFilter);
+      
+      return categoryMatch && statusMatch;
+    });
+  };
+
   const fetchWalletData = useCallback(async () => {
     if (!isAuthenticated || !user || user.userType !== 'artist') return;
     try {
@@ -1215,15 +1257,30 @@ const ArtistDashboard = () => {
       try {
         const txRes = await transactionAPI.getMyTransactions();
         const txs = Array.isArray(txRes?.data) ? txRes.data : [];
-        console.log('tsx',txs)
+        console.log('Artist transactions:', txs);
+        
+        // Use the enhanced transaction data from the controller
         const mapped = txs.map((t) => ({
+          _id: t._id,
           id: t._id || t.id,
-          event: t.event || t.description || 'Transaction',
-          method: t.method || t.provider || 'Stripe',
+          eventName: t.eventName || 'Unknown Event',
+          category: t.category || 'Event',
+          artistName: t.artistName || 'Unknown Artist',
+          artistInfo: t.artistInfo,
+          amount: Number(t.amount || 0),
+          amountDisplay: t.amountDisplay || `£${Number(t.amount || 0).toFixed(0)}`,
+          transactionType: t.transactionType || 'payment',
+          statusText: t.statusText || 'Paid',
+          statusClass: t.statusClass || 'paid',
+          createdAt: t.createdAt ? new Date(t.createdAt) : new Date(),
+          paymentMethod: t.paymentMethod || 'Stripe',
+          invoiceAvailable: t.invoiceAvailable !== false,
+          // Legacy fields for backward compatibility
+          event: t.eventName || t.event || t.description || 'Transaction',
+          method: t.paymentMethod || t.method || t.provider || 'Stripe',
           type: t.transactionType || t.type || t.category || 'payment',
-          status: t.status || 'Paid',
-          date: t.createdAt ? new Date(t.createdAt) : new Date(),
-          amount: Number(t.amount || 0)
+          status: t.statusText || t.status || 'Paid',
+          date: t.createdAt ? new Date(t.createdAt) : new Date()
         }));
         setWalletTransactions(mapped);
       } catch (_) {
@@ -3591,37 +3648,210 @@ useEffect(() => {
                     </div>
                   </div> */}
 
-                  {/* Transactions Section - Moved from Wallet */}
-                  <div className="transactions-card" style={{ background: '#fff', border: '1px solid #eee', borderRadius: '12px', overflow: 'hidden', marginTop:'30px' }}>
-                    <div style={{ padding: '16px 20px', borderBottom: '1px solid #f0f0f0', background: '#fff' }}>
-                      <h3 className="section-title" style={{ margin: 0 }}>Transaction History</h3>
+                  {/* Transaction History */}
+                  <div className="transaction-history">
+                    <h3 className="section-title">Transaction History</h3>
+
+                    {/* Transaction Filters */}
+                    <div className="transaction-filters">
+                      <div className="category-filters">
+                        <button 
+                          className={`category-filter-btn ${transactionCategoryFilter === 'all' ? 'active' : ''}`}
+                          onClick={() => handleTransactionCategoryFilter('all')}
+                        >
+                          <div className="filter-indicator"></div>
+                          All
+                        </button>
+                        <button 
+                          className={`category-filter-btn ${transactionCategoryFilter === 'bridal' ? 'active' : ''}`}
+                          onClick={() => handleTransactionCategoryFilter('bridal')}
+                        >
+                          <div className="filter-indicator"></div>
+                          Bridal
+                        </button>
+                        <button 
+                          className={`category-filter-btn ${transactionCategoryFilter === 'festive' ? 'active' : ''}`}
+                          onClick={() => handleTransactionCategoryFilter('festive')}
+                        >
+                          <div className="filter-indicator"></div>
+                          <span>+</span>
+                          Festive
+                        </button>
+                        <button 
+                          className={`category-filter-btn ${transactionCategoryFilter === 'party' ? 'active' : ''}`}
+                          onClick={() => handleTransactionCategoryFilter('party')}
+                        >
+                          <div className="filter-indicator"></div>
+                          <span>△</span>
+                          Party
+                        </button>
+                        <button 
+                          className={`category-filter-btn ${transactionCategoryFilter === 'casual' ? 'active' : ''}`}
+                          onClick={() => handleTransactionCategoryFilter('casual')}
+                        >
+                          <div className="filter-indicator"></div>
+                          <span>+</span>
+                          Casual
+                        </button>
+                      </div>
+                      
+                      <div className="status-filter">
+                        <select 
+                          value={transactionStatusFilter} 
+                          onChange={(e) => handleTransactionStatusFilter(e.target.value)}
+                          className="status-dropdown"
+                        >
+                          <option value="all">All</option>
+                          <option value="half">Deposit Received</option>
+                          <option value="full">Payment Complete</option>
+                          <option value="refund">Refunded</option>
+                          <option value="admin-fee">Admin Fee</option>
+                        </select>
+                      </div>
                     </div>
-                    <div style={{ overflowX: 'auto' }}>
-                      <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
-                        <thead>
-                          <tr style={{ background: '#fbfbfb', color: '#555' }}>
-                            <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 600 }}>Event</th>
-                            <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 600 }}>Method</th>
-                            <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 600 }}>Status</th>
-                            <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 600 }}>Date</th>
-                            <th style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 600 }}>Amount</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {walletTransactions.map((tx) => (
-                            <tr key={tx.id} style={{ borderTop: '1px solid #f3f4f6' }}>
-                              <td style={{ padding: '16px' }}>{tx.event}</td>
-                              <td style={{ padding: '16px' }}>{tx.method}</td>
-                              <td style={{ padding: '16px' }}>
-                                <span className="status-badge" style={{ background: '#e7f9ef', color: '#1f7a3f', border: '1px solid #c9efd9', padding: '6px 10px', borderRadius: '999px', fontSize: '12px', fontWeight: 700, textTransform: 'capitalize' }}>{tx.type}</span>
-                              </td>
-                              <td style={{ padding: '16px' }}>{new Date(tx.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
-                              <td style={{ padding: '16px', textAlign: 'right', fontWeight: 700 }}>{formatGBP(tx.amount)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+
+                    {walletLoading ? (
+                      <div className="loading-state" style={{ padding: '2rem', textAlign: 'center' }}>
+                        <p>Loading transaction history...</p>
+                      </div>
+                    ) : walletTransactions.length === 0 ? (
+                      <div className="empty-state">
+                        <FaMoneyBillWave size={'30px'}/>
+                        <h3>No Transactions Yet</h3>
+                        <p>Your transaction history will appear here once you receive payments.</p>
+                      </div>
+                    ) : (
+                      <div className="transaction-table">
+                        <div className="table-header">
+                          <span className="col-date">Date</span>
+                          <span className="col-category">Category</span>
+                          <span className="col-client">Client</span>
+                          <span className="col-amount">Amount</span>
+                          <span className="col-status">Status</span>
+                          <span className="col-invoice">Invoice</span>
+                        </div>
+
+                        {getFilteredTransactions().map((transaction) => {
+                          const formatDate = (dateString) => {
+                            const date = new Date(dateString);
+                            return date.toLocaleDateString('en-GB', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric'
+                            });
+                          };
+
+                          const getStatus = (transaction) => {
+                            // Use the pre-formatted status from the controller
+                            return {
+                              text: transaction.statusText || 'Paid',
+                              class: transaction.statusClass || 'paid'
+                            };
+                          };
+
+                          const getCategoryFromEventName = (transaction) => {
+                            return transaction.category || 'Event';
+                          };
+
+                          const getClientName = (transaction) => {
+                            // For artists, the client would be the other party
+                            return transaction.artistInfo ? 'Client' : 'Unknown Client';
+                          };
+
+                          const getAmountDisplay = (transaction) => {
+                            return transaction.amountDisplay || `£${transaction.amount.toFixed(0)}`;
+                          };
+
+                          const status = getStatus(transaction);
+
+                          const handleDownloadReceipt = () => {
+                            // Create PDF content
+                            const pdfContent = `
+                              <html>
+                                <head>
+                                  <title>Receipt - ${transaction.eventName === 'Unknown Event' ? 'Event' : transaction.eventName}</title>
+                                  <style>
+                                    body { font-family: Arial, sans-serif; padding: 20px; }
+                                    .header { text-align: center; margin-bottom: 30px; }
+                                    .receipt-details { margin: 20px 0; }
+                                    .detail-row { display: flex; justify-content: space-between; margin: 10px 0; }
+                                    .total { border-top: 2px solid #333; padding-top: 10px; font-weight: bold; }
+                                  </style>
+                                </head>
+                                <body>
+                                  <div class="header">
+                                    <h1>Payment Receipt</h1>
+                                    <p>Mehndi Booking Platform</p>
+                                  </div>
+                                  <div class="receipt-details">
+                                    <div class="detail-row">
+                                      <span>Event:</span>
+                                      <span>${transaction.eventName === 'Unknown Event' ? 'Event' : transaction.eventName}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                      <span>Transaction Type:</span>
+                                      <span>${transaction.transactionType}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                      <span>Date:</span>
+                                      <span>${formatDate(transaction.createdAt)}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                      <span>Amount:</span>
+                                      <span>£${transaction.amount.toFixed(2)}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                      <span>Payment Method:</span>
+                                      <span>Stripe</span>
+                                    </div>
+                                    <div class="detail-row">
+                                      <span>Status:</span>
+                                      <span>${status.text}</span>
+                                    </div>
+                                    <div class="detail-row total">
+                                      <span>Total Received:</span>
+                                      <span>£${transaction.amount.toFixed(2)}</span>
+                                    </div>
+                                  </div>
+                                </body>
+                              </html>
+                            `;
+
+                            // Create blob and download
+                            const blob = new Blob([pdfContent], { type: 'text/html' });
+                            const url = window.URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = `receipt-${transaction.eventName ? transaction.eventName.replace(/\s+/g, '-') : 'Event'.replace(/\s+/g, '-')}-${formatDate(transaction.createdAt).replace(/\s+/g, '-')}.html`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            window.URL.revokeObjectURL(url);
+                          };
+
+                          return (
+                            <div key={transaction._id} className="table-row">
+                              <span className="col-date">{formatDate(transaction.createdAt)}</span>
+                              <span className="col-category">{getCategoryFromEventName(transaction)}</span>
+                              <span className="col-client">{getClientName(transaction)}</span>
+                              <span className="col-amount">{getAmountDisplay(transaction)}</span>
+                              <span className={`col-status ${status.class}`}>
+                                {status.text}
+                              </span>
+                              <span className="col-invoice">
+                                <button className="invoice-btn" onClick={handleDownloadReceipt} title="View Invoice">
+                                  <span>View Invoice</span>
+                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 15L7 10H10V3H14V10H17L12 15Z" fill="currentColor" />
+                                    <path d="M20 18H4V20H20V18Z" fill="currentColor" />
+                                  </svg>
+                                </button>
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
 
                   {/* Withdraw Modal - Moved from Wallet */}
@@ -4342,20 +4572,59 @@ useEffect(() => {
 
             {applyOpen && (
               <div className="modal-overlay" onClick={closeApplyModal}>
-                <div className="application-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="application-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '900px', maxHeight: '90vh', width: '95%' }}>
                   <div className="modal-header">
                     <h3 className="modal-title">Apply to Booking</h3>
                     <button className="modal-close" onClick={closeApplyModal}>×</button>
                   </div>
                   
-                  <div className="modal-body">
-                    <div className="application-form">
-                      {/* Budget & Duration Section */}
-                      <div className="form-section">
-                        <h4 className="section-title">Budget & Timeline</h4>
-                        <div className="form-row">
+                  <div className="modal-body" style={{ padding: '0' }}>
+                    {/* Booking Card at the top */}
+                    {applyBookingData && (
+                      <div className="booking-card-modal" style={{
+                        background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+                        border: '1px solid #dee2e6',
+                        borderRadius: '12px',
+                        margin: '20px',
+                        padding: '20px',
+                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                        transition: 'all 0.3s ease'
+                      }}>
+                        <div className="booking-header" style={{ marginBottom: '0', textAlign: 'left', flexDirection:'column' }}>
+                          <h4 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: '600', color: '#2c3e50', textAlign: 'left' }}>
+                            {applyBookingData.title}
+                          </h4>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#6c757d', justifyContent: 'flex-start' }}>
+                              <span style={{ fontSize: '16px' }}>💰</span>
+                              <span>Client Budget: {applyBookingData.budget}</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#6c757d', justifyContent: 'flex-start' }}>
+                              <span style={{ fontSize: '16px' }}>📍</span>
+                              <span>Location: {applyBookingData.location || applyBookingData.city || 'Not specified'}</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#6c757d', justifyContent: 'flex-start' }}>
+                              <span style={{ fontSize: '16px' }}>📅</span>
+                              <span>Event Date: {new Date(applyBookingData.eventDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="application-form" style={{ padding: '0 20px 20px 20px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        {/* Row 1: Budget & Timeline */}
+                        <div className="form-card" style={{
+                          background: '#f8f9fa',
+                          border: '1px solid #e9ecef',
+                          borderRadius: '12px',
+                          padding: '20px'
+                        }}>
+                          <h4 className="section-title" style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px', color: '#2c3e50' }}>Budget & Timeline</h4>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                           <div className="form-group">
-                            <label className="form-label">Your Proposed Budget (£) *</label>
+                              <label className="form-label" style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px', color: '#495057' }}>Your Proposed Budget (£) *</label>
                             <input
                               type="number"
                               className={`form-input ${formErrors.proposedBudget ? 'error' : ''}`}
@@ -4365,12 +4634,21 @@ useEffect(() => {
                               disabled={applyLoading}
                               min="0"
                               step="0.01"
-                            />
-                            {formErrors.proposedBudget && <span className="error-text">{formErrors.proposedBudget}</span>}
+                                style={{
+                                  width: '100%',
+                                  padding: '12px',
+                                  border: '1px solid #ced4da',
+                                  borderRadius: '8px',
+                                  fontSize: '14px',
+                                  outline: 'none',
+                                  transition: 'border-color 0.2s ease'
+                                }}
+                              />
+                              {formErrors.proposedBudget && <span className="error-text" style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px', display: 'block' }}>{formErrors.proposedBudget}</span>}
                           </div>
                           <div className="form-group">
-                            <label className="form-label">Estimated Duration *</label>
-                            <div className="duration-input-group">
+                              <label className="form-label" style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px', color: '#495057' }}>Estimated Duration *</label>
+                              <div className="duration-input-group" style={{ display: 'flex', gap: '8px' }}>
                               <input
                                 type="number"
                                 className={`form-input ${formErrors.estimatedDuration ? 'error' : ''}`}
@@ -4380,170 +4658,133 @@ useEffect(() => {
                                 disabled={applyLoading}
                                 min="0"
                                 step="0.5"
+                                  style={{
+                                    flex: '2',
+                                    padding: '12px',
+                                    border: '1px solid #ced4da',
+                                    borderRadius: '8px',
+                                    fontSize: '14px',
+                                    outline: 'none',
+                                    transition: 'border-color 0.2s ease',
+                                    minWidth: '120px'
+                                  }}
                               />
                               <select
                                 className="form-input"
                                 value={applicationForm.estimatedDuration.unit}
                                 onChange={(e) => handleFormChange('estimatedDuration.unit', e.target.value)}
                                 disabled={applyLoading}
+                                  style={{
+                                    flex: '1',
+                                    padding: '12px',
+                                    border: '1px solid #ced4da',
+                                    borderRadius: '8px',
+                                    fontSize: '14px',
+                                    outline: 'none',
+                                    backgroundColor: 'white',
+                                    minWidth: '80px'
+                                  }}
                               >
                                 <option value="hours">Hours</option>
                                 <option value="days">Days</option>
                               </select>
                             </div>
-                            {formErrors.estimatedDuration && <span className="error-text">{formErrors.estimatedDuration}</span>}
+                              {formErrors.estimatedDuration && <span className="error-text" style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px', display: 'block' }}>{formErrors.estimatedDuration}</span>}
                           </div>
                         </div>
                       </div>
 
-                      {/* Experience Section */}
-                      <div className="form-section">
-                        <h4 className="section-title">Experience & Qualifications</h4>
+                        {/* Row 2: Your Proposal */}
+                        <div className="form-card" style={{
+                          background: '#f8f9fa',
+                          border: '1px solid #e9ecef',
+                          borderRadius: '12px',
+                          padding: '20px'
+                        }}>
+                          <h4 className="section-title" style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px', color: '#2c3e50' }}>Your Proposal</h4>
                         <div className="form-group">
-                          <label className="form-label">Years of Experience *</label>
-                          <input
-                            type="number"
-                            className={`form-input ${formErrors.yearsOfExperience ? 'error' : ''}`}
-                            placeholder="5"
-                            value={applicationForm.experience.yearsOfExperience}
-                            onChange={(e) => handleFormChange('experience.yearsOfExperience', e.target.value)}
-                            disabled={applyLoading}
-                            min="0"
-                          />
-                          {formErrors.yearsOfExperience && <span className="error-text">{formErrors.yearsOfExperience}</span>}
-                        </div>
-                        <div className="form-group">
-                          <label className="form-label">Relevant Experience *</label>
-                          <textarea
-                            className={`form-textarea ${formErrors.relevantExperience ? 'error' : ''}`}
-                            placeholder="Describe your relevant mehndi experience, specialties, and notable work..."
-                            rows="3"
-                            value={applicationForm.experience.relevantExperience}
-                            onChange={(e) => handleFormChange('experience.relevantExperience', e.target.value)}
-                            disabled={applyLoading}
-                          />
-                          {formErrors.relevantExperience && <span className="error-text">{formErrors.relevantExperience}</span>}
-                        </div>
-                        <div className="form-group">
-                          <label className="form-label">Portfolio Highlights</label>
-                          <textarea
-                            className="form-textarea"
-                            placeholder="Mention any special techniques, awards, or notable clients..."
-                            rows="2"
-                            value={applicationForm.experience.portfolioHighlights}
-                            onChange={(e) => handleFormChange('experience.portfolioHighlights', e.target.value)}
-                            disabled={applyLoading}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Availability Section */}
-                      <div className="form-section">
-                        <h4 className="section-title">Availability & Location</h4>
-                        <div className="checkbox-group">
-                          <label className="checkbox-label">
-                            <input
-                              type="checkbox"
-                              checked={applicationForm.availability.isAvailableOnDate}
-                              onChange={(e) => handleFormChange('availability.isAvailableOnDate', e.target.checked)}
-                              disabled={applyLoading}
-                            />
-                            <span>I am available on the requested date</span>
-                          </label>
-                          <label className="checkbox-label">
-                            <input
-                              type="checkbox"
-                              checked={applicationForm.availability.canTravelToLocation}
-                              onChange={(e) => handleFormChange('availability.canTravelToLocation', e.target.checked)}
-                              disabled={applyLoading}
-                            />
-                            <span>I can travel to the client's location</span>
-                          </label>
-                        </div>
-                        {applicationForm.availability.canTravelToLocation && (
-                          <div className="form-group">
-                            <label className="form-label">Travel Distance (miles)</label>
-                            <input
-                              type="number"
-                              className="form-input"
-                              placeholder="10"
-                              value={applicationForm.availability.travelDistance}
-                              onChange={(e) => handleFormChange('availability.travelDistance', e.target.value)}
-                              disabled={applyLoading}
-                              min="0"
-                            />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Proposal Section */}
-                      <div className="form-section">
-                        <h4 className="section-title">Your Proposal</h4>
-                        <div className="form-group">
-                          <label className="form-label">Proposal Message *</label>
+                            <label className="form-label" style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px', color: '#495057' }}>Proposal Message *</label>
                           <textarea
                             className={`form-textarea ${formErrors.proposalMessage ? 'error' : ''}`}
-                            placeholder="Write a compelling proposal explaining why you're the best fit for this booking. Include your approach, what makes you unique, and how you'll make this event special..."
-                            rows="4"
+                            placeholder="Write a message explaining why you're the best fit for this booking. Include your approach and what makes you unique..."
+                              rows="6"
                             value={applicationForm.proposal.message}
                             onChange={(e) => handleFormChange('proposal.message', e.target.value)}
                             disabled={applyLoading}
+                              style={{
+                                width: '100%',
+                                padding: '12px',
+                                border: '1px solid #ced4da',
+                                borderRadius: '8px',
+                                fontSize: '14px',
+                                outline: 'none',
+                                transition: 'border-color 0.2s ease',
+                                resize: 'vertical',
+                                fontFamily: 'inherit',
+                                lineHeight: '1.4'
+                              }}
                           />
                           <small style={{
-                            color: applicationForm.proposal.message.length < 50 ? '#e74c3c' : '#27ae60',
-                            fontSize: '12px'
+                              color: applicationForm.proposal.message.length < 20 ? '#dc3545' : '#28a745',
+                              fontSize: '12px',
+                              marginTop: '4px',
+                              display: 'block'
                           }}>
-                            {applicationForm.proposal.message.length}/50 characters minimum
+                            {applicationForm.proposal.message.length}/20 characters minimum
                           </small>
-                          {formErrors.proposalMessage && <span className="error-text">{formErrors.proposalMessage}</span>}
-                        </div>
-                        <div className="form-group">
-                          <label className="form-label">Why are you interested in this booking?</label>
-                          <textarea
-                            className="form-textarea"
-                            placeholder="Share what excites you about this particular event..."
-                            rows="2"
-                            value={applicationForm.proposal.whyInterested}
-                            onChange={(e) => handleFormChange('proposal.whyInterested', e.target.value)}
-                            disabled={applyLoading}
-                          />
-                        </div>
-                        <div className="form-group">
-                          <label className="form-label">Additional Notes</label>
-                          <textarea
-                            className="form-textarea"
-                            placeholder="Any additional information, special requests, or questions..."
-                            rows="2"
-                            value={applicationForm.proposal.additionalNotes}
-                            onChange={(e) => handleFormChange('proposal.additionalNotes', e.target.value)}
-                            disabled={applyLoading}
-                          />
+                            {formErrors.proposalMessage && <span className="error-text" style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px', display: 'block' }}>{formErrors.proposalMessage}</span>}
                         </div>
                       </div>
 
-                      {/* Terms Section */}
-                      <div className="form-section">
-                        <h4 className="section-title">Terms & Conditions</h4>
+                        {/* Row 3: Terms & Conditions */}
+                        <div className="form-card" style={{
+                          background: '#f8f9fa',
+                          border: '1px solid #e9ecef',
+                          borderRadius: '12px',
+                          padding: '20px'
+                        }}>
+                          <h4 className="section-title" style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px', color: '#2c3e50' }}>Terms & Conditions</h4>
                         <div className="checkbox-group">
-                          <label className="checkbox-label">
+                            <label className="checkbox-label" style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', fontSize: '14px', lineHeight: '1.4' }}>
                             <input
                               type="checkbox"
                               checked={applicationForm.terms.agreedToTerms}
                               onChange={(e) => handleFormChange('terms.agreedToTerms', e.target.checked)}
                               disabled={applyLoading}
+                                style={{ marginTop: '2px' }}
                             />
-                            <span>I understand that I cannot withdraw my application after the booking application is accepted.</span>
+                              <span style={{ color: '#495057' }}>I understand that I cannot withdraw my application after the booking application is accepted.</span>
                           </label>
+                            {formErrors.agreedToTerms && <span className="error-text" style={{ color: '#dc3545', fontSize: '12px', marginTop: '8px', display: 'block' }}>{formErrors.agreedToTerms}</span>}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="modal-footer">
+                  <div className="modal-footer" style={{
+                    borderTop: '1px solid #e9ecef',
+                    padding: '20px',
+                    backgroundColor: '#f8f9fa',
+                    display: 'flex',
+                    gap: '12px',
+                    justifyContent: 'flex-end'
+                  }}>
                     <button
                       className="cancel-btn"
                       onClick={closeApplyModal}
                       disabled={applyLoading}
+                      style={{
+                        padding: '12px 24px',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: '#6c757d',
+                        backgroundColor: 'white',
+                        border: '1px solid #dee2e6',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
                     >
                       Cancel
                     </button>
@@ -4551,6 +4792,17 @@ useEffect(() => {
                       className="submit-btn"
                       onClick={confirmApply}
                       disabled={applyLoading}
+                      style={{
+                        padding: '12px 24px',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: 'white',
+                        backgroundColor: applyLoading ? '#6c757d' : '#d4a574',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: applyLoading ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
                     >
                       {applyLoading ? 'Submitting Application...' : 'Submit Application'}
                     </button>
