@@ -7,13 +7,24 @@ const CancelAcceptedModal = ({
   isOpen,
   onClose,
   onConfirm,
+  showReasonDropdown = true, // For artist side (true) vs client side (false)
 }) => {
-  const [reason, setReason] = useState('');
+  const [reason, setReason] = useState('Other');
+  const [description, setDescription] = useState('');
   const [error, setError] = useState('');
+
+  const CANCEL_REASONS = [
+    'Scheduling Conflict',
+    'Personal Emergency',
+    'Travel / Location Issue',
+    'Health Issues',
+    'Other',
+  ];
 
   useEffect(() => {
     if (isOpen) {
-      setReason('');
+      setReason('Other');
+      setDescription('');
       setError('');
     }
   }, [isOpen]);
@@ -21,13 +32,34 @@ const CancelAcceptedModal = ({
   if (!isOpen) return null;
 
   const handleConfirm = () => {
-    if (!reason.trim()) {
-      setError('Please provide a cancellation reason.');
+    // For client side (no reason dropdown), only validate description
+    if (!showReasonDropdown) {
+      if (!description.trim()) {
+        setError('Please provide a cancellation reason.');
+        return;
+      }
+      setError('');
+      if (typeof onConfirm === 'function') {
+        onConfirm({ description: description.trim() });
+      }
+      return;
+    }
+
+    // For artist side (with reason dropdown)
+    if (!reason) {
+      setError('Please select a cancellation reason.');
+      return;
+    }
+    if (reason === 'Other' && !description.trim()) {
+      setError('Please provide additional details for "Other".');
       return;
     }
     setError('');
     if (typeof onConfirm === 'function') {
-      onConfirm({ reason: reason.trim() });
+      onConfirm({ 
+        reason: reason,
+        description: description.trim() || null
+      });
     }
   };
 
@@ -100,44 +132,105 @@ const CancelAcceptedModal = ({
             color: '#666',
             lineHeight: '1.6'
           }}>
-            Please confirm you'd like to cancel this booking. A message will be sent to the client automatically.
+            This action <span style={{ color: '#dc2626', fontWeight: 700 }}>cannot be undone</span>. {showReasonDropdown ? 'The client' : 'The artist'} will be notified immediately.
           </p>
 
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{
-              display: 'block',
-              fontSize: '14px',
-              fontWeight: '600',
-              color: '#333',
-              marginBottom: '8px'
-            }}>
-              Reason for cancellation (required):
-            </label>
-            <textarea
-              rows="4"
-              placeholder="e.g. I'm unwell, family emergency, etc."
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '12px',
+          {showReasonDropdown ? (
+            <>
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{
+                  display: 'block',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  color: '#333',
+                  marginBottom: '8px'
+                }}>
+                  Reason for cancellation
+                </label>
+                <select 
+                  value={reason} 
+                  onChange={(e) => setReason(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    fontSize: '14px',
+                    border: '1px solid #ddd',
+                    borderRadius: '6px',
+                    backgroundColor: 'white',
+                    color: '#333',
+                    cursor: 'pointer',
+                    outline: 'none'
+                  }}
+                >
+                  {CANCEL_REASONS.map((r) => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+              </div>
+
+              {reason === 'Other' && (
+                <div style={{ marginBottom: '12px' }}>
+                  <textarea
+                    rows="4"
+                    placeholder="Please provide additional details..."
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      fontSize: '14px',
+                      border: '1px solid #ddd',
+                      borderRadius: '6px',
+                      backgroundColor: 'white',
+                      color: '#333',
+                      resize: 'vertical',
+                      fontFamily: 'inherit',
+                      outline: 'none'
+                    }}
+                  />
+                </div>
+              )}
+            </>
+          ) : (
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{
+                display: 'block',
                 fontSize: '14px',
-                border: '1px solid #ddd',
-                borderRadius: '6px',
-                backgroundColor: 'white',
+                fontWeight: '600',
                 color: '#333',
-                resize: 'vertical',
-                fontFamily: 'inherit',
-                outline: 'none'
-              }}
-            />
-          </div>
+                marginBottom: '8px'
+              }}>
+                Reason for cancellation (required):
+              </label>
+              <textarea
+                rows="4"
+                placeholder="e.g. I'm unwell, family emergency, scheduling conflict, etc."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  fontSize: '14px',
+                  border: '1px solid #ddd',
+                  borderRadius: '6px',
+                  backgroundColor: 'white',
+                  color: '#333',
+                  resize: 'vertical',
+                  fontFamily: 'inherit',
+                  outline: 'none'
+                }}
+              />
+            </div>
+          )}
 
           {error && (
             <div style={{ 
               fontSize: '13px', 
               color: '#dc2626',
-              marginBottom: '16px'
+              marginBottom: '16px',
+              padding: '10px',
+              backgroundColor: '#fee2e2',
+              borderRadius: '6px'
             }}>
               {error}
             </div>
@@ -165,7 +258,7 @@ const CancelAcceptedModal = ({
               onMouseOver={(e) => e.target.style.backgroundColor = '#e5e5e5'}
               onMouseOut={(e) => e.target.style.backgroundColor = '#f5f5f5'}
             >
-              Go Back
+              Keep Booking
             </button>
             <button 
               onClick={handleConfirm}

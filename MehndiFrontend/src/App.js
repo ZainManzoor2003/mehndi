@@ -41,6 +41,7 @@ import PaymentCancel from './components/PaymentCancel';
 import PaymentRescheduleBooking from './components/PaymentRescheduleBooking';
 import EmailVerification from './components/EmailVerification';
 import AboutUsPage from './components/AboutUsPage';
+import EarnAsArtist from './components/EarnAsArtist';
 
 // Main Landing Page Component
 const LandingPage = () => (
@@ -95,6 +96,11 @@ function App() {
             <Route path="/about-us" element={
               <PublicWrapper>
                 <AboutUsPage />
+              </PublicWrapper>
+            } />
+            <Route path="/earn-as-artist" element={
+              <PublicWrapper>
+                <EarnAsArtist />
               </PublicWrapper>
             } />
             <Route path="/booking" element={

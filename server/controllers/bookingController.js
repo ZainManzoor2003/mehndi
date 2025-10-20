@@ -409,7 +409,7 @@ const updateBooking = async (req, res) => {
     }
 
     // Prevent updates when completed or cancelled
-    if (['completed', 'cancelled'].includes(booking.status)) {
+    if (['completed', 'cancelled','in_progress'].includes(booking.status)) {
       return res.status(400).json({ success: false, message: `Cannot edit a ${booking.status} booking` });
     }
 
@@ -442,6 +442,7 @@ const updateBooking = async (req, res) => {
     // Set status to pending when booking is updated
     booking.status = 'pending';
     booking.assignedArtist = [];
+    booking.appliedArtists = [];
 
     await booking.save();
 
@@ -574,10 +575,9 @@ const completeBooking = async (req, res) => {
       artistWallet.walletAmount += amountPaid;
       await artistWallet.save();
 
-      // Record transaction of type 'full' with admin as sender
-      const adminUser = await User.findOne({ userType: 'admin' });
+      // Record transaction of type 'full' with logged-in client as sender
       const tx = new Transaction({
-        sender: adminUser && adminUser._id,
+        sender: req.user.id,
         receiver: assignedArtistId,
         bookingId: booking._id,
         amount: amountPaid,
@@ -651,18 +651,11 @@ const cancelBooking = async (req, res) => {
       });
     }
 
-    if (!cancellationReason) {
+    // For client cancellations, only cancellationDescription is required
+    if (!cancellationDescription || !cancellationDescription.trim()) {
       return res.status(400).json({
         success: false,
-        message: 'Cancellation reason is required'
-      });
-    }
-
-    // If reason is 'Other', description is required
-    if (cancellationReason === 'Other' && (!cancellationDescription || !cancellationDescription.trim())) {
-      return res.status(400).json({
-        success: false,
-        message: 'Cancellation description is required when reason is "Other"'
+        message: 'Cancellation description is required'
       });
     }
 
@@ -700,8 +693,8 @@ const cancelBooking = async (req, res) => {
 
     // Update booking with cancellation details
     booking.status = 'cancelled';
-    booking.cancellationReason = cancellationReason;
-    booking.cancellationDescription = cancellationDescription || null;
+    booking.cancellationReason = cancellationReason || null; // Optional for client
+    booking.cancellationDescription = cancellationDescription;
     booking.updatedAt = new Date();
 
     await booking.save();
@@ -1150,6 +1143,13 @@ const processRefund = async (req, res) => {
       });
     }
 
+    // Check if booking status is confirmed
+    if (booking.status !== 'confirmed') {
+      return res.status(400).json({
+        success: false,
+        message: 'Refund cannot be proceesed for this booking'
+      });
+    }
 
     // Add refund amount to user's wallet
     let userWallet = await Wallet.findOne({ userId: userId });
@@ -1161,8 +1161,10 @@ const processRefund = async (req, res) => {
     userWallet.walletAmount += refundAmount;
     await userWallet.save();
 
+    
+
     // Reset booking status and payment fields
-    booking.status = 'pending';
+    booking.status = 'cancelled';
     booking.paymentPaid = '0';
     booking.remainingPayment = '0';
     booking.isPaid = 'none';
@@ -1177,6 +1179,17 @@ const processRefund = async (req, res) => {
       refundAmount: refundAmount,
       newWalletBalance: userWallet.walletAmount
     });
+
+    // Create refund transaction record
+      const refundTransaction = new Transaction({
+        sender: artistId,
+        receiver: userId,
+        bookingId: bookingId,
+        amount: refundAmount,
+        transactionType: 'refund'
+      });
+      await refundTransaction.save();
+      console.log('Refund transaction created:', refundTransaction);
 
     return res.status(200).json({
       success: true,

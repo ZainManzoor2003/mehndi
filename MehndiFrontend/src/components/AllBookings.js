@@ -5,6 +5,7 @@ import Header from './Header';
 import DashboardSidebar from './DashboardSidebar';
 import apiService from '../services/api';
 import { FaCalendarAlt, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import CancelAcceptedModal from './modals/CancelAcceptedModal';
 
 const { bookingsAPI } = apiService;
 
@@ -130,9 +131,6 @@ const AllBookings = () => {
   
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelTarget, setCancelTarget] = useState(null);
-  const [cancelReason, setCancelReason] = useState('Other');
-  const [cancelDetails, setCancelDetails] = useState('');
-  const [cancelError, setCancelError] = useState('');
 
   // Message modal state
   const [messageModalOpen, setMessageModalOpen] = useState(false);
@@ -198,27 +196,14 @@ const AllBookings = () => {
     setVideoPreview('');
   };
 
-  const CANCEL_REASONS = [
-    'Scheduling Conflict',
-    'Personal Emergency',
-    'Travel / Location Issue',
-    'Other',
-  ];
-
   const openCancelModal = (booking) => {
     setCancelTarget(booking);
-    setCancelReason('Other');
-    setCancelDetails('');
-    setCancelError('');
     setCancelOpen(true);
   };
 
   const closeCancelModal = () => {
     setCancelOpen(false);
     setCancelTarget(null);
-    setCancelReason('Other');
-    setCancelDetails('');
-    setCancelError('');
   };
 
   const openMessageModal = (message) => {
@@ -231,23 +216,13 @@ const AllBookings = () => {
     setMessageModalContent('');
   };
 
-  const handleConfirmCancel = async () => {
-    if (!cancelReason) {
-      setCancelError('Please provide a cancellation reason.');
-      return;
-    }
-    if (cancelReason === 'Other' && !cancelDetails.trim()) {
-      setCancelError('Please provide additional details for "Other".');
-      return;
-    }
-
+  const handleConfirmCancel = async ({ description }) => {
     try {
-      // Cancel booking with reason and details
+      // Cancel booking with description only (client side)
       await bookingsAPI.cancelBooking({
         bookingId: cancelTarget._id,
-        artistId:cancelTarget.assignedArtist[0]._id,
-        cancellationReason: cancelReason,
-        cancellationDescription: cancelDetails
+        artistId: cancelTarget.assignedArtist[0]._id,
+        cancellationDescription: description
       });
       
       // Refresh bookings
@@ -255,7 +230,7 @@ const AllBookings = () => {
       setAllBookings(refreshed.data || []);
       closeCancelModal();
     } catch (err) {
-      setCancelError(err.message || 'Failed to cancel booking');
+      alert(err.message || 'Failed to cancel booking');
     }
   };
 
@@ -1449,179 +1424,12 @@ const AllBookings = () => {
       )}
 
       {/* Cancel Booking Modal */}
-      {cancelOpen && (
-        <div className="modal-overlay" onClick={closeCancelModal}>
-          <div className="confirmation-modal" onClick={(e) => e.stopPropagation()} style={{
-            backgroundColor: 'white',
-            borderRadius: '12px',
-            maxWidth: '560px',
-            width: '90%',
-            padding: '0',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
-          }}>
-            {/* Header */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '24px 24px 20px 24px',
-              borderBottom: 'none'
-            }}>
-              <h3 style={{
-                margin: 0,
-                fontSize: '20px',
-                fontWeight: '600',
-                color: '#333'
-              }}>
-                Confirm Cancellation
-              </h3>
-              <button 
-                onClick={closeCancelModal}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '28px',
-                  color: '#999',
-                  cursor: 'pointer',
-                  padding: '0',
-                  width: '32px',
-                  height: '32px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  lineHeight: '1'
-                }}
-              >
-                ×
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div style={{ padding: '0 24px 24px 24px' }}>
-              <p style={{
-                margin: '0 0 20px 0',
-                fontSize: '14px',
-                color: '#666',
-                lineHeight: '1.6'
-              }}>
-                This action <span style={{ color: '#dc2626', fontWeight: 700 }}>cannot be undone</span>. The artist will be notified immediately.
-              </p>
-
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{
-                  display: 'block',
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  color: '#333',
-                  marginBottom: '8px'
-                }}>
-                  Reason for cancellation
-                </label>
-                <select 
-                  value={cancelReason} 
-                  onChange={(e) => setCancelReason(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    fontSize: '14px',
-                    border: '1px solid #ddd',
-                    borderRadius: '6px',
-                    backgroundColor: 'white',
-                    color: '#333',
-                    cursor: 'pointer',
-                    outline: 'none'
-                  }}
-                >
-                  {CANCEL_REASONS.map((r) => (
-                    <option key={r} value={r}>{r}</option>
-                  ))}
-                </select>
-              </div>
-
-              {cancelReason === 'Other' && (
-                <div style={{ marginBottom: '12px' }}>
-                  <textarea
-                    rows="4"
-                    placeholder="Additional details..."
-                    value={cancelDetails}
-                    onChange={(e) => setCancelDetails(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      fontSize: '14px',
-                      border: '1px solid #ddd',
-                      borderRadius: '6px',
-                      backgroundColor: 'white',
-                      color: '#333',
-                      resize: 'vertical',
-                      fontFamily: 'inherit',
-                      outline: 'none'
-                    }}
-                  />
-                </div>
-              )}
-
-              {cancelError && (
-                <div style={{ 
-                  fontSize: '13px', 
-                  color: '#dc2626',
-                  marginBottom: '16px',
-                  padding: '10px',
-                  backgroundColor: '#fee2e2',
-                  borderRadius: '6px'
-                }}>
-                  {cancelError}
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div style={{
-                display: 'flex',
-                gap: '12px',
-                marginTop: '24px',
-                justifyContent: 'flex-end',
-              }}>
-                <button 
-                  onClick={closeCancelModal}
-                  style={{
-                    padding: '12px 24px',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    color: '#666',
-                    backgroundColor: '#f5f5f5',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseOver={(e) => e.target.style.backgroundColor = '#e5e5e5'}
-                  onMouseOut={(e) => e.target.style.backgroundColor = '#f5f5f5'}
-                >
-                  Keep Booking
-                </button>
-                <button 
-                  onClick={handleConfirmCancel}
-                  style={{
-                    padding: '12px 24px',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    color: 'white',
-                    backgroundColor: '#dc2626',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseOver={(e) => e.target.style.backgroundColor = '#b91c1c'}
-                  onMouseOut={(e) => e.target.style.backgroundColor = '#dc2626'}
-                >
-                  Confirm Cancellation
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <CancelAcceptedModal
+        isOpen={cancelOpen}
+        onClose={closeCancelModal}
+        onConfirm={handleConfirmCancel}
+        showReasonDropdown={false}
+      />
 
       {/* Message Modal */}
       {messageModalOpen && (

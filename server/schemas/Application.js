@@ -17,6 +17,19 @@ const BookingRefSchema = new mongoose.Schema(
       default: 'applied',
       trim: true,
     },
+    // Cancellation details (for artist cancellations)
+    cancellationReason: {
+      type: String,
+      trim: true,
+      maxlength: 1000,
+      default: null
+    },
+    cancellationDescription: {
+      type: String,
+      trim: true,
+      maxlength: 1000,
+      default: null
+    },
     // Media attachments
     images: {
       type: [String],
@@ -69,35 +82,35 @@ const BookingRefSchema = new mongoose.Schema(
       availability: {
         isAvailableOnDate: {
           type: Boolean,
-          required: true,
           default: true
         },
         canTravelToLocation: {
           type: Boolean,
-          required: true,
           default: true
         },
         travelDistance: {
           type: Number,
-          min: 0
+          min: 0,
+          default: 0
         }
       },
       experience: {
         relevantExperience: {
           type: String,
-          required: true,
           trim: true,
-          maxlength: 1000
+          maxlength: 1000,
+          default: 'N/A'
         },
         yearsOfExperience: {
           type: Number,
-          required: true,
-          min: 0
+          min: 0,
+          default: 0
         },
         portfolioHighlights: {
           type: String,
           trim: true,
-          maxlength: 500
+          maxlength: 500,
+          default: ''
         }
       },
       proposal: {
@@ -110,12 +123,14 @@ const BookingRefSchema = new mongoose.Schema(
         whyInterested: {
           type: String,
           trim: true,
-          maxlength: 1000
+          maxlength: 1000,
+          default: ''
         },
         additionalNotes: {
           type: String,
           trim: true,
-          maxlength: 1000
+          maxlength: 1000,
+          default: ''
         }
       },
       terms: {

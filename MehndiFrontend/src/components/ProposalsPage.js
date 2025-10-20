@@ -552,7 +552,7 @@ const ProposalsPage = () => {
                   </div>
 
                    <div className="proposals-table">
-                    <div className="table-header">
+                    <div className="table-header" style={{gridTemplateColumns:' 1fr 1fr 1fr 1fr'}}>
                       <span className="col-artist">Artist</span>
                       <span className="col-price">Price/Time</span>
                       <span className="col-status">Status</span>
@@ -560,7 +560,7 @@ const ProposalsPage = () => {
                     </div>
 
                     {appliedOnly.map(app => (
-                      <div key={app.applicationId} className="table-row">
+                      <div key={app.applicationId} className="table-row" style={{gridTemplateColumns:' 1fr 1fr 1fr 1fr'}}>
                         <div className="col-artist">
                           <div className="artist-info">
                             <div className="artist-avatar">

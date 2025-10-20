@@ -300,37 +300,37 @@ const Header = () => {
                   <span className="nav__overlay-text">Home</span>
                 </a>
               </li>
-              {/* Request a Mehndi Artist - temp -> home */}
+              {/* Request a Mehndi Artist - link to booking page */}
               <li className="nav__overlay-item">
-                <a href="#home" className="nav__overlay-link" onClick={(e) => handleNavClick(e, '#home')}>
+                <Link to="/booking" className="nav__overlay-link" onClick={closeMenu}>
                   <span className="nav__overlay-number">
                     <img src="/images/2.png" alt="02" width="64" height="64" />
                   </span>
                   <span className="nav__overlay-text">Request a Mehndi Artist</span>
-                </a>
+                </Link>
               </li>
 
               {/* Section heading: Artists */}
               <li className="nav__overlay-item" style={{opacity: 1, letterSpacing: '.08em', textTransform: 'uppercase', marginTop: '1.25rem', fontWeight: 800, color: '#2b2118', width: '100%'}}>
                 <span className="nav__overlay-number"><strong>Artists</strong></span>
               </li>
-              {/* Browse Requests - temp -> home */}
+              {/* Browse Requests - link to artist dashboard applications */}
               <li className="nav__overlay-item">
-                <a href="#home" className="nav__overlay-link" onClick={(e) => handleNavClick(e, '#home')}>
+                <Link to="/artist-dashboard/applications" className="nav__overlay-link" onClick={closeMenu}>
                   <span className="nav__overlay-number">
                     <img src="/images/3.png" alt="03" width="64" height="64" />
                   </span>
                   <span className="nav__overlay-text">Browse Requests</span>
-                </a>
+                </Link>
               </li>
-              {/* Earn as an Artist - temp -> home */}
+              {/* Earn as an Artist - link to earn-as-artist page */}
               <li className="nav__overlay-item">
-                <a href="#home" className="nav__overlay-link" onClick={(e) => handleNavClick(e, '#home')}>
+                <Link to="/earn-as-artist" className="nav__overlay-link" onClick={closeMenu}>
                   <span className="nav__overlay-number">
                     <img src="/images/4.png" alt="04" width="64" height="64" />
                   </span>
                   <span className="nav__overlay-text">Earn as an Artist</span>
-                </a>
+                </Link>
               </li>
 
               {/* Section heading: Discover */}
