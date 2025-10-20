@@ -50,6 +50,7 @@ router.get('/api/blogs/:id', getBlogById);
 // Reviews
 router.post('/api/reviews', protect, reviewController.createReview);
 router.get('/api/reviews/booking/:bookingId', protect, reviewController.getMyReviewForBooking);
+router.get('/api/reviews/artist/:artistId', reviewController.getArtistReviews);
 router.put('/api/bookings/:id', protect, updateBooking);
 router.delete('/api/bookings/:id', protect, deleteBooking);
 
@@ -80,6 +81,7 @@ router.put('/api/chats/:chatId/read', protect, chatController.markRead);
 
 // Portfolio routes (artists only)
 router.get('/api/portfolios/me', protect, portfolioController.listMyPortfolios);
+router.get('/api/portfolios/artist/:artistId', portfolioController.getArtistPortfolio);
 router.post('/api/portfolios', protect, portfolioController.createPortfolio);
 router.put('/api/portfolios/:id', protect, portfolioController.updatePortfolio);
 router.delete('/api/portfolios/:id', protect, portfolioController.deletePortfolio);

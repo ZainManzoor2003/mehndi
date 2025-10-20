@@ -415,6 +415,9 @@ export const portfoliosAPI = {
   listMine: async () => {
     return apiRequest('/portfolios/me');
   },
+  getArtistPortfolio: async (artistId) => {
+    return apiRequest(`/portfolios/artist/${artistId}`);
+  },
   create: async (data) => {
     return apiRequest('/portfolios', {
       method: 'POST',

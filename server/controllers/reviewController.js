@@ -9,8 +9,8 @@ const createReview = async (req, res) => {
   try {
     const { bookingId, rating, comment, artistId } = req.body;
 
-    if (!bookingId || !rating || !comment) {
-      return res.status(400).json({ success: false, message: 'bookingId, rating and comment are required' });
+    if (!bookingId || !rating || !comment || !artistId) {
+      return res.status(400).json({ success: false, message: 'bookingId, artistId, rating and comment are required' });
     }
 
     const booking = await Booking.findById(bookingId);
@@ -29,7 +29,7 @@ const createReview = async (req, res) => {
     const existing = await Review.findOne({ userId: req.user.id, bookingId });
     if (existing) return res.status(409).json({ success: false, message: 'You have already reviewed this booking' });
 
-    const review = await Review.create({ userId: req.user.id, bookingId, rating, comment });
+    const review = await Review.create({ userId: req.user.id, artistId, bookingId, rating, comment });
 
     // Determine artist to update ratings for
     let targetArtistId = artistId;
@@ -99,6 +99,59 @@ const getMyReviewForBooking = async (req, res) => {
   }
 };
 
+// Get reviews for a specific artist
+// GET /api/reviews/artist/:artistId
+// Public
+const getArtistReviews = async (req, res) => {
+  try {
+    const { artistId } = req.params;
+
+    if (!artistId) {
+      return res.status(400).json({ success: false, message: 'Artist ID is required' });
+    }
+
+    // Get reviews for the artist with client information
+    const reviews = await Review.find({ artistId })
+      .populate('userId', 'firstName lastName userProfileImage')
+      .sort({ createdAt: -1 })
+      .limit(50); // Limit to 50 most recent reviews
+
+    // Calculate stats
+    const totalReviews = reviews.length;
+    const averageRating = totalReviews > 0 
+      ? reviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews 
+      : 0;
+
+    // Format reviews with client information
+    const formattedReviews = reviews.map(review => ({
+      _id: review._id,
+      rating: review.rating,
+      comment: review.comment,
+      createdAt: review.createdAt,
+      clientName: review.userId ? `${review.userId.firstName} ${review.userId.lastName}` : 'Anonymous',
+      clientInitials: review.userId 
+        ? `${review.userId.firstName?.charAt(0) || ''}${review.userId.lastName?.charAt(0) || ''}`.toUpperCase()
+        : 'A',
+      clientProfileImage: review.userId?.userProfileImage
+    }));
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        reviews: formattedReviews,
+        stats: {
+          totalReviews,
+          averageRating: Number(averageRating.toFixed(1))
+        }
+      }
+    });
+  } catch (err) {
+    console.error('Get artist reviews error:', err);
+    return res.status(500).json({ success: false, message: 'Server error while fetching reviews' });
+  }
+};
+
 module.exports.getMyReviewForBooking = getMyReviewForBooking;
+module.exports.getArtistReviews = getArtistReviews;
 
 
