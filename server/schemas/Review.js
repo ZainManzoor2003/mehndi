@@ -7,6 +7,11 @@ const ReviewSchema = new mongoose.Schema(
       ref: 'User',
       required: [true, 'User ID is required']
     },
+    artistId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'Artist ID is required']
+    },
     bookingId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Booking',
@@ -33,6 +38,7 @@ const ReviewSchema = new mongoose.Schema(
 // Index for efficient queries
 ReviewSchema.index({ bookingId: 1 });
 ReviewSchema.index({ rating: 1 });
+ReviewSchema.index({ artistId: 1 });
 
 // Ensure one review per user per booking
 ReviewSchema.index({ userId: 1, bookingId: 1 }, { unique: true });

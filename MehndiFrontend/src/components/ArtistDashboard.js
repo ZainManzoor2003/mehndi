@@ -8,6 +8,7 @@ import CancelAcceptedModal from './modals/CancelAcceptedModal';
 import MarkCompleteProofModal from './modals/MarkCompleteProofModal';
 import socket, { buildDirectRoomId, joinRoom, sendRoomMessage, sendTyping, signalOnline, onPresenceUpdate } from '../services/socket';
 import { ToastContainer, useToast } from './Toast';
+import ArtistPortfolioForm from './ArtistPortfolioForm';
 import { FaCalendarAlt, FaCheckCircle, FaClock, FaSignOutAlt, FaStickyNote, FaEye, FaWallet, FaCommentDots, FaStar, FaMoneyBillWave, FaCalendarCheck, FaHourglassHalf, FaArrowCircleUp, FaExclamationTriangle, FaEnvelope, FaTimes, FaArrowLeft, FaHandPeace, FaTrash } from 'react-icons/fa';
 const { proposalsAPI, authAPI, bookingsAPI, applicationsAPI, portfoliosAPI, walletAPI, transactionAPI, notificationAPI } = apiService;
 
@@ -181,10 +182,12 @@ const ArtistDashboard = () => {
   const [previewPortfolio, setPreviewPortfolio] = useState(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [showNewPortfolioForm, setShowNewPortfolioForm] = useState(false);
+  const [editingPortfolio, setEditingPortfolio] = useState(null);
   const [acceptedByDate, setAcceptedByDate] = useState({});
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [calendarMonth, setCalendarMonth] = useState(new Date());
-  
+
   // Notes state
   const [bookingNotes, setBookingNotes] = useState({}); // { bookingId: { notes: [...], newNote: '', followUp: false } }
   const [savingNote, setSavingNote] = useState(false);
@@ -227,10 +230,49 @@ const ArtistDashboard = () => {
     }
   }, [isAuthenticated, user, portfoliosAPI]);
 
+  const handleSaveNewPortfolio = async (portfolioData) => {
+    try {
+      setSavingPortfolio(true);
+      const payload = {
+        ...portfolioData,
+        displayName: 'My Portfolio', // Default name
+        tagline: 'Professional Mehndi Artist',
+        bio: portfolioData.aboutMe,
+        isPublished: true
+      };
+
+      if (editingPortfolio) {
+        await portfoliosAPI.update(editingPortfolio._id, payload);
+        showSuccess('Portfolio updated successfully');
+      } else {
+        await portfoliosAPI.create(payload);
+        showSuccess('Portfolio created successfully');
+      }
+
+      setShowNewPortfolioForm(false);
+      setEditingPortfolio(null);
+      fetchMyPortfolios();
+    } catch (e) {
+      showError(e.message || 'Failed to save portfolio');
+    } finally {
+      setSavingPortfolio(false);
+    }
+  };
+
+  const handleEditPortfolio = (portfolio) => {
+    setEditingPortfolio(portfolio);
+    setShowNewPortfolioForm(true);
+  };
+
+  const handleCancelPortfolioForm = () => {
+    setShowNewPortfolioForm(false);
+    setEditingPortfolio(null);
+  };
+
   // Fetch notifications for the current user
   const fetchNotifications = useCallback(async () => {
     if (!isAuthenticated) return;
-    
+
     try {
       setNotificationsLoading(true);
       const response = await notificationAPI.getNotifications();
@@ -411,16 +453,16 @@ const ArtistDashboard = () => {
 
   const fetchNearbyBookings = useCallback(async () => {
     if (!isAuthenticated || !user || user.userType !== 'artist') return;
-    
+
     try {
       setNearbyLoading(true);
-      
+
       // Get user's current location
       const location = await getCurrentLocation();
-      
+
       // Fetch nearby bookings
       const resp = await bookingsAPI.getNearbyBookings(location.latitude, location.longitude, 3);
-      
+
       const nearbyItems = (resp.data || []).map((b) => ({
         id: b._id,
         title: `${(b.eventType || []).join(', ') || 'Mehndi'} – ${new Date(b.eventDate).toLocaleDateString('en-GB')}`,
@@ -434,7 +476,7 @@ const ArtistDashboard = () => {
         // Add other booking details for view detail
         ...b
       }));
-      
+
       setNearbyRequests(nearbyItems);
     } catch (e) {
       console.error('Failed to fetch nearby bookings:', e);
@@ -470,7 +512,7 @@ const ArtistDashboard = () => {
               location: b.location || b.city || b.postalCode || '',
             };
           }
-        } catch (_) {}
+        } catch (_) { }
         // Fallback to application fields
         return {
           applicationId: a._id,
@@ -499,10 +541,10 @@ const ArtistDashboard = () => {
 
       const formatDateText = (dateString, preferred) => {
         const date = new Date(dateString);
-        const datePart = date.toLocaleDateString('en-GB', { 
-          day: '2-digit', 
-          month: 'short', 
-          year: 'numeric' 
+        const datePart = date.toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
         });
         const pref = Array.isArray(preferred) ? preferred.join(', ') : (preferred || 'Flexible');
         return { date: datePart, timeSlot: pref };
@@ -568,7 +610,7 @@ const ArtistDashboard = () => {
         phoneNumber: b.phoneNumber || '',
         eventType: b.eventType || [],
         otherEventType: b.otherEventType || '',
-        eventDate: b.eventDate ? new Date(b.eventDate).toISOString().substring(0,10) : '',
+        eventDate: b.eventDate ? new Date(b.eventDate).toISOString().substring(0, 10) : '',
         preferredTimeSlot: b.preferredTimeSlot || [],
         location: b.location || '',
         artistTravelsToClient: b.artistTravelsToClient === true,
@@ -604,11 +646,11 @@ const ArtistDashboard = () => {
 
   const openApplyModal = (bookingId) => {
     setApplyBookingId(bookingId);
-    
+
     // Find the booking data from the applications list
     const bookingData = applications.find(app => app.id === bookingId);
     setApplyBookingData(bookingData);
-    
+
     setApplyOpen(true);
     // Reset form to default values
     setApplicationForm({
@@ -693,7 +735,7 @@ const ArtistDashboard = () => {
         [field]: value
       }));
     }
-    
+
     // Clear error for this field when user starts typing
     if (formErrors[field]) {
       setFormErrors(prev => ({
@@ -705,7 +747,7 @@ const ArtistDashboard = () => {
 
   const confirmApply = async () => {
     if (!applyBookingId) return;
-    
+
     // Validate form before submitting
     if (!validateForm()) {
       return;
@@ -713,7 +755,7 @@ const ArtistDashboard = () => {
 
     try {
       setApplyLoading(true);
-      
+
       // Prepare the artist details object
       const artistDetails = {
         proposedBudget: parseFloat(applicationForm.proposedBudget),
@@ -742,7 +784,7 @@ const ArtistDashboard = () => {
       };
 
       const response = await applicationsAPI.applyToBooking(applyBookingId, artistDetails);
-      
+
       // Check if onboarding is required
       if (response.requiresOnboarding && response.onboardingUrl) {
         closeApplyModal();
@@ -751,15 +793,15 @@ const ArtistDashboard = () => {
         window.location.href = response.onboardingUrl;
         return;
       }
-      
+
       closeApplyModal();
       showSuccess('Application submitted successfully!');
-      
+
       // Auto-fetch data after successful submission
       await fetchPendingBookings();
       await fetchNearbyBookings();
       await fetchSentProposals();
-      
+
       // Refresh current tab data
       if (activeTab === 'dashboard') {
         fetchArtistUpcomingEvents();
@@ -789,13 +831,13 @@ const ArtistDashboard = () => {
 
   const confirmWithdraw = async () => {
     if (!withdrawBookingId) return;
-    
+
     try {
       setWithdrawLoading(true);
       await applicationsAPI.withdrawApplication(withdrawBookingId);
       showSuccess('Application withdrawn successfully!');
       closeWithdrawConfirm();
-      
+
       // Refresh applied bookings list
       await fetchAppliedBookings();
     } catch (e) {
@@ -885,7 +927,7 @@ const ArtistDashboard = () => {
       const upcomingDates = Object.keys(grouped)
         .map(k => new Date(k))
         .filter(d => d >= new Date())
-        .sort((a,b)=>a-b);
+        .sort((a, b) => a - b);
       if (upcomingDates.length) {
         setSelectedDate(upcomingDates[0]);
         setCalendarMonth(upcomingDates[0]);
@@ -1150,14 +1192,14 @@ const ArtistDashboard = () => {
       user: user ? { userType: user.userType, name: `${user.firstName} ${user.lastName}` } : null
     });
 
-     if (isAuthenticated) {
+    if (isAuthenticated) {
       console.log('User is authenticated, fetching jobs and proposals...');
       setTimeout(() => {
         fetchSentProposals();
-         fetchPendingBookings();
-         fetchArtistUpcomingEvents();
-         fetchNearbyBookings();
-         fetchNotifications();
+        fetchPendingBookings();
+        fetchArtistUpcomingEvents();
+        fetchNearbyBookings();
+        fetchNotifications();
         if (tab === 'profile') {
           fetchMyPortfolios();
         }
@@ -1213,7 +1255,7 @@ const ArtistDashboard = () => {
   const [walletSummary, setWalletSummary] = useState({ totalPaid: 0, remainingBalance: 0 });
   const [walletTransactions, setWalletTransactions] = useState([]);
   const [walletLoading, setWalletLoading] = useState(false);
-  
+
   // Transaction filters for artist
   const [transactionCategoryFilter, setTransactionCategoryFilter] = useState('all');
   const [transactionStatusFilter, setTransactionStatusFilter] = useState('all');
@@ -1231,13 +1273,13 @@ const ArtistDashboard = () => {
   const getFilteredTransactions = () => {
     return walletTransactions.filter(transaction => {
       // Category filter - use the category field from the controller
-      const categoryMatch = transactionCategoryFilter === 'all' || 
+      const categoryMatch = transactionCategoryFilter === 'all' ||
         (transaction.category && transaction.category.toLowerCase() === transactionCategoryFilter.toLowerCase());
-      
+
       // Status filter
-      const statusMatch = transactionStatusFilter === 'all' || 
+      const statusMatch = transactionStatusFilter === 'all' ||
         (transaction.transactionType === transactionStatusFilter);
-      
+
       return categoryMatch && statusMatch;
     });
   };
@@ -1258,7 +1300,7 @@ const ArtistDashboard = () => {
         const txRes = await transactionAPI.getMyTransactions();
         const txs = Array.isArray(txRes?.data) ? txRes.data : [];
         console.log('Artist transactions:', txs);
-        
+
         // Use the enhanced transaction data from the controller
         const mapped = txs.map((t) => ({
           _id: t._id,
@@ -1318,12 +1360,12 @@ const ArtistDashboard = () => {
     try {
       setWithdrawLoading(true);
       await walletAPI.withdrawFunds({ amount: amt });
-      try { showSuccess('Withdrawal requested successfully'); } catch {}
+      try { showSuccess('Withdrawal requested successfully'); } catch { }
       setWithdrawAmount('');
       closeWithdraw();
       await fetchWalletData();
     } catch (e) {
-      try { showError(e.message || 'Failed to withdraw'); } catch {}
+      try { showError(e.message || 'Failed to withdraw'); } catch { }
     } finally {
       setWithdrawLoading(false);
     }
@@ -1380,7 +1422,7 @@ const ArtistDashboard = () => {
   const handleLogoutClick = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
     try {
-      try { await logout(); } catch {}
+      try { await logout(); } catch { }
       localStorage.clear();
       const deleteCookieEverywhere = (name) => {
         try {
@@ -1391,7 +1433,7 @@ const ArtistDashboard = () => {
             document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${domain};`;
             document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain};`;
           }
-        } catch (e) {}
+        } catch (e) { }
       };
       deleteCookieEverywhere('token');
       deleteCookieEverywhere('refreshToken');
@@ -1497,7 +1539,7 @@ const ArtistDashboard = () => {
           console.log('Refreshing data after successful proposal submission...');
           await fetchSentProposals();
           await fetchNearbyBookings();
-          
+
           // Refresh current tab data
           if (activeTab === 'applications') {
             if (applicationsFilter === 'all') {
@@ -1550,7 +1592,7 @@ const ArtistDashboard = () => {
           });
           setChatMessages(res.data.messages);
           setNewMessage('');
-          
+
           // Auto-fetch conversations after sending message
           if (activeTab === 'messages') {
             chatAPI.listMyChats().then(res => {
@@ -1570,7 +1612,7 @@ const ArtistDashboard = () => {
     const interval = setInterval(() => {
       chatAPI.listMyChats().then(res => {
         if (res.success) setArtistConversations(res.data || []);
-      }).catch(() => {});
+      }).catch(() => { });
     }, 10000);
     return () => clearInterval(interval);
   }, [user, activeTab]);
@@ -1594,7 +1636,7 @@ const ArtistDashboard = () => {
             const roomId = buildDirectRoomId(user?._id, otherId);
             joinRoom(roomId, { userId: user?._id, userType: 'artist' });
           }
-          chatAPI.markRead(chat._id).catch(() => {});
+          chatAPI.markRead(chat._id).catch(() => { });
           setArtistConversations(prev => {
             const exists = prev.some(c => (c._id || c.id) === chat._id);
             if (exists) return prev;
@@ -1608,7 +1650,7 @@ const ArtistDashboard = () => {
             return [display, ...prev];
           });
         }
-      }).catch(() => {});
+      }).catch(() => { });
     }
   }, [location.search, user]);
 
@@ -1635,30 +1677,30 @@ const ArtistDashboard = () => {
   // }, [user, currentChat]);
 
   // The FIXED code
-useEffect(() => {
-  if (!user) return;
-  const onMessage = (incoming) => {
-    if (!currentChat || String(incoming.senderId) === String(user?._id)) {
-      return;
-    }
-    
-    setChatMessages(prev => [...prev, {
-      id: incoming.id,
-      sender: incoming.senderId,
-      text: incoming.message,
-      createdAt: new Date().toISOString(),
-    }]);
-  };
-  const onTyping = ({ userId, isTyping }) => {
-    // optional: typing state
-  };
-  socket.on('message', onMessage);
-  socket.on('typing', onTyping);
-  return () => {
-    socket.off('message', onMessage);
-    socket.off('typing', onTyping);
-  };
-}, [user, currentChat]);
+  useEffect(() => {
+    if (!user) return;
+    const onMessage = (incoming) => {
+      if (!currentChat || String(incoming.senderId) === String(user?._id)) {
+        return;
+      }
+
+      setChatMessages(prev => [...prev, {
+        id: incoming.id,
+        sender: incoming.senderId,
+        text: incoming.message,
+        createdAt: new Date().toISOString(),
+      }]);
+    };
+    const onTyping = ({ userId, isTyping }) => {
+      // optional: typing state
+    };
+    socket.on('message', onMessage);
+    socket.on('typing', onTyping);
+    return () => {
+      socket.off('message', onMessage);
+      socket.off('typing', onTyping);
+    };
+  }, [user, currentChat]);
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -1743,7 +1785,7 @@ useEffect(() => {
                 <>
                   {/* Welcome Section */}
                   <div className="welcome-section">
-                    <h2 className="welcome-message">Hi {artistName.split(' ')[0]} <FaHandPeace/>, here are your upcoming mehndi events!</h2>
+                    <h2 className="welcome-message">Hi {artistName.split(' ')[0]} <FaHandPeace />, here are your upcoming mehndi events!</h2>
 
                     {/* Next Event Card */}
                     <div className="next-event-card">
@@ -1765,11 +1807,11 @@ useEffect(() => {
                                 {/* <FaCalendarAlt style={{ color: '#d4a574' }} /> */}
                                 <strong>Date:</strong> {nextEvent.date} - {nextEvent.timeSlot}
                               </p>
-                                {nextEvent.location && (
-                                  <p style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                                    <strong>Location:</strong> {nextEvent.location}
-                                  </p>
-                                )}
+                              {nextEvent.location && (
+                                <p style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                                  <strong>Location:</strong> {nextEvent.location}
+                                </p>
+                              )}
                             </div>
                             <div className="event-right">
                               <div className="status-badge deposit-paid" style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'transparent', padding: '0px', margin: '0px', color: '#2d5f3f', fontWeight: '600' }}>
@@ -1783,10 +1825,10 @@ useEffect(() => {
                             </div>
                           </div>
                           <div style={{ marginTop: '16px' }}>
-                            <button 
-                              className="btn-primary" 
+                            <button
+                              className="btn-primary"
                               onClick={() => openViewBooking(nextEvent.id)}
-                              style={{ 
+                              style={{
                                 padding: '10px 24px',
                                 fontSize: '14px',
                                 fontWeight: '600',
@@ -1809,23 +1851,23 @@ useEffect(() => {
                     {/* Left Column - Bookings */}
                     <div className="bookings-section">
                       <h3 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <FaCalendarAlt style={{ color: '#d4a574' }} /> 
+                        <FaCalendarAlt style={{ color: '#d4a574' }} />
                         Upcoming & Confirmed Bookings
                       </h3>
                       {(!secondEvent) ? (
                         <div style={{ textAlign: 'center' }}>
-                          <div className="no-more-bookings" style={{ 
-                            border: '2px dashed #d4a574', 
-                            borderRadius: '12px', 
+                          <div className="no-more-bookings" style={{
+                            border: '2px dashed #d4a574',
+                            borderRadius: '12px',
                             padding: '40px 20px',
                             textAlign: 'center',
                             backgroundColor: '#F5DEB3',
                             marginBottom: '20px'
                           }}>
-                            <p style={{ 
-                              fontSize: '16px', 
-                              fontWeight: '600', 
-                              color: '#666', 
+                            <p style={{
+                              fontSize: '16px',
+                              fontWeight: '600',
+                              color: '#666',
                               margin: 0
                             }}>
                               No more confirmed bookings
@@ -1834,95 +1876,95 @@ useEffect(() => {
                         </div>
                       ) : (
                         <>
-                        {secondEvent && (
-                          <div className="booking-card" style={{ marginBottom: '20px' }}>
-                            <div className="booking-info">
-                              <h4 className="booking-title">{secondEvent.title} - {secondEvent.date}</h4>
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                                <p className="booking-artist">Client: {secondEvent.client}</p>
-                                <span className="status-badge small">{secondEvent.status}</span>
-                              </div>
-                              <div className="booking-meta" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                              <span>{secondEvent.timeSlot}</span>
-                                {secondEvent.daysLeft !== undefined && (
-                                  <span className="days-left-text">{secondEvent.daysLeft} day{secondEvent.daysLeft === 1 ? '' : 's'} left ⌛</span>
-                                )}
-                              </div>
-                              {/* <div className="booking-meta" style={{marginTop:'6px'}}>
+                          {secondEvent && (
+                            <div className="booking-card" style={{ marginBottom: '20px' }}>
+                              <div className="booking-info">
+                                <h4 className="booking-title">{secondEvent.title} - {secondEvent.date}</h4>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                                  <p className="booking-artist">Client: {secondEvent.client}</p>
+                                  <span className="status-badge small">{secondEvent.status}</span>
+                                </div>
+                                <div className="booking-meta" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                                  <span>{secondEvent.timeSlot}</span>
+                                  {secondEvent.daysLeft !== undefined && (
+                                    <span className="days-left-text">{secondEvent.daysLeft} day{secondEvent.daysLeft === 1 ? '' : 's'} left ⌛</span>
+                                  )}
+                                </div>
+                                {/* <div className="booking-meta" style={{marginTop:'6px'}}>
                                 <span><strong>Date:</strong> {secondEvent.date}</span>
                               </div> */}
-                              {/* <div className="booking-meta" style={{marginTop:'4px'}}>
+                                {/* <div className="booking-meta" style={{marginTop:'4px'}}>
                                 <span><strong>Time:</strong> {secondEvent.timeSlot}</span>
                               </div> */}
-                            </div>
-                            
-                            {/* View Detail Button */}
-                            <div style={{ marginTop: '12px' }}>
-                              <button 
-                                className="btn-primary" 
-                                onClick={() => openViewBooking(secondEvent.id)}
-                                style={{ 
-                                  padding: '8px 20px',
+                              </div>
+
+                              {/* View Detail Button */}
+                              <div style={{ marginTop: '12px' }}>
+                                <button
+                                  className="btn-primary"
+                                  onClick={() => openViewBooking(secondEvent.id)}
+                                  style={{
+                                    padding: '8px 20px',
+                                    fontSize: '14px',
+                                    fontWeight: '600',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    backgroundColor: '#d4a574',
+                                    border: 'none',
+                                    color: 'white'
+                                  }}
+                                >
+                                  View Event Details
+                                </button>
+                              </div>
+
+                              {/* Notes & Reminders Section */}
+                              <div style={{
+                                marginTop: '20px',
+                                padding: '16px',
+                                backgroundColor: '#f9f9f9',
+                                borderRadius: '8px',
+                                border: '1px solid #e0e0e0'
+                              }}>
+                                <h4 style={{
+                                  margin: '0 0 12px 0',
                                   fontSize: '14px',
                                   fontWeight: '600',
-                                  borderRadius: '8px',
-                                  cursor: 'pointer',
-                                  backgroundColor: '#d4a574',
-                                  border: 'none',
-                                  color: 'white'
-                                }}
-                              >
-                                View Event Details
-                              </button>
-                            </div>
+                                  color: '#333',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '8px'
+                                }}>
+                                  <FaStickyNote style={{ color: '#d4a574' }} />
+                                  Notes & Reminders
+                                </h4>
 
-                            {/* Notes & Reminders Section */}
-                            <div style={{ 
-                              marginTop: '20px', 
-                              padding: '16px', 
-                              backgroundColor: '#f9f9f9', 
-                              borderRadius: '8px',
-                              border: '1px solid #e0e0e0'
-                            }}>
-                              <h4 style={{ 
-                                margin: '0 0 12px 0', 
-                                fontSize: '14px', 
-                                fontWeight: '600',
-                                color: '#333',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px'
-                              }}>
-                                <FaStickyNote style={{ color: '#d4a574' }} />
-                                Notes & Reminders
-                              </h4>
-                              
-                              <textarea 
-                                placeholder="Add prep notes here..."
-                                value={bookingNotes[secondEvent.id]?.newNote || ''}
-                                onChange={(e) => {
-                                  setBookingNotes(prev => ({
-                                    ...prev,
-                                    [secondEvent.id]: {
-                                      ...prev[secondEvent.id],
-                                      newNote: e.target.value
-                                    }
-                                  }));
-                                }}
-                                style={{
-                                  width: '100%',
-                                  minHeight: '80px',
-                                  padding: '10px',
-                                  border: '1px solid #ddd',
-                                  borderRadius: '6px',
-                                  fontSize: '13px',
-                                  resize: 'vertical',
-                                  marginBottom: '10px'
-                                }}
-                                disabled={savingNote}
-                              />
-                              
-                              {/* <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                                <textarea
+                                  placeholder="Add prep notes here..."
+                                  value={bookingNotes[secondEvent.id]?.newNote || ''}
+                                  onChange={(e) => {
+                                    setBookingNotes(prev => ({
+                                      ...prev,
+                                      [secondEvent.id]: {
+                                        ...prev[secondEvent.id],
+                                        newNote: e.target.value
+                                      }
+                                    }));
+                                  }}
+                                  style={{
+                                    width: '100%',
+                                    minHeight: '80px',
+                                    padding: '10px',
+                                    border: '1px solid #ddd',
+                                    borderRadius: '6px',
+                                    fontSize: '13px',
+                                    resize: 'vertical',
+                                    marginBottom: '10px'
+                                  }}
+                                  disabled={savingNote}
+                                />
+
+                                {/* <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
                                 <input 
                                   type="checkbox" 
                                   id={`followup-${secondEvent.id}`}
@@ -1943,88 +1985,88 @@ useEffect(() => {
                                   Follow up with client
                                 </label>
                               </div> */}
-                              
-                              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                <button 
-                                  onClick={async () => {
-                                    const note = bookingNotes[secondEvent.id]?.newNote?.trim();
-                                    if (!note) {
-                                      showError('Please enter a note');
-                                      return;
-                                    }
-                                    
-                                    try {
-                                      setSavingNote(true);
-                                      await applicationsAPI.addApplicationNote(secondEvent.id, {
-                                        content: note,
-                                        followUp: bookingNotes[secondEvent.id]?.followUp || false
-                                      });
-                                      
-                                      // Fetch updated notes
-                                      const resp = await applicationsAPI.getApplicationNotes(secondEvent.id);
-                                      setBookingNotes(prev => ({
-                                        ...prev,
-                                        [secondEvent.id]: {
-                                          notes: resp.data || [],
-                                          newNote: '',
-                                          followUp: false
-                                        }
-                                      }));
-                                      
-                                      showSuccess('Note saved successfully');
-                                    } catch (e) {
-                                      showError(e.message || 'Failed to save note');
-                                    } finally {
-                                      setSavingNote(false);
-                                    }
-                                  }}
-                                  disabled={savingNote || !bookingNotes[secondEvent.id]?.newNote?.trim()}
-                                  style={{
-                                    padding: '8px 16px',
-                                    backgroundColor: '#d4a574',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '6px',
-                                    fontSize: '13px',
-                                    fontWeight: '600',
-                                    cursor: savingNote || !bookingNotes[secondEvent.id]?.newNote?.trim() ? 'not-allowed' : 'pointer',
-                                    opacity: savingNote || !bookingNotes[secondEvent.id]?.newNote?.trim() ? 0.6 : 1
-                                  }}
-                                >
-                                  {savingNote ? 'Saving...' : 'Save Notes'}
-                                </button>
-                                
-                                {bookingNotes[secondEvent.id]?.notes?.length > 0 && (
-                                  <button 
-                                    onClick={() => {
-                                      setViewNotesBookingId(secondEvent.id);
-                                      setViewNotesModalOpen(true);
+
+                                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                  <button
+                                    onClick={async () => {
+                                      const note = bookingNotes[secondEvent.id]?.newNote?.trim();
+                                      if (!note) {
+                                        showError('Please enter a note');
+                                        return;
+                                      }
+
+                                      try {
+                                        setSavingNote(true);
+                                        await applicationsAPI.addApplicationNote(secondEvent.id, {
+                                          content: note,
+                                          followUp: bookingNotes[secondEvent.id]?.followUp || false
+                                        });
+
+                                        // Fetch updated notes
+                                        const resp = await applicationsAPI.getApplicationNotes(secondEvent.id);
+                                        setBookingNotes(prev => ({
+                                          ...prev,
+                                          [secondEvent.id]: {
+                                            notes: resp.data || [],
+                                            newNote: '',
+                                            followUp: false
+                                          }
+                                        }));
+
+                                        showSuccess('Note saved successfully');
+                                      } catch (e) {
+                                        showError(e.message || 'Failed to save note');
+                                      } finally {
+                                        setSavingNote(false);
+                                      }
                                     }}
+                                    disabled={savingNote || !bookingNotes[secondEvent.id]?.newNote?.trim()}
                                     style={{
                                       padding: '8px 16px',
-                                      backgroundColor: 'transparent',
-                                      color: '#d4a574',
-                                      border: '1px solid #d4a574',
+                                      backgroundColor: '#d4a574',
+                                      color: 'white',
+                                      border: 'none',
                                       borderRadius: '6px',
                                       fontSize: '13px',
                                       fontWeight: '600',
-                                      cursor: 'pointer',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: '6px'
+                                      cursor: savingNote || !bookingNotes[secondEvent.id]?.newNote?.trim() ? 'not-allowed' : 'pointer',
+                                      opacity: savingNote || !bookingNotes[secondEvent.id]?.newNote?.trim() ? 0.6 : 1
                                     }}
                                   >
-                                    <FaEye /> View Notes ({bookingNotes[secondEvent.id]?.notes?.length})
+                                    {savingNote ? 'Saving...' : 'Save Notes'}
                                   </button>
-                                )}
+
+                                  {bookingNotes[secondEvent.id]?.notes?.length > 0 && (
+                                    <button
+                                      onClick={() => {
+                                        setViewNotesBookingId(secondEvent.id);
+                                        setViewNotesModalOpen(true);
+                                      }}
+                                      style={{
+                                        padding: '8px 16px',
+                                        backgroundColor: 'transparent',
+                                        color: '#d4a574',
+                                        border: '1px solid #d4a574',
+                                        borderRadius: '6px',
+                                        fontSize: '13px',
+                                        fontWeight: '600',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px'
+                                      }}
+                                    >
+                                      <FaEye /> View Notes ({bookingNotes[secondEvent.id]?.notes?.length})
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        )}
+                          )}
                         </>
                       )}
                       <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
-                        <button 
+                        <button
                           onClick={() => {
                             handleTabChange('applications');
                           }}
@@ -2066,7 +2108,7 @@ useEffect(() => {
                           <>
                             {/* Next Event Reminder */}
                             {nextEvent && (
-                              <div 
+                              <div
                                 className="notification-item reminder"
                                 style={{
                                   backgroundColor: nextEvent.daysLeft <= 7 ? '#ffebee' : '#e3f2fd'
@@ -2088,7 +2130,7 @@ useEffect(() => {
 
                             {/* Second Event Reminder */}
                             {secondEvent && (
-                              <div 
+                              <div
                                 className="notification-item reminder"
                                 style={{
                                   backgroundColor: secondEvent.daysLeft <= 7 ? '#ffebee' : '#e3f2fd'
@@ -2116,8 +2158,8 @@ useEffect(() => {
                               </div>
                             ) : (
                               notifications.map(notification => (
-                                <div 
-                                  key={notification.id} 
+                                <div
+                                  key={notification.id}
                                   className={`notification-item ${notification.type} ${!notification.isRead ? 'unread' : ''}`}
                                   style={{
                                     backgroundColor: '#e8f5e8',
@@ -2132,7 +2174,7 @@ useEffect(() => {
                                       {new Date(notification.createdAt).toLocaleDateString()}
                                     </span>
                                   </div>
-                                  <button 
+                                  <button
                                     className="notification-delete-btn"
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -2158,16 +2200,16 @@ useEffect(() => {
                         <span className="nearby-icon">📍</span>
                         <h3 className="section-title" style={{ margin: '0', marginLeft: '8px' }}>Requests Near You</h3>
                       </div>
-                      <button 
+                      <button
                         className="refresh-btn"
                         onClick={fetchNearbyBookings}
                         disabled={nearbyLoading}
-                        style={{ 
-                          padding: '8px 16px', 
-                          fontSize: '13px', 
+                        style={{
+                          padding: '8px 16px',
+                          fontSize: '13px',
                           background: nearbyLoading ? '#e0e0e0' : '#d4a574',
                           color: nearbyLoading ? '#999' : 'white',
-                          border: 'none', 
+                          border: 'none',
                           borderRadius: '6px',
                           cursor: nearbyLoading ? 'not-allowed' : 'pointer',
                           fontWeight: '500',
@@ -2190,9 +2232,9 @@ useEffect(() => {
                         }}
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <polyline points="23,4 23,10 17,10"/>
-                          <polyline points="1,20 1,14 7,14"/>
-                          <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+                          <polyline points="23,4 23,10 17,10" />
+                          <polyline points="1,20 1,14 7,14" />
+                          <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
                         </svg>
                         {nearbyLoading ? 'Loading...' : 'Refresh'}
                       </button>
@@ -2208,7 +2250,7 @@ useEffect(() => {
                         </div>
                       ) : (
                         nearbyRequests.map(r => (
-                          <div key={r.id} className="request-card" style={{ 
+                          <div key={r.id} className="request-card" style={{
                             background: 'white',
                             borderRadius: '12px',
                             padding: '16px',
@@ -2218,28 +2260,28 @@ useEffect(() => {
                             transition: 'all 0.2s ease'
                           }}>
                             <div className="request-info" style={{ flex: 1, marginRight: '16px' }}>
-                              <h4 className="request-title" style={{ 
-                                margin: '0 0 8px 0', 
-                                fontSize: '16px', 
-                                fontWeight: '600', 
+                              <h4 className="request-title" style={{
+                                margin: '0 0 8px 0',
+                                fontSize: '16px',
+                                fontWeight: '600',
                                 color: '#333',
                                 lineHeight: '1.4'
                               }}>
                                 {r.title}
                               </h4>
-                              <p className="request-meta" style={{ 
-                                margin: '0 0 6px 0', 
-                                fontSize: '14px', 
+                              <p className="request-meta" style={{
+                                margin: '0 0 6px 0',
+                                fontSize: '14px',
                                 color: '#666',
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '8px'
                               }}>
-                                <span style={{ 
-                                  background: '#e8f5e8', 
-                                  color: '#2e7d32', 
-                                  padding: '2px 8px', 
-                                  borderRadius: '12px', 
+                                <span style={{
+                                  background: '#e8f5e8',
+                                  color: '#2e7d32',
+                                  padding: '2px 8px',
+                                  borderRadius: '12px',
                                   fontSize: '12px',
                                   fontWeight: '500'
                                 }}>
@@ -2248,30 +2290,30 @@ useEffect(() => {
                                 <span style={{ color: '#888' }}>•</span>
                                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                                    <circle cx="12" cy="10" r="3"/>
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                    <circle cx="12" cy="10" r="3" />
                                   </svg>
                                   {r.location}
                                 </span>
                               </p>
-                              <p className="request-client" style={{ 
-                                margin: '0', 
-                                fontSize: '13px', 
+                              <p className="request-client" style={{
+                                margin: '0',
+                                fontSize: '13px',
                                 color: '#888',
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '4px'
                               }}>
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                                  <circle cx="12" cy="7" r="4"/>
+                                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                  <circle cx="12" cy="7" r="4" />
                                 </svg>
                                 {r.client}
                               </p>
                             </div>
-                            <div className="request-actions" style={{ 
-                              display: 'flex', 
-                              gap: '10px', 
+                            <div className="request-actions" style={{
+                              display: 'flex',
+                              gap: '10px',
                               flexDirection: 'column',
                               minWidth: '120px'
                             }}>
@@ -2307,8 +2349,8 @@ useEffect(() => {
                                 }}
                               >
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                  <circle cx="12" cy="12" r="3"/>
+                                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                  <circle cx="12" cy="12" r="3" />
                                 </svg>
                                 View Detail
                               </button>
@@ -2343,9 +2385,9 @@ useEffect(() => {
                                 }}
                               >
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                                  <circle cx="8.5" cy="7" r="4"/>
-                                  <polyline points="17,11 19,13 23,9"/>
+                                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                  <circle cx="8.5" cy="7" r="4" />
+                                  <polyline points="17,11 19,13 23,9" />
                                 </svg>
                                 Apply Now
                               </button>
@@ -2360,9 +2402,9 @@ useEffect(() => {
                   </div>
 
                   {/* KPI Stats (moved below Requests Near You) */}
-                  <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: 'repeat(4, 1fr)', 
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(4, 1fr)',
                     gap: '20px',
                     marginBottom: '30px'
                   }}>
@@ -2375,30 +2417,30 @@ useEffect(() => {
                       boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                       border: '1px solid #f0f0f0'
                     }}>
-                      <div style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
                         justifyContent: 'center',
                         gap: '8px',
                         marginBottom: '8px'
                       }}>
-                        <span style={{ 
-                          fontSize: '22px', 
+                        <span style={{
+                          fontSize: '22px',
                           fontWeight: '700',
                           color: '#333'
                         }}>
                           {kpiStats.bookings.value} Bookings
                         </span>
-                        <span style={{ 
-                          fontSize: '20px', 
+                        <span style={{
+                          fontSize: '20px',
                           color: '#22c55e',
                           fontWeight: '600'
                         }}>
                           ↗
                         </span>
                       </div>
-                      <div style={{ 
-                        fontSize: '12px', 
+                      <div style={{
+                        fontSize: '12px',
                         color: '#22c55e',
                         fontWeight: '500'
                       }}>
@@ -2415,30 +2457,30 @@ useEffect(() => {
                       boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                       border: '1px solid #f0f0f0'
                     }}>
-                      <div style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
                         justifyContent: 'center',
                         gap: '8px',
                         marginBottom: '8px'
                       }}>
-                        <span style={{ 
-                          fontSize: '22px', 
+                        <span style={{
+                          fontSize: '22px',
                           fontWeight: '700',
                           color: '#333'
                         }}>
                           {kpiStats.applications.value} Applications
                         </span>
-                        <span style={{ 
-                          fontSize: '20px', 
+                        <span style={{
+                          fontSize: '20px',
                           color: '#298AFF',
                           fontWeight: '600'
                         }}>
                           ↗
                         </span>
                       </div>
-                      <div style={{ 
-                        fontSize: '12px', 
+                      <div style={{
+                        fontSize: '12px',
                         color: '#298AFF',
                         fontWeight: '500'
                       }}>
@@ -2455,30 +2497,30 @@ useEffect(() => {
                       boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                       border: '1px solid #f0f0f0'
                     }}>
-                      <div style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
                         justifyContent: 'center',
                         gap: '8px',
                         marginBottom: '8px'
                       }}>
-                        <span style={{ 
-                          fontSize: '22px', 
+                        <span style={{
+                          fontSize: '22px',
                           fontWeight: '700',
                           color: '#333'
                         }}>
                           {kpiStats.conversion.value}
                         </span>
-                        <span style={{ 
-                          fontSize: '20px', 
+                        <span style={{
+                          fontSize: '20px',
                           color: '#ef4444',
                           fontWeight: '600'
                         }}>
                           ↘
                         </span>
                       </div>
-                      <div style={{ 
-                        fontSize: '12px', 
+                      <div style={{
+                        fontSize: '12px',
                         fontWeight: '600',
                         color: 'purple',
                         marginBottom: '4px'
@@ -2496,30 +2538,30 @@ useEffect(() => {
                       boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                       border: '1px solid #f0f0f0'
                     }}>
-                      <div style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
                         justifyContent: 'center',
                         gap: '8px',
                         marginBottom: '8px'
                       }}>
-                        <span style={{ 
-                          fontSize: '22px', 
+                        <span style={{
+                          fontSize: '22px',
                           fontWeight: '700',
                           color: '#333'
                         }}>
                           {kpiStats.response.value}
                         </span>
-                        <span style={{ 
-                          fontSize: '20px', 
+                        <span style={{
+                          fontSize: '20px',
                           color: '#22c55e',
                           fontWeight: '600'
                         }}>
                           ↗
                         </span>
                       </div>
-                      <div style={{ 
-                        fontSize: '12px', 
+                      <div style={{
+                        fontSize: '12px',
                         fontWeight: '600',
                         color: '#EABF36',
                         marginBottom: '4px'
@@ -2537,9 +2579,9 @@ useEffect(() => {
                       <p className="metric-line"><span className="metric-label">Avg Client Spend:</span> <strong>£350</strong></p>
                       <p className="metric-highlight">You earned 20% more than avg artist in London this month 🎉</p>
                     </div>
-                    <div style={{ 
-                      display: 'grid', 
-                      gridTemplateColumns: 'repeat(3, 1fr)', 
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(3, 1fr)',
                       gap: '20px',
                       marginTop: '20px'
                     }}>
@@ -2559,17 +2601,17 @@ useEffect(() => {
                         cursor: 'pointer',
                         transition: 'all 0.3s ease'
                       }}
-                      onMouseOver={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-4px)';
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-                      }}
-                      onMouseOut={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-                      }}
-                      onClick={() => {
-                        handleTabChange('earnings');
-                      }}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.transform = 'translateY(-4px)';
+                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                        }}
+                        onClick={() => {
+                          handleTabChange('earnings');
+                        }}
                       >
                         <div style={{
                           width: '60px',
@@ -2582,15 +2624,15 @@ useEffect(() => {
                         }}>
                           <FaWallet style={{ fontSize: '28px', color: '#ff8c42' }} />
                         </div>
-                        <div style={{ 
-                          fontSize: '16px', 
+                        <div style={{
+                          fontSize: '16px',
                           fontWeight: '600',
                           color: '#333'
                         }}>
                           Wallet / Earnings
                         </div>
-                        <div style={{ 
-                          fontSize: '13px', 
+                        <div style={{
+                          fontSize: '13px',
                           color: '#888',
                           fontWeight: '500'
                         }}>
@@ -2614,17 +2656,17 @@ useEffect(() => {
                         cursor: 'pointer',
                         transition: 'all 0.3s ease'
                       }}
-                      onMouseOver={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-4px)';
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-                      }}
-                      onMouseOut={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-                      }}
-                      onClick={() => {
-                        handleTabChange('messages');
-                      }}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.transform = 'translateY(-4px)';
+                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                        }}
+                        onClick={() => {
+                          handleTabChange('messages');
+                        }}
                       >
                         <div style={{
                           width: '60px',
@@ -2637,15 +2679,15 @@ useEffect(() => {
                         }}>
                           <FaCommentDots style={{ fontSize: '28px', color: '#ff8c42' }} />
                         </div>
-                        <div style={{ 
-                          fontSize: '16px', 
+                        <div style={{
+                          fontSize: '16px',
                           fontWeight: '600',
                           color: '#333'
                         }}>
                           Messages
                         </div>
-                        <div style={{ 
-                          fontSize: '13px', 
+                        <div style={{
+                          fontSize: '13px',
                           color: '#888',
                           fontWeight: '500'
                         }}>
@@ -2669,14 +2711,14 @@ useEffect(() => {
                         cursor: 'pointer',
                         transition: 'all 0.3s ease'
                       }}
-                      onMouseOver={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-4px)';
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-                      }}
-                      onMouseOut={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-                      }}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.transform = 'translateY(-4px)';
+                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                        }}
                       >
                         <div style={{
                           width: '60px',
@@ -2689,15 +2731,15 @@ useEffect(() => {
                         }}>
                           <FaStar style={{ fontSize: '28px', color: '#ff8c42' }} />
                         </div>
-                        <div style={{ 
-                          fontSize: '16px', 
+                        <div style={{
+                          fontSize: '16px',
                           fontWeight: '600',
                           color: '#333'
                         }}>
                           Reviews
                         </div>
-                        <div style={{ 
-                          fontSize: '13px', 
+                        <div style={{
+                          fontSize: '13px',
                           color: '#888',
                           fontWeight: '500'
                         }}>
@@ -2715,9 +2757,9 @@ useEffect(() => {
                   <p className="apps-subtitle">Track all the requests you’ve applied to</p>
 
                   {/* Stats */}
-                  <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: 'repeat(5, 1fr)', 
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(5, 1fr)',
                     gap: '15px',
                     marginBottom: '30px'
                   }}>
@@ -2746,20 +2788,20 @@ useEffect(() => {
                       }}>
                         <FaEnvelope style={{ fontSize: '20px', color: '#f59e0b' }} />
                       </div>
-                      <div style={{ 
-                        fontSize: '32px', 
+                      <div style={{
+                        fontSize: '32px',
                         fontWeight: '700',
                         color: '#333'
                       }}>{applicationStats.applied}</div>
-                      <div style={{ 
-                        fontSize: '14px', 
+                      <div style={{
+                        fontSize: '14px',
                         fontWeight: '600',
                         color: '#666'
                       }}>
                         Applied
                       </div>
-                      <div style={{ 
-                        fontSize: '12px', 
+                      <div style={{
+                        fontSize: '12px',
                         color: '#f59e0b',
                         fontWeight: '500',
                         display: 'flex',
@@ -2795,20 +2837,20 @@ useEffect(() => {
                       }}>
                         <FaCheckCircle style={{ fontSize: '20px', color: '#10b981' }} />
                       </div>
-                      <div style={{ 
-                        fontSize: '32px', 
+                      <div style={{
+                        fontSize: '32px',
                         fontWeight: '700',
                         color: '#333'
                       }}>{applicationStats.accepted}</div>
-                      <div style={{ 
-                        fontSize: '14px', 
+                      <div style={{
+                        fontSize: '14px',
                         fontWeight: '600',
                         color: '#666'
                       }}>
                         Accepted
                       </div>
-                      <div style={{ 
-                        fontSize: '12px', 
+                      <div style={{
+                        fontSize: '12px',
                         color: '#10b981',
                         fontWeight: '500',
                         display: 'flex',
@@ -2844,20 +2886,20 @@ useEffect(() => {
                       }}>
                         <FaTimes style={{ fontSize: '20px', color: '#ef4444' }} />
                       </div>
-                      <div style={{ 
-                        fontSize: '32px', 
+                      <div style={{
+                        fontSize: '32px',
                         fontWeight: '700',
                         color: '#333'
                       }}>{applicationStats.declined}</div>
-                      <div style={{ 
-                        fontSize: '14px', 
+                      <div style={{
+                        fontSize: '14px',
                         fontWeight: '600',
                         color: '#666'
                       }}>
                         Declined
                       </div>
-                      <div style={{ 
-                        fontSize: '12px', 
+                      <div style={{
+                        fontSize: '12px',
                         color: '#ef4444',
                         fontWeight: '500',
                         display: 'flex',
@@ -2893,20 +2935,20 @@ useEffect(() => {
                       }}>
                         <FaArrowLeft style={{ fontSize: '20px', color: '#999' }} />
                       </div>
-                      <div style={{ 
-                        fontSize: '32px', 
+                      <div style={{
+                        fontSize: '32px',
                         fontWeight: '700',
                         color: '#333'
                       }}>{applicationStats.withdrawn}</div>
-                      <div style={{ 
-                        fontSize: '14px', 
+                      <div style={{
+                        fontSize: '14px',
                         fontWeight: '600',
                         color: '#666'
                       }}>
                         Withdrawn
                       </div>
-                      <div style={{ 
-                        fontSize: '12px', 
+                      <div style={{
+                        fontSize: '12px',
                         color: '#999',
                         fontWeight: '500'
                       }}>
@@ -2939,20 +2981,20 @@ useEffect(() => {
                       }}>
                         <FaClock style={{ fontSize: '20px', color: '#999' }} />
                       </div>
-                      <div style={{ 
-                        fontSize: '32px', 
+                      <div style={{
+                        fontSize: '32px',
                         fontWeight: '700',
                         color: '#333'
                       }}>{applicationStats.expired}</div>
-                      <div style={{ 
-                        fontSize: '14px', 
+                      <div style={{
+                        fontSize: '14px',
                         fontWeight: '600',
                         color: '#666'
                       }}>
                         Expired
                       </div>
-                      <div style={{ 
-                        fontSize: '12px', 
+                      <div style={{
+                        fontSize: '12px',
                         color: '#f59e0b',
                         fontWeight: '500',
                         display: 'flex',
@@ -2976,7 +3018,7 @@ useEffect(() => {
                             fetchAppliedBookings();
                           } else if (f === 'all') {
                             fetchPendingBookings();
-                          } else if (['accepted','declined','withdrawn','expired'].includes(f)) {
+                          } else if (['accepted', 'declined', 'withdrawn', 'expired'].includes(f)) {
                             fetchApplicationsByStatus(f);
                           }
                         }}
@@ -2989,7 +3031,7 @@ useEffect(() => {
                   {/* List - show pending bookings as applications */}
                   <div className="apps-list">
                     {appsLoading && (<div className="app-card"><div>Loading pending bookings...</div></div>)}
-                    {appsError && (<div className="app-card"><div style={{color:'#c33'}}>{appsError}</div></div>)}
+                    {appsError && (<div className="app-card"><div style={{ color: '#c33' }}>{appsError}</div></div>)}
                     {!appsLoading && !appsError && applications
                       .filter(a => applicationsFilter === 'all' ? true : a.status === applicationsFilter)
                       .map(a => (
@@ -3005,8 +3047,8 @@ useEffect(() => {
                               applicationsFilter === 'all'
                                 ? { background: '#16a34a', borderColor: '#16a34a', color: '#ffffff' }
                                 : (applicationsFilter === 'applied'
-                                    ? { background: '#d4af37', borderColor: '#d4af37', color: '#1f2937' }
-                                    : undefined)
+                                  ? { background: '#d4af37', borderColor: '#d4af37', color: '#1f2937' }
+                                  : undefined)
                             }
                           >
                             {applicationsFilter === 'all' ? 'Active' : (a.status.charAt(0).toUpperCase() + a.status.slice(1))}
@@ -3030,13 +3072,13 @@ useEffect(() => {
 
                               return (
                                 <div style={{ position: 'relative', display: 'inline-block' }}>
-                                  <button 
-                                    className="app-btn app-btn-danger" 
-                                    style={{ 
+                                  <button
+                                    className="app-btn app-btn-danger"
+                                    style={{
                                       marginLeft: '8px',
                                       cursor: isWithin14Days ? 'not-allowed' : 'pointer',
                                       opacity: isWithin14Days ? 0.5 : 1
-                                    }} 
+                                    }}
                                     onClick={() => {
                                       if (isWithin14Days) {
                                         showError(tooltipMsg);
@@ -3056,28 +3098,28 @@ useEffect(() => {
                               // Check if current date is greater than or equal to event date
                               const eventDate = new Date(a.eventDate);
                               const today = new Date();
-                              
+
                               // Set both dates to midnight for accurate comparison
                               eventDate.setHours(0, 0, 0, 0);
                               today.setHours(0, 0, 0, 0);
-                              
+
                               const canMarkComplete = today.getTime() >= eventDate.getTime();
                               const tooltipMsg = "You can only mark as complete on or after the event date";
 
                               return (
-                                <button 
-                                  className="app-btn" 
-                                  style={{ 
-                                    background: canMarkComplete ? '#e24d0c' : '#d1d5db', 
-                                    color: '#fff', 
+                                <button
+                                  className="app-btn"
+                                  style={{
+                                    background: canMarkComplete ? '#e24d0c' : '#d1d5db',
+                                    color: '#fff',
                                     borderColor: canMarkComplete ? '#e24d0c' : '#d1d5db',
                                     cursor: canMarkComplete ? 'pointer' : 'not-allowed',
                                     opacity: canMarkComplete ? 1 : 0.6
-                                  }} 
-                                  onClick={() => { 
+                                  }}
+                                  onClick={() => {
                                     if (canMarkComplete) {
-                                      setMarkTargetBookingId(a.id); 
-                                      setMarkProofOpen(true); 
+                                      setMarkTargetBookingId(a.id);
+                                      setMarkProofOpen(true);
                                     } else {
                                       showError(tooltipMsg);
                                     }
@@ -3121,7 +3163,7 @@ useEffect(() => {
                   // Refetch calendar data
                   fetchAcceptedCalendar();
                 }}
-                bookingId= {markTargetBookingId}
+                bookingId={markTargetBookingId}
                 cloudinary={{
                   cloudName: "dstelsc7m",
                   uploadPreset: "mehndi",
@@ -3131,11 +3173,11 @@ useEffect(() => {
 
               {/* Portfolio Preview Modal */}
               {previewOpen && previewPortfolio && (
-                <div className="modal-overlay" onClick={()=>{ setPreviewOpen(false); setPreviewPortfolio(null); }}>
-                  <div className="application-modal" onClick={(e)=>e.stopPropagation()}>
+                <div className="modal-overlay" onClick={() => { setPreviewOpen(false); setPreviewPortfolio(null); }}>
+                  <div className="application-modal" onClick={(e) => e.stopPropagation()}>
                     <div className="modal-header">
                       <h3 className="modal-title">Portfolio Preview</h3>
-                      <button className="modal-close" onClick={()=>{ setPreviewOpen(false); setPreviewPortfolio(null); }}>×</button>
+                      <button className="modal-close" onClick={() => { setPreviewOpen(false); setPreviewPortfolio(null); }}>×</button>
                     </div>
                     <div className="modal-body">
                       <div className="modal-grid">
@@ -3144,10 +3186,10 @@ useEffect(() => {
                           <div>{previewPortfolio.tagline || ''}</div>
                         </div>
                         <div className="form-group full">
-                          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:'8px'}}>
-                            {(previewPortfolio.mediaUrls || []).map((u,idx)=> (
-                              <div key={idx} style={{background:'#f5f5f5',borderRadius:8,overflow:'hidden'}}>
-                                <img alt="media" src={u} style={{width:'100%',height:120,objectFit:'cover'}} />
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: '8px' }}>
+                            {(previewPortfolio.mediaUrls || []).map((u, idx) => (
+                              <div key={idx} style={{ background: '#f5f5f5', borderRadius: 8, overflow: 'hidden' }}>
+                                <img alt="media" src={u} style={{ width: '100%', height: 120, objectFit: 'cover' }} />
                               </div>
                             ))}
                           </div>
@@ -3156,11 +3198,11 @@ useEffect(() => {
                           <div><strong>Bio</strong></div>
                           <div>{previewPortfolio.bio}</div>
                         </div>
-                        <div className="form-group full" style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-                          {(previewPortfolio.styles || []).map(s=> (<span key={s} className="apps-pill">{s}</span>))}
-                          {(previewPortfolio.categories || []).map(c=> (<span key={c} className="apps-pill secondary">{c}</span>))}
+                        <div className="form-group full" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          {(previewPortfolio.styles || []).map(s => (<span key={s} className="apps-pill">{s}</span>))}
+                          {(previewPortfolio.categories || []).map(c => (<span key={c} className="apps-pill secondary">{c}</span>))}
                         </div>
-                        <div className="form-group full" style={{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))',gap:8}}>
+                        <div className="form-group full" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 8 }}>
                           <div>Hourly: £{previewPortfolio.hourlyRate ?? '-'}</div>
                           <div>Per Hand: £{previewPortfolio.perHandRate ?? '-'}</div>
                           <div>Bridal: £{previewPortfolio.bridalPackagePrice ?? '-'}</div>
@@ -3172,7 +3214,15 @@ useEffect(() => {
                       </div>
                     </div>
                     <div className="modal-footer">
-                      <button className="cancel-btn" onClick={()=>{ setPreviewOpen(false); setPreviewPortfolio(null); }}>Close</button>
+                      <button
+                        className="cancel-btn"
+                        onClick={() => { setPreviewOpen(false); setPreviewPortfolio(null); }}
+                        style={{ transition: 'background-color 0.2s ease' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#efefef'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; }}
+                      >
+                        Close
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -3180,23 +3230,39 @@ useEffect(() => {
 
               {/* Portfolio Delete Confirm Modal */}
               {deleteConfirmOpen && (
-                <div className="modal-overlay" onClick={()=>{ setDeleteConfirmOpen(false); setDeleteTargetId(null); }}>
-                  <div className="confirmation-modal" onClick={(e)=>e.stopPropagation()}>
+                <div className="modal-overlay" onClick={() => { setDeleteConfirmOpen(false); setDeleteTargetId(null); }}>
+                  <div className="confirmation-modal" onClick={(e) => e.stopPropagation()}>
                     <h3 className="modal-title">Delete Portfolio</h3>
                     <p className="modal-text">Are you sure you want to delete this portfolio?</p>
                     <div className="modal-actions">
-                      <button className="cancel-btn" onClick={()=>{ setDeleteConfirmOpen(false); setDeleteTargetId(null); }}>Cancel</button>
-                      <button className="confirm-btn decline" onClick={async ()=>{
-                        try {
-                          await portfoliosAPI.remove(deleteTargetId);
-                          setDeleteConfirmOpen(false);
-                          setDeleteTargetId(null);
-                          showSuccess('Portfolio deleted');
-                          fetchMyPortfolios();
-                        } catch(e) {
-                          showError(e.message || 'Failed to delete portfolio');
-                        }
-                      }}>Delete</button>
+                      <button
+                        className="cancel-btn"
+                        onClick={() => { setDeleteConfirmOpen(false); setDeleteTargetId(null); }}
+                        style={{ transition: 'background-color 0.2s ease' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#efefef'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        className="confirm-btn decline"
+                        onClick={async () => {
+                          try {
+                            await portfoliosAPI.remove(deleteTargetId);
+                            setDeleteConfirmOpen(false);
+                            setDeleteTargetId(null);
+                            showSuccess('Portfolio deleted');
+                            fetchMyPortfolios();
+                          } catch (e) {
+                            showError(e.message || 'Failed to delete portfolio');
+                          }
+                        }}
+                        style={{ transition: 'background-color 0.2s ease' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#b91c1c'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; }}
+                      >
+                        Delete
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -3231,8 +3297,8 @@ useEffect(() => {
                             </div>
 
                             <div className="conversation-info">
-                            <div className="conversation-header">
-                              <h4 className="client-name">{conversation.clientName || (conversation.client ? `${conversation.client.firstName} ${conversation.client.lastName}` : 'User')}</h4>
+                              <div className="conversation-header">
+                                <h4 className="client-name">{conversation.clientName || (conversation.client ? `${conversation.client.firstName} ${conversation.client.lastName}` : 'User')}</h4>
                                 <span className="message-time">{conversation.lastMessageTime}</span>
                               </div>
                               <div className="conversation-preview">
@@ -3253,17 +3319,17 @@ useEffect(() => {
                         <>
                           {/* Chat Header */}
                           <div className="chat-header">
-                        <div className="chat-client-info">
-                          <img src={(selectedConversation.client?.userProfileImage) || selectedConversation.clientImage || DEFAULT_AVATAR} alt={selectedConversation.clientName || (selectedConversation.client ? `${selectedConversation.client.firstName} ${selectedConversation.client.lastName}` : 'User')} />
-                          <div>
-                            <h3>{selectedConversation.clientName || (selectedConversation.client ? `${selectedConversation.client.firstName} ${selectedConversation.client.lastName}` : 'User')}</h3>
-                            {(() => {
-                              const otherId = selectedConversation.client?._id || selectedConversation.clientId || selectedConversation.id;
-                              const online = otherId ? onlineUserIds.has(String(otherId)) : false;
-                              return <span className={`status-text ${online ? 'online' : 'offline'}`}>{online ? 'Online' : 'Offline'}</span>;
-                            })()}
-                          </div>
-                        </div>
+                            <div className="chat-client-info">
+                              <img src={(selectedConversation.client?.userProfileImage) || selectedConversation.clientImage || DEFAULT_AVATAR} alt={selectedConversation.clientName || (selectedConversation.client ? `${selectedConversation.client.firstName} ${selectedConversation.client.lastName}` : 'User')} />
+                              <div>
+                                <h3>{selectedConversation.clientName || (selectedConversation.client ? `${selectedConversation.client.firstName} ${selectedConversation.client.lastName}` : 'User')}</h3>
+                                {(() => {
+                                  const otherId = selectedConversation.client?._id || selectedConversation.clientId || selectedConversation.id;
+                                  const online = otherId ? onlineUserIds.has(String(otherId)) : false;
+                                  return <span className={`status-text ${online ? 'online' : 'offline'}`}>{online ? 'Online' : 'Offline'}</span>;
+                                })()}
+                              </div>
+                            </div>
                           </div>
 
                           {/* Messages List */}
@@ -3332,11 +3398,11 @@ useEffect(() => {
 
                   <div className="calendar-card">
                     <div className="calendar-header">
-                      <span className="cal-icon"><FaCalendarAlt/></span>
+                      <span className="cal-icon"><FaCalendarAlt /></span>
                       <h3>Calendar</h3>
                     </div>
                     <div className="calendar-body">
-                      <div className="calendar-control" style={{ margin:'0 auto' }}>
+                      <div className="calendar-control" style={{ margin: '0 auto' }}>
                         <button className="cal-nav" onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))}>«</button>
                         <div className="cal-month">{calendarMonth.toLocaleString('en-GB', { month: 'long', year: 'numeric' })}</div>
                         <button className="cal-nav" onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))}>»</button>
@@ -3361,7 +3427,7 @@ useEffect(() => {
                         })}
                       </div>
                     </div>
-                    <div className="cal-legend" style={{display:'flex', justifyContent:'center'}}>
+                    <div className="cal-legend" style={{ display: 'flex', justifyContent: 'center' }}>
                       <span className="legend-item"><span className="legend-dot bridal"></span>Bridal</span>
                       <span className="legend-item"><span className="legend-dot festival"></span>Festival</span>
                       <span className="legend-item"><span className="legend-dot party"></span>Party</span>
@@ -3415,16 +3481,16 @@ useEffect(() => {
                       <div style={{ color: '#6b4a19', fontWeight: 600, marginBottom: '6px' }}>Remaining Balance</div>
                       <div style={{ fontSize: '36px', fontWeight: 800, color: '#d35400' }}>{walletLoading ? 'Loading…' : formatGBP(walletSummary.remainingBalance)}</div>
                       <button className="modern-withdraw-btn" onClick={openWithdraw} disabled={walletLoading || walletSummary.remainingBalance <= 0}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg>
                         Withdraw Funds
                       </button>
                     </div>
                   </div>
 
                   <h3 className="section-title" style={{ marginBottom: '10px' }}>Earnings</h3>
-                  <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: 'repeat(4, 1fr)', 
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(4, 1fr)',
                     gap: '20px',
                     marginBottom: '30px'
                   }}>
@@ -3453,15 +3519,15 @@ useEffect(() => {
                       }}>
                         <FaWallet style={{ fontSize: '24px', color: '#ff8c42' }} />
                       </div>
-                      <div style={{ 
-                        fontSize: '13px', 
+                      <div style={{
+                        fontSize: '13px',
                         color: '#666',
                         fontWeight: '500'
                       }}>
                         Lifetime Earnings
                       </div>
-                      <div style={{ 
-                        fontSize: '24px', 
+                      <div style={{
+                        fontSize: '24px',
                         fontWeight: '700',
                         color: '#333'
                       }}>
@@ -3494,15 +3560,15 @@ useEffect(() => {
                       }}>
                         <FaCalendarCheck style={{ fontSize: '24px', color: '#ff8c42' }} />
                       </div>
-                      <div style={{ 
-                        fontSize: '13px', 
+                      <div style={{
+                        fontSize: '13px',
                         color: '#666',
                         fontWeight: '500'
                       }}>
                         This Month
                       </div>
-                      <div style={{ 
-                        fontSize: '24px', 
+                      <div style={{
+                        fontSize: '24px',
                         fontWeight: '700',
                         color: '#333'
                       }}>
@@ -3535,15 +3601,15 @@ useEffect(() => {
                       }}>
                         <FaHourglassHalf style={{ fontSize: '24px', color: '#ff8c42' }} />
                       </div>
-                      <div style={{ 
-                        fontSize: '13px', 
+                      <div style={{
+                        fontSize: '13px',
                         color: '#666',
                         fontWeight: '500'
                       }}>
                         Pending Payouts
                       </div>
-                      <div style={{ 
-                        fontSize: '24px', 
+                      <div style={{
+                        fontSize: '24px',
                         fontWeight: '700',
                         color: '#333'
                       }}>
@@ -3576,21 +3642,21 @@ useEffect(() => {
                       }}>
                         <FaArrowCircleUp style={{ fontSize: '24px', color: '#ff8c42' }} />
                       </div>
-                      <div style={{ 
-                        fontSize: '13px', 
+                      <div style={{
+                        fontSize: '13px',
                         color: '#666',
                         fontWeight: '500'
                       }}>
                         Next Payout
                       </div>
-                      <div style={{ 
-                        fontSize: '20px', 
+                      <div style={{
+                        fontSize: '20px',
                         fontWeight: '700',
                         color: '#333'
                       }}>
                         2025-09-03
-                        <div style={{ 
-                          fontSize: '13px', 
+                        <div style={{
+                          fontSize: '13px',
                           fontWeight: '500',
                           color: '#666',
                           marginTop: '4px'
@@ -3601,7 +3667,7 @@ useEffect(() => {
                     </div>
                   </div>
 
-                 
+
 
                   {/* <div className="payout-methods">
                     <h3 className="section-title">Payout Methods</h3>
@@ -3655,21 +3721,21 @@ useEffect(() => {
                     {/* Transaction Filters */}
                     <div className="transaction-filters">
                       <div className="category-filters">
-                        <button 
+                        <button
                           className={`category-filter-btn ${transactionCategoryFilter === 'all' ? 'active' : ''}`}
                           onClick={() => handleTransactionCategoryFilter('all')}
                         >
                           <div className="filter-indicator"></div>
                           All
                         </button>
-                        <button 
+                        <button
                           className={`category-filter-btn ${transactionCategoryFilter === 'bridal' ? 'active' : ''}`}
                           onClick={() => handleTransactionCategoryFilter('bridal')}
                         >
                           <div className="filter-indicator"></div>
                           Bridal
                         </button>
-                        <button 
+                        <button
                           className={`category-filter-btn ${transactionCategoryFilter === 'festive' ? 'active' : ''}`}
                           onClick={() => handleTransactionCategoryFilter('festive')}
                         >
@@ -3677,7 +3743,7 @@ useEffect(() => {
                           <span>+</span>
                           Festive
                         </button>
-                        <button 
+                        <button
                           className={`category-filter-btn ${transactionCategoryFilter === 'party' ? 'active' : ''}`}
                           onClick={() => handleTransactionCategoryFilter('party')}
                         >
@@ -3685,7 +3751,7 @@ useEffect(() => {
                           <span>△</span>
                           Party
                         </button>
-                        <button 
+                        <button
                           className={`category-filter-btn ${transactionCategoryFilter === 'casual' ? 'active' : ''}`}
                           onClick={() => handleTransactionCategoryFilter('casual')}
                         >
@@ -3694,10 +3760,10 @@ useEffect(() => {
                           Casual
                         </button>
                       </div>
-                      
+
                       <div className="status-filter">
-                        <select 
-                          value={transactionStatusFilter} 
+                        <select
+                          value={transactionStatusFilter}
                           onChange={(e) => handleTransactionStatusFilter(e.target.value)}
                           className="status-dropdown"
                         >
@@ -3716,7 +3782,7 @@ useEffect(() => {
                       </div>
                     ) : walletTransactions.length === 0 ? (
                       <div className="empty-state">
-                        <FaMoneyBillWave size={'30px'}/>
+                        <FaMoneyBillWave size={'30px'} />
                         <h3>No Transactions Yet</h3>
                         <p>Your transaction history will appear here once you receive payments.</p>
                       </div>
@@ -3861,7 +3927,7 @@ useEffect(() => {
                         <div className="modern-modal-header">
                           <div className="modal-title-section">
                             <div className="withdraw-icon">
-                              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>
+                              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg>
                             </div>
                             <div>
                               <h3 className="modal-title">Withdraw funds</h3>
@@ -3869,7 +3935,7 @@ useEffect(() => {
                             </div>
                           </div>
                           <button className="modern-close-btn" onClick={closeWithdraw} aria-label="Close">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                           </button>
                         </div>
                         <div className="modern-modal-body">
@@ -3895,7 +3961,7 @@ useEffect(() => {
                               </div>
                             </div>
                             <div className="withdraw-info-card">
-                              <div className="info-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16"/></svg> This is a demo UI. No real withdrawal will be made.</div>
+                              <div className="info-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12" y2="16" /></svg> This is a demo UI. No real withdrawal will be made.</div>
                             </div>
                           </div>
                         </div>
@@ -3903,7 +3969,7 @@ useEffect(() => {
                           <button className="modern-cancel-btn" onClick={closeWithdraw}>Cancel</button>
                           <button className="modern-confirm-btn" onClick={confirmWalletWithdraw} disabled={!canConfirmWithdraw() || withdrawLoading}>
                             {withdrawLoading && (
-                              <svg className="spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/></svg>
+                              <svg className="spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /></svg>
                             )}
                             {withdrawLoading ? 'Processing…' : 'Confirm Withdraw'}
                           </button>
@@ -3917,108 +3983,63 @@ useEffect(() => {
               {/* Profile (Portfolios CRUD) */}
               {activeTab === 'profile' && (
                 <div className="profile-section">
-                  <div className="section-header">
-                    <h2>Profile</h2>
-                  </div>
+                  {showNewPortfolioForm ? (
+                    <ArtistPortfolioForm
+                      portfolioData={editingPortfolio}
+                      onSave={handleSaveNewPortfolio}
+                      onCancel={handleCancelPortfolioForm}
+                      loading={savingPortfolio}
+                      artistId={user?._id}
+                    />
+                  ) : (
+                    <>
+                      <div className="section-header">
+                        <h2>Profile</h2>
+                        <button
+                          onClick={() => setShowNewPortfolioForm(true)}
+                          style={{
+                            backgroundColor: '#ff6b35',
+                            color: 'white',
+                            border: 'none',
+                            padding: '10px 20px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            transition: 'background-color 0.2s ease'
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#e85a28'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#ff6b35'; }}
+                        >
+                          Create New Portfolio
+                        </button>
+                      </div>
 
-                  {/* Create Portfolio */}
-                  <div className="uploader-card">
-                    <h3 className="section-title">Create Portfolio</h3>
-                    <div className="uploader-tools">
-                      <div className="form-grid">
-                        <div className="form-group half">
-                          <label className="form-label">Display name</label>
-                          <input className="form-input" value={portfolioForm.displayName} onChange={(e)=>setPortfolioForm({...portfolioForm, displayName:e.target.value})} />
-                          {portfolioErrors.displayName && <small style={{color:'#b91c1c'}}>{portfolioErrors.displayName}</small>}
+
+                      {/* Portfolio List */}
+                      <div className="portfolio-grid">
+                        {portfoliosLoading && <div>Loading portfolios...</div>}
+                        {!portfoliosLoading && portfolios.length === 0 && (
+                          <div className="empty-state">No portfolios yet. Create your first above.</div>
+                        )}
+                        {portfolios.map(p => (
+                          <div key={p._id} className="portfolio-item">
+                            <div className="badge">{(p.categories || [])[0] || 'Mehndi'}</div>
+                            <div className="thumb" style={{ backgroundImage: (p.mediaUrls && p.mediaUrls[0]) ? `url(${p.mediaUrls[0]})` : undefined }}></div>
+                            <div className="item-actions">
+                              <button className="app-btn primary" onClick={() => { handleEditPortfolio(p); }}>Edit</button>
+                              <button className="app-btn danger" onClick={() => { setDeleteTargetId(p._id); setDeleteConfirmOpen(true); }}>Delete</button>
+                            </div>
+                            <div className="item-info">
+                              <div className="item-title">{p.displayName || 'Untitled'}</div>
+                              <div className="item-sub">{p.tagline || ''}</div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                        <div className="form-group half">
-                          <label className="form-label">Tagline</label>
-                          <input className="form-input" value={portfolioForm.tagline} onChange={(e)=>setPortfolioForm({...portfolioForm, tagline:e.target.value})} />
-                    </div>
-                        <div className="form-group full">
-                          <label className="form-label">Bio</label>
-                          <textarea className="form-input" rows={3} value={portfolioForm.bio} onChange={(e)=>setPortfolioForm({...portfolioForm, bio:e.target.value})} />
-                          {portfolioErrors.bio && <small style={{color:'#b91c1c'}}>{portfolioErrors.bio}</small>}
-                        </div>
-                        <div className="form-group full">
-                          <label className="form-label">Media URLs (comma separated)</label>
-                          <input className="form-input" value={(portfolioForm.mediaUrls || []).join(', ')} onChange={(e)=>setPortfolioForm({...portfolioForm, mediaUrls:e.target.value.split(',').map(s=>s.trim()).filter(Boolean)})} />
-                          {portfolioErrors.mediaUrls && <small style={{color:'#b91c1c'}}>{portfolioErrors.mediaUrls}</small>}
-                        </div>
-                        <div className="form-group half">
-                          <label className="form-label">Styles (comma separated)</label>
-                          <input className="form-input" value={(portfolioForm.styles || []).join(', ')} onChange={(e)=>setPortfolioForm({...portfolioForm, styles:e.target.value.split(',').map(s=>s.trim()).filter(Boolean)})} />
-                          {portfolioErrors.styles && <small style={{color:'#b91c1c'}}>{portfolioErrors.styles}</small>}
-                        </div>
-                        <div className="form-group half">
-                          <label className="form-label">Categories (comma separated)</label>
-                          <input className="form-input" value={(portfolioForm.categories || []).join(', ')} onChange={(e)=>setPortfolioForm({...portfolioForm, categories:e.target.value.split(',').map(s=>s.trim()).filter(Boolean)})} />
-                        </div>
-                        <div className="form-group third">
-                          <label className="form-label">Hourly Rate (£)</label>
-                          <input className="form-input" type="number" value={portfolioForm.hourlyRate} onChange={(e)=>setPortfolioForm({...portfolioForm, hourlyRate:e.target.value})} />
-                        </div>
-                        <div className="form-group third">
-                          <label className="form-label">Per Hand Rate (£)</label>
-                          <input className="form-input" type="number" value={portfolioForm.perHandRate} onChange={(e)=>setPortfolioForm({...portfolioForm, perHandRate:e.target.value})} />
-                        </div>
-                        <div className="form-group third">
-                          <label className="form-label">Bridal Package (£)</label>
-                          <input className="form-input" type="number" value={portfolioForm.bridalPackagePrice} onChange={(e)=>setPortfolioForm({...portfolioForm, bridalPackagePrice:e.target.value})} />
-                        </div>
-                        <div className="form-group third">
-                          <label className="form-label">Party Package (£)</label>
-                          <input className="form-input" type="number" value={portfolioForm.partyPackagePrice} onChange={(e)=>setPortfolioForm({...portfolioForm, partyPackagePrice:e.target.value})} />
-                        </div>
-                        <div className="form-group third">
-                          <label className="form-label">Outcall Fee (£)</label>
-                          <input className="form-input" type="number" value={portfolioForm.outcallFee} onChange={(e)=>setPortfolioForm({...portfolioForm, outcallFee:e.target.value})} />
-                        </div>
-                        <div className="form-group third">
-                          <label className="form-label">Event Types (comma separated)</label>
-                          <input className="form-input" value={(portfolioForm.eventTypes || []).join(', ')} onChange={(e)=>setPortfolioForm({...portfolioForm, eventTypes:e.target.value.split(',').map(s=>s.trim()).filter(Boolean)})} />
-                        </div>
-                        <div className="form-group third">
-                          <label className="form-label">Travels To Client</label>
-                          <select className="form-input" value={portfolioForm.travelsToClient ? 'yes':'no'} onChange={(e)=>setPortfolioForm({...portfolioForm, travelsToClient:e.target.value==='yes'})}>
-                            <option value="yes">Yes</option>
-                            <option value="no">No</option>
-                      </select>
-                      </div>
-                        <div className="form-group third">
-                          <label className="form-label">Published</label>
-                          <select className="form-input" value={portfolioForm.isPublished ? 'yes':'no'} onChange={(e)=>setPortfolioForm({...portfolioForm, isPublished:e.target.value==='yes'})}>
-                            <option value="yes">Yes</option>
-                            <option value="no">No</option>
-                          </select>
-                        </div>
-                        <div className="form-actions">
-                          <button className='save-portfolio-btn' style={{ background: 'var(--ad-primary-600)', color: '#fff', padding: '10px 20px', borderRadius: '24px' }} disabled={savingPortfolio} onClick={async ()=>{
-                            try {
-                              const errs = validatePortfolio(portfolioForm);
-                              setPortfolioErrors(errs);
-                              if (Object.keys(errs).length > 0) { showError('Fill required details correctly'); return; }
-                              setSavingPortfolio(true);
-                              const payload = { ...portfolioForm };
-                              // Convert numeric inputs
-                              ['hourlyRate','perHandRate','bridalPackagePrice','partyPackagePrice','outcallFee','yearsOfExperience','dryingTimeMinutes','stainLongevityDays','maxClientsPerEvent']
-                                .forEach(k=>{ if (payload[k] === '') delete payload[k]; else payload[k] = Number(payload[k]); });
-                              await portfoliosAPI.create(payload);
-                              showSuccess('Portfolio created');
-                              setPortfolioForm({ ...portfolioForm, displayName:'', tagline:'', bio:'', mediaUrls:[], styles:[], categories:[], hourlyRate:'', perHandRate:'', bridalPackagePrice:'', partyPackagePrice:'', outcallFee:'', eventTypes:[] });
-                              fetchMyPortfolios();
-                            } catch (e) {
-                              showError(e.message || 'Failed to create portfolio');
-                            } finally {
-                              setSavingPortfolio(false);
-                            }
-                          }}>📝 {savingPortfolio ? 'Saving…' : 'Save Portfolio'}</button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Logout Banner Section */}
+                    </>
+                  )}
+                   {/* Logout Banner Section */}
                   <div style={{
                     backgroundColor: '#F8F2E6',
                     padding: '2rem 0',
@@ -4082,32 +4103,13 @@ useEffect(() => {
                       </Link>
                     </div>
                   </div>
-
-                  {/* Portfolio List */}
-                  <div className="portfolio-grid">
-                    {portfoliosLoading && <div>Loading portfolios...</div>}
-                    {!portfoliosLoading && portfolios.length === 0 && (
-                      <div className="empty-state">No portfolios yet. Create your first above.</div>
-                    )}
-                    {portfolios.map(p => (
-                      <div key={p._id} className="portfolio-item">
-                        <div className="badge">{(p.categories || [])[0] || 'Mehndi'}</div>
-                        <div className="thumb" style={{ backgroundImage: (p.mediaUrls && p.mediaUrls[0]) ? `url(${p.mediaUrls[0]})` : undefined }}></div>
-                        <div className="item-actions">
-                          <button className="app-btn secondary" onClick={()=>{ setPreviewPortfolio(p); setPreviewOpen(true); }}>Preview</button>
-                          <button className="app-btn danger" onClick={()=>{ setDeleteTargetId(p._id); setDeleteConfirmOpen(true); }}>Delete</button>
-                        </div>
-                        <div className="item-info">
-                          <div className="item-title">{p.displayName || 'Untitled'}</div>
-                          <div className="item-sub">{p.tagline || ''}</div>
-                      </div>
-                  </div>
-                    ))}
-                  </div>
                 </div>
               )}
 
             </div>
+
+
+
 
             {/* Withdraw Confirmation Modal */}
             {withdrawConfirmOpen && (
@@ -4120,15 +4122,15 @@ useEffect(() => {
                     <strong>You can't apply to this booking again.</strong>
                   </p>
                   <div className="modal-actions">
-                    <button 
-                      className="cancel-btn" 
+                    <button
+                      className="cancel-btn"
                       onClick={closeWithdrawConfirm}
                       disabled={withdrawLoading}
                     >
                       Cancel
                     </button>
-                    <button 
-                      className="confirm-btn decline" 
+                    <button
+                      className="confirm-btn decline"
                       onClick={confirmWithdraw}
                       disabled={withdrawLoading}
                     >
@@ -4141,12 +4143,12 @@ useEffect(() => {
 
 
             {viewOpen && viewForm && (
-              <div className="modal-overlay" onClick={closeViewBooking} style={{ 
-                position: 'fixed', 
-                top: 0, 
-                left: 0, 
-                right: 0, 
-                bottom: 0, 
+              <div className="modal-overlay" onClick={closeViewBooking} style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
                 overflow: 'hidden',
                 display: 'flex',
                 alignItems: 'center',
@@ -4167,8 +4169,8 @@ useEffect(() => {
                     <h3 className="modal-title">Booking Details</h3>
                     <button className="modal-close" onClick={closeViewBooking}>×</button>
                   </div>
-                  <div className="modal-body" style={{ 
-                    overflowY: 'auto', 
+                  <div className="modal-body" style={{
+                    overflowY: 'auto',
                     flex: 1,
                     padding: '20px'
                   }}>
@@ -4196,7 +4198,7 @@ useEffect(() => {
                       <div className="form-group full">
                         <label>Event type</label>
                         <div className="checkbox-grid">
-                          {['Wedding','Eid','Party','Festival'].map(opt => (
+                          {['Wedding', 'Eid', 'Party', 'Festival'].map(opt => (
                             <label key={opt} className="checkbox-label">
                               <input type="checkbox" checked={(viewForm.eventType || []).includes(opt)} readOnly disabled />
                               <span>{opt}</span>
@@ -4213,7 +4215,7 @@ useEffect(() => {
                       <div className="form-group full">
                         <label>Preferred time slot</label>
                         <div className="checkbox-grid">
-                          {['Morning','Afternoon','Evening','Flexible'].map(opt => (
+                          {['Morning', 'Afternoon', 'Evening', 'Flexible'].map(opt => (
                             <label key={opt} className="checkbox-label">
                               <input type="checkbox" checked={(viewForm.preferredTimeSlot || []).includes(opt)} readOnly disabled />
                               <span>{opt}</span>
@@ -4270,7 +4272,7 @@ useEffect(() => {
                         <label>Design style</label>
                         <select name="designStyle" value={viewForm.designStyle} disabled>
                           <option value="">Select style</option>
-                          {['Traditional','Modern','Arabic','Indian','Moroccan','Minimalist','Bridal'].map(opt => (
+                          {['Traditional', 'Modern', 'Arabic', 'Indian', 'Moroccan', 'Minimalist', 'Bridal'].map(opt => (
                             <option key={opt} value={opt}>{opt}</option>
                           ))}
                         </select>
@@ -4279,7 +4281,7 @@ useEffect(() => {
                         <label>Complexity</label>
                         <select name="designComplexity" value={viewForm.designComplexity} disabled>
                           <option value="">Select complexity</option>
-                          {['Simple','Medium','Complex','Very Complex'].map(opt => (
+                          {['Simple', 'Medium', 'Complex', 'Very Complex'].map(opt => (
                             <option key={opt} value={opt}>{opt}</option>
                           ))}
                         </select>
@@ -4287,7 +4289,7 @@ useEffect(() => {
                       <div className="form-group full">
                         <label>Body parts to decorate</label>
                         <div className="checkbox-grid">
-                          {['Hands','Feet','Arms','Back'].map(opt => (
+                          {['Hands', 'Feet', 'Arms', 'Back'].map(opt => (
                             <label key={opt} className="checkbox-label">
                               <input type="checkbox" checked={(viewForm.bodyPartsToDecorate || []).includes(opt)} readOnly disabled />
                               <span>{opt}</span>
@@ -4299,7 +4301,7 @@ useEffect(() => {
                         <label>Coverage preference</label>
                         <select name="coveragePreference" value={viewForm.coveragePreference} disabled>
                           <option value="">Select coverage</option>
-                          {['Light','Medium','Full','Bridal Package'].map(opt => (
+                          {['Light', 'Medium', 'Full', 'Bridal Package'].map(opt => (
                             <option key={opt} value={opt}>{opt}</option>
                           ))}
                         </select>
@@ -4327,12 +4329,12 @@ useEffect(() => {
 
             {/* View Notes Modal */}
             {viewNotesModalOpen && viewNotesBookingId && (
-              <div className="modal-overlay" onClick={() => setViewNotesModalOpen(false)} style={{ 
-                position: 'fixed', 
-                top: 0, 
-                left: 0, 
-                right: 0, 
-                bottom: 0, 
+              <div className="modal-overlay" onClick={() => setViewNotesModalOpen(false)} style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
                 overflow: 'hidden',
                 display: 'flex',
                 alignItems: 'center',
@@ -4356,8 +4358,8 @@ useEffect(() => {
                     </h3>
                     <button className="modal-close" onClick={() => setViewNotesModalOpen(false)}>×</button>
                   </div>
-                  <div className="modal-body" style={{ 
-                    overflowY: 'auto', 
+                  <div className="modal-body" style={{
+                    overflowY: 'auto',
                     flex: 1,
                     padding: '20px'
                   }}>
@@ -4373,9 +4375,9 @@ useEffect(() => {
                             border: '1px solid #e0e0e0'
                           }}>
                             <div style={{ marginBottom: '8px', fontSize: '12px', color: '#888' }}>
-                              {new Date(note.createdAt).toLocaleDateString('en-GB', { 
-                                day: '2-digit', 
-                                month: 'short', 
+                              {new Date(note.createdAt).toLocaleDateString('en-GB', {
+                                day: '2-digit',
+                                month: 'short',
                                 year: 'numeric',
                                 hour: '2-digit',
                                 minute: '2-digit'
@@ -4385,10 +4387,10 @@ useEffect(() => {
                               {note.content}
                             </div>
                             {note.followUp && (
-                              <div style={{ 
-                                marginTop: '8px', 
-                                padding: '4px 8px', 
-                                backgroundColor: '#fff3cd', 
+                              <div style={{
+                                marginTop: '8px',
+                                padding: '4px 8px',
+                                backgroundColor: '#fff3cd',
                                 borderRadius: '4px',
                                 fontSize: '12px',
                                 color: '#856404',
@@ -4577,7 +4579,7 @@ useEffect(() => {
                     <h3 className="modal-title">Apply to Booking</h3>
                     <button className="modal-close" onClick={closeApplyModal}>×</button>
                   </div>
-                  
+
                   <div className="modal-body" style={{ padding: '0' }}>
                     {/* Booking Card at the top */}
                     {applyBookingData && (
@@ -4590,7 +4592,7 @@ useEffect(() => {
                         boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
                         transition: 'all 0.3s ease'
                       }}>
-                        <div className="booking-header" style={{ marginBottom: '0', textAlign: 'left', flexDirection:'column' }}>
+                        <div className="booking-header" style={{ marginBottom: '0', textAlign: 'left', flexDirection: 'column' }}>
                           <h4 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: '600', color: '#2c3e50', textAlign: 'left' }}>
                             {applyBookingData.title}
                           </h4>
@@ -4611,7 +4613,7 @@ useEffect(() => {
                         </div>
                       </div>
                     )}
-                    
+
                     <div className="application-form" style={{ padding: '0 20px 20px 20px' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                         {/* Row 1: Budget & Timeline */}
@@ -4623,17 +4625,17 @@ useEffect(() => {
                         }}>
                           <h4 className="section-title" style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px', color: '#2c3e50' }}>Budget & Timeline</h4>
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                          <div className="form-group">
+                            <div className="form-group">
                               <label className="form-label" style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px', color: '#495057' }}>Your Proposed Budget (£) *</label>
-                            <input
-                              type="number"
-                              className={`form-input ${formErrors.proposedBudget ? 'error' : ''}`}
-                              placeholder="450"
-                              value={applicationForm.proposedBudget}
-                              onChange={(e) => handleFormChange('proposedBudget', e.target.value)}
-                              disabled={applyLoading}
-                              min="0"
-                              step="0.01"
+                              <input
+                                type="number"
+                                className={`form-input ${formErrors.proposedBudget ? 'error' : ''}`}
+                                placeholder="450"
+                                value={applicationForm.proposedBudget}
+                                onChange={(e) => handleFormChange('proposedBudget', e.target.value)}
+                                disabled={applyLoading}
+                                min="0"
+                                step="0.01"
                                 style={{
                                   width: '100%',
                                   padding: '12px',
@@ -4645,19 +4647,19 @@ useEffect(() => {
                                 }}
                               />
                               {formErrors.proposedBudget && <span className="error-text" style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px', display: 'block' }}>{formErrors.proposedBudget}</span>}
-                          </div>
-                          <div className="form-group">
+                            </div>
+                            <div className="form-group">
                               <label className="form-label" style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px', color: '#495057' }}>Estimated Duration *</label>
                               <div className="duration-input-group" style={{ display: 'flex', gap: '8px' }}>
-                              <input
-                                type="number"
-                                className={`form-input ${formErrors.estimatedDuration ? 'error' : ''}`}
-                                placeholder="4"
-                                value={applicationForm.estimatedDuration.value}
-                                onChange={(e) => handleFormChange('estimatedDuration.value', e.target.value)}
-                                disabled={applyLoading}
-                                min="0"
-                                step="0.5"
+                                <input
+                                  type="number"
+                                  className={`form-input ${formErrors.estimatedDuration ? 'error' : ''}`}
+                                  placeholder="4"
+                                  value={applicationForm.estimatedDuration.value}
+                                  onChange={(e) => handleFormChange('estimatedDuration.value', e.target.value)}
+                                  disabled={applyLoading}
+                                  min="0"
+                                  step="0.5"
                                   style={{
                                     flex: '2',
                                     padding: '12px',
@@ -4668,12 +4670,12 @@ useEffect(() => {
                                     transition: 'border-color 0.2s ease',
                                     minWidth: '120px'
                                   }}
-                              />
-                              <select
-                                className="form-input"
-                                value={applicationForm.estimatedDuration.unit}
-                                onChange={(e) => handleFormChange('estimatedDuration.unit', e.target.value)}
-                                disabled={applyLoading}
+                                />
+                                <select
+                                  className="form-input"
+                                  value={applicationForm.estimatedDuration.unit}
+                                  onChange={(e) => handleFormChange('estimatedDuration.unit', e.target.value)}
+                                  disabled={applyLoading}
                                   style={{
                                     flex: '1',
                                     padding: '12px',
@@ -4684,15 +4686,15 @@ useEffect(() => {
                                     backgroundColor: 'white',
                                     minWidth: '80px'
                                   }}
-                              >
-                                <option value="hours">Hours</option>
-                                <option value="days">Days</option>
-                              </select>
-                            </div>
+                                >
+                                  <option value="hours">Hours</option>
+                                  <option value="days">Days</option>
+                                </select>
+                              </div>
                               {formErrors.estimatedDuration && <span className="error-text" style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px', display: 'block' }}>{formErrors.estimatedDuration}</span>}
+                            </div>
                           </div>
                         </div>
-                      </div>
 
                         {/* Row 2: Your Proposal */}
                         <div className="form-card" style={{
@@ -4702,15 +4704,15 @@ useEffect(() => {
                           padding: '20px'
                         }}>
                           <h4 className="section-title" style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px', color: '#2c3e50' }}>Your Proposal</h4>
-                        <div className="form-group">
+                          <div className="form-group">
                             <label className="form-label" style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px', color: '#495057' }}>Proposal Message *</label>
-                          <textarea
-                            className={`form-textarea ${formErrors.proposalMessage ? 'error' : ''}`}
-                            placeholder="Write a message explaining why you're the best fit for this booking. Include your approach and what makes you unique..."
+                            <textarea
+                              className={`form-textarea ${formErrors.proposalMessage ? 'error' : ''}`}
+                              placeholder="Write a message explaining why you're the best fit for this booking. Include your approach and what makes you unique..."
                               rows="6"
-                            value={applicationForm.proposal.message}
-                            onChange={(e) => handleFormChange('proposal.message', e.target.value)}
-                            disabled={applyLoading}
+                              value={applicationForm.proposal.message}
+                              onChange={(e) => handleFormChange('proposal.message', e.target.value)}
+                              disabled={applyLoading}
                               style={{
                                 width: '100%',
                                 padding: '12px',
@@ -4723,18 +4725,18 @@ useEffect(() => {
                                 fontFamily: 'inherit',
                                 lineHeight: '1.4'
                               }}
-                          />
-                          <small style={{
+                            />
+                            <small style={{
                               color: applicationForm.proposal.message.length < 20 ? '#dc3545' : '#28a745',
                               fontSize: '12px',
                               marginTop: '4px',
                               display: 'block'
-                          }}>
-                            {applicationForm.proposal.message.length}/20 characters minimum
-                          </small>
+                            }}>
+                              {applicationForm.proposal.message.length}/20 characters minimum
+                            </small>
                             {formErrors.proposalMessage && <span className="error-text" style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px', display: 'block' }}>{formErrors.proposalMessage}</span>}
+                          </div>
                         </div>
-                      </div>
 
                         {/* Row 3: Terms & Conditions */}
                         <div className="form-card" style={{
@@ -4744,17 +4746,17 @@ useEffect(() => {
                           padding: '20px'
                         }}>
                           <h4 className="section-title" style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px', color: '#2c3e50' }}>Terms & Conditions</h4>
-                        <div className="checkbox-group">
+                          <div className="checkbox-group">
                             <label className="checkbox-label" style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', fontSize: '14px', lineHeight: '1.4' }}>
-                            <input
-                              type="checkbox"
-                              checked={applicationForm.terms.agreedToTerms}
-                              onChange={(e) => handleFormChange('terms.agreedToTerms', e.target.checked)}
-                              disabled={applyLoading}
+                              <input
+                                type="checkbox"
+                                checked={applicationForm.terms.agreedToTerms}
+                                onChange={(e) => handleFormChange('terms.agreedToTerms', e.target.checked)}
+                                disabled={applyLoading}
                                 style={{ marginTop: '2px' }}
-                            />
+                              />
                               <span style={{ color: '#495057' }}>I understand that I cannot withdraw my application after the booking application is accepted.</span>
-                          </label>
+                            </label>
                             {formErrors.agreedToTerms && <span className="error-text" style={{ color: '#dc3545', fontSize: '12px', marginTop: '8px', display: 'block' }}>{formErrors.agreedToTerms}</span>}
                           </div>
                         </div>
@@ -4813,7 +4815,7 @@ useEffect(() => {
           </div>
         </div>
       </div>
-      
+
       {/* Toast Notifications */}
       <ToastContainer toasts={toasts} removeToast={removeToast} />
     </>

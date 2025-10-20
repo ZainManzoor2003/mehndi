@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import apiService, { chatAPI } from '../services/api';
 import { useNavigate } from 'react-router-dom';
+import ArtistProfileModal from './ArtistProfileModal';
 
 // Header removed for standalone use inside dashboard and route
 
@@ -18,6 +19,8 @@ const ProposalsPage = () => {
   const [selectedRow, setSelectedRow] = useState(null);
   const [selectedArtistDetails, setSelectedArtistDetails] = useState(null);
   const [expandedRequest, setExpandedRequest] = useState(null);
+  const [showArtistProfileModal, setShowArtistProfileModal] = useState(false);
+  const [selectedArtist, setSelectedArtist] = useState(null);
 
   // Live data
   const [bookings, setBookings] = useState([]); // pending bookings only
@@ -368,6 +371,11 @@ const ProposalsPage = () => {
     setShowDetailsModal(true);
   };
 
+  const handleArtistProfileClick = (artist) => {
+    setSelectedArtist(artist);
+    setShowArtistProfileModal(true);
+  };
+
   const getActionButtons = (row) => {
     if (row.status === 'applied') {
       return (
@@ -666,7 +674,17 @@ const ProposalsPage = () => {
                     {(selectedArtistDetails.artist?.firstName?.[0] || 'A')}{(selectedArtistDetails.artist?.lastName?.[0] || '')}
                   </div>
                   <div className="artist-basic-info">
-                    <h4 className="artist-name">
+                    <h4 
+                      className="artist-name"
+                      style={{ cursor: 'pointer', color: '#D2691E' }}
+                      onClick={() => handleArtistProfileClick(selectedArtistDetails.artist)}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.textDecoration = 'underline';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.textDecoration = 'none';
+                      }}
+                    >
                       {selectedArtistDetails.artist ? 
                         `${selectedArtistDetails.artist.firstName} ${selectedArtistDetails.artist.lastName}` : 
                         'Artist'
@@ -696,70 +714,6 @@ const ProposalsPage = () => {
                       <span className="detail-label">Message:</span>
                       <span className="detail-value long-text">{selectedArtistDetails.artistDetails?.proposal?.message || 'No message provided'}</span>
                     </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Additional Notes:</span>
-                      <span className="detail-value long-text">{selectedArtistDetails.artistDetails?.proposal?.additionalNotes || 'No additional notes'}</span>
-                    </div>
-                  </div>
-
-                  <div className="detail-section">
-                    <h5>Availability</h5>
-                    <div className="detail-item">
-                      <span className="detail-label">Can Travel to Location:</span>
-                      <span className="detail-value">
-                        {selectedArtistDetails.artistDetails?.availability?.canTravelToLocation ? '✅ Yes' : '❌ No'}
-                      </span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Available on Date:</span>
-                      <span className="detail-value">
-                        {selectedArtistDetails.artistDetails?.availability?.isAvailableOnDate ? '✅ Yes' : '❌ No'}
-                      </span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Flexible Schedule:</span>
-                      <span className="detail-value">
-                        {selectedArtistDetails.artistDetails?.availability?.flexibleSchedule ? '✅ Yes' : '❌ No'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="detail-section">
-                    <h5>Experience & Portfolio</h5>
-                    <div className="detail-item">
-                      <span className="detail-label">Portfolio Highlights:</span>
-                      <span className="detail-value long-text">{selectedArtistDetails.artistDetails?.experience?.portfolioHighlights || 'Not provided'}</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Relevant Experience:</span>
-                      <span className="detail-value long-text">{selectedArtistDetails.artistDetails?.experience?.relevantExperience || 'Not provided'}</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Years of Experience:</span>
-                      <span className="detail-value">{selectedArtistDetails.artistDetails?.experience?.yearsOfExperience || 'Not specified'}</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Specializations:</span>
-                      <span className="detail-value">{selectedArtistDetails.artistDetails?.experience?.specializations || 'Not specified'}</span>
-                    </div>
-                  </div>
-
-                  <div className="detail-section">
-                    <h5>Terms & Conditions</h5>
-                    <div className="detail-item">
-                      <span className="detail-label">Agreed to Terms:</span>
-                      <span className="detail-value">
-                        {selectedArtistDetails.artistDetails?.terms?.agreedToTerms ? '✅ Yes' : '❌ No'}
-                      </span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Payment Terms:</span>
-                      <span className="detail-value">{selectedArtistDetails.artistDetails?.terms?.paymentTerms || 'Not specified'}</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Cancellation Policy:</span>
-                      <span className="detail-value">{selectedArtistDetails.artistDetails?.terms?.cancellationPolicy || 'Not specified'}</span>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -775,6 +729,13 @@ const ProposalsPage = () => {
             </div>
           </div>
         )}
+
+        {/* Artist Profile Modal */}
+        <ArtistProfileModal
+          artist={selectedArtist}
+          isOpen={showArtistProfileModal}
+          onClose={() => setShowArtistProfileModal(false)}
+        />
       </div>
     </>
   );

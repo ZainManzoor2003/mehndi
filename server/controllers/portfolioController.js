@@ -95,4 +95,34 @@ exports.deletePortfolio = async (req, res) => {
   }
 };
 
+exports.getArtistPortfolio = async (req, res) => {
+  try {
+    const { artistId } = req.params;
+
+    // Find the artist's portfolio (get the first published one or the first one if none published)
+    const portfolio = await Portfolio.findOne({ artist: artistId, isPublished: true })
+      .populate('artist', 'firstName lastName email userProfileImage')
+      .sort({ createdAt: -1 });
+
+    // If no published portfolio, get the most recent one
+    if (!portfolio) {
+      const fallbackPortfolio = await Portfolio.findOne({ artist: artistId })
+        .populate('artist', 'firstName lastName email userProfileImage')
+        .sort({ createdAt: -1 });
+      
+      if (!fallbackPortfolio) {
+        return res.status(404).json({ success: false, message: 'No portfolio found for this artist' });
+      }
+      
+      return res.json({ success: true, data: fallbackPortfolio });
+    }
+
+    return res.json({ success: true, data: portfolio });
+  } catch (err) {
+    console.error('getArtistPortfolio error:', err);
+    const status = err.status || 500;
+    return res.status(status).json({ success: false, message: err.message || 'Server error' });
+  }
+};
+
 
