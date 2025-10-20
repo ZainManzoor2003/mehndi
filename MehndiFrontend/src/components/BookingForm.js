@@ -716,47 +716,29 @@ const BookingForm = () => {
                   </div>
                 </div>
 
-                <div className="form-row" style={{ display: 'flex', gap: '15px', alignItems: 'end' }}>
-                  <div className="form-group" style={{ flex: '1' }}>
-                    <label className="form-label">Latitude</label>
-                    <input
-                      type="text"
-                      name="latitude"
-                      className="form-input"
-                      placeholder="Latitude"
-                      value={formData.latitude}
-                      readOnly
-                      onFocus={() => {
-                        setTooltipMessage('Click Get Location button to add location');
-                        setTimeout(() => setTooltipMessage(''), 2000);
-                      }}
-                    />
-                  </div>
-                  <div className="form-group" style={{ flex: '1' }}>
-                    <label className="form-label">Longitude</label>
-                    <input
-                      type="text"
-                      name="longitude"
-                      className="form-input"
-                      placeholder="Longitude"
-                      value={formData.longitude}
-                      readOnly
-                      onFocus={() => {
-                        setTooltipMessage('Click Get Location button to add location');
-                        setTimeout(() => setTooltipMessage(''), 2000);
-                      }}
-                    />
-                  </div>
-                  <div className="form-group" style={{ flex: '0 0 auto', minWidth: '140px' }}>
-                    <button
-                      type="button"
-                      className="btn-primary"
-                      onClick={() => setShowLocationModal(true)}
-                      style={{ padding: '12px 20px', width: '100%' }}
-                    >
-                      Get Location
-                    </button>
-                  </div>
+                <div className="form-group">
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={() => setShowLocationModal(true)}
+                    style={{ padding: '12px 20px' }}
+                  >
+                    Get Location
+                  </button>
+                  {formData.latitude && formData.longitude && (
+                    <div style={{ 
+                      marginTop: '10px', 
+                      padding: '8px 12px', 
+                      backgroundColor: '#d4edda', 
+                      color: '#155724', 
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      display: 'inline-block',
+                      border: '1px solid #c3e6cb'
+                    }}>
+                      ✓ Location Selected
+                    </div>
+                  )}
                 </div>
 
                 <div className="form-group">

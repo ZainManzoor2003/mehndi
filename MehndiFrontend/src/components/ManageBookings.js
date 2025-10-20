@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import AdminSidebar from './AdminSidebar';
 import api from '../services/api';
 import Select from 'react-select';
+import './admin-styles.css';
 
 const ManageBookings = () => {
   const [bookings, setBookings] = useState([]);
@@ -209,9 +210,9 @@ const ManageBookings = () => {
   }, []);
 
   return (
-    <div className="dashboard-layout">
+    <div className="admin_dashboard-layout">
       <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="dashboard-main-content">
+      <div className="admin_dashboard-main-content">
         <button
           className="sidebar-toggle-btn"
           onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -222,95 +223,88 @@ const ManageBookings = () => {
             <line x1="3" y1="18" x2="21" y2="18" />
           </svg>
         </button>
-      <div className="dashboard-container">
-      <div className="dashboard-content">
-        <div className="bookings-header">
-          <h2 className="bookings-title">Manage Bookings</h2>
-          <p className="bookings-subtitle">Manage all platform bookings</p>
+      <div className="admin_dashboard-container">
+      <div className="admin_dashboard-content">
+        <div className="admin_bookings-header">
+          <h2 className="admin_bookings-title">Manage Bookings</h2>
+          <p className="admin_bookings-subtitle">Manage all platform bookings</p>
         </div>
 
-        {error && <p className="error">{error}</p>}
+        {error && <p className="admin_error">{error}</p>}
         {loading ? (
           <p>Loading...</p>
         ) : (
           <>
             {/* Booking Stats Cards */}
-          <div className="booking-stats">
-            <div className="stat-card">
-              <div className="stat-icon">
+          <div className="admin_booking-stats">
+            <div className="admin_stat-card">
+              <div className="admin_stat-icon">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
                   <line x1="8" y1="21" x2="16" y2="21" />
                   <line x1="12" y1="17" x2="12" y2="21" />
                 </svg>
               </div>
-              <div className="stat-info">
+              <div className="admin_stat-info">
                 <h3>Total Bookings</h3>
-                <span className="stat-number">{bookings.length}</span>
+                <span className="admin_stat-number">{bookings.length}</span>
               </div>
             </div>
 
-            <div className="stat-card">
-              <div className="stat-icon">
+            <div className="admin_stat-card">
+              <div className="admin_stat-icon">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
                   <polyline points="22,4 12,14.01 9,11.01"/>
                 </svg>
               </div>
-              <div className="stat-info">
+              <div className="admin_stat-info">
                 <h3>Confirmed</h3>
-                <span className="stat-number">{bookings.filter(b => b.status === 'confirmed').length}</span>
+                <span className="admin_stat-number">{bookings.filter(b => b.status === 'confirmed').length}</span>
               </div>
             </div>
 
-            <div className="stat-card">
-              <div className="stat-icon">
+            <div className="admin_stat-card">
+              <div className="admin_stat-icon">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="12" cy="12" r="10"/>
                   <polyline points="12,6 12,12 16,14"/>
                 </svg>
               </div>
-              <div className="stat-info">
+              <div className="admin_stat-info">
                 <h3>Pending</h3>
-                <span className="stat-number">{bookings.filter(b => b.status === 'pending').length}</span>
+                <span className="admin_stat-number">{bookings.filter(b => b.status === 'pending').length}</span>
               </div>
             </div>
 
-            <div className="stat-card">
-              <div className="stat-icon">
+            <div className="admin_stat-card">
+              <div className="admin_stat-icon">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polyline points="20,6 9,17 4,12"/>
                 </svg>
               </div>
-              <div className="stat-info">
+              <div className="admin_stat-info">
                 <h3>Completed</h3>
-                <span className="stat-number">{bookings.filter(b => b.status === 'completed').length}</span>
+                <span className="admin_stat-number">{bookings.filter(b => b.status === 'completed').length}</span>
               </div>
             </div>
 
-            <div className="stat-card">
-              <div className="stat-icon">
+            <div className="admin_stat-card">
+              <div className="admin_stat-icon">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="12" cy="12" r="10"/>
                   <line x1="15" y1="9" x2="9" y2="15"/>
                   <line x1="9" y1="9" x2="15" y2="15"/>
                 </svg>
               </div>
-              <div className="stat-info">
+              <div className="admin_stat-info">
                 <h3>Cancelled</h3>
-                <span className="stat-number">{bookings.filter(b => b.status === 'cancelled').length}</span>
+                <span className="admin_stat-number">{bookings.filter(b => b.status === 'cancelled').length}</span>
               </div>
             </div>
           </div>
           {/* Filter Section */}
-          <div className="filter-section" style={{
-              backgroundColor: '#fff',
-              padding: '1.5rem',
-              borderRadius: '12px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              marginBottom: '2rem',
-              border: '1px solid #e5e7eb'
-            }}>
+          <div className="admin_filter-section">
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: (searchTerm || selectedStatus?.value || selectedEventType?.value || selectedCity?.value) ? '1fr 1fr 1fr 1fr auto' : '1fr 1fr 1fr 1fr',
@@ -318,12 +312,12 @@ const ManageBookings = () => {
                 alignItems: 'end'
               }}>
                 {/* Search Input */}
-                <div className="filter-item">
+                <div className="admin_filter-item">
                   <label style={{
                     display: 'block',
                     marginBottom: '0.5rem',
                     fontWeight: '600',
-                    color: '#374151',
+                    color: '#0f172a',
                     fontSize: '0.875rem'
                   }}>
                     Search Bookings
@@ -336,30 +330,32 @@ const ManageBookings = () => {
                     style={{
                       width: '100%',
                       padding: '0.75rem',
-                      border: '2px solid #d1d5db',
+                      border: '2px solid #e5e7eb',
                       borderRadius: '8px',
                       fontSize: '0.875rem',
                       transition: 'border-color 0.2s',
-                      backgroundColor: '#f9fafb'
+                      backgroundColor: '#ffffff'
                     }}
                     onFocus={(e) => {
-                      e.target.style.borderColor = '#d4a574';
-                      e.target.style.backgroundColor = '#fff';
+                      e.target.style.borderColor = '#3b82f6';
+                      e.target.style.backgroundColor = '#ffffff';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
                     }}
                     onBlur={(e) => {
-                      e.target.style.borderColor = '#d1d5db';
-                      e.target.style.backgroundColor = '#f9fafb';
+                      e.target.style.borderColor = '#e5e7eb';
+                      e.target.style.backgroundColor = '#ffffff';
+                      e.target.style.boxShadow = 'none';
                     }}
                   />
                 </div>
 
                 {/* Status Dropdown */}
-                <div className="filter-item">
+                <div className="admin_filter-item">
                   <label style={{
                     display: 'block',
                     marginBottom: '0.5rem',
                     fontWeight: '600',
-                    color: '#374151',
+                    color: '#0f172a',
                     fontSize: '0.875rem'
                   }}>
                     Filter by Status
@@ -372,17 +368,20 @@ const ManageBookings = () => {
                     styles={{
                       control: (provided, state) => ({
                         ...provided,
-                        border: '2px solid #d1d5db',
+                        border: '2px solid #e5e7eb',
                         borderRadius: '8px',
                         minHeight: '42px',
-                        backgroundColor: '#f9fafb',
-                        boxShadow: 'none',
+                        backgroundColor: '#ffffff',
+                        boxShadow: state.isFocused ? '0 0 0 3px rgba(59, 130, 246, 0.1)' : 'none',
                         '&:hover': {
-                          borderColor: '#d4a574'
+                          borderColor: '#3b82f6'
                         },
                         ...(state.isFocused && {
-                          borderColor: '#d4a574',
-                          backgroundColor: '#fff'
+                          borderColor: '#3b82f6'
+                        }),
+                        ...(state.isFocused && {
+                          borderColor: '#3b82f6',
+                          backgroundColor: '#ffffff'
                         })
                       }),
                       placeholder: (provided) => ({
@@ -392,13 +391,13 @@ const ManageBookings = () => {
                       }),
                       option: (provided, state) => ({
                         ...provided,
-                        backgroundColor: state.isSelected ? '#d4a574' : state.isFocused ? '#fef7ed' : '#fff',
-                        color: state.isSelected ? '#fff' : '#374151',
+                        backgroundColor: state.isSelected ? '#6b7280' : state.isFocused ? '#f8fafc' : '#ffffff',
+                        color: state.isSelected ? '#ffffff' : '#0f172a',
                         fontSize: '0.875rem'
                       }),
                       singleValue: (provided) => ({
                         ...provided,
-                        color: '#374151',
+                        color: '#0f172a',
                         fontSize: '0.875rem'
                       })
                     }}
@@ -406,12 +405,12 @@ const ManageBookings = () => {
                 </div>
 
                 {/* Event Type Dropdown */}
-                <div className="filter-item">
+                <div className="admin_filter-item">
                   <label style={{
                     display: 'block',
                     marginBottom: '0.5rem',
                     fontWeight: '600',
-                    color: '#374151',
+                    color: '#0f172a',
                     fontSize: '0.875rem'
                   }}>
                     Filter by Event Type
@@ -424,17 +423,20 @@ const ManageBookings = () => {
                     styles={{
                       control: (provided, state) => ({
                         ...provided,
-                        border: '2px solid #d1d5db',
+                        border: '2px solid #e5e7eb',
                         borderRadius: '8px',
                         minHeight: '42px',
-                        backgroundColor: '#f9fafb',
-                        boxShadow: 'none',
+                        backgroundColor: '#ffffff',
+                        boxShadow: state.isFocused ? '0 0 0 3px rgba(59, 130, 246, 0.1)' : 'none',
                         '&:hover': {
-                          borderColor: '#d4a574'
+                          borderColor: '#3b82f6'
                         },
                         ...(state.isFocused && {
-                          borderColor: '#d4a574',
-                          backgroundColor: '#fff'
+                          borderColor: '#3b82f6'
+                        }),
+                        ...(state.isFocused && {
+                          borderColor: '#3b82f6',
+                          backgroundColor: '#ffffff'
                         })
                       }),
                       placeholder: (provided) => ({
@@ -444,13 +446,13 @@ const ManageBookings = () => {
                       }),
                       option: (provided, state) => ({
                         ...provided,
-                        backgroundColor: state.isSelected ? '#d4a574' : state.isFocused ? '#fef7ed' : '#fff',
-                        color: state.isSelected ? '#fff' : '#374151',
+                        backgroundColor: state.isSelected ? '#6b7280' : state.isFocused ? '#f8fafc' : '#ffffff',
+                        color: state.isSelected ? '#ffffff' : '#0f172a',
                         fontSize: '0.875rem'
                       }),
                       singleValue: (provided) => ({
                         ...provided,
-                        color: '#374151',
+                        color: '#0f172a',
                         fontSize: '0.875rem'
                       })
                     }}
@@ -458,12 +460,12 @@ const ManageBookings = () => {
                 </div>
 
                 {/* City Dropdown */}
-                <div className="filter-item">
+                <div className="admin_filter-item">
                   <label style={{
                     display: 'block',
                     marginBottom: '0.5rem',
                     fontWeight: '600',
-                    color: '#374151',
+                    color: '#0f172a',
                     fontSize: '0.875rem'
                   }}>
                     Filter by City
@@ -476,17 +478,20 @@ const ManageBookings = () => {
                     styles={{
                       control: (provided, state) => ({
                         ...provided,
-                        border: '2px solid #d1d5db',
+                        border: '2px solid #e5e7eb',
                         borderRadius: '8px',
                         minHeight: '42px',
-                        backgroundColor: '#f9fafb',
-                        boxShadow: 'none',
+                        backgroundColor: '#ffffff',
+                        boxShadow: state.isFocused ? '0 0 0 3px rgba(59, 130, 246, 0.1)' : 'none',
                         '&:hover': {
-                          borderColor: '#d4a574'
+                          borderColor: '#3b82f6'
                         },
                         ...(state.isFocused && {
-                          borderColor: '#d4a574',
-                          backgroundColor: '#fff'
+                          borderColor: '#3b82f6'
+                        }),
+                        ...(state.isFocused && {
+                          borderColor: '#3b82f6',
+                          backgroundColor: '#ffffff'
                         })
                       }),
                       placeholder: (provided) => ({
@@ -496,13 +501,13 @@ const ManageBookings = () => {
                       }),
                       option: (provided, state) => ({
                         ...provided,
-                        backgroundColor: state.isSelected ? '#d4a574' : state.isFocused ? '#fef7ed' : '#fff',
-                        color: state.isSelected ? '#fff' : '#374151',
+                        backgroundColor: state.isSelected ? '#6b7280' : state.isFocused ? '#f8fafc' : '#ffffff',
+                        color: state.isSelected ? '#ffffff' : '#0f172a',
                         fontSize: '0.875rem'
                       }),
                       singleValue: (provided) => ({
                         ...provided,
-                        color: '#374151',
+                        color: '#0f172a',
                         fontSize: '0.875rem'
                       })
                     }}
@@ -511,7 +516,7 @@ const ManageBookings = () => {
 
                 {/* Clear Filters Button */}
                 {(searchTerm || selectedStatus?.value || selectedEventType?.value || selectedCity?.value || selectedUserType?.value) && (
-                  <div className="filter-item" style={{ display: 'flex', alignItems: 'end' }}>
+                  <div className="admin_filter-item" style={{ display: 'flex', alignItems: 'end' }}>
                     <button
                       onClick={() => {
                         setSearchTerm('');
@@ -523,7 +528,7 @@ const ManageBookings = () => {
                       style={{
                         padding: '0.75rem 1rem',
                         backgroundColor: 'transparent',
-                        border: '1px solid #d1d5db',
+                        border: '1px solid #e5e7eb',
                         borderRadius: '6px',
                         color: '#6b7280',
                         fontSize: '0.875rem',
@@ -532,11 +537,11 @@ const ManageBookings = () => {
                         whiteSpace: 'nowrap'
                       }}
                       onMouseEnter={(e) => {
-                        e.target.style.borderColor = '#d4a574';
-                        e.target.style.color = '#d4a574';
+                        e.target.style.borderColor = '#3b82f6';
+                        e.target.style.color = '#3b82f6';
                       }}
                       onMouseLeave={(e) => {
-                        e.target.style.borderColor = '#d1d5db';
+                        e.target.style.borderColor = '#e5e7eb';
                         e.target.style.color = '#6b7280';
                       }}
                     >
@@ -546,12 +551,12 @@ const ManageBookings = () => {
                 )}
               </div>
             </div>
-            <div className="table-responsive" style={{ marginTop: '1rem' }}>
+            <div className="admin_table-responsive" style={{ marginTop: '1rem' }}>
               {paginatedBookings.length === 0 && filteredBookings.length === 0 ? (
                 <div style={{
                   textAlign: 'center',
                   padding: '3rem 1rem',
-                  backgroundColor: '#f9fafb',
+                  backgroundColor: '#ffffff',
                   borderRadius: '8px',
                   border: '1px solid #e5e7eb'
                 }}>
@@ -567,7 +572,7 @@ const ManageBookings = () => {
                   </p>
                 </div>
               ) : (
-                <table className="styled-table">
+                <table className="admin_styled-table">
                   <thead>
                     <tr>
                       <th>Client</th>
@@ -585,9 +590,17 @@ const ManageBookings = () => {
                         <td>{(b.eventType && b.eventType.join(', ')) || b.otherEventType}</td>
                         <td>{new Date(b.eventDate).toLocaleDateString()}</td>
                         <td>£{b.minimumBudget} - £{b.maximumBudget}</td>
-                        <td>{b.status}</td>
                         <td>
-                          <button className="btn btn-outline" onClick={() => setSelected(b)}>View Details</button>
+                          <span className={`admin_status-badge ${b.status}`}>
+                            {b.status === 'pending' && 'Pending'}
+                            {b.status === 'confirmed' && 'Confirmed'}
+                            {b.status === 'in_progress' && 'In Progress'}
+                            {b.status === 'completed' && 'Completed'}
+                            {b.status === 'cancelled' && 'Cancelled'}
+                          </span>
+                        </td>
+                        <td>
+                          <button className="admin_btn admin_btn-outline" onClick={() => setSelected(b)}>View Details</button>
                         </td>
                       </tr>
                     ))}
@@ -598,7 +611,7 @@ const ManageBookings = () => {
 
             {/* Pagination Component */}
             {filteredBookings.length > 0 && (
-              <div className="pagination-container" style={{
+              <div className="admin_pagination-container" style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
@@ -615,17 +628,20 @@ const ManageBookings = () => {
                     options={itemsPerPageOptions}
                     menuPlacement="top"
                     styles={{
-                      control: (provided) => ({
+                      control: (provided, state) => ({
                         ...provided,
-                        border: '1px solid #d1d5db',
+                        border: '1px solid #e5e7eb',
                         borderRadius: '6px',
                         minHeight: '36px',
                         width: '120px',
-                        backgroundColor: '#f9fafb',
-                        boxShadow: 'none',
+                        backgroundColor: '#ffffff',
+                        boxShadow: state.isFocused ? '0 0 0 3px rgba(59, 130, 246, 0.1)' : 'none',
                         '&:hover': {
-                          borderColor: '#d4a574'
-                        }
+                          borderColor: '#3b82f6'
+                        },
+                        ...(state.isFocused && {
+                          borderColor: '#3b82f6'
+                        })
                       }),
                       placeholder: (provided) => ({
                         ...provided,
@@ -634,13 +650,13 @@ const ManageBookings = () => {
                       }),
                       option: (provided, state) => ({
                         ...provided,
-                        backgroundColor: state.isSelected ? '#d4a574' : state.isFocused ? '#fef7ed' : '#fff',
-                        color: state.isSelected ? '#fff' : '#374151',
+                        backgroundColor: state.isSelected ? '#6b7280' : state.isFocused ? '#f8fafc' : '#ffffff',
+                        color: state.isSelected ? '#ffffff' : '#0f172a',
                         fontSize: '0.75rem'
                       }),
                       singleValue: (provided) => ({
                         ...provided,
-                        color: '#374151',
+                        color: '#0f172a',
                         fontSize: '0.75rem'
                       })
                     }}
@@ -658,10 +674,10 @@ const ManageBookings = () => {
                     disabled={currentPage === 1}
                     style={{
                       padding: '0.5rem 0.75rem',
-                      border: '1px solid #d1d5db',
+                      border: '1px solid #e5e7eb',
                       borderRadius: '6px',
-                      backgroundColor: currentPage === 1 ? '#f9fafb' : '#fff',
-                      color: currentPage === 1 ? '#9ca3af' : '#374151',
+                      backgroundColor: currentPage === 1 ? '#ffffff' : '#ffffff',
+                      color: currentPage === 1 ? '#9ca3af' : '#0f172a',
                       fontSize: '0.875rem',
                       cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
                       transition: 'all 0.2s',
@@ -671,14 +687,14 @@ const ManageBookings = () => {
                     }}
                     onMouseEnter={(e) => {
                       if (currentPage !== 1) {
-                        e.target.style.borderColor = '#d4a574';
-                        e.target.style.color = '#d4a574';
+                        e.target.style.borderColor = '#3b82f6';
+                        e.target.style.color = '#3b82f6';
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (currentPage !== 1) {
-                        e.target.style.borderColor = '#d1d5db';
-                        e.target.style.color = '#374151';
+                        e.target.style.borderColor = '#e5e7eb';
+                        e.target.style.color = '#0f172a';
                       }
                     }}
                   >
@@ -696,10 +712,10 @@ const ManageBookings = () => {
                         onClick={() => handlePageChange(pageNum)}
                         style={{
                           padding: '0.5rem 0.75rem',
-                          border: `1px solid ${currentPage === pageNum ? '#d4a574' : '#d1d5db'}`,
+                          border: `1px solid ${currentPage === pageNum ? '#3b82f6' : '#e5e7eb'}`,
                           borderRadius: '6px',
-                          backgroundColor: currentPage === pageNum ? '#d4a574' : '#fff',
-                          color: currentPage === pageNum ? '#fff' : '#374151',
+                          backgroundColor: currentPage === pageNum ? '#3b82f6' : '#ffffff',
+                          color: currentPage === pageNum ? '#ffffff' : '#0f172a',
                           fontSize: '0.875rem',
                           cursor: 'pointer',
                           transition: 'all 0.2s',
@@ -707,14 +723,14 @@ const ManageBookings = () => {
                         }}
                         onMouseEnter={(e) => {
                           if (currentPage !== pageNum) {
-                            e.target.style.borderColor = '#d4a574';
-                            e.target.style.backgroundColor = '#fef7ed';
+                            e.target.style.borderColor = '#3b82f6';
+                            e.target.style.backgroundColor = '#f8fafc';
                           }
                         }}
                         onMouseLeave={(e) => {
                           if (currentPage !== pageNum) {
-                            e.target.style.borderColor = '#d1d5db';
-                            e.target.style.backgroundColor = '#fff';
+                            e.target.style.borderColor = '#e5e7eb';
+                            e.target.style.backgroundColor = '#ffffff';
                           }
                         }}
                       >
@@ -729,10 +745,10 @@ const ManageBookings = () => {
                     disabled={currentPage === totalPages}
                     style={{
                       padding: '0.5rem 0.75rem',
-                      border: '1px solid #d1d5db',
+                      border: '1px solid #e5e7eb',
                       borderRadius: '6px',
-                      backgroundColor: currentPage === totalPages ? '#f9fafb' : '#fff',
-                      color: currentPage === totalPages ? '#9ca3af' : '#374151',
+                      backgroundColor: currentPage === totalPages ? '#ffffff' : '#ffffff',
+                      color: currentPage === totalPages ? '#9ca3af' : '#0f172a',
                       fontSize: '0.875rem',
                       cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
                       transition: 'all 0.2s',
@@ -742,14 +758,14 @@ const ManageBookings = () => {
                     }}
                     onMouseEnter={(e) => {
                       if (currentPage !== totalPages) {
-                        e.target.style.borderColor = '#d4a574';
-                        e.target.style.color = '#d4a574';
+                        e.target.style.borderColor = '#3b82f6';
+                        e.target.style.color = '#3b82f6';
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (currentPage !== totalPages) {
-                        e.target.style.borderColor = '#d1d5db';
-                        e.target.style.color = '#374151';
+                        e.target.style.borderColor = '#e5e7eb';
+                        e.target.style.color = '#0f172a';
                       }
                     }}
                   >
@@ -765,47 +781,47 @@ const ManageBookings = () => {
         )}
 
         {selected && (
-          <div className="modal-overlay" onClick={() => setSelected(null)}>
-            <div className="payment-modal" onClick={(e)=>e.stopPropagation()} style={{ maxWidth: '700px', maxHeight: '90vh', overflowY: 'auto' }}>
-              <div className="modal-header">
-                <h2 className="modal-title">Booking Details</h2>
-                <button className="modal-close" onClick={() => setSelected(null)}>×</button>
+          <div className="admin_modal-overlay" onClick={() => setSelected(null)}>
+            <div className="admin_payment-modal" onClick={(e)=>e.stopPropagation()} style={{ maxWidth: '700px', maxHeight: '90vh', overflowY: 'auto' }}>
+              <div className="admin_modal-header">
+                <h2 className="admin_modal-title">Booking Details</h2>
+                <button className="admin_modal-close" onClick={() => setSelected(null)}>×</button>
               </div>
-              <div className="modal-body">
-                <div className="details-grid">
-                  <div className="detail-card">
-                    <h3 className="modal-section-title">Client</h3>
-                    <div className="detail-row"><span className="detail-label">Name</span><span className="detail-value">{selected.firstName} {selected.lastName}</span></div>
-                    <div className="detail-row"><span className="detail-label">Email</span><span className="detail-value">{selected.email}</span></div>
-                    <div className="detail-row"><span className="detail-label">Phone</span><span className="detail-value">{selected.phoneNumber}</span></div>
+              <div className="admin_modal-body">
+                <div className="admin_details-grid">
+                  <div className="admin_detail-card">
+                    <h3 className="admin_modal-section-title">Client</h3>
+                    <div className="admin_detail-row"><span className="admin_detail-label">Name</span><span className="admin_detail-value">{selected.firstName} {selected.lastName}</span></div>
+                    <div className="admin_detail-row"><span className="admin_detail-label">Email</span><span className="admin_detail-value">{selected.email}</span></div>
+                    <div className="admin_detail-row"><span className="admin_detail-label">Phone</span><span className="admin_detail-value">{selected.phoneNumber}</span></div>
                   </div>
-                  <div className="detail-card">
-                    <h3 className="modal-section-title">Event</h3>
-                    <div className="detail-row"><span className="detail-label">Type</span><span className="detail-value">{(selected.eventType && selected.eventType.join(', ')) || selected.otherEventType}</span></div>
-                    <div className="detail-row"><span className="detail-label">Date</span><span className="detail-value">{selected.eventDate ? new Date(selected.eventDate).toLocaleDateString() : ''}</span></div>
-                    <div className="detail-row"><span className="detail-label">Time</span><span className="detail-value">{(selected.preferredTimeSlot && selected.preferredTimeSlot.join(', '))}</span></div>
+                  <div className="admin_detail-card">
+                    <h3 className="admin_modal-section-title">Event</h3>
+                    <div className="admin_detail-row"><span className="admin_detail-label">Type</span><span className="admin_detail-value">{(selected.eventType && selected.eventType.join(', ')) || selected.otherEventType}</span></div>
+                    <div className="admin_detail-row"><span className="admin_detail-label">Date</span><span className="admin_detail-value">{selected.eventDate ? new Date(selected.eventDate).toLocaleDateString() : ''}</span></div>
+                    <div className="admin_detail-row"><span className="admin_detail-label">Time</span><span className="admin_detail-value">{(selected.preferredTimeSlot && selected.preferredTimeSlot.join(', '))}</span></div>
                   </div>
-                  <div className="detail-card">
-                    <h3 className="modal-section-title">Budget</h3>
-                    <div className="badges">
-                      <span className="badge">Min £{selected.minimumBudget}</span>
+                  <div className="admin_detail-card">
+                    <h3 className="admin_modal-section-title">Budget</h3>
+                    <div className="admin_badges">
+                      <span className="admin_badge">Min £{selected.minimumBudget}</span>
                       <span className="badge outline">Max £{selected.maximumBudget}</span>
                     </div>
                   </div>
-                  <div className="detail-card">
-                    <h3 className="modal-section-title">Location</h3>
-                    <div className="detail-row"><span className="detail-label">City</span><span className="detail-value">{selected.city}</span></div>
-                    <div className="detail-row"><span className="detail-label">Address</span><span className="detail-value">{selected.fullAddress}</span></div>
+                  <div className="admin_detail-card">
+                    <h3 className="admin_modal-section-title">Location</h3>
+                    <div className="admin_detail-row"><span className="admin_detail-label">City</span><span className="admin_detail-value">{selected.city}</span></div>
+                    <div className="admin_detail-row"><span className="admin_detail-label">Address</span><span className="admin_detail-value">{selected.fullAddress}</span></div>
                   </div>
                 </div>
 
                 {/* Images Section */}
                 {selected.images && selected.images.length > 0 && (
-                  <div className="detail-card" style={{ marginTop: '1.5rem' }}>
-                    <h3 className="modal-section-title">Uploaded Images</h3>
+                  <div className="admin_detail-card" style={{ marginTop: '1.5rem' }}>
+                    <h3 className="admin_modal-section-title">Uploaded Images</h3>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '15px', marginTop: '10px' }}>
                       {selected.images.map((img, idx) => (
-                        <div key={idx} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', border: '2px solid #d4a574' }}>
+                        <div key={idx} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', border: '2px solid #eab308' }}>
                           <img 
                             src={img} 
                             alt={`Upload ${idx + 1}`}
@@ -825,9 +841,9 @@ const ManageBookings = () => {
 
                 {/* Video Section */}
                 {selected.video && (
-                  <div className="detail-card" style={{ marginTop: '1.5rem' }}>
-                    <h3 className="modal-section-title">Uploaded Video</h3>
-                    <div style={{ marginTop: '10px', borderRadius: '8px', overflow: 'hidden', border: '2px solid #d4a574' }}>
+                  <div className="admin_detail-card" style={{ marginTop: '1.5rem' }}>
+                    <h3 className="admin_modal-section-title">Uploaded Video</h3>
+                    <div style={{ marginTop: '10px', borderRadius: '8px', overflow: 'hidden', border: '2px solid #eab308' }}>
                       <video 
                         controls
                         style={{ 
@@ -845,10 +861,16 @@ const ManageBookings = () => {
                   </div>
                 )}
 
-                <div className="status-row">
-                  <span className="detail-label">Status</span>
-                  <span className={`status-badge ${selected.status}`}>{selected.status}</span>
-                </div>
+                    <div className="admin_status-row">
+                      <span className="admin_detail-label">Status</span>
+                      <span className={`admin_status-badge ${selected.status}`}>
+                        {selected.status === 'pending' && 'Pending'}
+                        {selected.status === 'confirmed' && 'Confirmed'}
+                        {selected.status === 'in_progress' && 'In Progress'}
+                        {selected.status === 'completed' && 'Completed'}
+                        {selected.status === 'cancelled' && 'Cancelled'}
+                      </span>
+                    </div>
               </div>
             </div>
           </div>

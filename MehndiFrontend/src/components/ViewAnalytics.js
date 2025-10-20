@@ -45,7 +45,7 @@ const ViewAnalytics = () => {
     'var(--ad-success)', 
     'var(--ad-info)', 
     'var(--ad-warn)', 
-    '#6b5544' // A fallback muted color
+    '#6b7280' // A fallback muted color
   ];
 
   const timeRangeOptions = [
@@ -150,7 +150,11 @@ const cityOptions = [
         setRequestsByStatus(requestsResponse.data);
         setApplicationsByStatus(applicationsResponse.data);
         setGrowthOverTime(growthResponse.data);
-        setActivityByCity(activityResponse.data);
+        // If a specific city is selected, filter activity to only that city client-side as a safeguard
+        const filteredActivity = (selectedCity?.value)
+          ? activityResponse.data.filter((row) => (row.city || '').toLowerCase().includes((selectedCity.value || '').toLowerCase()))
+          : activityResponse.data;
+        setActivityByCity(filteredActivity);
         
         // Check if data is empty for each category
         setHasData({
@@ -192,29 +196,32 @@ const cityOptions = [
 
   const selectStyles = {
     control: (provided, state) => ({
-      ...provided, border: `1px solid var(--ad-border)`, borderRadius: '8px',
-      minHeight: '42px', backgroundColor: 'var(--ad-surface)',
-      boxShadow: state.isFocused ? `0 0 0 2px var(--ad-accent)` : 'none',
-      '&:hover': { borderColor: 'var(--ad-primary)' },
+      ...provided,
+      border: `2px solid ${state.isFocused ? '#3b82f6' : 'var(--ad-border)'}`,
+      borderRadius: '8px',
+      minHeight: '42px',
+      backgroundColor: 'var(--ad-surface)',
+      boxShadow: state.isFocused ? '0 0 0 3px rgba(59, 130, 246, 0.1)' : 'none',
+      '&:hover': { borderColor: '#3b82f6' },
     }),
     placeholder: (p) => ({ ...p, color: 'var(--ad-muted)' }),
     option: (p, state) => ({ ...p,
-      backgroundColor: state.isSelected ? 'var(--ad-primary)' : state.isFocused ? 'var(--ad-surface-strong)' : 'var(--ad-surface)',
-      color: state.isSelected ? '#fff' : 'var(--ad-text)',
+      backgroundColor: state.isSelected ? '#6b7280' : state.isFocused ? '#f3f4f6' : 'var(--ad-surface)',
+      color: state.isSelected ? '#ffffff' : 'var(--ad-text)',
     }),
     singleValue: (p) => ({ ...p, color: 'var(--ad-text)' }),
   };
 
   const dateInputStyle = {
-    padding: '0.65rem', border: `1px solid var(--ad-border)`,
+    padding: '0.65rem', border: `2px solid var(--ad-border)`,
     borderRadius: '8px', fontSize: '0.875rem',
-    backgroundColor: 'var(--ad-surface)', color: 'var(--ad-text)',
+    backgroundColor: 'var(--ad-surface)', color: 'var(--ad-text)'
   };
 
   return (
-    <div className="dashboard-layout">
+    <div className="admin_dashboard-layout">
       <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="dashboard-main-content" style={{ backgroundColor: 'var(--ad-bg)'}}>
+      <div className="admin_dashboard-main-content">
         <button
           className="sidebar-toggle-btn"
           onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -223,11 +230,11 @@ const cityOptions = [
             <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
           </svg>
         </button>
-        <div className="dashboard-container" style={{backgroundColor:'#E4C293'}}>
-          <div className="dashboard-content">
-            <div className="bookings-header">
-              <h2 className="bookings-title" style={{color: 'var(--ad-text)'}}>Reports & Analytics</h2>
-              <p className="bookings-subtitle" style={{color: 'var(--ad-muted)'}}>Comprehensive platform insights and metrics</p>
+        <div className="admin_dashboard-container">
+          <div className="admin_dashboard-content">
+            <div className="admin_bookings-header">
+              <h2 className="admin_bookings-title">Reports & Analytics</h2>
+              <p className="admin_bookings-subtitle">Comprehensive platform insights and metrics</p>
             </div>
 
             {error && <p className="error">{error}</p>}

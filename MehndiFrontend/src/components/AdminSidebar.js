@@ -1,9 +1,36 @@
-import React from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import LogoutButton from './LogoutButton';
+import './admin-theme.css';
 
 const AdminSidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
+  const [user, setUser] = useState(null);
+
+  // Get user info from localStorage
+  useEffect(() => {
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
+    } catch (error) {
+      console.error('Error loading user:', error);
+    }
+  }, []);
+
+  // Apply admin theme on admin routes
+  useEffect(() => {
+    const isAdminRoute = location.pathname.startsWith('/admin-dashboard');
+    if (isAdminRoute) {
+      document.body.classList.add('admin-theme');
+    } else {
+      document.body.classList.remove('admin-theme');
+    }
+    return () => {
+      document.body.classList.remove('admin-theme');
+    };
+  }, [location.pathname]);
 
   const items = [
     {
@@ -112,13 +139,11 @@ const AdminSidebar = ({ isOpen, onClose }) => {
 
   const isActive = (path) => location.pathname.startsWith(path);
 
-  const navigate = useNavigate();
-
   return (
     <>
       {isOpen && <div className="sidebar-overlay" onClick={onClose} />}
       <div className={`dashboard-sidebar admin-sidebar ${isOpen ? 'sidebar-open' : ''}`}>
-        <div className="sidebar-header">
+        {/* <div className="sidebar-header">
           <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={() => navigate('/')}>
             <div className="logo-icon" style={{ background: 'transparent', border: 'none', boxShadow: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <img src="/assets/logo icon.png" alt="Mehndi Me" style={{ width: 'auto', height: 'auto', display: 'block', borderRadius: '50%' }} />
@@ -127,7 +152,7 @@ const AdminSidebar = ({ isOpen, onClose }) => {
               <img src="/assets/logo text.png" alt="Mehndi Me" style={{ height: 22, display: 'block' }} />
             </span>
           </div>
-        </div>
+        </div> */}
 
         <nav className="sidebar-nav">
           <ul className="sidebar-menu">
@@ -143,19 +168,53 @@ const AdminSidebar = ({ isOpen, onClose }) => {
         </nav>
 
         <div className="sidebar-footer">
-          <div className="user-info">
-            <div className="user-avatar">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-              </svg>
+          {/* {user && user.userType === 'admin' && (
+            <div className="user-info" style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '12px',
+              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              borderRadius: '8px',
+              marginBottom: '12px'
+            }}>
+              <div className="user-avatar" style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                backgroundColor: '#3b82f6',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#ffffff'
+              }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+              </div>
+              <div className="user-details" style={{ flex: 1, minWidth: 0 }}>
+                <div className="user-name" style={{
+                  color: '#ffffff',
+                  fontWeight: '600',
+                  fontSize: '0.875rem',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}>
+                  {user.firstName} {user.lastName}
+                </div>
+                <div className="user-role" style={{
+                  color: '#9ca3af',
+                  fontSize: '0.75rem',
+                  textTransform: 'capitalize'
+                }}>
+                  {user.userType}
+                </div>
+              </div>
             </div>
-            <div className="user-details">
-              <span className="user-name">Admin</span>
-              <span className="user-role">Dashboard</span>
-            </div>
-          </div>
-          <div className="sidebar-logout" style={{ marginTop: '10px' }}>
+          )} */}
+          <div className="sidebar-logout">
             <LogoutButton variant="sidebar" />
           </div>
         </div>

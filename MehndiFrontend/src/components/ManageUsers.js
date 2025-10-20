@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import AdminSidebar from './AdminSidebar';
 import { adminAPI } from '../services/api';
 import Select from 'react-select';
+import './admin-styles.css';
 
 const ManageUsers = () => {
   const [users, setUsers] = useState([]);
@@ -158,9 +159,9 @@ const ManageUsers = () => {
   };
 
   return (
-    <div className="dashboard-layout">
+    <div className="admin_dashboard-layout">
       <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="dashboard-main-content">
+      <div className="admin_dashboard-main-content">
         <button
           className="sidebar-toggle-btn"
           onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -171,17 +172,17 @@ const ManageUsers = () => {
             <line x1="3" y1="18" x2="21" y2="18" />
           </svg>
         </button>
-        <div className="dashboard-container">
-        <div className="dashboard-content">
-        <div className="bookings-header">
-          <h2 className="bookings-title">Manage Users</h2>
-          <p className="bookings-subtitle">Manage all platform users</p>
+        <div className="admin_dashboard-container">
+        <div className="admin_dashboard-content">
+        <div className="admin_bookings-header">
+          <h2 className="admin_bookings-title">Manage Users</h2>
+          <p className="admin_bookings-subtitle">Manage all platform users</p>
         </div>
 
         {/* User Stats Cards */}
-        <div className="booking-stats">
-          <div className="stat-card">
-            <div className="stat-icon">
+        <div className="admin_booking-stats">
+          <div className="admin_stat-card">
+            <div className="admin_stat-icon">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                 <circle cx="9" cy="7" r="4" />
@@ -189,14 +190,14 @@ const ManageUsers = () => {
                 <path d="M16 3.13a4 4 0 0 1 0 7.75" />
               </svg>
             </div>
-            <div className="stat-info">
+            <div className="admin_stat-info">
               <h3>Total Users</h3>
-              <span className="stat-number">{users.length}</span>
+              <span className="admin_stat-number">{users.length}</span>
             </div>
           </div>
 
-          <div className="stat-card">
-            <div className="stat-icon">
+          <div className="admin_stat-card">
+            <div className="admin_stat-icon" >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
                 <circle cx="9" cy="7" r="4" />
@@ -206,53 +207,46 @@ const ManageUsers = () => {
                 <polyline points="14.5 10.5 19.5 10.5" />
               </svg>
             </div>
-            <div className="stat-info">
-              <h3>Admin Users</h3>
-              <span className="stat-number">{users.filter(u => u.userType === 'admin').length}</span>
+            <div className="admin_stat-info">
+              <h3 >Admin Users</h3>
+              <span className="admin_stat-number" >{users.filter(u => u.userType === 'admin').length}</span>
             </div>
           </div>
 
-          <div className="stat-card">
-            <div className="stat-icon">
+          <div className="admin_stat-card">
+            <div className="admin_stat-icon" >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 2L2 7l10 5 10-5-10-5z"/>
                 <path d="M2 17l10 5 10-5"/>
                 <path d="M2 12l10 5 10-5"/>
               </svg>
             </div>
-            <div className="stat-info">
-              <h3>Artist Users</h3>
-              <span className="stat-number">{users.filter(u => u.userType === 'artist').length}</span>
+            <div className="admin_stat-info">
+              <h3 >Artist Users</h3>
+              <span className="admin_stat-number" >{users.filter(u => u.userType === 'artist').length}</span>
             </div>
           </div>
 
-          <div className="stat-card">
-            <div className="stat-icon">
+          <div className="admin_stat-card">
+            <div className="admin_stat-icon" >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                 <circle cx="12" cy="7" r="4" />
               </svg>
             </div>
-            <div className="stat-info">
-              <h3>Client Users</h3>
-              <span className="stat-number">{users.filter(u => u.userType === 'client').length}</span>
+            <div className="admin_stat-info">
+              <h3 >Client Users</h3>
+              <span className="admin_stat-number" >{users.filter(u => u.userType === 'client').length}</span>
             </div>
           </div>
         </div>
-        {error && <p className="error">{error}</p>}
+        {error && <p className="admin_error">{error}</p>}
         {loading ? (
           <p>Loading...</p>
         ) : (
           <>
             {/* Filter Section */}
-            <div className="filter-section" style={{
-              backgroundColor: '#fff',
-              padding: '1.5rem',
-              borderRadius: '12px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              marginBottom: '2rem',
-              border: '1px solid #e5e7eb'
-            }}>
+            <div className="admin_filter-section">
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: (searchTerm || selectedRole?.value) ? '1fr 1fr auto' : '1fr 1fr',
@@ -260,12 +254,12 @@ const ManageUsers = () => {
                 alignItems: 'end'
               }}>
                 {/* Search Input */}
-                <div className="filter-item">
+                <div className="admin_filter-item">
                   <label style={{
                     display: 'block',
                     marginBottom: '0.5rem',
                     fontWeight: '600',
-                    color: '#374151',
+                    color: '#0f172a',
                     fontSize: '0.875rem'
                   }}>
                     Search Users
@@ -278,30 +272,32 @@ const ManageUsers = () => {
                     style={{
                       width: '100%',
                       padding: '0.75rem',
-                      border: '2px solid #d1d5db',
+                      border: '2px solid #e5e7eb',
                       borderRadius: '8px',
                       fontSize: '0.875rem',
                       transition: 'border-color 0.2s',
-                      backgroundColor: '#f9fafb'
+                      backgroundColor: '#ffffff'
                     }}
                     onFocus={(e) => {
-                      e.target.style.borderColor = '#d4a574';
-                      e.target.style.backgroundColor = '#fff';
+                      e.target.style.borderColor = '#3b82f6';
+                      e.target.style.backgroundColor = '#ffffff';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
                     }}
                     onBlur={(e) => {
-                      e.target.style.borderColor = '#d1d5db';
-                      e.target.style.backgroundColor = '#f9fafb';
+                      e.target.style.borderColor = '#e5e7eb';
+                      e.target.style.backgroundColor = '#ffffff';
+                      e.target.style.boxShadow = 'none';
                     }}
                   />
                 </div>
 
                 {/* Role Dropdown */}
-                <div className="filter-item">
+                <div className="admin_filter-item">
                   <label style={{
                     display: 'block',
                     marginBottom: '0.5rem',
                     fontWeight: '600',
-                    color: '#374151',
+                    color: '#0f172a',
                     fontSize: '0.875rem'
                   }}>
                     Filter by Role
@@ -314,17 +310,20 @@ const ManageUsers = () => {
                     styles={{
                       control: (provided, state) => ({
                         ...provided,
-                        border: '2px solid #d1d5db',
+                        border: '2px solid #e5e7eb',
                         borderRadius: '8px',
                         minHeight: '42px',
-                        backgroundColor: '#f9fafb',
-                        boxShadow: 'none',
+                        backgroundColor: '#ffffff',
+                        boxShadow: state.isFocused ? '0 0 0 3px rgba(59, 130, 246, 0.1)' : 'none',
                         '&:hover': {
-                          borderColor: '#d4a574'
+                          borderColor: '#3b82f6'
                         },
                         ...(state.isFocused && {
-                          borderColor: '#d4a574',
-                          backgroundColor: '#fff'
+                          borderColor: '#3b82f6'
+                        }),
+                        ...(state.isFocused && {
+                          borderColor: '#3b82f6',
+                          backgroundColor: '#ffffff'
                         })
                       }),
                       placeholder: (provided) => ({
@@ -334,13 +333,13 @@ const ManageUsers = () => {
                       }),
                       option: (provided, state) => ({
                         ...provided,
-                        backgroundColor: state.isSelected ? '#d4a574' : state.isFocused ? '#fef7ed' : '#fff',
-                        color: state.isSelected ? '#fff' : '#374151',
+                        backgroundColor: state.isSelected ? '#6b7280' : state.isFocused ? '#f8fafc' : '#ffffff',
+                        color: state.isSelected ? '#ffffff' : '#0f172a',
                         fontSize: '0.875rem'
                       }),
                       singleValue: (provided) => ({
                         ...provided,
-                        color: '#374151',
+                        color: '#0f172a',
                         fontSize: '0.875rem'
                       })
                     }}
@@ -349,7 +348,7 @@ const ManageUsers = () => {
 
                 {/* Clear Filters Button */}
                 {(searchTerm || selectedRole?.value) && (
-                  <div className="filter-item" style={{ display: 'flex', alignItems: 'end' }}>
+                  <div className="admin_filter-item" style={{ display: 'flex', alignItems: 'end' }}>
                     <button
                       onClick={() => {
                         setSearchTerm('');
@@ -358,7 +357,7 @@ const ManageUsers = () => {
                       style={{
                         padding: '0.75rem 1rem',
                         backgroundColor: 'transparent',
-                        border: '1px solid #d1d5db',
+                        border: '1px solid #e5e7eb',
                         borderRadius: '6px',
                         color: '#6b7280',
                         fontSize: '0.875rem',
@@ -367,11 +366,11 @@ const ManageUsers = () => {
                         whiteSpace: 'nowrap'
                       }}
                       onMouseEnter={(e) => {
-                        e.target.style.borderColor = '#d4a574';
-                        e.target.style.color = '#d4a574';
+                        e.target.style.borderColor = '#3b82f6';
+                        e.target.style.color = '#3b82f6';
                       }}
                       onMouseLeave={(e) => {
-                        e.target.style.borderColor = '#d1d5db';
+                        e.target.style.borderColor = '#e5e7eb';
                         e.target.style.color = '#6b7280';
                       }}
                     >
@@ -382,12 +381,12 @@ const ManageUsers = () => {
               </div>
             </div>
 
-            <div className="table-responsive" style={{ marginTop: '1rem' }}>
+            <div className="admin_table-responsive" style={{ marginTop: '1rem' }}>
               {paginatedUsers.length === 0 && filteredUsers.length === 0 ? (
                 <div style={{
                   textAlign: 'center',
                   padding: '3rem 1rem',
-                  backgroundColor: '#f9fafb',
+                  backgroundColor: '#ffffff',
                   borderRadius: '8px',
                   border: '1px solid #e5e7eb'
                 }}>
@@ -403,31 +402,31 @@ const ManageUsers = () => {
                   </p>
                 </div>
               ) : (
-                <table className="styled-table">
+                <table className="admin_styled-table">
                   <thead>
                     <tr>
-                      <th>Name</th>
-                      <th>Email</th>
-                      <th>Role</th>
-                      <th>Actions</th>
+                      <th >Name</th>
+                      <th >Email</th>
+                      <th >Role</th>
+                      <th >Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {paginatedUsers.map(u => (
                       <tr key={u._id}>
-                        <td>{u.firstName} {u.lastName}</td>
-                        <td>{u.email}</td>
+                        <td >{u.firstName} {u.lastName}</td>
+                        <td >{u.email}</td>
                         <td>
-                          <select className="styled-select" value={u.userType} onChange={(e) => handleRoleChange(u._id, e.target.value)}>
+                          <select className="admin_styled-select" value={u.userType} onChange={(e) => handleRoleChange(u._id, e.target.value)}>
                             <option value="client">client</option>
                             <option value="artist">artist</option>
                             <option value="admin">admin</option>
                           </select>
                         </td>
                         <td>
-                          <button className="btn btn-outline" onClick={() => openEdit(u)}>Edit</button>
+                          <button className="admin_btn admin_btn-outline" onClick={() => openEdit(u)}>Edit</button>
                           {(() => { try { return String(u._id) !== String((JSON.parse(localStorage.getItem('user')||'{}'))._id); } catch { return true; } })() && (
-                            <button onClick={() => handleDelete(u._id)} className="btn danger" style={{ marginLeft: '8px' }}>Delete</button>
+                            <button onClick={() => handleDelete(u._id)} className="admin_btn danger" style={{ marginLeft: '8px' }}>Delete</button>
                           )}
                         </td>
                       </tr>
@@ -439,7 +438,7 @@ const ManageUsers = () => {
 
             {/* Pagination Component */}
             {filteredUsers.length > 0 && (
-              <div className="pagination-container" style={{
+              <div className="admin_pagination-container" style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
@@ -456,17 +455,20 @@ const ManageUsers = () => {
                     options={itemsPerPageOptions}
                     menuPlacement="top"
                     styles={{
-                      control: (provided) => ({
+                      control: (provided, state) => ({
                         ...provided,
-                        border: '1px solid #d1d5db',
+                        border: '1px solid #e5e7eb',
                         borderRadius: '6px',
                         minHeight: '36px',
                         width: '120px',
-                        backgroundColor: '#f9fafb',
-                        boxShadow: 'none',
+                        backgroundColor: '#ffffff',
+                        boxShadow: state.isFocused ? '0 0 0 3px rgba(59, 130, 246, 0.1)' : 'none',
                         '&:hover': {
-                          borderColor: '#d4a574'
-                        }
+                          borderColor: '#3b82f6'
+                        },
+                        ...(state.isFocused && {
+                          borderColor: '#3b82f6'
+                        })
                       }),
                       placeholder: (provided) => ({
                         ...provided,
@@ -475,13 +477,13 @@ const ManageUsers = () => {
                       }),
                       option: (provided, state) => ({
                         ...provided,
-                        backgroundColor: state.isSelected ? '#d4a574' : state.isFocused ? '#fef7ed' : '#fff',
-                        color: state.isSelected ? '#fff' : '#374151',
+                        backgroundColor: state.isSelected ? '#6b7280' : state.isFocused ? '#f8fafc' : '#ffffff',
+                        color: state.isSelected ? '#ffffff' : '#0f172a',
                         fontSize: '0.75rem'
                       }),
                       singleValue: (provided) => ({
                         ...provided,
-                        color: '#374151',
+                        color: '#0f172a',
                         fontSize: '0.75rem'
                       })
                     }}
@@ -499,10 +501,10 @@ const ManageUsers = () => {
                     disabled={currentPage === 1}
                     style={{
                       padding: '0.5rem 0.75rem',
-                      border: '1px solid #d1d5db',
+                      border: '1px solid #e5e7eb',
                       borderRadius: '6px',
-                      backgroundColor: currentPage === 1 ? '#f9fafb' : '#fff',
-                      color: currentPage === 1 ? '#9ca3af' : '#374151',
+                      backgroundColor: currentPage === 1 ? '#ffffff' : '#ffffff',
+                      color: currentPage === 1 ? '#9ca3af' : '#0f172a',
                       fontSize: '0.875rem',
                       cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
                       transition: 'all 0.2s',
@@ -512,14 +514,14 @@ const ManageUsers = () => {
                     }}
                     onMouseEnter={(e) => {
                       if (currentPage !== 1) {
-                        e.target.style.borderColor = '#d4a574';
-                        e.target.style.color = '#d4a574';
+                        e.target.style.borderColor = '#3b82f6';
+                        e.target.style.color = '#3b82f6';
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (currentPage !== 1) {
-                        e.target.style.borderColor = '#d1d5db';
-                        e.target.style.color = '#374151';
+                        e.target.style.borderColor = '#e5e7eb';
+                        e.target.style.color = '#0f172a';
                       }
                     }}
                   >
@@ -537,10 +539,10 @@ const ManageUsers = () => {
                         onClick={() => handlePageChange(pageNum)}
                         style={{
                           padding: '0.5rem 0.75rem',
-                          border: `1px solid ${currentPage === pageNum ? '#d4a574' : '#d1d5db'}`,
+                          border: `1px solid ${currentPage === pageNum ? '#3b82f6' : '#e5e7eb'}`,
                           borderRadius: '6px',
-                          backgroundColor: currentPage === pageNum ? '#d4a574' : '#fff',
-                          color: currentPage === pageNum ? '#fff' : '#374151',
+                          backgroundColor: currentPage === pageNum ? '#3b82f6' : '#ffffff',
+                          color: currentPage === pageNum ? '#ffffff' : '#0f172a',
                           fontSize: '0.875rem',
                           cursor: 'pointer',
                           transition: 'all 0.2s',
@@ -548,14 +550,14 @@ const ManageUsers = () => {
                         }}
                         onMouseEnter={(e) => {
                           if (currentPage !== pageNum) {
-                            e.target.style.borderColor = '#d4a574';
-                            e.target.style.backgroundColor = '#fef7ed';
+                            e.target.style.borderColor = '#3b82f6';
+                            e.target.style.backgroundColor = '#f8fafc';
                           }
                         }}
                         onMouseLeave={(e) => {
                           if (currentPage !== pageNum) {
-                            e.target.style.borderColor = '#d1d5db';
-                            e.target.style.backgroundColor = '#fff';
+                            e.target.style.borderColor = '#e5e7eb';
+                            e.target.style.backgroundColor = '#ffffff';
                           }
                         }}
                       >
@@ -570,10 +572,10 @@ const ManageUsers = () => {
                     disabled={currentPage === totalPages}
                     style={{
                       padding: '0.5rem 0.75rem',
-                      border: '1px solid #d1d5db',
+                      border: '1px solid #e5e7eb',
                       borderRadius: '6px',
-                      backgroundColor: currentPage === totalPages ? '#f9fafb' : '#fff',
-                      color: currentPage === totalPages ? '#9ca3af' : '#374151',
+                      backgroundColor: currentPage === totalPages ? '#ffffff' : '#ffffff',
+                      color: currentPage === totalPages ? '#9ca3af' : '#0f172a',
                       fontSize: '0.875rem',
                       cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
                       transition: 'all 0.2s',
@@ -583,14 +585,14 @@ const ManageUsers = () => {
                     }}
                     onMouseEnter={(e) => {
                       if (currentPage !== totalPages) {
-                        e.target.style.borderColor = '#d4a574';
-                        e.target.style.color = '#d4a574';
+                        e.target.style.borderColor = '#3b82f6';
+                        e.target.style.color = '#3b82f6';
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (currentPage !== totalPages) {
-                        e.target.style.borderColor = '#d1d5db';
-                        e.target.style.color = '#374151';
+                        e.target.style.borderColor = '#e5e7eb';
+                        e.target.style.color = '#0f172a';
                       }
                     }}
                   >
@@ -606,13 +608,13 @@ const ManageUsers = () => {
         )}
 
         {editing && (
-          <div className="modal-overlay" onClick={closeEdit}>
-            <div className="payment-modal" onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
-                <h2 className="modal-title">Edit User</h2>
-                <button className="modal-close" onClick={closeEdit}>×</button>
+          <div className="admin_modal-overlay" onClick={closeEdit}>
+            <div className="admin_payment-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="admin_modal-header">
+                <h2 className="admin_modal-title">Edit User</h2>
+                <button className="admin_modal-close" onClick={closeEdit}>×</button>
               </div>
-              <form onSubmit={submitEdit} className="form-grid" style={{ padding: '1rem' }}>
+              <form onSubmit={submitEdit} className="admin_form-grid" style={{ padding: '1rem' }}>
                 <label>First name
                   <input type="text" placeholder="First name" value={form.firstName} onChange={(e)=>setForm({...form, firstName:e.target.value})} required />
                 </label>
@@ -623,7 +625,7 @@ const ManageUsers = () => {
                   <input type="email" placeholder="Email" value={form.email} onChange={(e)=>setForm({...form, email:e.target.value})} required />
                 </label>
                 <label>Role
-                  <select className="styled-select" value={form.userType} onChange={(e)=>setForm({...form, userType:e.target.value})}>
+                  <select className="admin_styled-select" value={form.userType} onChange={(e)=>setForm({...form, userType:e.target.value})}>
                     <option value="client">client</option>
                     <option value="artist">artist</option>
                     <option value="admin">admin</option>
@@ -633,8 +635,8 @@ const ManageUsers = () => {
                   <input type="password" placeholder="New password (optional, min 6)" value={form.password} onChange={(e)=>setForm({...form, password:e.target.value})} />
                 </label>
                 <div style={{ display:'flex', gap:'8px', marginTop:'8px' }}>
-                  <button type="button" className="btn btn-light" onClick={closeEdit}>Cancel</button>
-                  <button type="submit" className="btn btn-primary">Save</button>
+                  <button type="button" className="admin_btn admin_btn-light" onClick={closeEdit}>Cancel</button>
+                  <button type="submit" className="admin_btn admin_btn-primary">Save</button>
                 </div>
               </form>
             </div>

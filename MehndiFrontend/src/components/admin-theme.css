@@ -1,0 +1,458 @@
+/* Admin Theme Overrides
+   Scope all styles under .admin-theme so regular site styles remain unchanged. */
+
+/* ===== Core palette ===== */
+.admin-theme {
+  --ad-sidebar-bg: #0f172a; /* navy-ish */
+  --ad-sidebar-text: #e5e7eb;
+  --ad-sidebar-muted: #9ca3af;
+  --ad-surface: #ffffff; /* cards, panels */
+  --ad-surface-alt: #f8fafc;
+  --ad-border-strong: #e5e7eb;
+  --ad-link-active: #1e293b; /* slightly lighter navy */
+  --ad-accent: #eab308; /* gold accent used across app */
+  --ad-text: #0f172a;
+  --ad-muted: #6b7280;
+  --ad-border: #e5e7eb;
+  --ad-surface-strong: #f3f4f6;
+  --ad-primary: #0ea5e9; /* used for charts/accents in admin */
+  --ad-success: #10b981;
+  --ad-info: #2563eb;
+  --ad-warn: #f59e0b;
+  --ad-danger: #ef4444;
+  --ad-bg: #f5f7fb;
+}
+
+/* ===== Sidebar ===== */
+.admin-theme .dashboard-sidebar.admin-sidebar {
+  background: var(--ad-sidebar-bg);
+  color: var(--ad-sidebar-text);
+  border-right: 1px solid rgba(255,255,255,0.06);
+}
+
+.admin-theme .dashboard-sidebar .sidebar-link {
+  color: var(--ad-sidebar-text);
+  background: transparent;
+}
+
+.admin-theme .dashboard-sidebar .sidebar-link:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+.admin-theme .dashboard-sidebar .sidebar-link.active {
+  background: var(--ad-link-active);
+  color: #fff;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.2);
+}
+
+.admin-theme .dashboard-sidebar .sidebar-link.active::before {
+  content: '';
+  position: absolute;
+  left: -1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 30px;
+  background: #ffffff;
+  border-radius: 0 2px 2px 0;
+}
+
+.admin-theme .dashboard-sidebar .sidebar-icon svg {
+  color: var(--ad-sidebar-text);
+}
+
+.admin-theme .dashboard-sidebar .sidebar-text { color: var(--ad-sidebar-text); }
+.admin-theme .sidebar-footer { 
+  border-top-color: rgba(255,255,255,0.08); 
+  padding: 1rem;
+}
+
+.admin-theme .sidebar-logout button {
+  width: 100%;
+  background: #ffffff;
+  color: #0f172a !important;
+  border: 2px solid #e5e7eb;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.admin-theme .sidebar-logout button:hover {
+  background: #f8fafc;
+  color: #ef4444;
+  border-color: #3b82f6;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.2);
+}
+
+/* ===== Main content containers/cards ===== */
+.admin-theme .dashboard-main-content .dashboard-container > *,
+.admin-theme .stats-grid .stat-card,
+.admin-theme .booking-card,
+.admin-theme .key-metrics-card,
+.admin-theme .quick-card,
+.admin-theme .apps-stat,
+.admin-theme .app-card,
+.admin-theme .calendar-card,
+.admin-theme .booking-line-card,
+.admin-theme .styled-table,
+.admin-theme .requests-section,
+.admin-theme .notifications-panel,
+.admin-theme .wallet-card,
+.admin-theme .payment-status-card,
+.admin-theme .proposal-card,
+.admin-theme .review-card {
+  background: var(--ad-surface);
+  border-color: var(--ad-border-strong);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06); /* neutral soft shadow */
+}
+
+/* Section wrappers that are "panels" */
+.admin-theme .dashboard-container,
+.admin-theme .bookings-container,
+.admin-theme .proposals-page,
+.admin-theme .applications-page {
+  background: var(--ad-surface-alt);
+}
+
+/* ===== Filters, tabs, pills ===== */
+.admin-theme .filter-tab,
+.admin-theme .apps-pill,
+.admin-theme .nav-tab,
+.admin-theme .filters-btn,
+.admin-theme .btn,
+.admin-theme .btn-primary,
+.admin-theme .btn-light,
+.admin-theme .btn-outline {
+  background: #fff;
+  color: #0f172a;
+  border: 1px solid var(--ad-border-strong);
+  box-shadow: 0 2px 6px rgba(15,23,42,0.05);
+}
+
+.admin-theme .filter-tab.active,
+.admin-theme .apps-pill.active,
+.admin-theme .nav-tab.active {
+  background: #fff;
+  border-color: var(--ad-accent);
+  box-shadow: 0 0 0 1px rgba(234, 179, 8, 0.25) inset;
+}
+
+/* ===== Tables ===== */
+.admin-theme .styled-table thead tr,
+.admin-theme .tx-row.tx-head {
+  background: var(--ad-surface-alt);
+  color: #0f172a;
+}
+
+.admin-theme .styled-table th,
+.admin-theme .styled-table td {
+  border-color: var(--ad-border-strong);
+}
+
+/* ===== Badges and small UI accents ===== */
+.admin-theme .status-badge,
+.admin-theme .tx-badge,
+.admin-theme .badge {
+  border: 1px solid var(--ad-border-strong);
+  background: #fff;
+  color: #0f172a;
+}
+
+/* Keep primary accent for important CTAs */
+.admin-theme .primary-btn,
+.admin-theme .btn-primary,
+.admin-theme .confirm-btn {
+  background: var(--ad-accent) !important;
+  color: #111827 !important;
+  border-color: #d4af37 !important;
+}
+
+/* Inputs inside admin panels */
+.admin-theme input,
+.admin-theme select,
+.admin-theme textarea {
+  background: #fff;
+  border: 1px solid var(--ad-border-strong);
+  color: #0f172a;
+}
+
+/* ===== Nav link containers inside admin pages ===== */
+.admin-theme .bookings-header,
+.admin-theme .section-header,
+.admin-theme .proposals-header,
+.admin-theme .requests-section .request-header {
+  background: transparent;
+  color: var(--ad-text);
+}
+
+/* ===== Scrollbar styling for admin only ===== */
+/* Apply blue scrollbar to the ROOT viewport when admin theme is active */
+body.admin-theme {
+  /* Firefox root scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: #3B82F6 #EAF2FF;
+}
+
+/* WebKit root scrollbars (page/viewport) */
+body.admin-theme::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+body.admin-theme::-webkit-scrollbar-track {
+  background: #EAF2FF;
+}
+body.admin-theme::-webkit-scrollbar-thumb {
+  background-color: #3B82F6;
+  border-radius: 8px;
+  border: 2px solid #EAF2FF;
+}
+body.admin-theme::-webkit-scrollbar-thumb:hover {
+  background-color: #2563EB;
+}
+
+/* ===== Override inline brown/gold colors ===== */
+.admin-theme input[style*="#d4a574"],
+.admin-theme button[style*="#d4a574"],
+.admin-theme .badge[style*="#d4a574"] {
+  border-color: var(--ad-border) !important;
+  background-color: var(--ad-surface) !important;
+  color: var(--ad-text) !important;
+}
+
+.admin-theme input:focus {
+  border-color: var(--ad-accent) !important;
+  background-color: var(--ad-surface) !important;
+  box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.1) !important;
+}
+
+.admin-theme button[style*="borderColor: '#d4a574'"],
+.admin-theme button[style*="color: '#d4a574'"] {
+  border-color: var(--ad-border) !important;
+  color: var(--ad-text) !important;
+}
+
+.admin-theme button[style*="backgroundColor: '#d4a574'"] {
+  background-color: var(--ad-accent) !important;
+  color: var(--ad-surface) !important;
+}
+
+.admin-theme .badge[style*="backgroundColor: '#d4a574'"] {
+  background-color: var(--ad-accent) !important;
+  color: var(--ad-surface) !important;
+}
+
+.admin-theme button[style*="backgroundColor: '#fef7ed'"] {
+  background-color: var(--ad-surface-alt) !important;
+}
+
+.admin-theme button[style*="borderColor: '#d4a574'"]:hover {
+  border-color: var(--ad-accent) !important;
+  color: var(--ad-accent) !important;
+}
+
+.admin-theme button[style*="color: '#d4a574'"]:hover {
+  color: var(--ad-accent) !important;
+}
+
+/* ===== Override specific component styles ===== */
+.admin-theme .filter-section input,
+.admin-theme .filter-section select,
+.admin-theme .filter-section .react-select__control {
+  border-color: var(--ad-border) !important;
+  background-color: var(--ad-surface) !important;
+  color: var(--ad-text) !important;
+}
+
+.admin-theme .filter-section input:focus,
+.admin-theme .filter-section select:focus,
+.admin-theme .filter-section .react-select__control--is-focused {
+  border-color: var(--ad-accent) !important;
+  background-color: var(--ad-surface) !important;
+  box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.1) !important;
+}
+
+.admin-theme .filter-section input:hover,
+.admin-theme .filter-section select:hover,
+.admin-theme .filter-section .react-select__control:hover {
+  border-color: var(--ad-accent) !important;
+}
+
+/* ===== Override pagination colors ===== */
+.admin-theme .pagination-container button[style*="#d4a574"] {
+  background-color: var(--ad-accent) !important;
+  border-color: var(--ad-accent) !important;
+  color: var(--ad-surface) !important;
+}
+
+.admin-theme .pagination-container button[style*="borderColor: '#d4a574'"] {
+  border-color: var(--ad-accent) !important;
+}
+
+.admin-theme .pagination-container button[style*="color: '#d4a574'"] {
+  color: var(--ad-accent) !important;
+}
+
+.admin-theme .pagination-container button[style*="backgroundColor: '#fef7ed'"] {
+  background-color: var(--ad-surface-alt) !important;
+}
+
+/* ===== Override React Select styles ===== */
+.admin-theme .react-select__control {
+  border-color: var(--ad-border) !important;
+  background-color: var(--ad-surface) !important;
+}
+
+.admin-theme .react-select__control:hover {
+  border-color: var(--ad-accent) !important;
+}
+
+.admin-theme .react-select__control--is-focused {
+  border-color: var(--ad-accent) !important;
+  background-color: var(--ad-surface) !important;
+  box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.1) !important;
+}
+
+.admin-theme .react-select__option--is-selected {
+  background-color: var(--ad-accent) !important;
+  color: var(--ad-surface) !important;
+}
+
+.admin-theme .react-select__option--is-focused:not(.react-select__option--is-selected) {
+  background-color: var(--ad-surface-alt) !important;
+  color: var(--ad-text) !important;
+}
+
+.admin-theme .react-select__single-value {
+  color: var(--ad-text) !important;
+}
+
+.admin-theme .react-select__placeholder {
+  color: var(--ad-muted) !important;
+}
+
+/* ===== Override badge colors ===== */
+.admin-theme .badge[style*="backgroundColor: '#fef3c7'"] {
+  background-color: var(--ad-surface-alt) !important;
+  color: var(--ad-text) !important;
+}
+
+.admin-theme .badge[style*="color: '#92400e'"] {
+  color: var(--ad-text) !important;
+}
+
+/* ===== Override status badge colors ===== */
+.admin-theme .badge[style*="backgroundColor: '#d1fae5'"] {
+  background-color: var(--ad-success) !important;
+  color: var(--ad-surface) !important;
+}
+
+.admin-theme .badge[style*="backgroundColor: '#fee2e2'"] {
+  background-color: var(--ad-danger) !important;
+  color: var(--ad-surface) !important;
+}
+
+.admin-theme .badge[style*="color: '#065f46'"] {
+  color: var(--ad-surface) !important;
+}
+
+.admin-theme .badge[style*="color: '#991b1b'"] {
+  color: var(--ad-surface) !important;
+}
+
+/* ===== Override blog form colors ===== */
+.admin-theme .blog-form .form-input,
+.admin-theme .blog-form .form-textarea {
+  border-color: var(--ad-border) !important;
+  background-color: var(--ad-surface) !important;
+  color: var(--ad-text) !important;
+}
+
+.admin-theme .blog-form .form-input:focus,
+.admin-theme .blog-form .form-textarea:focus {
+  border-color: var(--ad-accent) !important;
+  background-color: var(--ad-surface) !important;
+  box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.1) !important;
+}
+
+.admin-theme .upload-label {
+  border-color: var(--ad-accent) !important;
+  background-color: var(--ad-surface-alt) !important;
+  color: var(--ad-accent) !important;
+}
+
+.admin-theme .upload-label svg {
+  stroke: var(--ad-accent) !important;
+}
+
+.admin-theme .upload-label p {
+  color: var(--ad-accent) !important;
+}
+
+/* ===== Override modal colors ===== */
+.admin-theme .modal-overlay {
+  background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+.admin-theme .payment-modal {
+  background-color: var(--ad-surface) !important;
+  border: 1px solid var(--ad-border) !important;
+}
+
+.admin-theme .modal-header {
+  background-color: var(--ad-surface-alt) !important;
+  border-bottom: 1px solid var(--ad-border) !important;
+}
+
+.admin-theme .modal-title {
+  color: var(--ad-text) !important;
+}
+
+.admin-theme .form-grid input,
+.admin-theme .form-grid select,
+.admin-theme .form-grid textarea {
+  border-color: var(--ad-border) !important;
+  background-color: var(--ad-surface) !important;
+  color: var(--ad-text) !important;
+}
+
+.admin-theme .form-grid input:focus,
+.admin-theme .form-grid select:focus,
+.admin-theme .form-grid textarea:focus {
+  border-color: var(--ad-accent) !important;
+  background-color: var(--ad-surface) !important;
+  box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.1) !important;
+}
+
+/* ===== Override dropdown menu colors ===== */
+.admin-theme .dropdown-menu {
+  background-color: var(--ad-surface) !important;
+  border-color: var(--ad-border) !important;
+  box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.1) !important;
+}
+
+.admin-theme .dropdown-menu button {
+  color: var(--ad-text) !important;
+}
+
+.admin-theme .dropdown-menu button:hover {
+  background-color: var(--ad-surface-alt) !important;
+}
+
+.admin-theme .dropdown-menu button[style*="color: '#dc2626'"] {
+  color: var(--ad-danger) !important;
+}
+
+.admin-theme .dropdown-menu button[style*="color: '#dc2626'"]:hover {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+}
+
+

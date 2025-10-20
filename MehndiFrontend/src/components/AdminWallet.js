@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import AdminSidebar from './AdminSidebar';
 import apiService from '../services/api';
 import Select from 'react-select';
+import './admin-styles.css';
 
 const formatGBP = (n) => `£${Number(n).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -78,9 +79,9 @@ const AdminWallet = () => {
   };
 
   return (
-    <div className="dashboard-layout">
+    <div className="admin_dashboard-layout">
       <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="dashboard-main-content">
+      <div className="admin_dashboard-main-content">
         <button
           className="sidebar-toggle-btn"
           onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -91,17 +92,17 @@ const AdminWallet = () => {
             <line x1="3" y1="18" x2="21" y2="18" />
           </svg>
         </button>
-        <div className="dashboard-container">
-          <main className="dashboard-content">
-            <div className="bookings-header">
-              <h2 className="bookings-title">Transactions</h2>
-              <p className="bookings-subtitle">Review and manage platform transactions</p>
+        <div className="admin_dashboard-container">
+          <main className="admin_dashboard-content">
+            <div className="admin_bookings-header">
+              <h2 className="admin_bookings-title">Transactions</h2>
+              <p className="admin_bookings-subtitle">Review and manage platform transactions</p>
             </div>
 
             {/* Transactions */}
-            <div className="transactions-card" style={{ background: '#fff', border: '1px solid #eee', borderRadius: '12px', overflow: 'hidden' }}>
-              <div style={{ padding: '16px 20px', borderBottom: '1px solid #f0f0f0', background: '#fff' }}>
-                <h3 className="section-title" style={{ margin: 0 }}>Transaction History</h3>
+            <div className="admin_transactions-card" style={{ background: '#ffffff', border: '1px solid #eee', borderRadius: '12px', overflow: 'hidden' }}>
+              <div style={{ padding: '16px 20px', borderBottom: '1px solid #f0f0f0', background: '#ffffff' }}>
+                <h3 className="admin_section-title" style={{ margin: 0 }}>Transaction History</h3>
               </div>
               <div style={{ overflowX: 'auto' }}>
                 {loading ? (
@@ -111,28 +112,28 @@ const AdminWallet = () => {
                 ) : walletTransactions.length === 0 ? (
                   <div style={{ padding: '20px', textAlign: 'center' }}>No transactions found.</div>
                 ) : (
-                  <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
+                  <table className="admin_styled-table">
                     <thead>
-                      <tr style={{ background: '#fbfbfb', color: '#555' }}>
-                        <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 600 }}>Event</th>
-                        <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 600 }}>Method</th>
-                        <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 600 }}>Type</th>
-                        <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 600 }}>Status</th>
-                        <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 600 }}>Date</th>
-                        <th style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 600 }}>Amount</th>
+                      <tr>
+                        <th style={{ textAlign: 'left' }}>Event</th>
+                        <th style={{ textAlign: 'left' }}>Method</th>
+                        <th style={{ textAlign: 'left' }}>Type</th>
+                        <th style={{ textAlign: 'left' }}>Status</th>
+                        <th style={{ textAlign: 'left' }}>Date</th>
+                        <th style={{ textAlign: 'right' }}>Amount</th>
                       </tr>
                     </thead>
                     <tbody>
                       {paginatedTransactions.map((tx) => (
-                        <tr key={tx.id} style={{ borderTop: '1px solid #f3f4f6' }}>
-                          <td style={{ padding: '16px' }}>{tx.event}</td>
-                          <td style={{ padding: '16px' }}>{tx.method}</td>
-                          <td style={{ padding: '16px', textTransform: 'capitalize' }}>{tx.type}</td>
-                          <td style={{ padding: '16px' }}>
-                            <span className="status-badge" style={{ background: '#e7f9ef', color: '#1f7a3f', border: '1px solid #c9efd9', padding: '6px 10px', borderRadius: '999px', fontSize: '12px', fontWeight: 700, textTransform: 'capitalize' }}>{tx.status}</span>
+                        <tr key={tx.id}>
+                          <td style={{ color: '#0f172a' }}>{tx.event}</td>
+                          <td style={{ color: '#0f172a' }}>{tx.method}</td>
+                          <td style={{ color: '#0f172a', textTransform: 'capitalize' }}>{tx.type}</td>
+                          <td>
+                            <span className="admin_status-badge completed" style={{ textTransform: 'capitalize' }}>{tx.status}</span>
                           </td>
-                          <td style={{ padding: '16px' }}>{new Date(tx.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
-                          <td style={{ padding: '16px', textAlign: 'right', fontWeight: 700 }}>{formatGBP(tx.amount)}</td>
+                          <td style={{ color: '#0f172a' }}>{new Date(tx.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+                          <td style={{ textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>{formatGBP(tx.amount)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -143,7 +144,7 @@ const AdminWallet = () => {
 
             {/* Pagination Component */}
             {walletTransactions.length > 0 && (
-              <div className="pagination-container" style={{
+              <div className="admin_pagination-container" style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
@@ -160,17 +161,20 @@ const AdminWallet = () => {
                     options={itemsPerPageOptions}
                     menuPlacement="top"
                     styles={{
-                      control: (provided) => ({
+                      control: (provided, state) => ({
                         ...provided,
-                        border: '1px solid #d1d5db',
+                        border: '1px solid #e5e7eb',
                         borderRadius: '6px',
                         minHeight: '36px',
                         width: '120px',
-                        backgroundColor: '#f9fafb',
-                        boxShadow: 'none',
+                        backgroundColor: '#ffffff',
+                        boxShadow: state.isFocused ? '0 0 0 3px rgba(59, 130, 246, 0.1)' : 'none',
                         '&:hover': {
-                          borderColor: '#d4a574'
-                        }
+                          borderColor: '#3b82f6'
+                        },
+                        ...(state.isFocused && {
+                          borderColor: '#3b82f6'
+                        })
                       }),
                       placeholder: (provided) => ({
                         ...provided,
@@ -179,13 +183,13 @@ const AdminWallet = () => {
                       }),
                       option: (provided, state) => ({
                         ...provided,
-                        backgroundColor: state.isSelected ? '#d4a574' : state.isFocused ? '#fef7ed' : '#fff',
-                        color: state.isSelected ? '#fff' : '#374151',
+                        backgroundColor: state.isSelected ? '#6b7280' : state.isFocused ? '#f8fafc' : '#ffffff',
+                        color: state.isSelected ? '#ffffff' : '#0f172a',
                         fontSize: '0.75rem'
                       }),
                       singleValue: (provided) => ({
                         ...provided,
-                        color: '#374151',
+                        color: '#0f172a',
                         fontSize: '0.75rem'
                       })
                     }}
@@ -203,16 +207,28 @@ const AdminWallet = () => {
                     disabled={currentPage === 1}
                     style={{
                       padding: '0.5rem 0.75rem',
-                      border: '1px solid #d1d5db',
+                      border: '1px solid #e5e7eb',
                       borderRadius: '6px',
-                      backgroundColor: currentPage === 1 ? '#f9fafb' : '#fff',
-                      color: currentPage === 1 ? '#9ca3af' : '#374151',
+                      backgroundColor: currentPage === 1 ? '#ffffff' : '#ffffff',
+                      color: currentPage === 1 ? '#9ca3af' : '#0f172a',
                       fontSize: '0.875rem',
                       cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
                       transition: 'all 0.2s',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.25rem'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (currentPage !== 1) {
+                        e.target.style.borderColor = '#3b82f6';
+                        e.target.style.color = '#3b82f6';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (currentPage !== 1) {
+                        e.target.style.borderColor = '#e5e7eb';
+                        e.target.style.color = '#0f172a';
+                      }
                     }}
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -229,14 +245,26 @@ const AdminWallet = () => {
                         onClick={() => handlePageChange(pageNum)}
                         style={{
                           padding: '0.5rem 0.75rem',
-                          border: `1px solid ${currentPage === pageNum ? '#d4a574' : '#d1d5db'}`,
+                          border: `1px solid ${currentPage === pageNum ? '#3b82f6' : '#e5e7eb'}`,
                           borderRadius: '6px',
-                          backgroundColor: currentPage === pageNum ? '#d4a574' : '#fff',
-                          color: currentPage === pageNum ? '#fff' : '#374151',
+                          backgroundColor: currentPage === pageNum ? '#3b82f6' : '#ffffff',
+                          color: currentPage === pageNum ? '#ffffff' : '#0f172a',
                           fontSize: '0.875rem',
                           cursor: 'pointer',
                           transition: 'all 0.2s',
                           minWidth: '40px'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (currentPage !== pageNum) {
+                            e.target.style.borderColor = '#3b82f6';
+                            e.target.style.backgroundColor = '#f8fafc';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (currentPage !== pageNum) {
+                            e.target.style.borderColor = '#e5e7eb';
+                            e.target.style.backgroundColor = '#ffffff';
+                          }
                         }}
                       >
                         {pageNum}
@@ -250,16 +278,28 @@ const AdminWallet = () => {
                     disabled={currentPage === totalPages}
                     style={{
                       padding: '0.5rem 0.75rem',
-                      border: '1px solid #d1d5db',
+                      border: '1px solid #e5e7eb',
                       borderRadius: '6px',
-                      backgroundColor: currentPage === totalPages ? '#f9fafb' : '#fff',
-                      color: currentPage === totalPages ? '#9ca3af' : '#374151',
+                      backgroundColor: currentPage === totalPages ? '#ffffff' : '#ffffff',
+                      color: currentPage === totalPages ? '#9ca3af' : '#0f172a',
                       fontSize: '0.875rem',
                       cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
                       transition: 'all 0.2s',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.25rem'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (currentPage !== totalPages) {
+                        e.target.style.borderColor = '#3b82f6';
+                        e.target.style.color = '#3b82f6';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (currentPage !== totalPages) {
+                        e.target.style.borderColor = '#e5e7eb';
+                        e.target.style.color = '#0f172a';
+                      }
                     }}
                   >
                     Next

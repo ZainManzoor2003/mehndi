@@ -268,20 +268,34 @@ const getPeriodData = async (fromDate, toDate, cityFilter) => {
     });
     
     // Get active applications (applications with status 'accepted')
-    const activeApplications = await Application.countDocuments({
-      'Booking.status': 'accepted',
-      createdAt: { $gte: fromDate, $lte: toDate }
-    });
+    // Active applications filtered via booking.city
+    const activeAppsAgg = await Application.aggregate([
+      { $unwind: '$Booking' },
+      { $lookup: { from: 'bookings', localField: 'Booking.booking_id', foreignField: '_id', as: 'bookingRef' } },
+      { $unwind: '$bookingRef' },
+      { $match: { 'Booking.status': 'accepted', createdAt: { $gte: fromDate, $lte: toDate }, ...(cityFilter.city ? { 'bookingRef.city': cityFilter.city } : {}) } },
+      { $count: 'count' }
+    ]);
+    const activeApplications = activeAppsAgg[0]?.count || 0;
     
     // Calculate cancellation rate
-    const cancelledApplications = await Application.countDocuments({
-      'Booking.status': 'cancelled',
-      createdAt: { $gte: fromDate, $lte: toDate }
-    });
+    const cancelledAppsAgg = await Application.aggregate([
+      { $unwind: '$Booking' },
+      { $lookup: { from: 'bookings', localField: 'Booking.booking_id', foreignField: '_id', as: 'bookingRef' } },
+      { $unwind: '$bookingRef' },
+      { $match: { 'Booking.status': 'cancelled', createdAt: { $gte: fromDate, $lte: toDate }, ...(cityFilter.city ? { 'bookingRef.city': cityFilter.city } : {}) } },
+      { $count: 'count' }
+    ]);
+    const cancelledApplications = cancelledAppsAgg[0]?.count || 0;
     
-    const totalApplications = await Application.countDocuments({
-      createdAt: { $gte: fromDate, $lte: toDate }
-    });
+    const totalAppsAgg = await Application.aggregate([
+      { $unwind: '$Booking' },
+      { $lookup: { from: 'bookings', localField: 'Booking.booking_id', foreignField: '_id', as: 'bookingRef' } },
+      { $unwind: '$bookingRef' },
+      { $match: { createdAt: { $gte: fromDate, $lte: toDate }, ...(cityFilter.city ? { 'bookingRef.city': cityFilter.city } : {}) } },
+      { $count: 'count' }
+    ]);
+    const totalApplications = totalAppsAgg[0]?.count || 0;
     
     const cancellationRate = totalApplications > 0 ? 
       Math.round((cancelledApplications / totalApplications) * 100) : 0;
@@ -350,7 +364,7 @@ exports.getRequestsByStatus = async (req, res) => {
 
 exports.getApplicationsByStatus = async (req, res) => {
   try {
-    const { from, to } = req.query;
+    const { from, to, city } = req.query;
     
     const fromDate = new Date(from);
     const toDate = new Date(to);
@@ -360,9 +374,19 @@ exports.getApplicationsByStatus = async (req, res) => {
       {
         $unwind: '$Booking'
       },
+      // Join booking to get city when filtering
+      ...(city ? [{
+        $lookup: {
+          from: 'bookings',
+          localField: 'Booking.booking_id',
+          foreignField: '_id',
+          as: 'bookingRef'
+        }
+      }, { $unwind: '$bookingRef' } ] : []),
       {
         $match: {
-          createdAt: { $gte: fromDate, $lte: toDate }
+          createdAt: { $gte: fromDate, $lte: toDate },
+          ...(city ? { 'bookingRef.city': { $regex: city, $options: 'i' } } : {})
         }
       },
       {

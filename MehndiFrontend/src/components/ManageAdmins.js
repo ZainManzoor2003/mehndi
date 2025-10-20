@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import AdminSidebar from './AdminSidebar';
 import { adminAPI } from '../services/api';
 import Select from 'react-select';
+import './admin-styles.css';
 
 const ManageAdmins = () => {
   const [users, setUsers] = useState([]);
@@ -135,9 +136,9 @@ const ManageAdmins = () => {
   const admins = users.filter(u => u.userType === 'admin');
 
   return (
-    <div className="dashboard-layout">
+    <div className="admin_dashboard-layout">
       <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="dashboard-main-content">
+      <div className="admin_dashboard-main-content">
         <button
           className="sidebar-toggle-btn"
           onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -148,37 +149,37 @@ const ManageAdmins = () => {
             <line x1="3" y1="18" x2="21" y2="18" />
           </svg>
         </button>
-        <div className="dashboard-container">
-        <div className="dashboard-content">
-        <div className="bookings-header">
-          <h2 className="bookings-title">Manage Admins</h2>
-          <p className="bookings-subtitle">Manage all admin users</p>
+        <div className="admin_dashboard-container">
+        <div className="admin_dashboard-content">
+        <div className="admin_bookings-header">
+          <h2 className="admin_bookings-title">Manage Admins</h2>
+          <p className="admin_bookings-subtitle">Manage all admin users</p>
         </div>
 
         {/* Admin Stats Cards */}
-        <div className="booking-stats">
-          <div className="stat-card">
-            <div className="stat-icon">
+        <div className="admin_booking-stats">
+          <div className="admin_stat-card">
+            <div className="admin_stat-icon">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 15l-3-3 3-3"/>
                 <path d="M8 12h8"/>
                 <circle cx="12" cy="12" r="10"/>
               </svg>
             </div>
-            <div className="stat-info">
+            <div className="admin_stat-info">
               <h3>Total Admins</h3>
-              <span className="stat-number">{admins.length}</span>
+              <span className="admin_stat-number">{admins.length}</span>
             </div>
           </div>
         </div>
-        {error && <p className="error">{error}</p>}
+        {error && <p className="admin_error">{error}</p>}
         {loading ? (
           <p>Loading...</p>
         ) : (
           <>
             {/* Filter Section */}
-            <div className="filter-section" style={{
-              backgroundColor: '#fff',
+            <div className="admin_filter-section" style={{
+              backgroundColor: '#ffffff',
               padding: '1.5rem',
               borderRadius: '12px',
               boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
@@ -192,12 +193,12 @@ const ManageAdmins = () => {
                 alignItems: 'end'
               }}>
                 {/* Search Input */}
-                <div className="filter-item">
+                <div className="admin_filter-item">
                   <label style={{
                     display: 'block',
                     marginBottom: '0.5rem',
                     fontWeight: '600',
-                    color: '#374151',
+                    color: '#0f172a',
                     fontSize: '0.875rem'
                   }}>
                     Search Admins
@@ -210,32 +211,34 @@ const ManageAdmins = () => {
                     style={{
                       width: '100%',
                       padding: '0.75rem',
-                      border: '2px solid #d1d5db',
+                      border: '2px solid #e5e7eb',
                       borderRadius: '8px',
                       fontSize: '0.875rem',
                       transition: 'border-color 0.2s',
-                      backgroundColor: '#f9fafb'
+                      backgroundColor: '#ffffff'
                     }}
                     onFocus={(e) => {
-                      e.target.style.borderColor = '#d4a574';
-                      e.target.style.backgroundColor = '#fff';
+                      e.target.style.borderColor = '#3b82f6';
+                      e.target.style.backgroundColor = '#ffffff';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
                     }}
                     onBlur={(e) => {
-                      e.target.style.borderColor = '#d1d5db';
-                      e.target.style.backgroundColor = '#f9fafb';
+                      e.target.style.borderColor = '#e5e7eb';
+                      e.target.style.backgroundColor = '#ffffff';
+                      e.target.style.boxShadow = 'none';
                     }}
                   />
                 </div>
 
                 {/* Clear Filters Button */}
                 {searchTerm && (
-                  <div className="filter-item" style={{ display: 'flex', alignItems: 'end' }}>
+                  <div className="admin_filter-item" style={{ display: 'flex', alignItems: 'end' }}>
                     <button
                       onClick={() => setSearchTerm('')}
                       style={{
                         padding: '0.75rem 1rem',
                         backgroundColor: 'transparent',
-                        border: '1px solid #d1d5db',
+                        border: '1px solid #e5e7eb',
                         borderRadius: '6px',
                         color: '#6b7280',
                         fontSize: '0.875rem',
@@ -244,11 +247,11 @@ const ManageAdmins = () => {
                         whiteSpace: 'nowrap'
                       }}
                       onMouseEnter={(e) => {
-                        e.target.style.borderColor = '#d4a574';
-                        e.target.style.color = '#d4a574';
+                        e.target.style.borderColor = '#3b82f6';
+                        e.target.style.color = '#3b82f6';
                       }}
                       onMouseLeave={(e) => {
-                        e.target.style.borderColor = '#d1d5db';
+                        e.target.style.borderColor = '#e5e7eb';
                         e.target.style.color = '#6b7280';
                       }}
                     >
@@ -259,12 +262,12 @@ const ManageAdmins = () => {
               </div>
             </div>
 
-            <div className="table-responsive" style={{ marginTop: '1rem' }}>
+            <div className="admin_table-responsive" style={{ marginTop: '1rem' }}>
               {paginatedUsers.length === 0 && filteredUsers.length === 0 ? (
                 <div style={{
                   textAlign: 'center',
                   padding: '3rem 1rem',
-                  backgroundColor: '#f9fafb',
+                  backgroundColor: '#ffffff',
                   borderRadius: '8px',
                   border: '1px solid #e5e7eb'
                 }}>
@@ -280,7 +283,7 @@ const ManageAdmins = () => {
                   </p>
                 </div>
               ) : (
-                <table className="styled-table">
+                <table className="admin_styled-table">
                   <thead>
                     <tr>
                       <th>Name</th>
@@ -308,7 +311,7 @@ const ManageAdmins = () => {
                           </span>
                         </td>
                          <td>
-                           <button className="btn btn-outline" onClick={() => openEdit(u)}>Edit</button>
+                           <button className="admin_btn admin_btn-outline" onClick={() => openEdit(u)}>Edit</button>
                          </td>
                       </tr>
                     ))}
@@ -319,7 +322,7 @@ const ManageAdmins = () => {
 
             {/* Pagination Component */}
             {filteredUsers.length > 0 && (
-              <div className="pagination-container" style={{
+              <div className="admin_pagination-container" style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
@@ -336,17 +339,20 @@ const ManageAdmins = () => {
                     options={itemsPerPageOptions}
                     menuPlacement="top"
                     styles={{
-                      control: (provided) => ({
+                      control: (provided, state) => ({
                         ...provided,
-                        border: '1px solid #d1d5db',
+                        border: '1px solid #e5e7eb',
                         borderRadius: '6px',
                         minHeight: '36px',
                         width: '120px',
-                        backgroundColor: '#f9fafb',
-                        boxShadow: 'none',
+                        backgroundColor: '#ffffff',
+                        boxShadow: state.isFocused ? '0 0 0 3px rgba(59, 130, 246, 0.1)' : 'none',
                         '&:hover': {
-                          borderColor: '#d4a574'
-                        }
+                          borderColor: '#3b82f6'
+                        },
+                        ...(state.isFocused && {
+                          borderColor: '#3b82f6'
+                        })
                       }),
                       placeholder: (provided) => ({
                         ...provided,
@@ -355,13 +361,13 @@ const ManageAdmins = () => {
                       }),
                       option: (provided, state) => ({
                         ...provided,
-                        backgroundColor: state.isSelected ? '#d4a574' : state.isFocused ? '#fef7ed' : '#fff',
-                        color: state.isSelected ? '#fff' : '#374151',
+                        backgroundColor: state.isSelected ? '#6b7280' : state.isFocused ? '#f8fafc' : '#ffffff',
+                        color: state.isSelected ? '#ffffff' : '#0f172a',
                         fontSize: '0.75rem'
                       }),
                       singleValue: (provided) => ({
                         ...provided,
-                        color: '#374151',
+                        color: '#0f172a',
                         fontSize: '0.75rem'
                       })
                     }}
@@ -379,10 +385,10 @@ const ManageAdmins = () => {
                     disabled={currentPage === 1}
                     style={{
                       padding: '0.5rem 0.75rem',
-                      border: '1px solid #d1d5db',
+                      border: '1px solid #e5e7eb',
                       borderRadius: '6px',
-                      backgroundColor: currentPage === 1 ? '#f9fafb' : '#fff',
-                      color: currentPage === 1 ? '#9ca3af' : '#374151',
+                      backgroundColor: currentPage === 1 ? '#ffffff' : '#ffffff',
+                      color: currentPage === 1 ? '#9ca3af' : '#0f172a',
                       fontSize: '0.875rem',
                       cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
                       transition: 'all 0.2s',
@@ -392,14 +398,14 @@ const ManageAdmins = () => {
                     }}
                     onMouseEnter={(e) => {
                       if (currentPage !== 1) {
-                        e.target.style.borderColor = '#d4a574';
-                        e.target.style.color = '#d4a574';
+                        e.target.style.borderColor = '#3b82f6';
+                        e.target.style.color = '#3b82f6';
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (currentPage !== 1) {
-                        e.target.style.borderColor = '#d1d5db';
-                        e.target.style.color = '#374151';
+                        e.target.style.borderColor = '#e5e7eb';
+                        e.target.style.color = '#0f172a';
                       }
                     }}
                   >
@@ -417,10 +423,10 @@ const ManageAdmins = () => {
                         onClick={() => handlePageChange(pageNum)}
                         style={{
                           padding: '0.5rem 0.75rem',
-                          border: `1px solid ${currentPage === pageNum ? '#d4a574' : '#d1d5db'}`,
+                          border: `1px solid ${currentPage === pageNum ? '#3b82f6' : '#e5e7eb'}`,
                           borderRadius: '6px',
-                          backgroundColor: currentPage === pageNum ? '#d4a574' : '#fff',
-                          color: currentPage === pageNum ? '#fff' : '#374151',
+                          backgroundColor: currentPage === pageNum ? '#3b82f6' : '#ffffff',
+                          color: currentPage === pageNum ? '#ffffff' : '#0f172a',
                           fontSize: '0.875rem',
                           cursor: 'pointer',
                           transition: 'all 0.2s',
@@ -428,14 +434,14 @@ const ManageAdmins = () => {
                         }}
                         onMouseEnter={(e) => {
                           if (currentPage !== pageNum) {
-                            e.target.style.borderColor = '#d4a574';
-                            e.target.style.backgroundColor = '#fef7ed';
+                            e.target.style.borderColor = '#3b82f6';
+                            e.target.style.backgroundColor = '#f8fafc';
                           }
                         }}
                         onMouseLeave={(e) => {
                           if (currentPage !== pageNum) {
-                            e.target.style.borderColor = '#d1d5db';
-                            e.target.style.backgroundColor = '#fff';
+                            e.target.style.borderColor = '#e5e7eb';
+                            e.target.style.backgroundColor = '#ffffff';
                           }
                         }}
                       >
@@ -450,10 +456,10 @@ const ManageAdmins = () => {
                     disabled={currentPage === totalPages}
                     style={{
                       padding: '0.5rem 0.75rem',
-                      border: '1px solid #d1d5db',
+                      border: '1px solid #e5e7eb',
                       borderRadius: '6px',
-                      backgroundColor: currentPage === totalPages ? '#f9fafb' : '#fff',
-                      color: currentPage === totalPages ? '#9ca3af' : '#374151',
+                      backgroundColor: currentPage === totalPages ? '#ffffff' : '#ffffff',
+                      color: currentPage === totalPages ? '#9ca3af' : '#0f172a',
                       fontSize: '0.875rem',
                       cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
                       transition: 'all 0.2s',
@@ -463,14 +469,14 @@ const ManageAdmins = () => {
                     }}
                     onMouseEnter={(e) => {
                       if (currentPage !== totalPages) {
-                        e.target.style.borderColor = '#d4a574';
-                        e.target.style.color = '#d4a574';
+                        e.target.style.borderColor = '#3b82f6';
+                        e.target.style.color = '#3b82f6';
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (currentPage !== totalPages) {
-                        e.target.style.borderColor = '#d1d5db';
-                        e.target.style.color = '#374151';
+                        e.target.style.borderColor = '#e5e7eb';
+                        e.target.style.color = '#0f172a';
                       }
                     }}
                   >
@@ -486,13 +492,13 @@ const ManageAdmins = () => {
         )}
 
         {editing && (
-          <div className="modal-overlay" onClick={closeEdit}>
-            <div className="payment-modal" onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
-                <h2 className="modal-title">Edit Admin</h2>
-                <button className="modal-close" onClick={closeEdit}>×</button>
+          <div className="admin_modal-overlay" onClick={closeEdit}>
+            <div className="admin_payment-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="admin_modal-header">
+                <h2 className="admin_modal-title">Edit Admin</h2>
+                <button className="admin_modal-close" onClick={closeEdit}>×</button>
               </div>
-              <form onSubmit={submitEdit} className="form-grid" style={{ padding: '1rem' }}>
+              <form onSubmit={submitEdit} className="admin_form-grid" style={{ padding: '1rem' }}>
                 <label>First name
                   <input type="text" placeholder="First name" value={form.firstName} onChange={(e)=>setForm({...form, firstName:e.target.value})} required />
                 </label>
@@ -506,8 +512,8 @@ const ManageAdmins = () => {
                   <input type="password" placeholder="New password (optional, min 6)" value={form.password} onChange={(e)=>setForm({...form, password:e.target.value})} />
                 </label>
                 <div style={{ display:'flex', gap:'8px', marginTop:'8px' }}>
-                  <button type="button" className="btn btn-light" onClick={closeEdit}>Cancel</button>
-                  <button type="submit" className="btn btn-primary">Save</button>
+                  <button type="button" className="admin_btn admin_btn-light" onClick={closeEdit}>Cancel</button>
+                  <button type="submit" className="admin_btn admin_btn-primary">Save</button>
                 </div>
               </form>
             </div>

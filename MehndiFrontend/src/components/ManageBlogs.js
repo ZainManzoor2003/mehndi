@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import AdminSidebar from './AdminSidebar';
 import { adminAPI } from '../services/api';
+import './admin-styles.css';
 
 const ManageBlogs = () => {
   const [blogs, setBlogs] = useState([]);
@@ -102,9 +103,9 @@ const ManageBlogs = () => {
   };
 
   return (
-    <div className="dashboard-layout">
+    <div className="admin_dashboard-layout">
       <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="dashboard-main-content">
+      <div className="admin_dashboard-main-content">
         <button
           className="sidebar-toggle-btn"
           onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -115,36 +116,36 @@ const ManageBlogs = () => {
             <line x1="3" y1="18" x2="21" y2="18" />
           </svg>
         </button>
-        <div className="dashboard-container">
-          <div className="dashboard-content">
-            <div className="bookings-header">
-              <h2 className="bookings-title">Manage Blogs</h2>
-              <p className="bookings-subtitle">Create and manage blog posts</p>
+        <div className="admin_dashboard-container">
+          <div className="admin_dashboard-content">
+            <div className="admin_bookings-header">
+              <h2 className="admin_bookings-title">Manage Blogs</h2>
+              <p className="admin_bookings-subtitle">Create and manage blog posts</p>
             </div>
 
             {/* Blog Stats Cards */}
             {!loading && (
-              <div className="booking-stats">
-                <div className="stat-card">
-                  <div className="stat-icon">
+              <div className="admin_booking-stats">
+                <div className="admin_stat-card">
+                  <div className="admin_stat-icon">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
                     </svg>
                   </div>
-                  <div className="stat-info">
+                  <div className="admin_stat-info">
                     <h3>Total Blogs</h3>
-                    <span className="stat-number">{blogs.length}</span>
+                    <span className="admin_stat-number">{blogs.length}</span>
                   </div>
                 </div>
               </div>
             )}
 
-            {error && <p className="error">{error}</p>}
+            {error && <p className="admin_error">{error}</p>}
 
-            <form onSubmit={handleSubmit} className="blog-form">
+            <form onSubmit={handleSubmit} className="admin_blog-form">
               <input
                 type="text"
-                className="form-input"
+                className="admin_form-input"
                 placeholder="Title"
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -153,25 +154,25 @@ const ManageBlogs = () => {
               
               {/* Image Upload Section */}
               <div className="image-upload-section" style={{ marginBottom: '1rem' }}>
-                <label htmlFor="blog-image-upload" className="upload-label" style={{ 
+                <label htmlFor="blog-image-upload" className="admin_upload-label" style={{ 
                   display: 'block',
                   padding: '20px',
-                  border: '2px dashed #d4a574',
+                  border: '2px dashed #eab308',
                   borderRadius: '8px',
                   textAlign: 'center',
                   cursor: 'pointer',
-                  backgroundColor: '#faf8f5',
+                  backgroundColor: '#f8fafc',
                   transition: 'all 0.3s ease'
                 }}>
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d4a574" strokeWidth="2" style={{ margin: '0 auto 10px' }}>
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#eab308" strokeWidth="2" style={{ margin: '0 auto 10px' }}>
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                     <circle cx="8.5" cy="8.5" r="1.5"/>
                     <polyline points="21 15 16 10 5 21"/>
                   </svg>
-                  <p style={{ margin: '0', color: '#d4a574', fontWeight: '600' }}>
+                  <p style={{ margin: '0', color: '#eab308', fontWeight: '600' }}>
                     Click to upload blog image
                   </p>
-                  <small style={{ color: '#888' }}>PNG, JPG, WEBP up to 10MB</small>
+                  <small style={{ color: '#6b7280' }}>PNG, JPG, WEBP up to 10MB</small>
                 </label>
                 <input
                   type="file"
@@ -192,7 +193,7 @@ const ManageBlogs = () => {
                         maxHeight: '200px', 
                         objectFit: 'cover', 
                         borderRadius: '8px',
-                        border: '2px solid #d4a574'
+                        border: '2px solid #eab308'
                       }} 
                     />
                     <button
@@ -226,19 +227,27 @@ const ManageBlogs = () => {
               </div>
 
               <textarea
-                className="form-textarea"
+                className="admin_form-textarea"
                 placeholder="Description"
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 rows={4}
                 required
               />
-              <div className="form-actions">
-                <button type="submit" className="btn-primary" disabled={uploading}>
+              <div className="admin_form-actions">
+                <button 
+                  type="submit" 
+                  className="admin_btn admin_btn-primary" 
+                  disabled={uploading}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    fontSize: '1rem'
+                  }}
+                >
                   {uploading ? 'Uploading...' : editingId ? 'Update Blog' : 'Create Blog'}
                 </button>
                 {editingId && (
-                  <button type="button" className="btn btn-light" onClick={() => { 
+                  <button type="button" className="admin_btn admin_btn-light" onClick={() => { 
                     setEditingId(null); 
                     setForm({ title:'', description:'', imageUrl:'' }); 
                     setImageFile(null);
@@ -251,70 +260,28 @@ const ManageBlogs = () => {
             {loading ? (
               <p>Loading...</p>
             ) : (
-              <div className="blogs-grid">
+              <div className="admin_blogs-grid">
                 {blogs.map(b => (
-                  <div className="blog-card" key={b._id}>
+                  <div className="admin_blog-card" key={b._id}>
                     {b.imageUrl && (
                       <div style={{ marginBottom: '.5rem' }}>
                         <img src={b.imageUrl} alt={b.title} style={{ width: '100%', borderRadius: '8px', maxHeight: '180px', objectFit: 'cover' }} />
                       </div>
                     )}
-                    <h3 className="blog-title">{b.title}</h3>
-                    <p className="blog-desc" style={{ margin: 0, color: '#6e5f50', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    <h3 className="admin_blog-title">{b.title}</h3>
+                    <p className="admin_blog-desc" style={{ margin: 0, color: '#0f172a', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                       {b.description}
                     </p>
-                    <div className="blog-actions" style={{ display: 'flex', gap: '10px', marginTop: '.6rem' }}>
+                    <div className="admin_blog-actions" style={{ display: 'flex', gap: '10px', marginTop: '.6rem' }}>
                       <button
-                        className="btn btn-outline"
+                        className="admin_btn admin_btn-outline"
                         onClick={() => handleEdit(b)}
-                        style={{
-                          border: '2px solid #d4a574',
-                          color: '#d4a574',
-                          padding: '8px 14px',
-                          borderRadius: '8px',
-                          fontWeight: 700,
-                          background: 'transparent',
-                          transition: 'all .2s ease',
-                          boxShadow: '0 2px 8px rgba(212,165,116,0.15)'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = '#d4a574';
-                          e.currentTarget.style.color = 'white';
-                          e.currentTarget.style.boxShadow = '0 6px 16px rgba(212,165,116,0.35)';
-                          e.currentTarget.style.transform = 'translateY(-1px)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'transparent';
-                          e.currentTarget.style.color = '#d4a574';
-                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(212,165,116,0.15)';
-                          e.currentTarget.style.transform = 'translateY(0)';
-                        }}
                       >
                         Edit
                       </button>
                       <button
-                        className="btn danger"
+                        className="admin_btn danger"
                         onClick={() => handleDelete(b._id)}
-                        style={{
-                          background: '#b94b3c',
-                          color: 'white',
-                          padding: '8px 14px',
-                          borderRadius: '8px',
-                          fontWeight: 700,
-                          border: 'none',
-                          transition: 'all .2s ease',
-                          boxShadow: '0 2px 8px rgba(185,75,60,0.25)'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = '#a63f34';
-                          e.currentTarget.style.boxShadow = '0 6px 16px rgba(185,75,60,0.4)';
-                          e.currentTarget.style.transform = 'translateY(-1px)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = '#b94b3c';
-                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(185,75,60,0.25)';
-                          e.currentTarget.style.transform = 'translateY(0)';
-                        }}
                       >
                         Delete
                       </button>

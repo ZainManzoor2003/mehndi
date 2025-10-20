@@ -192,7 +192,7 @@ const GetLocationModal = ({ isOpen, onClose, onLocationSelect }) => {
           <button
             className="btn-primary"
             onClick={handleSelectLocation}
-            style={{ padding: '10px 20px' }}
+            style={{ background: 'var(--accent-orange)', color: '#fff' }}
           >
             Select Location
           </button>
