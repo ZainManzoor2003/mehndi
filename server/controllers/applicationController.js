@@ -677,6 +677,19 @@ exports.updateApplicationStatus = async (req, res) => {
               booking.remainingPayment = String(remainingPayment);
             }
             booking.isPaid = isPaid;
+            
+            // Create transaction for the payment
+            if (isPaid && (isPaid === 'half')) {
+              const transaction = new Transaction({
+                sender: req.user.id,
+                receiver: artistId,
+                bookingId: booking._id,
+                amount: Number(booking.paymentPaid) || 0,
+                transactionType: isPaid
+              });
+              await transaction.save();
+            }
+            
           }
         }
         

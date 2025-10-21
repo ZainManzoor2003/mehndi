@@ -1950,6 +1950,7 @@ useEffect(() => {
                           };
 
                           const getAmountDisplay = (transaction) => {
+                            console.log('trsnaction',transaction)
                             return transaction.amountDisplay || `£${transaction.amount.toFixed(0)}`;
                           };
 

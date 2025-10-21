@@ -16,7 +16,7 @@ const reviewController = require('../controllers/reviewController');
 const chatController = require('../controllers/chatController');
 const portfolioController = require('../controllers/portfolioController');
 const { getWallet, updateWallet, getAllWallets, getWalletSummary, withdrawFunds } = require('../controllers/walletController');
-const { getAllTransactions, getMyTransactions } = require('../controllers/transactionController');
+const { getAllTransactions, getMyTransactions, getArtistEarnings } = require('../controllers/transactionController');
 const notificationController = require('../controllers/notificationController');
 
 // Auth routes
@@ -96,6 +96,7 @@ router.post('/api/wallet/withdraw', protect, withdrawFunds);
 // Transaction routes
 router.get('/api/transactions', protect, getAllTransactions);
 router.get('/api/transactions/my-transactions', protect, getMyTransactions);
+router.get('/api/transactions/artist-earnings', protect, getArtistEarnings);
 
 // Notification routes
 router.get('/api/notifications', protect, notificationController.getNotifications);

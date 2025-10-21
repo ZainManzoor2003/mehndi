@@ -10173,6 +10173,32 @@ body.dark-theme .scroll-header .henna-line {
 .earning-label { color:#6b7280; margin-top:6px; }
 .earning-value { color:#0f172a; font-weight:900; font-size:20px; }
 
+/* Earnings Grid Container - Responsive */
+.earnings-grid-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+  margin-bottom: 30px;
+  margin: 0 auto 30px auto;
+  padding: 0 20px;
+}
+
+@media screen and (max-width: 1024px) {
+  .earnings-grid-container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 25px;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .earnings-grid-container {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    max-width: 100%;
+    padding: 0 10px;
+  }
+}
+
 .earnings-notices { display:grid; grid-template-columns:1fr; gap:.75rem; }
 .notice-card { display:flex; align-items:center; gap:.5rem; padding:12px 14px; border-radius:10px; border:1px solid #e8f0e8; }
 .notice-card.success { background:#ecfdf5; border-color:#d1fae5; }
@@ -10224,6 +10250,58 @@ body.dark-theme .scroll-header .henna-line {
 @media screen and (max-width: 560px) {
   .tx-row { grid-template-columns:1fr 1fr; }
   .tx-row > div:nth-child(3), .tx-row > div:nth-child(4), .tx-row > div:nth-child(5) { justify-self:end; }
+}
+
+/*========== Logout Component Mobile Responsive ==========*/
+@media screen and (max-width: 768px) {
+  .logout-banner-section {
+    padding: 1.5rem 0 !important;
+    margin-top: 1.5rem !important;
+  }
+  
+  .logout-banner-content {
+    flex-direction: column !important;
+    gap: 1rem !important;
+    text-align: center !important;
+    padding: 0 1rem !important;
+  }
+  
+  .logout-text {
+    font-size: 0.9rem !important;
+  }
+  
+  .logout-link {
+    font-size: 0.9rem !important;
+    padding: 10px 20px !important;
+    border-radius: 8px !important;
+    background-color: rgba(160, 82, 45, 0.1) !important;
+    transition: all 0.3s ease !important;
+  }
+  
+  .logout-link:hover {
+    background-color: rgba(160, 82, 45, 0.2) !important;
+    transform: translateY(-1px) !important;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .logout-banner-section {
+    padding: 1rem 0 !important;
+    margin-top: 1rem !important;
+  }
+  
+  .logout-banner-content {
+    padding: 0 0.5rem !important;
+  }
+  
+  .logout-text {
+    font-size: 0.85rem !important;
+  }
+  
+  .logout-link {
+    font-size: 0.85rem !important;
+    padding: 8px 16px !important;
+  }
 }
 @media screen and (max-width: 768px) {
   .apply-now-btn {
