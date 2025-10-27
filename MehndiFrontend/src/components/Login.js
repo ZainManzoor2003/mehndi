@@ -19,6 +19,8 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showResendModal, setShowResendModal] = useState(false);
+  const [resendingEmail, setResendingEmail] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -68,9 +70,42 @@ const Login = () => {
 
     } catch (error) {
       console.error('Login error:', error);
-      setError(error.message || 'Login failed. Please check your credentials.');
+      
+      // Check if user is not verified
+      if (error.message && error.message.includes('verify your email')) {
+        setShowResendModal(true);
+        setError('');
+      } else {
+        setError(error.message || 'Login failed. Please check your credentials.');
+      }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setResendingEmail(true);
+    setError('');
+    
+    try {
+      const response = await authAPI.resendVerificationEmail(formData.email);
+      
+      if (response.success) {
+        setSuccess('Verification email has been sent! Please check your inbox.');
+        setShowResendModal(false);
+        
+        // Clear success message after 5 seconds
+        setTimeout(() => {
+          setSuccess('');
+        }, 5000);
+      } else {
+        setError(response.message || 'Failed to send verification email.');
+      }
+    } catch (err) {
+      console.error('Resend verification error:', err);
+      setError(err.message || 'Failed to send verification email. Please try again.');
+    } finally {
+      setResendingEmail(false);
     }
   };
 
@@ -178,7 +213,7 @@ const Login = () => {
             <div className="form-group">
               <div className="form-label-row">
                 <label htmlFor="password" className="form-label">Password</label>
-                <Link to="/forgot-password" className="forgot-link">Forgot?</Link>
+                {/* <Link to="/forgot-password" className="forgot-link">Forgot?</Link> */}
               </div>
               <div className="password-input-wrapper">
                 <input
@@ -265,6 +300,38 @@ const Login = () => {
           </div>
         </div>
       </div>
+
+      {/* Resend Verification Email Modal */}
+      {showResendModal && (
+        <div className="modal-overlay" onClick={() => setShowResendModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 className="modal-title">Email Not Verified</h2>
+              <button className="modal-close" onClick={() => setShowResendModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <p>Your email address has not been verified yet. Please check your inbox for the verification link.</p>
+              <p>Would you like us to resend the verification email to <strong>{formData.email}</strong>?</p>
+            </div>
+            <div className="modal-footer">
+              <button 
+                className="modal-cancel-btn" 
+                onClick={() => setShowResendModal(false)}
+                disabled={resendingEmail}
+              >
+                Cancel
+              </button>
+              <button 
+                className="modal-confirm-btn" 
+                onClick={handleResendVerification}
+                disabled={resendingEmail}
+              >
+                {resendingEmail ? 'Sending...' : 'Resend Email'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

@@ -124,6 +124,14 @@ export const authAPI = {
     });
   },
 
+  // Resend verification email
+  resendVerificationEmail: async (email) => {
+    return apiRequest('/auth/resend-verification-email', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  },
+
   // Google OAuth authentication
   googleAuth: async (credential) => {
     return apiRequest('/auth/google', {
@@ -716,6 +724,11 @@ export const transactionAPI = {
   },
   getMyTransactions: async () => {
     return apiRequest('/transactions/my-transactions', {
+      method: 'GET'
+    });
+  },
+  getArtistEarnings: async () => {
+    return apiRequest('/transactions/artist-earnings', {
       method: 'GET'
     });
   }

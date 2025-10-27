@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 // Auth routes
-const { signup, login, me, updateProfile, googleAuth, getArtistRating, verifyEmail } = require('../controllers/authController');
+const { signup, login, me, updateProfile, googleAuth, getArtistRating, verifyEmail, resendVerificationEmail } = require('../controllers/authController');
 const { createBooking, getClientBookings, getAllBookings, getBookingById, updateBookingStatus, updateBooking, deleteBooking, getPendingBookings, completeBooking, cancelBooking, updateBookingPaymentStatus, processRefund,getNearbyBookings} = require('../controllers/bookingController');
 const { listBlogs, getBlogById } = require('../controllers/blogController');
 
@@ -16,7 +16,7 @@ const reviewController = require('../controllers/reviewController');
 const chatController = require('../controllers/chatController');
 const portfolioController = require('../controllers/portfolioController');
 const { getWallet, updateWallet, getAllWallets, getWalletSummary, withdrawFunds } = require('../controllers/walletController');
-const { getAllTransactions, getMyTransactions } = require('../controllers/transactionController');
+const { getAllTransactions, getMyTransactions, getArtistEarnings } = require('../controllers/transactionController');
 const notificationController = require('../controllers/notificationController');
 
 // Auth routes
@@ -27,6 +27,7 @@ router.get('/api/auth/me', protect, me);
 router.put('/api/auth/update-profile', protect, updateProfile);
 router.get('/api/auth/artist-rating/:id', getArtistRating);
 router.get('/api/auth/verify-email/:token', verifyEmail);
+router.post('/api/auth/resend-verification-email', resendVerificationEmail);
 
 // Booking routes
 router.post('/api/bookings', protect, createBooking);
@@ -96,6 +97,7 @@ router.post('/api/wallet/withdraw', protect, withdrawFunds);
 // Transaction routes
 router.get('/api/transactions', protect, getAllTransactions);
 router.get('/api/transactions/my-transactions', protect, getMyTransactions);
+router.get('/api/transactions/artist-earnings', protect, getArtistEarnings);
 
 // Notification routes
 router.get('/api/notifications', protect, notificationController.getNotifications);

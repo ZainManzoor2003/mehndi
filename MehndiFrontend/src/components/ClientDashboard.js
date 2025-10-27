@@ -1566,7 +1566,7 @@ useEffect(() => {
                   )}
 
                   {/* Bookings by Event Type */}
-                  {bookingsLoading ? (
+                  {/* {bookingsLoading ? (
                     <div className="loading-state" style={{ padding: '2rem', textAlign: 'center' }}>
                       <p>Loading bookings...</p>
                     </div>
@@ -1781,7 +1781,7 @@ useEffect(() => {
                         ));
                       })()}
                     </div>
-                  )}
+                  )} */}
 
                   {/* Payment Status Bar */}
                   {/* <div className="payment-status-bar">
@@ -1870,6 +1870,7 @@ useEffect(() => {
                         </button>
                       </div>
                       
+                    </div>
                       <div className="status-filter">
                         <select 
                           value={transactionStatusFilter} 
@@ -1883,7 +1884,6 @@ useEffect(() => {
                           <option value="admin-fee">Admin Fee</option>
                         </select>
                       </div>
-                    </div>
 
                     {transactionsLoading ? (
                       <div className="loading-state" style={{ padding: '2rem', textAlign: 'center' }}>
@@ -1902,17 +1902,18 @@ useEffect(() => {
                         <p>Your transaction history will appear here once you make payments.</p>
                       </div>
                     ) : (
-                      <div className="transaction-table">
-                        <div className="table-header">
-                          <span className="col-date">Date</span>
-                          <span className="col-category">Category</span>
-                          <span className="col-artist">Artist</span>
-                          <span className="col-amount">Amount</span>
-                          <span className="col-status">Status</span>
-                          <span className="col-invoice">Invoice</span>
-                        </div>
+                      <div className="transaction-table-wrapper">
+                        <div className="transaction-table">
+                          <div className="table-header">
+                            <span className="col-date" style={{color:'white'}}>Date</span>
+                            <span className="col-category" style={{color:'white'}}>Category</span>
+                            <span className="col-artist" style={{color:'white'}}>Artist</span>
+                            <span className="col-amount" style={{color:'white'}}>Amount</span>
+                            <span className="col-status" style={{color:'white'}}>Status</span>
+                            <span className="col-invoice" style={{color:'white'}}>Invoice</span>
+                          </div>
 
-                        {getFilteredTransactions().map((transaction) => {
+                          {getFilteredTransactions().map((transaction) => {
                           const formatDate = (dateString) => {
                             const date = new Date(dateString);
                             return date.toLocaleDateString('en-GB', {
@@ -1950,6 +1951,7 @@ useEffect(() => {
                           };
 
                           const getAmountDisplay = (transaction) => {
+                            console.log('trsnaction',transaction)
                             return transaction.amountDisplay || `£${transaction.amount.toFixed(0)}`;
                           };
 
@@ -2040,7 +2042,8 @@ useEffect(() => {
                               </span>
                             </div>
                           );
-                        })}
+                          })}
+                        </div>
                       </div>
                     )}
                   </div>

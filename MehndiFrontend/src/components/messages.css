@@ -328,15 +328,18 @@
   font-size: 24px;
   font-weight: 600;
   margin-bottom: 20px;
+  justify-content: center;
 }
 
 /* Transaction Filters */
 .transaction-filters {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   margin-bottom: 20px;
   gap: 20px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #e0d5c7;
 }
 
 .category-filters {
@@ -390,7 +393,11 @@
 }
 
 .status-filter {
-  position: relative;
+  display: flex;
+  justify-content: end;
+  padding-bottom: 20px;
+  /* float: right; */
+  /* position: relative; */
 }
 
 .status-dropdown {
@@ -416,7 +423,6 @@
 
 /* Transaction Table */
 .transaction-table {
-  background: #ffffff;
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -427,8 +433,8 @@
   grid-template-columns: 1fr 1fr 1fr 1.5fr 1fr 1fr;
   gap: 16px;
   padding: 16px 20px;
-  background: #d4a574;
-  color: #ffffff;
+  background: var(--accent-orange);
+  color: white;
   font-weight: 600;
   font-size: 14px;
 }
@@ -460,12 +466,9 @@
 .col-status,
 .col-invoice {
   font-size: 14px;
-  color: #8b4513;
+  /* color: #4a4a4a; */
 }
 
-.col-amount {
-  font-weight: 600;
-}
 
 .col-status {
   display: flex;
@@ -474,9 +477,8 @@
   font-weight: 500;
 }
 
-.col-status.deposit-paid,
-.col-status.payment-complete {
-  color: #d4a574;
+.col-status{
+  color: var(--accent-orange);
 }
 
 .col-status.refunded {
@@ -492,7 +494,7 @@
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  background: #d4a574;
+  background: var(--accent-orange);
   color: #ffffff;
   border: none;
   border-radius: 6px;
@@ -514,7 +516,7 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .transaction-filters {
+  /* .transaction-filters {
     flex-direction: column;
     align-items: stretch;
     gap: 16px;
@@ -522,9 +524,9 @@
   
   .category-filters {
     justify-content: center;
-  }
+  } */
   
-  .table-header,
+  /* .table-header,
   .table-row {
     grid-template-columns: 1fr;
     gap: 8px;
@@ -545,7 +547,7 @@
   
   .table-header span:before {
     color: #ffffff;
-  }
+  } */
 }
 
 /* Dynamic Booking Card Styles */
@@ -1410,16 +1412,7 @@
   transform: translateY(-1px);
 }
 
-/* Payment Complete States */
-.payment-complete {
-  color: #2d5f3f;
-  font-weight: 600;
-}
 
-.payment-complete-footer {
-  color: #2d5f3f;
-  font-weight: 500;
-}
 
 /* Star button styles for detailed review modal */
 .rating-stars {

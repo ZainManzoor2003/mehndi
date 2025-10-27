@@ -6,6 +6,36 @@ import { FaLock, FaCalendarCheck, FaSearchDollar, FaHandshake, FaChartLine, FaMa
 
 // Add responsive styles
 const responsiveStyles = `
+  /* Feature card hover effects */
+  .feature-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+  
+  .feature-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  }
+  
+  .feature-card:active {
+    transform: translateY(-4px);
+  }
+  
+  .how-it-works-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+  
+  .how-it-works-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    background-color: #f9f9f9;
+  }
+  
+  .how-it-works-card:active {
+    transform: translateY(-4px) scale(1.01);
+  }
+  
   .flip-card {
     background-color: transparent;
     width: 100%;
@@ -99,14 +129,14 @@ const responsiveStyles = `
     }
     
     .responsive-section {
-      padding: 40px 16px !important;
+      padding: 20px 16px !important;
     }
     
     .responsive-hero {
       padding: 60px 16px !important;
     }
     
-    .responsive-hero h1 {
+    .responsive-hero h1,h2 {
       font-size: 2.5rem !important;
     }
     
@@ -126,7 +156,7 @@ const responsiveStyles = `
     }
     
     .responsive-section {
-      padding: 32px 12px !important;
+      padding: 12px 12px !important;
     }
     
     .responsive-hero {
@@ -165,9 +195,9 @@ const EarnAsArtist = () => {
           padding: '80px 20px',
           textAlign: 'center'
         }}>
-          <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <div style={{ maxWidth: '900px', margin: '0 auto' }}>
             <h1 style={{
-              fontSize: '3.5rem',
+              fontSize: '4rem',
               fontWeight: 'bold',
               color: '#8B4513',
               marginBottom: '24px',
@@ -181,16 +211,8 @@ const EarnAsArtist = () => {
               marginBottom: '16px',
               lineHeight: '1.6'
             }}>
-              Join <strong>Mehndi Me</strong>, the platform built for mehndi artists — where your creativity is celebrated, your time is respected, and your earnings are 100% yours.
-            </p>
-            <p style={{
-              fontSize: '1rem',
-              color: '#8B4513',
-              marginBottom: '32px',
-              lineHeight: '1.6',
-              fontWeight: '500'
-            }}>
-              It only takes 2 minutes to get started.
+              Join <strong>Mehndi Me</strong>, the platform built for mehndi artists — where your creativity is celebrated, your time is respected, and your talent turns into steady
+bookings.
             </p>
             <button
               onClick={handleJoinAsArtist}
@@ -203,12 +225,21 @@ const EarnAsArtist = () => {
             >
               Join as an Artist
             </button>
+                <p style={{
+                  fontSize: '1rem',
+                  color: '#8B4513',
+                  marginTop: '20px',
+                  lineHeight: '1.6',
+                  fontWeight: '500'
+                }}>
+                  It only takes 2 minutes to get started.
+                </p>
           </div>
         </section>
 
         {/* Features Section */}
         <section className="responsive-section" style={{
-          padding: '80px 20px',
+          padding: '20px 20px',
           backgroundColor: '#E4C293'
         }}>
           <div style={{
@@ -219,7 +250,7 @@ const EarnAsArtist = () => {
             margin: '0 auto'
           }}>
             {/* Secure Bookings Card */}
-            <div style={{
+            <div className="feature-card" style={{
               backgroundColor: '#fafafa',
               padding: '32px',
               borderRadius: '12px',
@@ -246,7 +277,7 @@ const EarnAsArtist = () => {
             </div>
 
             {/* We Handle the Admin Card */}
-            <div style={{
+            <div className="feature-card" style={{
               backgroundColor: '#fafafa',
               padding: '32px',
               borderRadius: '12px',
@@ -277,7 +308,7 @@ const EarnAsArtist = () => {
           {/* How It Works Section */}
 
         <section className="responsive-section" style={{
-          padding: '80px 20px',
+          padding: '0px 20px',
           backgroundColor: '#E4C293'
         }}>
           <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
@@ -292,7 +323,7 @@ const EarnAsArtist = () => {
               }}
             >
               {/* Apply to Client Requests */}
-              <div style={{
+              <div className="how-it-works-card" style={{
                 backgroundColor: '#ffffff',
                 padding: '32px',
                 borderRadius: '12px',
@@ -319,7 +350,7 @@ const EarnAsArtist = () => {
               </div>
 
               {/* Flexible Work */}
-              <div style={{
+              <div className="how-it-works-card" style={{
                 backgroundColor: '#ffffff',
                 padding: '32px',
                 borderRadius: '12px',
@@ -355,7 +386,7 @@ const EarnAsArtist = () => {
               }}
             >
               {/* Grow Your Brand */}
-              <div style={{
+              <div className="how-it-works-card" style={{
                 backgroundColor: '#ffffff',
                 padding: '32px',
                 borderRadius: '12px',
@@ -393,7 +424,7 @@ const EarnAsArtist = () => {
         }}>
           <div style={{ maxWidth: '1000px', margin: '0 auto', textAlign: 'center' }}>
             <h2 style={{
-              fontSize: '2.5rem',
+              fontSize: '4rem',
               fontWeight: 'bold',
               color: '#8B4513',
               marginBottom: '24px'
@@ -525,13 +556,13 @@ const EarnAsArtist = () => {
 
         {/* CTA Section */}
         <section className="responsive-section" style={{
-          padding: '80px 20px',
+          padding: '20px 20px',
           backgroundColor: '#E4C293',
           textAlign: 'center'
         }}>
           <div style={{ maxWidth: '600px', margin: '0 auto' }}>
             <h2 style={{
-              fontSize: '2.5rem',
+              fontSize: '4rem',
               fontWeight: 'bold',
               color: '#8B4513',
               marginBottom: '24px'

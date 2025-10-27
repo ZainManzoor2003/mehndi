@@ -1259,6 +1259,13 @@ const ArtistDashboard = () => {
   const [walletTransactions, setWalletTransactions] = useState([]);
   const [walletLoading, setWalletLoading] = useState(false);
 
+  // Earnings
+  const [earningsData, setEarningsData] = useState({
+    lifetimeEarnings: 0,
+    thisMonthEarnings: 0
+  });
+  const [earningsLoading, setEarningsLoading] = useState(false);
+
   // Transaction filters for artist
   const [transactionCategoryFilter, setTransactionCategoryFilter] = useState('all');
   const [transactionStatusFilter, setTransactionStatusFilter] = useState('all');
@@ -1340,12 +1347,30 @@ const ArtistDashboard = () => {
     }
   }, [isAuthenticated, user]);
 
+  const fetchEarningsData = useCallback(async () => {
+    if (!isAuthenticated || !user || user.userType !== 'artist') return;
+    try {
+      setEarningsLoading(true);
+      const earningsRes = await transactionAPI.getArtistEarnings();
+      const earnings = earningsRes?.data || {};
+      setEarningsData({
+        lifetimeEarnings: Number(earnings.lifetimeEarnings || 0),
+        thisMonthEarnings: Number(earnings.thisMonthEarnings || 0)
+      });
+    } catch (error) {
+      console.error('Error fetching earnings data:', error);
+    } finally {
+      setEarningsLoading(false);
+    }
+  }, [isAuthenticated, user]);
+
   // Auto-fetch wallet data on mount and user change
   useEffect(() => {
     if (isAuthenticated && user && user.userType === 'artist') {
       fetchWalletData();
+      fetchEarningsData();
     }
-  }, [isAuthenticated, user, fetchWalletData]);
+  }, [isAuthenticated, user, fetchWalletData, fetchEarningsData]);
 
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
@@ -1398,6 +1423,7 @@ const ArtistDashboard = () => {
       }).catch(console.error);
     } else if (tab === 'wallet') {
       fetchWalletData();
+      fetchEarningsData();
     } else if (tab === 'profile') {
       fetchMyPortfolios();
     }
@@ -2773,183 +2799,7 @@ useEffect(() => {
                     </div>
                   </div>
 
-                  {/* Key Metrics and Quick Links */}
-                  <div className="key-metrics-section">
-                    <div className="key-metrics-card">
-                      <div className="key-metrics-header">📌 Key Metrics</div>
-                      <p className="metric-line"><span className="metric-label">Avg Booking Value:</span> <strong>£200</strong></p>
-                      <p className="metric-line"><span className="metric-label">Avg Client Spend:</span> <strong>£350</strong></p>
-                      <p className="metric-highlight">You earned 20% more than avg artist in London this month 🎉</p>
-                    </div>
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(3, 1fr)',
-                      gap: '20px',
-                      marginTop: '20px'
-                    }}>
-                      {/* Wallet / Earnings Card */}
-                      <div style={{
-                        backgroundColor: 'white',
-                        borderRadius: '12px',
-                        padding: '30px 20px',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                        border: '1px solid #f0f0f0',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        textAlign: 'center',
-                        gap: '12px',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease'
-                      }}
-                        onMouseOver={(e) => {
-                          e.currentTarget.style.transform = 'translateY(-4px)';
-                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-                        }}
-                        onMouseOut={(e) => {
-                          e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-                        }}
-                        onClick={() => {
-                          handleTabChange('earnings');
-                        }}
-                      >
-                        <div style={{
-                          width: '60px',
-                          height: '60px',
-                          borderRadius: '12px',
-                          backgroundColor: '#fff5e6',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}>
-                          <FaWallet style={{ fontSize: '28px', color: '#ff8c42' }} />
-                        </div>
-                        <div style={{
-                          fontSize: '16px',
-                          fontWeight: '600',
-                          color: '#333'
-                        }}>
-                          Wallet / Earnings
-                        </div>
-                        <div style={{
-                          fontSize: '13px',
-                          color: '#888',
-                          fontWeight: '500'
-                        }}>
-                          £750.00 earned
-                        </div>
-                      </div>
-
-                      {/* Messages Card */}
-                      <div style={{
-                        backgroundColor: 'white',
-                        borderRadius: '12px',
-                        padding: '30px 20px',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                        border: '1px solid #f0f0f0',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        textAlign: 'center',
-                        gap: '12px',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease'
-                      }}
-                        onMouseOver={(e) => {
-                          e.currentTarget.style.transform = 'translateY(-4px)';
-                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-                        }}
-                        onMouseOut={(e) => {
-                          e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-                        }}
-                        onClick={() => {
-                          handleTabChange('messages');
-                        }}
-                      >
-                        <div style={{
-                          width: '60px',
-                          height: '60px',
-                          borderRadius: '12px',
-                          backgroundColor: '#fff5e6',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}>
-                          <FaCommentDots style={{ fontSize: '28px', color: '#ff8c42' }} />
-                        </div>
-                        <div style={{
-                          fontSize: '16px',
-                          fontWeight: '600',
-                          color: '#333'
-                        }}>
-                          Messages
-                        </div>
-                        <div style={{
-                          fontSize: '13px',
-                          color: '#888',
-                          fontWeight: '500'
-                        }}>
-                          3 new
-                        </div>
-                      </div>
-
-                      {/* Reviews Card */}
-                      <div style={{
-                        backgroundColor: 'white',
-                        borderRadius: '12px',
-                        padding: '30px 20px',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                        border: '1px solid #f0f0f0',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        textAlign: 'center',
-                        gap: '12px',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease'
-                      }}
-                        onMouseOver={(e) => {
-                          e.currentTarget.style.transform = 'translateY(-4px)';
-                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-                        }}
-                        onMouseOut={(e) => {
-                          e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-                        }}
-                      >
-                        <div style={{
-                          width: '60px',
-                          height: '60px',
-                          borderRadius: '12px',
-                          backgroundColor: '#fff5e6',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}>
-                          <FaStar style={{ fontSize: '28px', color: '#ff8c42' }} />
-                        </div>
-                        <div style={{
-                          fontSize: '16px',
-                          fontWeight: '600',
-                          color: '#333'
-                        }}>
-                          Reviews
-                        </div>
-                        <div style={{
-                          fontSize: '13px',
-                          color: '#888',
-                          fontWeight: '500'
-                        }}>
-                          12 total
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  
                 </>
               )}
 
@@ -3764,7 +3614,19 @@ useEffect(() => {
                     {!(acceptedByDate[toKey(selectedDate)] || []).length && (
                       <div className="empty-banner">No bookings on this date.</div>
                     )}
-                    {(acceptedByDate[toKey(selectedDate)] || []).map(b => (
+                    {(acceptedByDate[toKey(selectedDate)] || []).map(b => {
+                      // Calculate date differences for button logic
+                      const today = new Date();
+                      const eventDate = b.date ? new Date(b.date) : null;
+                      const daysUntilEvent = eventDate ? Math.ceil((eventDate - today) / (1000 * 60 * 60 * 24)) : null;
+                      
+                      // Cancel button: disabled if event is within 14 days or less
+                      const canCancel = eventDate && daysUntilEvent > 14;
+                      
+                      // Mark Complete button: enabled only on or after event date
+                      const canMarkComplete = eventDate && daysUntilEvent <= 0;
+                      
+                      return (
                       <div key={b.id} className="booking-line-card">
                         <div className="b-info">
                           <div className="b-title">{b.title}</div>
@@ -3774,11 +3636,39 @@ useEffect(() => {
                           <span className="b-badge">{b.status}</span>
                         </div>
                         <div className="b-actions">
-                          <button className="app-btn danger" style={{ background: '#ef4444', borderColor: '#ef4444' }} onClick={() => openCancelAccepted(b.id)}>Cancel</button>
-                          <button className="app-btn" style={{ background: '#e24d0c', color: '#fff', borderColor: '#e24d0c' }} onClick={() => { setMarkTargetBookingId(b.id); setMarkProofOpen(true); }}>Mark Complete</button>
+                            <button 
+                              className="app-btn danger" 
+                              style={{ 
+                                background: canCancel ? '#ef4444' : '#ccc', 
+                                borderColor: canCancel ? '#ef4444' : '#ccc',
+                                cursor: canCancel ? 'pointer' : 'not-allowed',
+                                opacity: canCancel ? 1 : 0.6
+                              }} 
+                              onClick={() => canCancel && openCancelAccepted(b.id)}
+                              disabled={!canCancel}
+                              title={!canCancel ? 'Cannot cancel within 14 days of event' : 'Cancel booking'}
+                            >
+                              Cancel
+                            </button>
+                            <button 
+                              className="app-btn" 
+                              style={{ 
+                                background: canMarkComplete ? '#e24d0c' : '#ccc', 
+                                color: '#fff', 
+                                borderColor: canMarkComplete ? '#e24d0c' : '#ccc',
+                                cursor: canMarkComplete ? 'pointer' : 'not-allowed',
+                                opacity: canMarkComplete ? 1 : 0.6
+                              }} 
+                              onClick={() => canMarkComplete && (() => { setMarkTargetBookingId(b.id); setMarkProofOpen(true); })()}
+                              disabled={!canMarkComplete}
+                              title={!canMarkComplete ? 'Can only mark complete on or after event date' : 'Mark booking as complete'}
+                            >
+                              Mark Complete
+                            </button>
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -3787,37 +3677,9 @@ useEffect(() => {
               {/* Earnings (placeholder) */}
               {activeTab === 'earnings' && (
                 <div className="earnings-section">
-                  <div className="section-header">
-                    <h2>Wallet</h2>
-                  </div>
-
-                  {/* Remaining Balance Section - Moved from Wallet */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '30px' }}>
-                    <div style={{
-                      background: 'linear-gradient(180deg,#fff5e6, #ffffff)',
-                      border: '1px solid #ffddb3',
-                      borderRadius: '14px',
-                      padding: '24px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'flex-start'
-                    }}>
-                      <div style={{ color: '#6b4a19', fontWeight: 600, marginBottom: '6px' }}>Remaining Balance</div>
-                      <div style={{ fontSize: '36px', fontWeight: 800, color: '#d35400' }}>{walletLoading ? 'Loading…' : formatGBP(walletSummary.remainingBalance)}</div>
-                      <button className="modern-withdraw-btn" onClick={openWithdraw} disabled={walletLoading || walletSummary.remainingBalance <= 0}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg>
-                        Withdraw Funds
-                      </button>
-                    </div>
-                  </div>
 
                   <h3 className="section-title" style={{ marginBottom: '10px' }}>Earnings</h3>
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(4, 1fr)',
-                    gap: '20px',
-                    marginBottom: '30px'
-                  }}>
+                  <div className="earnings-grid-container">
                     {/* Lifetime Earnings Card */}
                     <div style={{
                       backgroundColor: 'white',
@@ -3855,7 +3717,7 @@ useEffect(() => {
                         fontWeight: '700',
                         color: '#333'
                       }}>
-                        £3,200.00
+                        {earningsLoading ? '...' : `£${earningsData.lifetimeEarnings.toFixed(2)}`}
                       </div>
                     </div>
 
@@ -3896,11 +3758,11 @@ useEffect(() => {
                         fontWeight: '700',
                         color: '#333'
                       }}>
-                        £750.00
+                        {earningsLoading ? '...' : `£${earningsData.thisMonthEarnings.toFixed(2)}`}
                       </div>
                     </div>
 
-                    {/* Pending Payouts Card */}
+                    {/* Remaining Balance Card */}
                     <div style={{
                       backgroundColor: 'white',
                       borderRadius: '12px',
@@ -3923,72 +3785,38 @@ useEffect(() => {
                         alignItems: 'center',
                         justifyContent: 'center'
                       }}>
-                        <FaHourglassHalf style={{ fontSize: '24px', color: '#ff8c42' }} />
+                        <FaWallet style={{ fontSize: '24px', color: '#ff8c42' }} />
                       </div>
                       <div style={{
                         fontSize: '13px',
                         color: '#666',
                         fontWeight: '500'
                       }}>
-                        Pending Payouts
+                        Remaining Balance
                       </div>
                       <div style={{
                         fontSize: '24px',
                         fontWeight: '700',
                         color: '#333'
                       }}>
-                        £250.00
+                        {walletLoading ? '...' : `£${walletSummary.remainingBalance.toFixed(2)}`}
                       </div>
+                      <button 
+                        className="modern-withdraw-btn" 
+                        onClick={openWithdraw} 
+                        disabled={walletLoading || walletSummary.remainingBalance <= 0}
+                        style={{
+                          marginTop: '8px',
+                          padding: '8px 16px',
+                          fontSize: '12px',
+                          minHeight: 'auto'
+                        }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg>
+                        Withdraw Funds
+                      </button>
                     </div>
 
-                    {/* Next Payout Card */}
-                    <div style={{
-                      backgroundColor: 'white',
-                      borderRadius: '12px',
-                      padding: '30px 20px',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                      border: '1px solid #f0f0f0',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      textAlign: 'center',
-                      gap: '12px'
-                    }}>
-                      <div style={{
-                        width: '50px',
-                        height: '50px',
-                        borderRadius: '10px',
-                        backgroundColor: '#fff5e6',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}>
-                        <FaArrowCircleUp style={{ fontSize: '24px', color: '#ff8c42' }} />
-                      </div>
-                      <div style={{
-                        fontSize: '13px',
-                        color: '#666',
-                        fontWeight: '500'
-                      }}>
-                        Next Payout
-                      </div>
-                      <div style={{
-                        fontSize: '20px',
-                        fontWeight: '700',
-                        color: '#333'
-                      }}>
-                        2025-09-03
-                        <div style={{
-                          fontSize: '13px',
-                          fontWeight: '500',
-                          color: '#666',
-                          marginTop: '4px'
-                        }}>
-                          (today)
-                        </div>
-                      </div>
-                    </div>
                   </div>
 
 
@@ -4085,6 +3913,7 @@ useEffect(() => {
                         </button>
                       </div>
 
+                    </div>
                       <div className="status-filter">
                         <select
                           value={transactionStatusFilter}
@@ -4098,7 +3927,6 @@ useEffect(() => {
                           <option value="admin-fee">Admin Fee</option>
                         </select>
                       </div>
-                    </div>
 
                     {walletLoading ? (
                       <div className="loading-state" style={{ padding: '2rem', textAlign: 'center' }}>
@@ -4111,17 +3939,18 @@ useEffect(() => {
                         <p>Your transaction history will appear here once you receive payments.</p>
                       </div>
                     ) : (
-                      <div className="transaction-table">
-                        <div className="table-header">
-                          <span className="col-date">Date</span>
-                          <span className="col-category">Category</span>
-                          <span className="col-client">Client</span>
-                          <span className="col-amount">Amount</span>
-                          <span className="col-status">Status</span>
-                          <span className="col-invoice">Invoice</span>
-                        </div>
+                      <div className="transaction-table-wrapper">
+                        <div className="transaction-table">
+                          <div className="table-header">
+                            <span className="col-date" style={{color:'white'}}>Date</span>
+                            <span className="col-category" style={{color:'white'}}>Category</span>
+                            <span className="col-client" style={{color:'white'}}>Client</span>
+                            <span className="col-amount" style={{color:'white'}}>Amount</span>
+                            <span className="col-status" style={{color:'white'}}>Status</span>
+                            <span className="col-invoice" style={{color:'white'}}>Invoice</span>
+                          </div>
 
-                        {getFilteredTransactions().map((transaction) => {
+                          {getFilteredTransactions().map((transaction) => {
                           const formatDate = (dateString) => {
                             const date = new Date(dateString);
                             return date.toLocaleDateString('en-GB', {
@@ -4239,7 +4068,8 @@ useEffect(() => {
                               </span>
                             </div>
                           );
-                        })}
+                          })}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -4363,14 +4193,15 @@ useEffect(() => {
                       </div>
                     </>
                   )}
-                   {/* Logout Banner Section */}
-                  <div style={{
+                  
+                  {/* Logout Banner Section - Moved to bottom of profile section */}
+                  <div className="logout-banner-section" style={{
                     backgroundColor: '#F8F2E6',
                     padding: '2rem 0',
-                    marginBottom: '20px',
+                    marginTop: '2rem',
                     // borderTop: '1px solid rgba(0,0,0,0.1)'
                   }}>
-                    <div style={{ 
+                    <div className="logout-banner-content" style={{ 
                       maxWidth: 980, 
                       margin: '0 auto', 
                       padding: '0 0.2rem',
@@ -4378,7 +4209,7 @@ useEffect(() => {
                       justifyContent: 'space-between',
                       alignItems: 'center'
                     }}>
-                      <div style={{
+                      <div className="logout-text" style={{
                         color: '#666',
                         fontSize: '1rem',
                         fontWeight: 400
@@ -4389,6 +4220,7 @@ useEffect(() => {
                       <Link 
                         to="/login"
                         onClick={handleLogoutClick}
+                        className="logout-link"
                         style={{
                           display: 'flex',
                           alignItems: 'center',

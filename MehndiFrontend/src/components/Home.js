@@ -48,16 +48,6 @@ const Home = () => {
       scale: 1
     }, "-=0.3");
 
-    // Add floating animation to button
-    gsap.to(buttonRef.current, {
-      y: -5,
-      duration: 2,
-      ease: "power2.inOut",
-      yoyo: true,
-      repeat: -1,
-      delay: 2
-    });
-
   }, []);
 
   return (

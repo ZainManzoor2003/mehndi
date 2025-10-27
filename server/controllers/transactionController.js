@@ -155,7 +155,7 @@ const getMyTransactions = async (req, res) => {
       if (transaction.transactionType === 'half') {
         amountDisplay = `£${transaction.amount.toFixed(0)} (50% deposit)`;
       } else if (transaction.transactionType === 'full') {
-        amountDisplay = `£${transaction.amount.toFixed(0)} (remaining)`;
+        amountDisplay = `£${transaction.amount.toFixed(0)} (full deposit)`;
       }
 
       return {
@@ -194,8 +194,59 @@ const getMyTransactions = async (req, res) => {
   }
 };
 
+// @desc    Get artist earnings (lifetime and this month)
+// @route   GET /api/transactions/artist-earnings
+// @access  Private
+const getArtistEarnings = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    
+    // Get current date for this month calculation
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    
+    // Get all transactions where user is receiver and transactionType is 'full'
+    const lifetimeTransactions = await Transaction.find({
+      receiver: userId,
+      transactionType: 'full'
+    });
+    
+    // Get this month's transactions where user is receiver and transactionType is 'full'
+    const thisMonthTransactions = await Transaction.find({
+      receiver: userId,
+      transactionType: 'full',
+      createdAt: {
+        $gte: startOfMonth,
+        $lte: endOfMonth
+      }
+    });
+    
+    // Calculate lifetime earnings
+    const lifetimeEarnings = lifetimeTransactions.reduce((sum, transaction) => sum + transaction.amount, 0);
+    
+    // Calculate this month's earnings
+    const thisMonthEarnings = thisMonthTransactions.reduce((sum, transaction) => sum + transaction.amount, 0);
+    
+    return res.status(200).json({
+      success: true,
+      data: {
+        lifetimeEarnings: lifetimeEarnings,
+        thisMonthEarnings: thisMonthEarnings
+      }
+    });
+  } catch (error) {
+    console.error('Get artist earnings error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while fetching artist earnings'
+    });
+  }
+};
+
 module.exports = {
   getAllTransactions,
-  getMyTransactions
+  getMyTransactions,
+  getArtistEarnings
 };
 
