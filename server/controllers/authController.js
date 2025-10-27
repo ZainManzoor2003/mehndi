@@ -39,7 +39,7 @@ const signup = async (req, res) => {
     // Send verification email
     const verificationURL = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email/${verificationToken}`;
     
-    const message = `Welcome to MehndiMe! Please verify your email by clicking the link below:\n\n${verificationURL}\n\nThis link will expire in 10 minutes.\n\nIf you didn't create an account, please ignore this email.`;
+    const message = `Welcome to MehndiMe! Please verify your email by clicking the link below:\n\n${verificationURL}\n\nThis link will expire in 24 hours.\n\nIf you didn't create an account, please ignore this email.`;
     
     const htmlMessage = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
@@ -73,7 +73,7 @@ const signup = async (req, res) => {
           
           <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
             <p style="color: #999; font-size: 12px; margin: 0;">
-              This verification link will expire in 10 minutes.<br>
+              This verification link will expire in 24 hours (1 day).<br>
               If you didn't create an account with MehndiMe, please ignore this email.
             </p>
           </div>
@@ -498,6 +498,117 @@ const verifyEmail = async (req, res) => {
   }
 };
 
-module.exports = { signup, login, me, updateProfile, googleAuth, getArtistRating, verifyEmail };
+// POST /api/auth/resend-verification-email
+const resendVerificationEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email is required' 
+      });
+    }
+
+    // Find user by email
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'No account found with this email address' 
+      });
+    }
+
+    // Check if email is already verified
+    if (user.isEmailVerified) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email is already verified' 
+      });
+    }
+
+    // Generate new email verification token
+    const verificationToken = user.generateEmailVerificationToken();
+    await user.save({ validateBeforeSave: false });
+
+    // Send verification email
+    const verificationURL = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email/${verificationToken}`;
+    
+    const message = `Welcome to MehndiMe! Please verify your email by clicking the link below:\n\n${verificationURL}\n\nThis link will expire in 24 hours.\n\nIf you didn't create an account, please ignore this email.`;
+    
+    const htmlMessage = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <img src="${process.env.FRONTEND_URL || 'http://localhost:3000'}/assets/logo%20icon.png" alt="MehndiMe" style="width: 80px; height: 80px;">
+          <h1 style="color: #d4a574; margin: 10px 0;">Welcome to MehndiMe!</h1>
+        </div>
+        
+        <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+          <h2 style="color: #333; margin-bottom: 20px;">Verify Your Email Address</h2>
+          
+          <p style="color: #666; line-height: 1.6; margin-bottom: 25px;">
+            Hi ${user.firstName},<br><br>
+            Thank you for signing up with MehndiMe! To complete your registration and start booking amazing mehndi artists, please verify your email address by clicking the button below:
+          </p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${verificationURL}" 
+               style="background-color: #d4a574; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; transition: background-color 0.3s;">
+              Verify Email Address
+            </a>
+          </div>
+          
+          <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+            Or copy and paste this link into your browser:
+          </p>
+          
+          <p style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; word-break: break-all; color: #333; font-size: 14px;">
+            ${verificationURL}
+          </p>
+          
+          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+            <p style="color: #999; font-size: 12px; margin: 0;">
+              This verification link will expire in 24 hours (1 day).<br>
+              If you didn't create an account with MehndiMe, please ignore this email.
+            </p>
+          </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px; color: #999; font-size: 12px;">
+          <p>© 2024 MehndiMe. All rights reserved.</p>
+        </div>
+      </div>
+    `;
+
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: 'Verify Your Email - MehndiMe',
+        message: message,
+        html: htmlMessage
+      });
+
+      return res.status(200).json({ 
+        success: true, 
+        message: 'Verification email has been sent successfully. Please check your inbox.' 
+      });
+    } catch (emailError) {
+      console.error('Email sending error:', emailError);
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Failed to send verification email. Please try again later.' 
+      });
+    }
+  } catch (err) {
+    console.error('Resend verification email error:', err);
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Server error' 
+    });
+  }
+};
+
+module.exports = { signup, login, me, updateProfile, googleAuth, getArtistRating, verifyEmail, resendVerificationEmail };
 
 

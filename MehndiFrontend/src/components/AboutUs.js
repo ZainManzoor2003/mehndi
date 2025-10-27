@@ -1,9 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useNavigate } from 'react-router-dom';
 
 const AboutUs = () => {
   const storyRef = useRef(null);
+  const navigate=useNavigate();
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
@@ -56,15 +58,14 @@ const AboutUs = () => {
     }}>
       <div className="container" style={{ maxWidth: 980, margin: "0 auto", padding: "0 1.2rem" }}>
         <div className="origin-story__text" style={{ fontSize: "26px", textAlign: 'center', lineHeight: 1.35, letterSpacing: "0.2px" }}>
-          <p style={{ margin: '0 0 1.3rem 0', fontWeight: 800, color: 'var(--ad-text)' }}>A Global First, Born from Chaos</p>
+          <h2 style={{ margin: '0 0 1.3rem 0', fontWeight: 800, color: '#4A4A4A' }}>A Global First, Born from Chaos</h2>
           <p className="story-line" style={{ margin: "8px 0 1.3rem 0", fontSize: "20px" }}>In a world where plans can fall apart overnight, we built something to make sure yours don’t.</p>
           <p className="story-line" style={{ margin: "8px 0 1.3rem 0", fontSize: "20px" }}>Three days before my wedding, my mehndi artist cancelled.</p>
           <p className="story-line" style={{ margin: "8px 0 1.3rem 0", fontSize: "20px" }}>No design. No backup. No time.</p>
           <p className="story-line" style={{ margin: "8px 0 1.3rem 0", fontSize: "20px" }}>I thought it was just my bad luck—until I learned it happens to brides, families, planners, and even artists everywhere.</p>
           <p className="story-line" style={{ margin: "8px 0 1.3rem 0", fontSize: "20px" }}>That moment of panic became the spark for something the mehndi world had never seen before…</p>
           <div style={{ marginTop: "1.6rem" }}>
-            <button type="button" className="home__cta-button"
-            >
+            <button type="button" className="home__cta-button" onClick={()=>navigate('/about-us')}>
               <span>Read what happened next →</span>
             </button>
           </div>

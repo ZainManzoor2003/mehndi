@@ -2799,183 +2799,7 @@ useEffect(() => {
                     </div>
                   </div>
 
-                  {/* Key Metrics and Quick Links */}
-                  <div className="key-metrics-section">
-                    <div className="key-metrics-card">
-                      <div className="key-metrics-header">📌 Key Metrics</div>
-                      <p className="metric-line"><span className="metric-label">Avg Booking Value:</span> <strong>£200</strong></p>
-                      <p className="metric-line"><span className="metric-label">Avg Client Spend:</span> <strong>£350</strong></p>
-                      <p className="metric-highlight">You earned 20% more than avg artist in London this month 🎉</p>
-                    </div>
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(3, 1fr)',
-                      gap: '20px',
-                      marginTop: '20px'
-                    }}>
-                      {/* Wallet / Earnings Card */}
-                      <div style={{
-                        backgroundColor: 'white',
-                        borderRadius: '12px',
-                        padding: '30px 20px',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                        border: '1px solid #f0f0f0',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        textAlign: 'center',
-                        gap: '12px',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease'
-                      }}
-                        onMouseOver={(e) => {
-                          e.currentTarget.style.transform = 'translateY(-4px)';
-                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-                        }}
-                        onMouseOut={(e) => {
-                          e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-                        }}
-                        onClick={() => {
-                          handleTabChange('earnings');
-                        }}
-                      >
-                        <div style={{
-                          width: '60px',
-                          height: '60px',
-                          borderRadius: '12px',
-                          backgroundColor: '#fff5e6',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}>
-                          <FaWallet style={{ fontSize: '28px', color: '#ff8c42' }} />
-                        </div>
-                        <div style={{
-                          fontSize: '16px',
-                          fontWeight: '600',
-                          color: '#333'
-                        }}>
-                          Wallet / Earnings
-                        </div>
-                        <div style={{
-                          fontSize: '13px',
-                          color: '#888',
-                          fontWeight: '500'
-                        }}>
-                          £750.00 earned
-                        </div>
-                      </div>
-
-                      {/* Messages Card */}
-                      <div style={{
-                        backgroundColor: 'white',
-                        borderRadius: '12px',
-                        padding: '30px 20px',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                        border: '1px solid #f0f0f0',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        textAlign: 'center',
-                        gap: '12px',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease'
-                      }}
-                        onMouseOver={(e) => {
-                          e.currentTarget.style.transform = 'translateY(-4px)';
-                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-                        }}
-                        onMouseOut={(e) => {
-                          e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-                        }}
-                        onClick={() => {
-                          handleTabChange('messages');
-                        }}
-                      >
-                        <div style={{
-                          width: '60px',
-                          height: '60px',
-                          borderRadius: '12px',
-                          backgroundColor: '#fff5e6',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}>
-                          <FaCommentDots style={{ fontSize: '28px', color: '#ff8c42' }} />
-                        </div>
-                        <div style={{
-                          fontSize: '16px',
-                          fontWeight: '600',
-                          color: '#333'
-                        }}>
-                          Messages
-                        </div>
-                        <div style={{
-                          fontSize: '13px',
-                          color: '#888',
-                          fontWeight: '500'
-                        }}>
-                          3 new
-                        </div>
-                      </div>
-
-                      {/* Reviews Card */}
-                      <div style={{
-                        backgroundColor: 'white',
-                        borderRadius: '12px',
-                        padding: '30px 20px',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                        border: '1px solid #f0f0f0',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        textAlign: 'center',
-                        gap: '12px',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease'
-                      }}
-                        onMouseOver={(e) => {
-                          e.currentTarget.style.transform = 'translateY(-4px)';
-                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-                        }}
-                        onMouseOut={(e) => {
-                          e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-                        }}
-                      >
-                        <div style={{
-                          width: '60px',
-                          height: '60px',
-                          borderRadius: '12px',
-                          backgroundColor: '#fff5e6',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}>
-                          <FaStar style={{ fontSize: '28px', color: '#ff8c42' }} />
-                        </div>
-                        <div style={{
-                          fontSize: '16px',
-                          fontWeight: '600',
-                          color: '#333'
-                        }}>
-                          Reviews
-                        </div>
-                        <div style={{
-                          fontSize: '13px',
-                          color: '#888',
-                          fontWeight: '500'
-                        }}>
-                          12 total
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  
                 </>
               )}
 
@@ -4089,6 +3913,7 @@ useEffect(() => {
                         </button>
                       </div>
 
+                    </div>
                       <div className="status-filter">
                         <select
                           value={transactionStatusFilter}
@@ -4102,7 +3927,6 @@ useEffect(() => {
                           <option value="admin-fee">Admin Fee</option>
                         </select>
                       </div>
-                    </div>
 
                     {walletLoading ? (
                       <div className="loading-state" style={{ padding: '2rem', textAlign: 'center' }}>
@@ -4115,17 +3939,18 @@ useEffect(() => {
                         <p>Your transaction history will appear here once you receive payments.</p>
                       </div>
                     ) : (
-                      <div className="transaction-table">
-                        <div className="table-header">
-                          <span className="col-date">Date</span>
-                          <span className="col-category">Category</span>
-                          <span className="col-client">Client</span>
-                          <span className="col-amount">Amount</span>
-                          <span className="col-status">Status</span>
-                          <span className="col-invoice">Invoice</span>
-                        </div>
+                      <div className="transaction-table-wrapper">
+                        <div className="transaction-table">
+                          <div className="table-header">
+                            <span className="col-date" style={{color:'white'}}>Date</span>
+                            <span className="col-category" style={{color:'white'}}>Category</span>
+                            <span className="col-client" style={{color:'white'}}>Client</span>
+                            <span className="col-amount" style={{color:'white'}}>Amount</span>
+                            <span className="col-status" style={{color:'white'}}>Status</span>
+                            <span className="col-invoice" style={{color:'white'}}>Invoice</span>
+                          </div>
 
-                        {getFilteredTransactions().map((transaction) => {
+                          {getFilteredTransactions().map((transaction) => {
                           const formatDate = (dateString) => {
                             const date = new Date(dateString);
                             return date.toLocaleDateString('en-GB', {
@@ -4243,7 +4068,8 @@ useEffect(() => {
                               </span>
                             </div>
                           );
-                        })}
+                          })}
+                        </div>
                       </div>
                     )}
                   </div>

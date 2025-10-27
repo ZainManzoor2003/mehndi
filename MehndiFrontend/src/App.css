@@ -3452,6 +3452,51 @@
 .modal-content {
   padding: 1.5rem 2rem 2rem;
 }
+
+.modal-footer {
+  padding: 1.5rem 2rem;
+  border-top: 1px solid var(--light-beige);
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.modal-cancel-btn,
+.modal-confirm-btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: var(--font-semi-bold);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  font-size: 1rem;
+}
+
+.modal-cancel-btn {
+  background: var(--container-color);
+  color: var(--title-color);
+}
+
+.modal-cancel-btn:hover {
+  background: var(--light-beige);
+}
+
+.modal-confirm-btn {
+  background: linear-gradient(90deg, #C06A2B 0%, #E08B42 100%);
+  color: white;
+}
+
+.modal-confirm-btn:hover {
+  background: linear-gradient(90deg, #B85F25 0%, #D47E3A 100%);
+  transform: translateY(-1px);
+}
+
+.modal-confirm-btn:disabled,
+.modal-cancel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .payment-details {
   margin-bottom: 2rem;
 }
@@ -3798,17 +3843,42 @@
   box-shadow: 0 4px 12px rgba(139, 115, 85, 0.1);
 }
 
+.transaction-table-wrapper {
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+}
+
+.transaction-table-wrapper::-webkit-scrollbar {
+  height: 8px;
+}
+
+.transaction-table-wrapper::-webkit-scrollbar-track {
+  background: var(--container-color);
+  border-radius: 10px;
+}
+
+.transaction-table-wrapper::-webkit-scrollbar-thumb {
+  background: var(--accent-orange);
+  border-radius: 10px;
+}
+
+.transaction-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-orange-alt);
+}
+
 .transaction-table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 1000px;
 }
 
-.table-header {
+.transaction-table .table-header {
   display: grid;
-  grid-template-columns: 2fr 1.5fr 1.2fr 1fr 1fr 1fr 1fr;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr 1.5fr;
   gap: 1rem;
   padding: 1rem;
-  background: var(--container-color);
+  background: var(--accent-gold);
   border-radius: 12px;
   margin-bottom: 0.5rem;
   font-weight: var(--font-semi-bold);
@@ -3816,9 +3886,9 @@
   font-size: var(--small-font-size);
 }
 
-.table-row {
+.transaction-table .table-row {
   display: grid;
-  grid-template-columns: 2fr 1.5fr 1.2fr 1fr 1fr 1fr 1fr;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr 1.5fr;
   gap: 1rem;
   padding: 1rem;
   border-bottom: 1px solid var(--light-beige);
@@ -3826,12 +3896,12 @@
   transition: background-color 0.3s ease;
 }
 
-.table-row:hover {
+.transaction-table .table-row:hover {
   background: var(--container-color);
   border-radius: 8px;
 }
 
-.table-row:last-child {
+.transaction-table .table-row:last-child {
   border-bottom: none;
 }
 
@@ -4085,7 +4155,7 @@
 }
 
 /*========== Transaction History Responsive ==========*/
-@media screen and (max-width: 968px) {
+/* @media screen and (max-width: 968px) {
   .table-header, .table-row {
     grid-template-columns: 1fr;
     gap: 0.5rem;
@@ -4129,41 +4199,42 @@
 }
 
 @media screen and (max-width: 768px) {
-  .transaction-history, .saved-payment-methods, .invoices-receipts {
+  .transaction-history {
     padding: 1rem;
     margin-top: 1rem;
   }
-  
-  .payment-method-item {
-    padding: 1rem;
+
+  .transaction-table-wrapper {
+    margin: 0 -1rem;
+    padding: 0 1rem;
   }
-  
-  .method-info {
-    gap: 0.75rem;
-  }
-  
-  .method-icon {
-    font-size: 1.25rem;
-  }
-  
-  .receipt-item {
-    padding: 1rem;
+
+  .transaction-filters {
     flex-direction: column;
-    align-items: flex-start;
     gap: 1rem;
   }
-  
-  .receipt-actions {
-    align-self: flex-end;
+
+  .category-filters {
+    flex-wrap: wrap;
+    justify-content: flex-start;
   }
-  
-  .payment-security-info {
-    padding-top: 1rem;
-    margin-top: 1rem;
+
+  .status-filter {
+    width: 100%;
   }
-  
-  .security-item {
-    gap: 0.5rem;
+
+  .status-dropdown {
+    width: 100%;
+  }
+
+  .transaction-table {
+    min-width: 900px;
+  }
+
+  .transaction-table .table-header,
+  .transaction-table .table-row {
+    grid-template-columns: 1.2fr 1fr 1.2fr 1fr 1fr 1.5fr;
+    font-size: 0.85rem;
   }
 }
 
@@ -4598,15 +4669,16 @@ input {
 /*=============== DASHBOARD SIDEBAR ===============*/
 .dashboard-sidebar {
   position: fixed;
+  background-color: #E4C293;
   top: 0;
   left: 0;
   width: 280px;
   height: 100vh;
   max-height: 100vh;
-  background: linear-gradient(180deg, 
+  /* background: linear-gradient(180deg, 
     var(--warm-beige) 0%, 
     var(--light-beige) 50%, 
-    var(--cream) 100%);
+    var(--cream) 100%); */
   border-right: 1px solid rgba(139, 115, 85, 0.1);
   box-shadow: 2px 0 20px rgba(139, 115, 85, 0.1);
   z-index: 1000;
@@ -5441,7 +5513,7 @@ input {
 }
 
 .home__cta-button {
-  background: #EA7C25;
+  background: linear-gradient(90deg, #C06A2B 0%, #E08B42 100%);
   color: var(--white-color);
   border: none;
   padding: 1rem 2.5rem;
@@ -5451,7 +5523,7 @@ input {
   font-family: var(--body-font);
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 8px 25px rgba(205, 133, 63, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -5459,9 +5531,9 @@ input {
 }
 
 .home__cta-button:hover {
-  background: var(--first-color-alt);
-  transform: translateY(-3px);
-  box-shadow: 0 12px 35px rgba(205, 133, 63, 0.4);
+  background: linear-gradient(90deg, #B85F25 0%, #D47E3A 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
 }
 
 .home__social {
@@ -8706,7 +8778,7 @@ body.dark-theme .scroll-header .henna-line {
 
 .dashboard-content {
   max-width: 1200px;
-  margin: 10px;
+  margin: 10px auto;
   padding-bottom: 2rem;
 }
 
@@ -10348,7 +10420,7 @@ body.dark-theme .scroll-header .henna-line {
   .request-controls {
     flex-wrap: wrap;
   }
-  
+/*   
   .table-header,
   .table-row {
     grid-template-columns: 1fr;
@@ -10372,7 +10444,7 @@ body.dark-theme .scroll-header .henna-line {
   
   .artist-info {
     margin-bottom: 0.5rem;
-  }
+  } */
   
   .col-price::before { content: "Price: "; font-weight: var(--font-semi-bold); }
   .col-status::before { content: "Status: "; font-weight: var(--font-semi-bold); }
