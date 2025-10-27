@@ -129,14 +129,14 @@ const responsiveStyles = `
     }
     
     .responsive-section {
-      padding: 40px 16px !important;
+      padding: 20px 16px !important;
     }
     
     .responsive-hero {
       padding: 60px 16px !important;
     }
     
-    .responsive-hero h1 {
+    .responsive-hero h1,h2 {
       font-size: 2.5rem !important;
     }
     
@@ -156,7 +156,7 @@ const responsiveStyles = `
     }
     
     .responsive-section {
-      padding: 32px 12px !important;
+      padding: 12px 12px !important;
     }
     
     .responsive-hero {
@@ -239,7 +239,7 @@ bookings.
 
         {/* Features Section */}
         <section className="responsive-section" style={{
-          padding: '80px 20px',
+          padding: '20px 20px',
           backgroundColor: '#E4C293'
         }}>
           <div style={{
@@ -556,7 +556,7 @@ bookings.
 
         {/* CTA Section */}
         <section className="responsive-section" style={{
-          padding: '80px 20px',
+          padding: '20px 20px',
           backgroundColor: '#E4C293',
           textAlign: 'center'
         }}>
