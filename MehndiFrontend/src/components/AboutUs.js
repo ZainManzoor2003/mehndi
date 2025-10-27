@@ -4,6 +4,19 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useNavigate } from 'react-router-dom';
 
 const AboutUs = () => {
+  const responsive=`.hero-title {
+  margin: 0 0 1.3rem 0;
+  font-weight: 800;
+  color: #4A4A4A;
+  font-size: 3rem; /* default font size */
+}
+
+/* Media query for screens ≤ 767px */
+@media (max-width: 767px) {
+  .hero-title {
+    font-size: 2.5rem;
+  }
+}`
   const storyRef = useRef(null);
   const navigate=useNavigate();
 
@@ -51,6 +64,8 @@ const AboutUs = () => {
   }, []);
 
   return (
+    <>
+    <style>{responsive}</style>
     <section className="origin-story" id="aboutus" ref={storyRef} style={{
       color: "var(--text-color)",
       padding: "6rem 0 3rem",
@@ -58,7 +73,7 @@ const AboutUs = () => {
     }}>
       <div className="container" style={{ maxWidth: 980, margin: "0 auto", padding: "0 1.2rem" }}>
         <div className="origin-story__text" style={{ fontSize: "26px", textAlign: 'center', lineHeight: 1.35, letterSpacing: "0.2px" }}>
-          <h2 style={{ margin: '0 0 1.3rem 0', fontWeight: 800, color: '#4A4A4A' }}>A Global First, Born from Chaos</h2>
+          <h1 className="hero-title">A Global First, Born from Chaos</h1>
           <p className="story-line" style={{ margin: "8px 0 1.3rem 0", fontSize: "20px" }}>In a world where plans can fall apart overnight, we built something to make sure yours don’t.</p>
           <p className="story-line" style={{ margin: "8px 0 1.3rem 0", fontSize: "20px" }}>Three days before my wedding, my mehndi artist cancelled.</p>
           <p className="story-line" style={{ margin: "8px 0 1.3rem 0", fontSize: "20px" }}>No design. No backup. No time.</p>
@@ -72,6 +87,7 @@ const AboutUs = () => {
         </div>
       </div>
     </section>
+    </>
   );
 };
 
