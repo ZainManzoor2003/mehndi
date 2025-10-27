@@ -143,11 +143,11 @@ const DashboardSidebar = ({ activeTab, onTabChange, isOpen, onClose, bookingCoun
         {/* Sidebar Header */}
         <div className="sidebar-header">
           <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={() => navigate('/')}>
-            <div className="logo-icon" style={{ background: 'transparent', border: 'none', boxShadow: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {/* <div className="logo-icon" style={{ background: 'transparent', border: 'none', boxShadow: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <img src="/assets/logo icon.png" alt="Mehndi Me" style={{ width: 'auto', height: 'auto', display: 'block', borderRadius: '50%' }} />
-            </div>
+            </div> */}
             <span className="logo-text" style={{ display: 'inline-block' }}>
-              <img src="/assets/logo text.png" alt="Mehndi Me" style={{ height: 22, display: 'block' }} />
+              <img src="/assets/logo text.png" alt="Mehndi Me" style={{ height: 28, display: 'block' }} />
             </span>
           </div>
         </div>
