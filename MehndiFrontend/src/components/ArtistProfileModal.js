@@ -404,72 +404,6 @@ const ArtistProfileModal = ({ artist, isOpen, onClose }) => {
                 )}
               </div>
 
-              {/* Social Links Section */}
-              <div style={{
-                backgroundColor: 'white',
-                borderRadius: '12px',
-                padding: '24px',
-                marginBottom: '24px',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-              }}>
-                <h3 style={{
-                  margin: '0 0 20px 0',
-                  fontSize: '18px',
-                  fontWeight: '600',
-                  color: '#1f2937',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}>
-                  <FaInstagram style={{ color: '#ff6b35', fontSize: '16px' }} />
-                  Social Links
-                </h3>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {portfolioData.socials?.instagram && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <FaInstagram style={{ color: '#e4405f', fontSize: '20px' }} />
-                      <a
-                        href={portfolioData.socials.instagram}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ color: '#3b82f6', textDecoration: 'none' }}
-                      >
-                        {portfolioData.socials.instagram}
-                      </a>
-                    </div>
-                  )}
-                  {portfolioData.socials?.facebook && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <FaFacebook style={{ color: '#1877f2', fontSize: '20px' }} />
-                      <a
-                        href={portfolioData.socials.facebook}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ color: '#3b82f6', textDecoration: 'none' }}
-                      >
-                        {portfolioData.socials.facebook}
-                      </a>
-                    </div>
-                  )}
-                  {portfolioData.socials?.tiktok && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <FaTiktok style={{ color: '#000000', fontSize: '20px' }} />
-                      <a
-                        href={portfolioData.socials.tiktok}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ color: '#3b82f6', textDecoration: 'none' }}
-                      >
-                        {portfolioData.socials.tiktok}
-                      </a>
-                    </div>
-                  )}
-                  {(!portfolioData.socials?.instagram && !portfolioData.socials?.facebook && !portfolioData.socials?.tiktok) && (
-                    <p style={{ color: '#6b7280', fontStyle: 'italic' }}>No social links provided</p>
-                  )}
-                </div>
-              </div>
 
               {/* Travel & Languages Section */}
               <div style={{
@@ -501,7 +435,7 @@ const ArtistProfileModal = ({ artist, isOpen, onClose }) => {
                       {portfolioData.availableForTravel && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <FaCar style={{ color: '#10b981' }} />
-                          <span style={{ color: '#374151' }}>Available for Travel</span>
+                          <span style={{ color: '#374151' }}>Available for Travel ({portfolioData.travelDistanceKm}km)</span>
                         </div>
                       )}
                       {portfolioData.homeBased && (

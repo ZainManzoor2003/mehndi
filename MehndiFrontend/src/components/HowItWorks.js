@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useNavigate } from 'react-router-dom';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -22,6 +23,7 @@ const ArtistIcon = ({ size = 18 }) => (
 const HowItWorks = () => {
   const [activeTab, setActiveTab] = useState('artists');
   const [leafDecorations, setLeafDecorations] = useState([]);
+  const navigate=useNavigate()
   const mainRef = useRef(null);
   const sectionRef = useRef(null);
   const headerRef = useRef(null);
@@ -75,6 +77,7 @@ const HowItWorks = () => {
           toggleActions: "play none none reverse",
           invalidateOnRefresh: true,
           onEnter: () => {
+            if (!headerRef.current) return;
             gsap.to(headerRef.current, { opacity: 1, y: 0, duration: 1, ease: "power3.out" });
             if (pathRef.current) {
               const pathLength = pathRef.current.getTotalLength();
@@ -93,9 +96,11 @@ const HowItWorks = () => {
             }, 1200);
           },
           onLeave: () => {
+            if (!headerRef.current) return;
             gsap.to([headerRef.current], { opacity: 0, y: -30, duration: 0.5, ease: "power2.in" });
           },
           onEnterBack: () => {
+            if (!headerRef.current) return;
             gsap.to([headerRef.current], { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" });
           }
         }
@@ -160,7 +165,10 @@ const HowItWorks = () => {
 
     }, mainRef);
 
-    return () => ctx.revert();
+    return () => {
+      try { ctx.revert(); } catch {}
+      try { ScrollTrigger.getAll().forEach(t => t.kill()); } catch {}
+    };
   }, [activeTab]);
 
   const addToStepsRef = (el) => {
@@ -272,6 +280,40 @@ const HowItWorks = () => {
               ))}
             </div>
           </div>
+        </div>
+        {/* CTA Buttons based on active tab */}
+        <div style={{ textAlign: 'center', marginTop: '150px' }}>
+          {activeTab === 'clients' ? (
+            <div>
+              <button onClick={() => navigate('/booking')} style={{
+                backgroundColor: '#4A2C1D',
+                color: 'white',
+                border: 'none',
+                padding: '20px 40px',
+                borderRadius: '16px',
+                fontWeight: 700,
+                fontSize: '18px',
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+              }}>Post Your Mehndi Request</button>
+              <div style={{ marginTop: '10px', color: '#6b6b6b' }}>It only takes 2 minutes — get offers today.</div>
+            </div>
+          ) : (
+            <div>
+              <button onClick={() => navigate('/signup')} style={{
+                backgroundColor: '#4A2C1D',
+                color: 'white',
+                border: 'none',
+                padding: '20px 40px',
+                borderRadius: '16px',
+                fontWeight: 700,
+                fontSize: '18px',
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+              }}>Join as an Artist</button>
+              <div style={{ marginTop: '10px', color: '#6b6b6b' }}>Sign up today — 0% commission for your first 3 months.</div>
+            </div>
+          )}
         </div>
       </section>
     </div>

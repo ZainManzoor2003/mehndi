@@ -75,7 +75,7 @@ const BookingRefSchema = new mongoose.Schema(
         unit: {
           type: String,
           required: true,
-          enum: ['hours', 'days'],
+          enum: ['hours'],
           default: 'hours'
         }
       },

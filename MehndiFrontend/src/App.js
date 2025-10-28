@@ -10,6 +10,7 @@ import Blogs from './components/Blogs';
 import BlogDetail from './components/BlogDetail';
 import HowItWorks from './components/HowItWorks';
 import About from './components/About';
+import FullFAQ from './components/FullFAQ';
 import Discover from './components/Discover';
 import Experience from './components/Experience';
 import FAQ from './components/FAQ';
@@ -77,6 +78,7 @@ function App() {
           <Routes>
             <Route path="/" element={<PublicWrapper><LandingPage /></PublicWrapper>} />
             <Route path="/blogs" element={<PublicWrapper><><Header /><main className="main"><Blogs /></main><Footer /></></PublicWrapper>} />
+            <Route path="/faq" element={<PublicWrapper><><Header /><main className="main"><FullFAQ /></main><Footer /></></PublicWrapper>} />
             <Route path="/blogs/:id" element={<PublicWrapper><><Header /><main className="main"><BlogDetail /></main><Footer /></></PublicWrapper>} />
             <Route path="/choose-path" element={<PublicWrapper><ChoosePathForm /></PublicWrapper>} />
             <Route path="/login" element={

@@ -6,6 +6,7 @@ import DashboardSidebar from './DashboardSidebar';
 import apiService from '../services/api';
 import { FaCalendarAlt, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import CancelAcceptedModal from './modals/CancelAcceptedModal';
+import GetLocationModal from './modals/GetLocationModal';
 
 const { bookingsAPI } = apiService;
 
@@ -22,6 +23,99 @@ const AllBookings = () => {
   const [deleting, setDeleting] = useState(false);
 
   const [form, setForm] = useState({});
+  const [linkInput, setLinkInput] = useState('');
+  const [uploadingInspiration, setUploadingInspiration] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
+
+  // Handler for uploading design inspiration images
+  const handleInspirationImageUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    setUploadingInspiration(true);
+    try {
+      const uploadPromises = files.map(file => uploadToCloudinary(file));
+      const urls = await Promise.all(uploadPromises);
+      const currentImages = Array.isArray(form.designInspiration) ? form.designInspiration : [];
+      setForm(prev => ({
+        ...prev,
+        designInspiration: [...currentImages, ...urls]
+      }));
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Failed to upload images. Please try again.');
+    } finally {
+      setUploadingInspiration(false);
+    }
+  };
+
+  const handleAddInspirationLink = () => {
+    if (!linkInput.trim()) return;
+    const currentImages = Array.isArray(form.designInspiration) ? form.designInspiration : [];
+    setForm(prev => ({
+      ...prev,
+      designInspiration: [...currentImages, linkInput.trim()]
+    }));
+    setLinkInput('');
+  };
+
+  const handleRemoveInspirationImage = (index) => {
+    const currentImages = Array.isArray(form.designInspiration) ? form.designInspiration : [];
+    const newImages = currentImages.filter((_, i) => i !== index);
+    setForm(prev => ({
+      ...prev,
+      designInspiration: newImages
+    }));
+  };
+
+  // Handler for location selection from modal
+  const handleLocationSelect = (lat, lng) => {
+    // Reverse geocode to get address from coordinates
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+      .then(res => res.json())
+      .then(data => {
+        // Extract shorter location name (city, town, or suburb)
+        let locationName = '';
+        const address = data.address || {};
+        
+        // Prioritize: city > town > village > suburb > county
+        locationName = address.city || 
+                      address.town || 
+                      address.village || 
+                      address.suburb || 
+                      address.county || 
+                      '';
+        
+        // If we still don't have a location name, try to get postcode
+        if (!locationName) {
+          locationName = address.postcode ? `Postcode ${address.postcode}` : '';
+        }
+        
+        // Final fallback
+        if (!locationName) {
+          locationName = data.display_name ? data.display_name.split(',').slice(0, 2).join(',') : `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        }
+        
+        setForm(prev => ({
+          ...prev,
+          location: locationName,
+          latitude: lat.toString(),
+          longitude: lng.toString()
+        }));
+        setShowLocationModal(false);
+      })
+      .catch(error => {
+        console.error('Geocoding error:', error);
+        // Fallback to just coordinates
+        setForm(prev => ({
+          ...prev,
+          location: `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+          latitude: lat.toString(),
+          longitude: lng.toString()
+        }));
+        setShowLocationModal(false);
+      });
+  };
 
   // Sidebar handlers
   const handleSidebarClose = () => {
@@ -30,29 +124,45 @@ const AllBookings = () => {
 
   const openEditModal = (booking) => {
     setEditing(booking);
+    // Handle eventType - convert array to single value or take first value
+    const eventTypeValue = Array.isArray(booking.eventType) 
+      ? (booking.eventType.length === 1 ? booking.eventType[0] : booking.eventType[0]) 
+      : booking.eventType || '';
+    
+    // Handle preferredTimeSlot - convert array to single value
+    const timeSlotValue = Array.isArray(booking.preferredTimeSlot)
+      ? booking.preferredTimeSlot[0]
+      : booking.preferredTimeSlot || '';
+
+    // Handle travel preference
+    let travelPreference;
+    if (booking.artistTravelsToClient === 'both' || booking.artistTravelsToClient === 'Both') {
+      travelPreference = 'both';
+    } else if (booking.artistTravelsToClient === true || booking.artistTravelsToClient === 'yes') {
+      travelPreference = 'yes';
+    } else {
+      travelPreference = 'no';
+    }
+
     setForm({
       firstName: booking.firstName,
       lastName: booking.lastName,
       email: booking.email,
-      phoneNumber: booking.phoneNumber,
-      eventType: booking.eventType || [],
+      eventType: eventTypeValue,
       otherEventType: booking.otherEventType || '',
       eventDate: booking.eventDate ? booking.eventDate.substring(0, 10) : '',
-      preferredTimeSlot: booking.preferredTimeSlot || [],
+      preferredTimeSlot: timeSlotValue,
       location: booking.location || '',
-      artistTravelsToClient: booking.artistTravelsToClient,
-      fullAddress: booking.fullAddress || '',
-      city: booking.city || '',
-      postalCode: booking.postalCode || '',
+      latitude: booking.latitude || '',
+      longitude: booking.longitude || '',
+      artistTravelsToClient: travelPreference,
       venueName: booking.venueName || '',
       minimumBudget: booking.minimumBudget,
       maximumBudget: booking.maximumBudget,
-      duration: booking.duration,
+      duration: booking.duration || 3,
       numberOfPeople: booking.numberOfPeople,
       designStyle: booking.designStyle || '',
-      designComplexity: booking.designComplexity || '',
-      bodyPartsToDecorate: booking.bodyPartsToDecorate || [],
-      designInspiration: booking.designInspiration || '',
+      designInspiration: Array.isArray(booking.designInspiration) ? booking.designInspiration : (booking.designInspiration ? [booking.designInspiration] : []),
       coveragePreference: booking.coveragePreference || '',
       additionalRequests: booking.additionalRequests || ''
     });
@@ -64,6 +174,7 @@ const AllBookings = () => {
   const closeEditModal = () => {
     setEditOpen(false);
     setEditing(null);
+    setLinkInput('');
     // Restore body scroll when modal closes
     document.body.style.overflow = 'auto';
   };
@@ -89,12 +200,38 @@ const AllBookings = () => {
     try {
       setSaving(true);
       const payload = { ...form };
+      
+      // Convert eventType to array
+      if (payload.eventType) {
+        payload.eventType = [payload.eventType];
+      }
+      
+      // Convert preferredTimeSlot to array
+      if (payload.preferredTimeSlot) {
+        payload.preferredTimeSlot = [payload.preferredTimeSlot];
+      }
+      
+      // Convert artistTravelsToClient to boolean or 'both'
+      if (payload.artistTravelsToClient === 'both') {
+        payload.artistTravelsToClient = 'both';
+      } else if (payload.artistTravelsToClient === 'yes') {
+        payload.artistTravelsToClient = true;
+      } else if (payload.artistTravelsToClient === 'no') {
+        payload.artistTravelsToClient = false;
+      }
+      
+      // Convert designInspiration to array if it's a string
+      if (typeof payload.designInspiration === 'string') {
+        payload.designInspiration = payload.designInspiration.split('\n').filter(url => url.trim() !== '');
+      }
+      
       // convert numbers
       ['minimumBudget', 'maximumBudget', 'duration', 'numberOfPeople'].forEach(k => {
         if (payload[k] !== undefined && payload[k] !== null && payload[k] !== '') {
           payload[k] = Number(payload[k]);
         }
       });
+      
       await bookingsAPI.updateBooking(editing._id, payload);
       // refresh list
       const refreshed = await bookingsAPI.getMyBookings();
@@ -664,30 +801,23 @@ const AllBookings = () => {
                             <div className="info-row">
                               <div className="info-item">
                                 <span className="info-label">Duration</span>
-                                <span className="info-value">{booking.duration} hours</span>
-                              </div>
-                              <div className="info-item">
-                                <span className="info-label">Complexity</span>
-                                <span className="info-value">{booking.designComplexity}</span>
-                              </div>
+                                <span className="info-value">{booking.duration || 3} hours</span>
                             </div>
 
                             {daysLeft > 0 && (
-                              <div className="info-row">
                                 <div className="info-item">
                                   <span className="info-label">Days Left</span>
                                   <span className="info-value highlight">{daysLeft} days</span>
-                                </div>
                               </div>
                             )}
                             {daysLeft <= 0 && (
-                              <div className="info-row">
                                 <div className="info-item">
                                   <span className="info-label">Status</span>
                                   <span className="info-value highlight">{daysLeft === 0 ? 'Today!' : 'Overdue'}</span>
-                                </div>
                               </div>
                             )}
+                            </div>
+
                           </div>
                         </div>
                       );
@@ -739,11 +869,7 @@ const AllBookings = () => {
                           <div className="info-row">
                             <div className="info-item">
                               <span className="info-label">Duration</span>
-                              <span className="info-value">{booking.duration} hours</span>
-                            </div>
-                            <div className="info-item">
-                              <span className="info-label">Complexity</span>
-                              <span className="info-value">{booking.designComplexity}</span>
+                              <span className="info-value">{booking.duration || 3} hours</span>
                             </div>
                           </div>
                         </div>
@@ -796,11 +922,7 @@ const AllBookings = () => {
                           <div className="info-row">
                             <div className="info-item">
                               <span className="info-label">Duration</span>
-                              <span className="info-value">{booking.duration} hours</span>
-                            </div>
-                            <div className="info-item">
-                              <span className="info-label">Complexity</span>
-                              <span className="info-value">{booking.designComplexity}</span>
+                              <span className="info-value">{booking.duration || 3} hours</span>
                             </div>
                           </div>
                         </div>
@@ -813,29 +935,47 @@ const AllBookings = () => {
           </div>
 
           {editOpen && (
-            <div className="modal-overlay" onClick={closeEditModal}>
-              <div className="modal edit-booking-modal" onClick={(e) => e.stopPropagation()} style={{
-                maxWidth: '900px',
+            <div className="modal-overlay" onClick={closeEditModal} style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000
+            }}>
+              <div className="modal" onClick={(e) => e.stopPropagation()} style={{
+                maxWidth: '800px',
                 maxHeight: '90vh',
                 width: '95%',
-                margin: '20px auto',
+                backgroundColor: 'white',
+                borderRadius: '16px',
+                boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
                 display: 'flex',
                 flexDirection: 'column'
               }}>
-                <div className="modal-header" style={{
-                  flexShrink: 0,
-                  borderBottom: '1px solid #e5e5e5',
-                  padding: '20px 24px',
-                  backgroundColor: '#fafafa'
+                <div style={{
+                  padding: '2rem 2.5rem 1.5rem',
+                  borderBottom: '1px solid #e8ddd4',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
                 }}>
-                  <h3 className="modal-title" style={{ margin: 0, fontSize: '20px', fontWeight: '600', color: '#333' }}>Edit Booking</h3>
-                  <button className="modal-close" onClick={closeEditModal} style={{
+                  <h2 style={{ 
+                    margin: 0, 
+                    fontSize: '1.75rem', 
+                    fontWeight: '600', 
+                    color: '#8B4513' 
+                  }}>Edit Booking</h2>
+                  <button onClick={closeEditModal} style={{
                     background: 'none',
                     border: 'none',
-                    fontSize: '24px',
-                    color: '#999',
+                    fontSize: '28px',
+                    color: '#8B4513',
                     cursor: 'pointer',
-                    padding: '0',
                     width: '32px',
                     height: '32px',
                     display: 'flex',
@@ -843,409 +983,514 @@ const AllBookings = () => {
                     justifyContent: 'center'
                   }}>×</button>
                 </div>
-                <div className="modal-body" style={{
+                <div style={{
                   flex: 1,
                   overflowY: 'auto',
-                  padding: '24px'
+                  padding: '2rem 2.5rem'
                 }}>
-                  <div className="modal-grid" style={{
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                    {/* Event Type */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Event Type *</label>
+                      <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '1rem' }}>Choose the event you are booking for</p>
+                      <div style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                    gap: '20px'
-                  }}>
-                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
-                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>First name</label>
-                      <input name="firstName" value={form.firstName || ''} onChange={handleFormChange} style={{
-                        padding: '10px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        outline: 'none',
-                        transition: 'border-color 0.2s ease'
-                      }} />
-                    </div>
-                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
-                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Last name</label>
-                      <input name="lastName" value={form.lastName || ''} onChange={handleFormChange} style={{
-                        padding: '10px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        outline: 'none',
-                        transition: 'border-color 0.2s ease'
-                      }} />
-                    </div>
-                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
-                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Email</label>
-                      <input name="email" type="email" value={form.email || ''} onChange={handleFormChange} style={{
-                        padding: '10px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        outline: 'none',
-                        transition: 'border-color 0.2s ease'
-                      }} />
-                    </div>
-                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
-                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Phone</label>
-                      <input name="phoneNumber" value={form.phoneNumber || ''} onChange={handleFormChange} style={{
-                        padding: '10px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        outline: 'none',
-                        transition: 'border-color 0.2s ease'
-                      }} />
-                    </div>
-                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
-                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Event date</label>
-                      <input name="eventDate" type="date" value={form.eventDate || ''} onChange={handleFormChange} style={{
-                        padding: '10px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        outline: 'none',
-                        transition: 'border-color 0.2s ease'
-                      }} />
-                    </div>
-                    <div className="form-group full" style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column' }}>
-                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Event type</label>
-                      <div className="checkbox-grid" style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-                        gap: '10px',
-                        marginBottom: '12px'
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                        gap: '1rem'
                       }}>
-                        {['Wedding', 'Eid', 'Party', 'Festival'].map(opt => (
-                          <label key={opt} className="checkbox-label" style={{
+                        {[
+                          { value: 'Wedding', emoji: '💍' },
+                          { value: 'Eid', emoji: '🌙' },
+                          { value: 'Party', emoji: '🎉' },
+                          { value: 'Festival', emoji: '🎊' }
+                        ].map(opt => (
+                          <label key={opt.value} style={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '8px',
+                            gap: '12px',
+                            padding: '16px',
+                            border: `2px solid ${form.eventType === opt.value ? '#CD853F' : '#e0d5c9'}`,
+                            borderRadius: '12px',
+                            background: form.eventType === opt.value ? '#fff8f0' : '#faf8f5',
                             cursor: 'pointer',
-                            fontSize: '14px'
-                          }}>
+                            transition: 'all 0.3s',
+                            position: 'relative'
+                          }} onClick={() => setForm(prev => ({ ...prev, eventType: opt.value }))}>
                             <input
-                              type="checkbox"
+                              type="radio"
                               name="eventType"
-                              value={opt}
-                              checked={(form.eventType || []).includes(opt)}
-                              onChange={handleFormChange}
-                              style={{ margin: 0 }}
+                              value={opt.value}
+                              checked={form.eventType === opt.value}
+                              onChange={() => setForm(prev => ({ ...prev, eventType: opt.value }))}
+                              style={{ display: 'none' }}
                             />
-                            <span>{opt}</span>
+                            <span style={{ fontSize: '1.5rem' }}>{opt.emoji}</span>
+                            <span style={{ fontSize: '0.95rem', fontWeight: '500' }}>{opt.value}</span>
+                            {form.eventType === opt.value && (
+                              <span style={{ position: 'absolute', right: '16px', color: '#CD853F', fontWeight: 'bold', fontSize: '1.2rem' }}>✓</span>
+                            )}
                           </label>
                         ))}
                       </div>
                       <input
                         name="otherEventType"
-                        placeholder="Other event type"
+                        placeholder="Other:"
                         value={form.otherEventType || ''}
                         onChange={handleFormChange}
                         style={{
-                          padding: '10px 12px',
-                          border: '1px solid #ddd',
-                          borderRadius: '6px',
-                          fontSize: '14px',
+                          padding: '12px 16px',
+                          border: '1px solid #e0d5c9',
+                          borderRadius: '10px',
+                          fontSize: '1rem',
+                          background: '#faf8f5',
+                          width: '100%',
+                          marginTop: '1rem',
                           outline: 'none',
-                          transition: 'border-color 0.2s ease'
+                          transition: 'all 0.3s'
                         }}
                       />
                     </div>
-                    <div className="form-group full" style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column' }}>
-                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Preferred time slot</label>
-                      <div className="checkbox-grid" style={{
+
+                    {/* Event Date */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Event Date *</label>
+                      <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '0.5rem' }}>Select the date of your occasion</p>
+                      <input name="eventDate" type="date" value={form.eventDate || ''} onChange={handleFormChange} style={{
+                        padding: '12px 16px',
+                        border: '1px solid #e0d5c9',
+                        borderRadius: '10px',
+                        fontSize: '1rem',
+                        background: '#faf8f5',
+                        width: '100%',
+                        outline: 'none',
+                        transition: 'all 0.3s'
+                      }} />
+                    </div>
+                    {/* Preferred Time Slot */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Preferred Time Slot *</label>
+                      <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '1rem' }}>Pick one option</p>
+                      <div style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-                        gap: '10px'
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                        gap: '1rem'
                       }}>
-                        {['Morning', 'Afternoon', 'Evening', 'Flexible'].map(opt => (
-                          <label key={opt} className="checkbox-label" style={{
+                        {[
+                          { value: 'Morning', icon: '☀️' },
+                          { value: 'Afternoon', icon: '🌤️' },
+                          { value: 'Evening', icon: '🌙' },
+                          { value: 'Flexible', icon: '🔄' }
+                        ].map(opt => (
+                          <label key={opt.value} style={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '8px',
+                            gap: '12px',
+                            padding: '16px',
+                            border: `2px solid ${form.preferredTimeSlot === opt.value ? '#CD853F' : '#e0d5c9'}`,
+                            borderRadius: '12px',
+                            background: form.preferredTimeSlot === opt.value ? '#fff8f0' : '#faf8f5',
                             cursor: 'pointer',
-                            fontSize: '14px'
-                          }}>
+                            transition: 'all 0.3s',
+                            position: 'relative'
+                          }} onClick={() => setForm(prev => ({ ...prev, preferredTimeSlot: opt.value }))}>
                             <input
-                              type="checkbox"
+                              type="radio"
                               name="preferredTimeSlot"
-                              value={opt}
-                              checked={(form.preferredTimeSlot || []).includes(opt)}
-                              onChange={handleFormChange}
-                              style={{ margin: 0 }}
+                              value={opt.value}
+                              checked={form.preferredTimeSlot === opt.value}
+                              onChange={() => setForm(prev => ({ ...prev, preferredTimeSlot: opt.value }))}
+                              style={{ display: 'none' }}
                             />
-                            <span>{opt}</span>
+                            <span style={{ fontSize: '1.5rem' }}>{opt.icon}</span>
+                            <span style={{ fontSize: '0.95rem', fontWeight: '500' }}>{opt.value}</span>
                           </label>
                         ))}
                       </div>
                     </div>
-                    <div className="form-group full" style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column' }}>
-                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Artist travel preference</label>
-                      <div className="radio-group" style={{
+
+                    {/* Location */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Location / Postcode *</label>
+                      <p style={{ fontSize: '0.85rem', color: '#888', marginBottom: '1rem' }}>Click "Get Location" to select your location on the map</p>
+                      <button
+                        type="button"
+                        onClick={() => setShowLocationModal(true)}
+                        style={{
+                          padding: '14px 32px',
+                          background: '#faf8f5',
+                          border: '2px solid #CD853F',
+                          borderRadius: '10px',
+                          color: '#8B4513',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s',
                         display: 'flex',
-                        gap: '20px',
-                        flexWrap: 'wrap'
+                          alignItems: 'center',
+                          gap: '10px',
+                          fontSize: '1rem',
+                          boxShadow: '0 2px 8px rgba(205, 133, 63, 0.15)'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.background = '#fff8f0';
+                          e.target.style.transform = 'translateY(-2px)';
+                          e.target.style.boxShadow = '0 4px 12px rgba(205, 133, 63, 0.25)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.background = '#faf8f5';
+                          e.target.style.transform = 'translateY(0)';
+                          e.target.style.boxShadow = '0 2px 8px rgba(205, 133, 63, 0.15)';
+                        }}
+                      >
+                        <span style={{ fontSize: '1.2rem' }}>📍</span> Get Location
+                      </button>
+                      {form.location && (
+                        <div style={{
+                          marginTop: '1rem',
+                          padding: '12px 16px',
+                          background: '#f0f8f0',
+                          border: '1px solid #c8e6c9',
+                          borderRadius: '8px',
+                          color: '#2e7d32',
+                          fontSize: '0.95rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px'
+                        }}>
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                          </svg>
+                          <span>{form.location}</span>
+                        </div>
+                      )}
+                    </div>
+                    {/* Travel Preference */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Do you want the artist to come to you? *</label>
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                        gap: '1rem'
                       }}>
-                        <label className="radio-label" style={{
+                        {[
+                          { value: 'yes', text: 'Yes, come to my home', icon: '🚗' },
+                          { value: 'no', text: 'No, I\'ll travel to the artist', icon: '🏡' },
+                          { value: 'both', text: 'I\'m open to both', icon: '🤝' }
+                        ].map(opt => (
+                          <label key={opt.value} style={{
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '8px',
+                            gap: '12px',
+                            padding: '16px',
+                            border: `2px solid ${form.artistTravelsToClient === opt.value ? '#CD853F' : '#e0d5c9'}`,
+                            borderRadius: '12px',
+                            background: form.artistTravelsToClient === opt.value ? '#fff8f0' : '#faf8f5',
                           cursor: 'pointer',
-                          fontSize: '14px'
-                        }}>
-                          <input type="radio" name="artistTravelsToClientRadio" checked={form.artistTravelsToClient === true} onChange={() => setForm(prev => ({ ...prev, artistTravelsToClient: true }))} style={{ margin: 0 }} />
-                          <span>Artist travels to me</span>
+                            transition: 'all 0.3s',
+                            position: 'relative'
+                          }} onClick={() => setForm(prev => ({ ...prev, artistTravelsToClient: opt.value }))}>
+                            <input type="radio" name="artistTravelsToClientRadio" checked={form.artistTravelsToClient === opt.value} onChange={() => setForm(prev => ({ ...prev, artistTravelsToClient: opt.value }))} style={{ display: 'none' }} />
+                            <span style={{ fontSize: '1.5rem' }}>{opt.icon}</span>
+                            <span style={{ fontSize: '0.95rem', fontWeight: '500' }}>{opt.text}</span>
                         </label>
-                        <label className="radio-label" style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          cursor: 'pointer',
-                          fontSize: '14px'
-                        }}>
-                          <input type="radio" name="artistTravelsToClientRadio" checked={form.artistTravelsToClient === false} onChange={() => setForm(prev => ({ ...prev, artistTravelsToClient: false }))} style={{ margin: 0 }} />
-                          <span>I travel to artist</span>
-                        </label>
+                        ))}
                       </div>
                     </div>
-                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
-                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Location</label>
-                      <input name="location" value={form.location || ''} onChange={handleFormChange} style={{
-                        padding: '10px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '6px',
-                        fontSize: '14px',
+
+                    {/* Venue Name */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Venue Name</label>
+                      <input name="venueName" value={form.venueName || ''} onChange={handleFormChange} placeholder="Enter venue name (optional)" style={{
+                        padding: '12px 16px',
+                        border: '1px solid #e0d5c9',
+                        borderRadius: '10px',
+                        fontSize: '1rem',
+                        background: '#faf8f5',
+                        width: '100%',
                         outline: 'none',
-                        transition: 'border-color 0.2s ease'
+                        transition: 'all 0.3s'
                       }} />
                     </div>
-                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
-                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Address</label>
-                      <input name="fullAddress" value={form.fullAddress || ''} onChange={handleFormChange} style={{
-                        padding: '10px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        outline: 'none',
-                        transition: 'border-color 0.2s ease'
-                      }} />
-                    </div>
-                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
-                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>City</label>
-                      <input name="city" value={form.city || ''} onChange={handleFormChange} style={{
-                        padding: '10px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        outline: 'none',
-                        transition: 'border-color 0.2s ease'
-                      }} />
-                    </div>
-                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
-                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Postal code</label>
-                      <input name="postalCode" value={form.postalCode || ''} onChange={handleFormChange} style={{
-                        padding: '10px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        outline: 'none',
-                        transition: 'border-color 0.2s ease'
-                      }} />
-                    </div>
-                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
-                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Budget min</label>
-                      <input name="minimumBudget" type="number" value={form.minimumBudget ?? ''} onChange={handleFormChange} style={{
-                        padding: '10px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        outline: 'none',
-                        transition: 'border-color 0.2s ease'
-                      }} />
-                    </div>
-                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
-                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Budget max</label>
-                      <input name="maximumBudget" type="number" value={form.maximumBudget ?? ''} onChange={handleFormChange} style={{
-                        padding: '10px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        outline: 'none',
-                        transition: 'border-color 0.2s ease'
-                      }} />
-                    </div>
-                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
-                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Duration (hours)</label>
-                      <input name="duration" type="number" value={form.duration ?? ''} onChange={handleFormChange} style={{
-                        padding: '10px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        outline: 'none',
-                        transition: 'border-color 0.2s ease'
-                      }} />
-                    </div>
-                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
-                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>People</label>
-                      <input name="numberOfPeople" type="number" value={form.numberOfPeople ?? ''} onChange={handleFormChange} style={{
-                        padding: '10px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        outline: 'none',
-                        transition: 'border-color 0.2s ease'
-                      }} />
-                    </div>
-                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
-                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Design style</label>
-                      <select name="designStyle" value={form.designStyle || ''} onChange={handleFormChange} style={{
-                        padding: '10px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        outline: 'none',
-                        transition: 'border-color 0.2s ease',
-                        backgroundColor: 'white'
-                      }}>
-                        <option value="">Select style</option>
-                        {['Traditional', 'Modern', 'Arabic', 'Indian', 'Moroccan', 'Minimalist', 'Bridal'].map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
-                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Complexity</label>
-                      <select name="designComplexity" value={form.designComplexity || ''} onChange={handleFormChange} style={{
-                        padding: '10px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        outline: 'none',
-                        transition: 'border-color 0.2s ease',
-                        backgroundColor: 'white'
-                      }}>
-                        <option value="">Select complexity</option>
-                        {['Simple', 'Medium', 'Complex', 'Very Complex'].map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="form-group full" style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column' }}>
-                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Body parts to decorate</label>
-                      <div className="checkbox-grid" style={{
+
+                    {/* Design Style */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Style You're Looking For *</label>
+                      <div style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
-                        gap: '10px'
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                        gap: '1rem'
                       }}>
-                        {['Hands', 'Feet', 'Arms', 'Back'].map(opt => (
-                          <label key={opt} className="checkbox-label" style={{
+                        {['Bridal Mehndi', 'Party Mehndi', 'Festival Mehndi', 'Casual / Minimal Mehndi'].map(opt => (
+                          <label key={opt} style={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '8px',
+                            padding: '16px',
+                            border: `2px solid ${form.designStyle === opt ? '#CD853F' : '#e0d5c9'}`,
+                            borderRadius: '12px',
+                            background: form.designStyle === opt ? '#fff8f0' : '#faf8f5',
                             cursor: 'pointer',
-                            fontSize: '14px'
-                          }}>
+                            transition: 'all 0.3s',
+                            position: 'relative'
+                          }} onClick={() => setForm(prev => ({ ...prev, designStyle: opt }))}>
                             <input
-                              type="checkbox"
-                              name="bodyPartsToDecorate"
+                              type="radio"
+                              name="designStyle"
                               value={opt}
-                              checked={(form.bodyPartsToDecorate || []).includes(opt)}
-                              onChange={handleFormChange}
-                              style={{ margin: 0 }}
+                              checked={form.designStyle === opt}
+                              onChange={() => setForm(prev => ({ ...prev, designStyle: opt }))}
+                              style={{ display: 'none' }}
                             />
-                            <span>{opt}</span>
+                            <span style={{ fontSize: '0.95rem', fontWeight: '500' }}>{opt}</span>
+                            {form.designStyle === opt && (
+                              <span style={{ position: 'absolute', right: '16px', color: '#CD853F', fontWeight: 'bold', fontSize: '1.2rem' }}>✓</span>
+                            )}
                           </label>
                         ))}
                       </div>
                     </div>
-                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
-                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Coverage preference</label>
+
+                    {/* Design Inspiration */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Design Inspiration</label>
+                      <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '1rem' }}>Upload images or paste links to share your preferred designs</p>
+                      
+                      {/* Upload Images */}
+                      <div style={{ marginBottom: '1rem' }}>
+                        <label
+                          htmlFor="design-inspiration-upload"
+                          style={{
+                            display: 'inline-block',
+                            padding: '12px 24px',
+                            background: '#faf8f5',
+                            border: '2px dashed #CD853F',
+                            borderRadius: '10px',
+                            cursor: 'pointer',
+                            color: '#8B4513',
+                            fontWeight: '500',
+                            transition: 'all 0.3s'
+                          }}
+                          onMouseEnter={(e) => e.target.style.background = '#fff8f0'}
+                          onMouseLeave={(e) => e.target.style.background = '#faf8f5'}
+                        >
+                          {uploadingInspiration ? 'Uploading...' : '📸 Upload Images'}
+                          <input
+                            type="file"
+                            id="design-inspiration-upload"
+                            multiple
+                            accept="image/*"
+                            onChange={handleInspirationImageUpload}
+                            disabled={uploadingInspiration}
+                            style={{ display: 'none' }}
+                          />
+                        </label>
+                      </div>
+
+                      {/* Paste Link */}
+                      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                        <input
+                          type="url"
+                          placeholder="Paste image link here..."
+                          value={linkInput}
+                          onChange={(e) => setLinkInput(e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddInspirationLink();
+                            }
+                          }}
+                          style={{
+                            flex: 1,
+                            padding: '12px 16px',
+                            border: '1px solid #e0d5c9',
+                            borderRadius: '10px',
+                            fontSize: '1rem',
+                            background: '#faf8f5',
+                            outline: 'none',
+                            transition: 'all 0.3s'
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddInspirationLink}
+                          disabled={!linkInput.trim()}
+                          style={{
+                            padding: '12px 24px',
+                            background: '#CD853F',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '10px',
+                            cursor: 'pointer',
+                            fontWeight: '600',
+                            opacity: linkInput.trim() ? 1 : 0.6,
+                            transition: 'all 0.3s'
+                          }}
+                        >
+                          Add
+                        </button>
+                      </div>
+
+                      {/* Uploaded Images Preview */}
+                      {Array.isArray(form.designInspiration) && form.designInspiration.length > 0 && (
+                        <div style={{ marginTop: '1rem', padding: '1rem', background: '#f9f9f9', borderRadius: '10px' }}>
+                          <p style={{ fontSize: '0.85rem', color: '#8B4513', marginBottom: '0.5rem', fontWeight: '600' }}>
+                            Your Inspiration Images ({form.designInspiration.length}):
+                          </p>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '0.75rem' }}>
+                            {form.designInspiration.map((url, idx) => (
+                              <div key={idx} style={{ position: 'relative', aspectRatio: '1', borderRadius: '8px', overflow: 'hidden', border: '2px solid #e0d5c9' }}>
+                                <img src={url} alt={`Inspiration ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => e.target.style.display = 'none'} />
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveInspirationImage(idx)}
+                                  style={{
+                                    position: 'absolute', top: '4px', right: '4px', width: '24px', height: '24px', borderRadius: '50%', background: 'rgba(255, 0, 0, 0.8)', color: 'white', border: 'none', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: '1'
+                                  }} title="Remove image">×</button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Coverage Preference */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Coverage Preference (for bridal)</label>
                       <select name="coveragePreference" value={form.coveragePreference || ''} onChange={handleFormChange} style={{
-                        padding: '10px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '6px',
-                        fontSize: '14px',
+                        padding: '12px 16px',
+                        border: '1px solid #e0d5c9',
+                        borderRadius: '10px',
+                        fontSize: '1rem',
+                        background: '#faf8f5',
+                        width: '100%',
                         outline: 'none',
-                        transition: 'border-color 0.2s ease',
-                        backgroundColor: 'white'
+                        transition: 'all 0.3s'
                       }}>
                         <option value="">Select coverage</option>
-                        {['Light', 'Medium', 'Full', 'Bridal Package'].map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
+                        <option value="Full arms & feet">Full arms & feet</option>
+                        <option value="Hands only">Hands only</option>
+                        <option value="Simple, elegant design">Simple, elegant design</option>
+                        <option value="Not sure yet">Not sure yet</option>
                       </select>
                     </div>
-                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
-                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Venue name</label>
-                      <input name="venueName" value={form.venueName || ''} onChange={handleFormChange} style={{
-                        padding: '10px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        outline: 'none',
-                        transition: 'border-color 0.2s ease'
+
+                    {/* Budget Range */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>What's your budget range? *</label>
+                      <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '1rem' }}>Helps artists tailor their offers to you.</p>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e0d5c9', borderRadius: '10px', padding: '8px 16px', background: '#faf8f5' }}>
+                          <span style={{ fontWeight: '600', color: '#8B4513', marginRight: '8px' }}>£</span>
+                          <input name="minimumBudget" type="number" value={form.minimumBudget || ''} onChange={handleFormChange} placeholder="From" style={{
+                            border: 'none',
+                            background: 'transparent',
+                            fontSize: '1rem',
+                            flex: 1,
+                            outline: 'none'
                       }} />
                     </div>
-                    <div className="form-group full" style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column' }}>
-                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Design inspiration</label>
-                      <textarea name="designInspiration" rows="3" value={form.designInspiration || ''} onChange={handleFormChange} style={{
-                        padding: '10px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        outline: 'none',
-                        transition: 'border-color 0.2s ease',
-                        resize: 'vertical',
-                        fontFamily: 'inherit'
+                        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e0d5c9', borderRadius: '10px', padding: '8px 16px', background: '#faf8f5' }}>
+                          <span style={{ fontWeight: '600', color: '#8B4513', marginRight: '8px' }}>£</span>
+                          <input name="maximumBudget" type="number" value={form.maximumBudget || ''} onChange={handleFormChange} placeholder="To" style={{
+                            border: 'none',
+                            background: 'transparent',
+                            fontSize: '1rem',
+                            flex: 1,
+                            outline: 'none'
                       }} />
                     </div>
-                    <div className="form-group full" style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column' }}>
-                      <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>Additional requests</label>
-                      <textarea name="additionalRequests" rows="3" value={form.additionalRequests || ''} onChange={handleFormChange} style={{
-                        padding: '10px 12px',
-                        border: '1px solid #ddd',
-                        borderRadius: '6px',
-                        fontSize: '14px',
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                        {[
+                          { from: 50, to: 100, label: 'Under £100' },
+                          { from: 100, to: 250, label: '£100 - £250' },
+                          { from: 250, to: 500, label: '£250 - £500' },
+                          { from: 500, to: 1000, label: '£500+' }
+                        ].map(preset => (
+                          <button type="button" key={preset.label} onClick={() => setForm(prev => ({ ...prev, minimumBudget: preset.from, maximumBudget: preset.to }))} style={{
+                            padding: '10px 20px',
+                            border: `2px solid ${form.minimumBudget == preset.from && form.maximumBudget == preset.to ? '#CD853F' : '#e0d5c9'}`,
+                            borderRadius: '8px',
+                            background: form.minimumBudget == preset.from && form.maximumBudget == preset.to ? '#CD853F' : '#faf8f5',
+                            color: form.minimumBudget == preset.from && form.maximumBudget == preset.to ? 'white' : '#8B4513',
+                            fontWeight: '500',
+                            fontSize: '0.95rem',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s'
+                          }}>{preset.label}</button>
+                        ))}
+                      </div>
+                      <p style={{ fontSize: '0.85rem', color: '#888' }}>
+                        Final price may vary depending on design, travel, and number of people. You'll receive a full quote before confirming your booking.
+                      </p>
+                    </div>
+
+                    {/* Number of People */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>How many people need Mehndi? (for group bookings) *</label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid #e0d5c9', borderRadius: '10px', background: '#faf8f5', padding: '8px', width: 'fit-content' }}>
+                        <button type="button" onClick={() => setForm(prev => ({ ...prev, numberOfPeople: Math.max(1, (prev.numberOfPeople || 1) - 1) }))} style={{
+                          width: '40px', height: '40px', border: 'none', borderRadius: '8px', background: 'white', fontSize: '1.3rem', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.3s', color: '#8B4513'
+                        }}>-</button>
+                        <span style={{ fontSize: '1.2rem', fontWeight: '600', minWidth: '40px', textAlign: 'center' }}>{form.numberOfPeople || 1}</span>
+                        <button type="button" onClick={() => setForm(prev => ({ ...prev, numberOfPeople: (prev.numberOfPeople || 1) + 1 }))} style={{
+                          width: '40px', height: '40px', border: 'none', borderRadius: '8px', background: 'white', fontSize: '1.3rem', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.3s', color: '#8B4513'
+                        }}>+</button>
+                      </div>
+                    </div>
+
+                    {/* Additional Requests */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Anything else artists should know?</label>
+                      <p style={{ fontSize: '0.85rem', color: '#888', marginBottom: '0.5rem' }}>
+                        E.g. "Please bring your own cones," "We'll be outdoors," "Prefer traditional Indian patterns," or "I'm flexible with timing"
+                      </p>
+                      <textarea name="additionalRequests" rows="4" value={form.additionalRequests || ''} onChange={handleFormChange} placeholder="Write your notes here..." style={{
+                        padding: '12px 16px',
+                        border: '1px solid #e0d5c9',
+                        borderRadius: '10px',
+                        fontSize: '1rem',
+                        background: '#faf8f5',
+                        width: '100%',
                         outline: 'none',
-                        transition: 'border-color 0.2s ease',
                         resize: 'vertical',
-                        fontFamily: 'inherit'
+                        fontFamily: 'inherit',
+                        transition: 'all 0.3s'
                       }} />
                     </div>
                   </div>
                 </div>
-                <div className="modal-footer" style={{
+                <div style={{
                   flexShrink: 0,
-                  borderTop: '1px solid #e5e5e5',
-                  padding: '20px 24px',
-                  backgroundColor: '#fafafa',
+                  borderTop: '1px solid #e8ddd4',
+                  padding: '1.5rem 2.5rem',
                   display: 'flex',
-                  gap: '12px',
-                  justifyContent: 'flex-end'
+                  gap: '1rem',
+                  justifyContent: 'flex-end',
+                  background: '#faf8f5'
                 }}>
-                  <button className="btn-secondary" onClick={closeEditModal} disabled={saving} style={{
-                    padding: '12px 24px',
-                    fontSize: '14px',
+                  <button onClick={closeEditModal} disabled={saving} style={{
+                    padding: '14px 32px',
+                    fontSize: '1rem',
                     fontWeight: '600',
-                    color: '#666',
-                    backgroundColor: '#f5f5f5',
-                    border: 'none',
-                    borderRadius: '8px',
+                    color: '#8B4513',
+                    backgroundColor: 'white',
+                    border: '2px solid #CD853F',
+                    borderRadius: '12px',
                     cursor: 'pointer',
-                    transition: 'all 0.2s ease'
+                    transition: 'all 0.3s'
                   }}>Cancel</button>
-                  <button className="btn-primary" onClick={handleSave} disabled={saving} style={{
-                    padding: '12px 24px',
-                    fontSize: '14px',
+                  <button onClick={handleSave} disabled={saving} style={{
+                    padding: '14px 32px',
+                    fontSize: '1rem',
                     fontWeight: '600',
                     color: 'white',
-                    backgroundColor: '#d4a574',
+                    backgroundColor: '#CD853F',
                     border: 'none',
-                    borderRadius: '8px',
+                    borderRadius: '12px',
                     cursor: saving ? 'not-allowed' : 'pointer',
                     opacity: saving ? 0.7 : 1,
-                    transition: 'all 0.2s ease'
-                  }}>{saving ? 'Saving...' : 'Save changes'}</button>
+                    transition: 'all 0.3s',
+                    boxShadow: saving ? 'none' : '0 4px 12px rgba(205, 133, 63, 0.3)'
+                  }}>{saving ? 'Saving...' : 'Save Changes'}</button>
                 </div>
               </div>
             </div>
@@ -1520,6 +1765,13 @@ const AllBookings = () => {
           </div>
         </div>
       )}
+      
+      {/* Get Location Modal */}
+      <GetLocationModal
+        isOpen={showLocationModal}
+        onClose={() => setShowLocationModal(false)}
+        onLocationSelect={handleLocationSelect}
+      />
     </>
   );
 };

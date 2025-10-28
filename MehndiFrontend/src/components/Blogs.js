@@ -7,6 +7,15 @@ const Blogs = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
+   // Scroll to top on mount
+   useEffect(() => {
+    try {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch {
+      window.scrollTo(0, 0);
+    }
+  }, []);
+
   useEffect(() => {
     let mounted = true;
     api.blogsAPI.list().then(res => {
@@ -91,7 +100,7 @@ const Blogs = () => {
               ))}
             </div>
             <div className="home__actions" style={{ justifyContent: 'flex-start', marginTop: '1.25rem' }}>
-              <input value={search} onChange={(e) => setSearch(e.target.value)} className="blogs__search" placeholder="Search by title" style={{ maxWidth: 520, width: '100%', padding: '0.9rem 1.15rem', borderRadius: 999, border: '1px solid rgba(139,115,85,0.25)', background: '#f0dcc6', color: '#4a3f35', boxShadow: '0 8px 26px rgba(139,115,85,0.08)', outline: 'none' }} />
+              <input value={search} onChange={(e) => setSearch(e.target.value)} className="blogs__search" placeholder="Search by keyword or topic (e.g., bridal, artist tips)" style={{ maxWidth: 520, width: '100%', padding: '0.9rem 1.15rem', borderRadius: 999, border: '1px solid rgba(139,115,85,0.25)', background: '#f0dcc6', color: '#4a3f35', boxShadow: '0 8px 26px rgba(139,115,85,0.08)', outline: 'none' }} />
             </div>
           </div>
           <div>

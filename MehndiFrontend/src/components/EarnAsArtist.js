@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
-import { FaLock, FaCalendarCheck, FaSearchDollar, FaHandshake, FaChartLine, FaMapPin, FaClock, FaStar, FaSearch, FaBriefcase, FaCalendarAlt } from 'react-icons/fa';
+import { FaLock, FaCalendarCheck, FaSearchDollar, FaHandshake, FaChartLine, FaMapPin, FaClock, FaStar, FaSearch, 
+  FaBriefcase, FaCalendarAlt } from 'react-icons/fa';
 
 // Add responsive styles
 const responsiveStyles = `
@@ -140,6 +141,10 @@ const responsiveStyles = `
       font-size: 2.5rem !important;
     }
     
+    .responsive-section h2 {
+      font-size: 2.5rem !important;
+    }
+    
     .responsive-hero p {
       font-size: 1rem !important;
     }
@@ -167,6 +172,10 @@ const responsiveStyles = `
       font-size: 2rem !important;
     }
     
+    .responsive-section h2 {
+      font-size: 2rem !important;
+    }
+    
     .flip-card {
       height: 240px;
     }
@@ -179,9 +188,17 @@ const responsiveStyles = `
 
 const EarnAsArtist = () => {
   const navigate = useNavigate();
+  // Scroll to top on mount
+ useEffect(() => {
+  try {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } catch {
+    window.scrollTo(0, 0);
+  }
+}, []);
 
   const handleJoinAsArtist = () => {
-    navigate('/choose-path');
+    navigate('/signup');
   };
 
   return (
@@ -552,44 +569,163 @@ bookings.
           </div>
         </section>
 
-       
-
-        {/* CTA Section */}
-        <section className="responsive-section" style={{
-          padding: '20px 20px',
-          backgroundColor: '#E4C293',
+       {/* Testimonials Section */}
+       <section className="responsive-section" style={{
+          padding: '80px 20px',
+          // backgroundColor: '#FDF7F0',
           textAlign: 'center'
         }}>
-          <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+          <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
             <h2 style={{
               fontSize: '4rem',
               fontWeight: 'bold',
               color: '#8B4513',
-              marginBottom: '24px'
+              marginBottom: '24px',
+              lineHeight: '1.2'
             }}>
-              Ready to Start Earning?
+              Trusted by Mehndi Artists Across the UK
             </h2>
             <p style={{
-              fontSize: '1.1rem',
-              color: '#8B4513',
-              marginBottom: '32px',
-              lineHeight: '1.6'
+              fontSize: '1.2rem',
+              color: '#A0522D',
+              marginBottom: '40px',
+              lineHeight: '1.6',
+              maxWidth: '700px',
+              margin: '0 auto 40px auto'
             }}>
-              Join our community of talented mehndi artists and start building your business today.
+              Artists across the UK are growing their mehndi businesses with Mehndi Me — getting more bookings, saving hours of admin time, and earning more with ease.
             </p>
-            <button
-              onClick={handleJoinAsArtist}
-              className="nav__cta-button"
-              style={{
-                fontSize: '1.1rem',
-                padding: '0.75rem 1.5rem',
-                borderRadius:'10px'
-              }}
-            >
-              Join as an Artist
-            </button>
+            
+            {/* Separator */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: '8px',
+              marginBottom: '40px'
+            }}>
+              <div style={{
+                width: '40px',
+                height: '4px',
+                backgroundColor: '#CD853F',
+                borderRadius: '2px'
+              }}></div>
+              <div style={{
+                width: '40px',
+                height: '4px',
+                backgroundColor: '#CD853F',
+                borderRadius: '2px'
+              }}></div>
+            </div>
+
+            {/* Testimonial */}
+            <blockquote style={{
+              fontSize: '2.2rem',
+              fontWeight: 'bold',
+              fontStyle: 'italic',
+              color: '#8B4513',
+              marginBottom: '24px',
+              lineHeight: '1.3',
+              maxWidth: '800px',
+              margin: '0 auto 24px auto'
+            }}>
+              "Mehndi Me has completely changed how I work. I no longer waste time managing messages or chasing payments — now I can just focus on my art."
+            </blockquote>
+            
+            <p style={{
+              fontSize: '1.2rem',
+              color: '#8B4513',
+              marginBottom: '24px',
+              fontWeight: '500'
+            }}>
+              — Aisha, London
+            </p>
+
+            {/* Rating */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
+            }}>
+              <span style={{ fontSize: '1.5rem', color: '#FFD700' }}>★</span>
+              <span style={{
+                fontSize: '1rem',
+                color: '#8B4513',
+                fontWeight: '500'
+              }}>
+                Rated 4.9/5 by artists across the UK
+              </span>
+            </div>
           </div>
         </section>
+
+        {/* Call-to-Action Section */}
+        <section className="responsive-section" style={{
+          padding: '80px 20px',
+          textAlign: 'center'
+        }}>
+          <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+            <div style={{
+              backgroundColor: 'rgba(249, 243, 234,0.9)',
+              padding: '60px 40px',
+              borderRadius: '20px',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+              margin: '0 auto'
+            }}>
+              <h2 style={{
+                fontSize: '4rem',
+                fontWeight: 'bold',
+                color: '#8B4513',
+                marginBottom: '24px',
+                lineHeight: '1.2'
+              }}>
+                Ready to Grow Your Mehndi Career?
+              </h2>
+              <p style={{
+                fontSize: '1.2rem',
+                color: '#8B4513',
+                marginBottom: '40px',
+                lineHeight: '1.6',
+                maxWidth: '600px',
+                margin: '0 auto 40px auto'
+              }}>
+                Create your artist profile in minutes and start getting booked by clients who love your style.
+              </p>
+              <button
+                onClick={handleJoinAsArtist}
+                style={{
+                  backgroundColor: '#CD853F',
+                  color: 'white',
+                  border: 'none',
+                  padding: '16px 32px',
+                  borderRadius: '12px',
+                  fontSize: '1.1rem',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(205, 133, 63, 0.3)',
+                  transition: 'all 0.3s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  margin: '0 auto'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.transform = 'translateY(-2px)';
+                  e.target.style.boxShadow = '0 6px 16px rgba(205, 133, 63, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = '0 4px 12px rgba(205, 133, 63, 0.3)';
+                }}
+              >
+                Get Started →
+              </button>
+            </div>
+          </div>
+        </section>
+
+        
       </main>
       <Footer />
     </>

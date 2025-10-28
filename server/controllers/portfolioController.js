@@ -32,6 +32,19 @@ exports.createPortfolio = async (req, res) => {
       payload.mediaUrls = payload.mediaUrls.filter(Boolean);
     }
 
+    // Handle travel distance validation
+    if (payload.availableForTravel && (!payload.travelDistanceKm || payload.travelDistanceKm <= 0)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Travel distance in km is required when available for travel' 
+      });
+    }
+
+    // Set travel distance to 0 if not available for travel
+    if (!payload.availableForTravel) {
+      payload.travelDistanceKm = 0;
+    }
+
     const portfolio = await Portfolio.create(payload);
 
     // Link to artist's portfolios array
@@ -62,6 +75,19 @@ exports.updatePortfolio = async (req, res) => {
 
     if (Array.isArray(updates.mediaUrls)) {
       updates.mediaUrls = updates.mediaUrls.filter(Boolean);
+    }
+
+    // Handle travel distance validation
+    if (updates.availableForTravel && (!updates.travelDistanceKm || updates.travelDistanceKm <= 0)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Travel distance in km is required when available for travel' 
+      });
+    }
+
+    // Set travel distance to 0 if not available for travel
+    if (updates.availableForTravel === false) {
+      updates.travelDistanceKm = 0;
     }
 
     const updated = await Portfolio.findByIdAndUpdate(id, updates, { new: true, runValidators: true });

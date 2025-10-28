@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-// import Header from './Header';
 import apiService from '../services/api';
 import GetLocationModal from './modals/GetLocationModal';
 
@@ -9,52 +8,148 @@ const { bookingsAPI } = apiService;
 
 const BookingForm = () => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [uploadedImages, setUploadedImages] = useState([]);
+  const [linkInput, setLinkInput] = useState('');
   
   const [formData, setFormData] = useState({
     // Contact Details
-    firstName: '',
-    lastName: '',
-    email: '',
-    phoneNumber: '',
+    fullName: '',
     
     // Event Details
-    eventType: [],
+    eventType: '',
     otherEventType: '',
     eventDate: '',
-    preferredTimeSlot: [],
+    preferredTimeSlot: '',
     location: '',
-    artistTravelsToClient: '',
-    duration: '',
-    numberOfPeople: '',
-    
-    // Style Details
-    designStyle: '',
-    designComplexity: '',
-    bodyPartsToDecorate: [],
-    designInspiration: '',
-    
-    // Budget
-    minimumBudget: '',
-    maximumBudget: '',
-    
-    // Additional Info
-    additionalRequests: '',
-    venueName: '',
-    coveragePreference: '',
-    fullAddress: '',
-    city: '',
-    postalCode: '',
     latitude: '',
-    longitude: ''
+    longitude: '',
+    artistTravelsToClient: '',
+    venueName: '',
+    
+    // Mehndi Style
+    stylePreference: '',
+    designInspiration: '',
+    coveragePreference: '',
+    
+    // Budget & Notes
+    budgetFrom: '',
+    budgetTo: '',
+    numberOfPeople: 1,
+    additionalRequests: ''
   });
 
   const [showLocationModal, setShowLocationModal] = useState(false);
-  const [tooltipMessage, setTooltipMessage] = useState('');
+
+  // Handler for location selection from modal
+  const handleLocationSelect = (lat, lng) => {
+    // Reverse geocode to get address from coordinates
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+      .then(res => res.json())
+      .then(data => {
+        // Extract shorter location name (city, town, or suburb)
+        let locationName = '';
+        const address = data.address || {};
+        
+        // Prioritize: city > town > village > suburb > county
+        locationName = address.city || 
+                      address.town || 
+                      address.village || 
+                      address.suburb || 
+                      address.county || 
+                      '';
+        
+        // If we still don't have a location name, try to get postcode
+        if (!locationName) {
+          locationName = address.postcode ? `Postcode ${address.postcode}` : '';
+        }
+        
+        // Final fallback
+        if (!locationName) {
+          locationName = data.display_name ? data.display_name.split(',').slice(0, 2).join(',') : `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        }
+        
+        setFormData(prev => ({
+          ...prev,
+          location: locationName,
+          latitude: lat.toString(),
+          longitude: lng.toString()
+        }));
+        setShowLocationModal(false);
+      })
+      .catch(error => {
+        console.error('Geocoding error:', error);
+        // Fallback to just coordinates
+        setFormData(prev => ({
+          ...prev,
+          location: `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+          latitude: lat.toString(),
+          longitude: lng.toString()
+        }));
+        setShowLocationModal(false);
+      });
+  };
+
+  // Cloudinary upload function
+  const uploadToCloudinary = async (file, resourceType = 'image') => {
+    const url = `https://api.cloudinary.com/v1_1/dfoetpdk9/${resourceType}/upload`;
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', 'mehndi');
+    const res = await fetch(url, { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || 'Upload failed');
+    return data.secure_url || data.url;
+  };
+
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    setUploading(true);
+    try {
+      const uploadPromises = files.map(file => uploadToCloudinary(file));
+      const urls = await Promise.all(uploadPromises);
+      setUploadedImages(prev => [...prev, ...urls]);
+      // Update designInspiration with all image URLs
+      const allImages = [...uploadedImages, ...urls];
+      setFormData(prev => ({
+        ...prev,
+        designInspiration: allImages.join('\n')
+      }));
+    } catch (error) {
+      console.error('Upload error:', error);
+      setError('Failed to upload images. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleAddLink = () => {
+    if (!linkInput.trim()) return;
+    
+    const newImages = [...uploadedImages, linkInput.trim()];
+    setUploadedImages(newImages);
+    setFormData(prev => ({
+      ...prev,
+      designInspiration: newImages.join('\n')
+    }));
+    setLinkInput('');
+  };
+
+  const handleRemoveImage = (index) => {
+    const newImages = uploadedImages.filter((_, i) => i !== index);
+    setUploadedImages(newImages);
+    setFormData(prev => ({
+      ...prev,
+      designInspiration: newImages.join('\n')
+    }));
+  };
 
   const steps = [
     { id: 1, name: 'Contact' },
@@ -67,34 +162,50 @@ const BookingForm = () => {
     const { name, value, type, checked } = e.target;
     
     if (type === 'checkbox') {
-      if (name === 'eventType' || name === 'preferredTimeSlot' || name === 'bodyPartsToDecorate') {
         setFormData(prev => ({
           ...prev,
           [name]: checked 
             ? [...prev[name], value]
             : prev[name].filter(item => item !== value)
         }));
-      } else {
-        setFormData(prev => ({
-          ...prev,
-          [name]: checked
-        }));
-      }
     } else if (type === 'radio') {
       setFormData(prev => ({
         ...prev,
-        [name]: value === 'yes'
-      }));
-    } else {
+        [name]: value
+        }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+        [name]: value
+        }));
+      }
+  };
+
+  // Special handler for style preference (single selection)
+  const handleStyleChange = (value) => {
       setFormData(prev => ({
         ...prev,
-        [name]: value
+      stylePreference: value
       }));
-    }
+  };
+
+  const handleNumberChange = (field, increment) => {
+      setFormData(prev => ({
+        ...prev,
+      [field]: Math.max(1, prev[field] + increment)
+      }));
+  };
+
+  const handlePresetBudget = (from, to) => {
+      setFormData(prev => ({
+        ...prev,
+      budgetFrom: from,
+      budgetTo: to
+      }));
   };
 
   const handleNextStep = () => {
-    if (currentStep < 5) {
+    if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -110,50 +221,41 @@ const BookingForm = () => {
     setError('');
     setSuccess('');
 
-    console.log('Form submission started...');
-    console.log('Current form data:', formData);
-    console.log('Is authenticated:', isAuthenticated);
-
-    // Check if user is authenticated
     if (!isAuthenticated) {
       setError('Please log in to submit a booking request');
       return;
     }
 
-    // Validate required fields - more flexible validation
-    const requiredFields = [
-      'firstName', 'lastName', 'email', 'phoneNumber',
-      'eventType', 'eventDate', 'minimumBudget', 'maximumBudget'
-    ];
-
-    // Check which fields are missing
-    const missingFields = [];
-    for (const field of requiredFields) {
-      if (!formData[field] || (Array.isArray(formData[field]) && formData[field].length === 0)) {
-        missingFields.push(field);
-      }
-    }
-
-    if (missingFields.length > 0) {
-      console.log('Missing required fields:', missingFields);
-      
-      // Navigate to the step with missing fields
-      if (missingFields.some(field => ['firstName', 'lastName', 'email', 'phoneNumber'].includes(field))) {
-        setCurrentStep(1);
-        setError('Please complete the Contact Details in Step 1');
-      } else if (missingFields.some(field => ['eventType', 'eventDate'].includes(field))) {
-        setCurrentStep(2);
-        setError('Please complete the Event Details in Step 2');
-      } else if (missingFields.some(field => ['minimumBudget', 'maximumBudget'].includes(field))) {
-        setCurrentStep(4);
-        setError('Please complete the Budget information in Step 4');
-      } else {
-        setError(`Please fill in the following required fields: ${missingFields.join(', ')}`);
-      }
+    // Validate required fields
+    if (!formData.fullName) {
+      setCurrentStep(1);
+      setError('Please enter your full name');
       return;
     }
 
-    if (parseInt(formData.maximumBudget) <= parseInt(formData.minimumBudget)) {
+    if (!formData.eventType || !formData.eventDate || !formData.preferredTimeSlot || 
+        !formData.location || !formData.artistTravelsToClient) {
+      setCurrentStep(2);
+      setError('Please complete Event Details');
+      return;
+    }
+
+    if (!formData.stylePreference) {
+      setCurrentStep(3);
+      setError('Please select a style preference');
+      return;
+    }
+
+    if (!formData.budgetFrom || !formData.budgetTo || !formData.numberOfPeople) {
+        setCurrentStep(4);
+      setError('Please complete Budget information');
+      return;
+    }
+
+    const budgetFrom = parseInt(formData.budgetFrom);
+    const budgetTo = parseInt(formData.budgetTo);
+
+    if (budgetTo <= budgetFrom) {
       setError('Maximum budget must be greater than minimum budget');
       return;
     }
@@ -161,102 +263,72 @@ const BookingForm = () => {
     // Check if event date is in the future
     const eventDate = new Date(formData.eventDate);
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Set to start of today
+    today.setHours(0, 0, 0, 0);
     
     if (eventDate <= today) {
       setCurrentStep(2);
-      setError('Event date must be in the future. Please select a date after today.');
+      setError('Event date must be in the future');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // Transform form data to match booking schema
+      // Transform to match backend expectations
+      const nameParts = formData.fullName.split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
       const bookingData = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        phoneNumber: formData.phoneNumber,
-        eventType: formData.eventType,
+        firstName,
+        lastName,
+        email: user?.email || '',
+        phoneNumber: user?.phoneNumber || '',
+        eventType: [formData.eventType],
         otherEventType: formData.otherEventType || undefined,
         eventDate: formData.eventDate,
-        preferredTimeSlot: formData.preferredTimeSlot,
+        preferredTimeSlot: [formData.preferredTimeSlot],
         location: formData.location,
-        artistTravelsToClient: formData.artistTravelsToClient,
-        fullAddress: formData.fullAddress,
-        city: formData.city,
-        postalCode: formData.postalCode,
+        latitude: formData.latitude || undefined,
+        longitude: formData.longitude || undefined,
+        artistTravelsToClient: formData.artistTravelsToClient === 'both' ? 'both' : formData.artistTravelsToClient === 'yes',
         venueName: formData.venueName || undefined,
-        minimumBudget: parseInt(formData.minimumBudget),
-        maximumBudget: parseInt(formData.maximumBudget),
-        duration: parseInt(formData.duration) || 3,
-        numberOfPeople: parseInt(formData.numberOfPeople) || 1,
-        designStyle: formData.designStyle,
-        designComplexity: formData.designComplexity,
-        bodyPartsToDecorate: formData.bodyPartsToDecorate,
-        designInspiration: formData.designInspiration || undefined,
+        minimumBudget: budgetFrom,
+        maximumBudget: budgetTo,
+        numberOfPeople: parseInt(formData.numberOfPeople),
+        designStyle: formData.stylePreference,
+        designInspiration: uploadedImages.length > 0 ? uploadedImages : [],
         coveragePreference: formData.coveragePreference || undefined,
         additionalRequests: formData.additionalRequests || undefined,
-        latitude: formData.latitude || undefined,
-        longitude: formData.longitude || undefined
+        duration: 3
       };
-
-      console.log('Submitting booking data:', bookingData);
-      console.log('Booking data JSON:', JSON.stringify(bookingData, null, 2));
 
       const response = await bookingsAPI.createBooking(bookingData);
       
-      console.log('Booking created successfully:', response);
-      setSuccess('Your booking request has been submitted successfully! Artists will be able to view and respond to your request.');
+      setSuccess('Your booking request has been submitted successfully!');
       
-      // Clear form
-      setFormData({
-        firstName: '', lastName: '', email: '', phoneNumber: '',
-        eventType: [], otherEventType: '', eventDate: '', preferredTimeSlot: [],
-        location: '', artistTravelsToClient: '', duration: '', numberOfPeople: '',
-        designStyle: '', designComplexity: '', bodyPartsToDecorate: [], designInspiration: '',
-        minimumBudget: '', maximumBudget: '', additionalRequests: '', venueName: '',
-        coveragePreference: '', fullAddress: '', city: '', postalCode: '',
-        latitude: '', longitude: ''
-      });
-      
-      // Reset to first step
-      setCurrentStep(1);
-      
-      // Redirect to dashboard after 3 seconds
+      // Redirect after 2 seconds
       setTimeout(() => {
         navigate('/dashboard');
-      }, 3000);
+      }, 2000);
 
     } catch (error) {
       console.error('Booking creation error:', error);
-      
-      // If it's a validation error, show more specific information
-      if (error.message.includes('Validation errors')) {
-        setError('Please check all required fields. Make sure budget amounts are filled in correctly.');
-      } else {
-        setError(error.message || 'Failed to submit booking request. Please try again.');
-      }
+      setError(error.message || 'Failed to submit booking request');
     } finally {
       setIsLoading(false);
     }
   };
 
-
   return (
     <>
-      {/* <Header /> */}
       <div className="booking-container">
-
         <div className="booking-form-container">
           {/* Progress Bar */}
           <div className="progress-bar">
             {steps.map((step, index) => (
               <div key={step.id} className="progress-step-container">
-                <div 
-                  className={`progress-step ${currentStep >= step.id ? 'active' : ''} ${currentStep === step.id ? 'current' : ''}`}
-                >
+              <div className={`progress-step ${currentStep >= step.id ? 'active' : ''} ${currentStep === step.id ? 'current' : ''}`}>
                   <span className="step-number">{step.id}</span>
                   <span className="step-name">{step.name}</span>
                 </div>
@@ -267,63 +339,52 @@ const BookingForm = () => {
             ))}
           </div>
 
+        {/* Title */}
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <h1 style={{ 
+            fontSize: '2rem', 
+            color: '#8B4513', 
+            marginBottom: '0.5rem',
+            fontWeight: '600'
+          }}>
+            Post a Mehndi Request
+          </h1>
+          <p style={{ 
+            fontSize: '1.1rem', 
+            color: '#666',
+            fontStyle: 'italic'
+          }}>
+            Tell Us What You Need – Artists Will Apply to You!
+          </p>
+          <p style={{ 
+            fontSize: '0.95rem', 
+            color: '#888',
+            marginTop: '0.5rem'
+          }}>
+            Sit back and let artists send you offers based on your event, budget, and style.
+          </p>
+          </div>
+
           <form className="booking-form" onSubmit={handleSubmit}>
             {/* Step 1: Contact Details */}
             {currentStep === 1 && (
               <div className="form-step">
                 <div className="step-header">
                   <h2 className="step-title">Contact Details</h2>
-                  <p className="step-subtitle">We need your contact information to get started</p>
+                <p className="step-subtitle">We'll use your account information</p>
                 </div>
                 
-                <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">First Name *</label>
+                <label className="form-label">Full Name *</label>
                     <input
                       type="text"
-                      name="firstName"
+                  name="fullName"
                       className="form-input"
-                      value={formData.firstName}
+                  placeholder="Enter your full name"
+                  value={formData.fullName}
                       onChange={handleInputChange}
                       required
                     />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Last Name *</label>
-                    <input
-                      type="text"
-                      name="lastName"
-                      className="form-input"
-                      value={formData.lastName}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label className="form-label">Email Address *</label>
-                    <input
-                      type="email"
-                      name="email"
-                      className="form-input"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Phone Number *</label>
-                    <input
-                      type="tel"
-                      name="phoneNumber"
-                      className="form-input"
-                      value={formData.phoneNumber}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
                 </div>
               </div>
             )}
@@ -336,66 +397,91 @@ const BookingForm = () => {
                   <p className="step-subtitle">Tell us about your special occasion</p>
                 </div>
 
+              {/* Event Type */}
                 <div className="form-group">
                   <label className="form-label">Event Type *</label>
-                  <div className="checkbox-grid">
-                    <label className="checkbox-label">
+                <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '1rem' }}>
+                  Choose the event you are booking for
+                </p>
+                <div className="event-option-grid">
+                  <label className={`event-option ${formData.eventType === 'Wedding' ? 'selected' : ''}`}>
                       <input
-                        type="checkbox"
+                      type="radio"
                         name="eventType"
                         value="Wedding"
-                        checked={formData.eventType.includes('Wedding')}
+                      checked={formData.eventType === 'Wedding'}
                         onChange={handleInputChange}
-                        className="checkbox-input"
-                      />
-                      <span className="checkbox-text">Wedding</span>
+                      style={{ display: 'none' }}
+                    />
+                    <span className="event-emoji">💍</span>
+                    <span className="event-text">Wedding</span>
+                    {formData.eventType === 'Wedding' && (
+                      <span className="checkmark">✓</span>
+                    )}
                     </label>
-                    <label className="checkbox-label">
+                  <label className={`event-option ${formData.eventType === 'Eid' ? 'selected' : ''}`}>
                       <input
-                        type="checkbox"
+                      type="radio"
                         name="eventType"
                         value="Eid"
-                        checked={formData.eventType.includes('Eid')}
+                      checked={formData.eventType === 'Eid'}
                         onChange={handleInputChange}
-                        className="checkbox-input"
-                      />
-                      <span className="checkbox-text">Eid</span>
+                      style={{ display: 'none' }}
+                    />
+                    <span className="event-emoji">🌙</span>
+                    <span className="event-text">Eid</span>
+                    {formData.eventType === 'Eid' && (
+                      <span className="checkmark">✓</span>
+                    )}
                     </label>
-                    <label className="checkbox-label">
+                  <label className={`event-option ${formData.eventType === 'Party' ? 'selected' : ''}`}>
                       <input
-                        type="checkbox"
+                      type="radio"
                         name="eventType"
                         value="Party"
-                        checked={formData.eventType.includes('Party')}
+                      checked={formData.eventType === 'Party'}
                         onChange={handleInputChange}
-                        className="checkbox-input"
-                      />
-                      <span className="checkbox-text">Party</span>
+                      style={{ display: 'none' }}
+                    />
+                    <span className="event-emoji">🎉</span>
+                    <span className="event-text">Party</span>
+                    {formData.eventType === 'Party' && (
+                      <span className="checkmark">✓</span>
+                    )}
                     </label>
-                    <label className="checkbox-label">
+                  <label className={`event-option ${formData.eventType === 'Festival' ? 'selected' : ''}`}>
                       <input
-                        type="checkbox"
+                      type="radio"
                         name="eventType"
                         value="Festival"
-                        checked={formData.eventType.includes('Festival')}
+                      checked={formData.eventType === 'Festival'}
                         onChange={handleInputChange}
-                        className="checkbox-input"
-                      />
-                      <span className="checkbox-text">Festival</span>
+                      style={{ display: 'none' }}
+                    />
+                    <span className="event-emoji">🎊</span>
+                    <span className="event-text">Festival</span>
+                    {formData.eventType === 'Festival' && (
+                      <span className="checkmark">✓</span>
+                    )}
                     </label>
                   </div>
                   <input
                     type="text"
                     name="otherEventType"
                     className="form-input"
+                  style={{ marginTop: '1rem' }}
                     placeholder="Other:"
                     value={formData.otherEventType}
                     onChange={handleInputChange}
                   />
                 </div>
 
+              {/* Event Date */}
                 <div className="form-group">
                   <label className="form-label">Event Date *</label>
+                <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '0.5rem' }}>
+                  Select the date of your occasion
+                </p>
                   <input
                     type="date"
                     name="eventDate"
@@ -406,468 +492,564 @@ const BookingForm = () => {
                   />
                 </div>
 
+              {/* Preferred Time Slot */}
                 <div className="form-group">
                   <label className="form-label">Preferred Time Slot *</label>
-                  <div className="checkbox-grid">
-                    <label className="checkbox-label">
+                <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '1rem' }}>
+                  Pick one option
+                </p>
+                <div className="time-slot-grid">
+                  <label className={`time-slot-option ${formData.preferredTimeSlot === 'Morning' ? 'selected' : ''}`}>
                       <input
-                        type="checkbox"
+                      type="radio"
                         name="preferredTimeSlot"
                         value="Morning"
-                        checked={formData.preferredTimeSlot.includes('Morning')}
+                      checked={formData.preferredTimeSlot === 'Morning'}
                         onChange={handleInputChange}
-                        className="checkbox-input"
+                      style={{ display: 'none' }}
                       />
-                      <span className="checkbox-text">Morning</span>
+                    <span className="time-icon">☀️</span>
+                    <span className="time-text">Morning</span>
                     </label>
-                    <label className="checkbox-label">
+                  <label className={`time-slot-option ${formData.preferredTimeSlot === 'Afternoon' ? 'selected' : ''}`}>
                       <input
-                        type="checkbox"
+                      type="radio"
                         name="preferredTimeSlot"
                         value="Afternoon"
-                        checked={formData.preferredTimeSlot.includes('Afternoon')}
+                      checked={formData.preferredTimeSlot === 'Afternoon'}
                         onChange={handleInputChange}
-                        className="checkbox-input"
+                      style={{ display: 'none' }}
                       />
-                      <span className="checkbox-text">Afternoon</span>
+                    <span className="time-icon">🌤️</span>
+                    <span className="time-text">Afternoon</span>
                     </label>
-                    <label className="checkbox-label">
+                  <label className={`time-slot-option ${formData.preferredTimeSlot === 'Evening' ? 'selected' : ''}`}>
                       <input
-                        type="checkbox"
+                      type="radio"
                         name="preferredTimeSlot"
                         value="Evening"
-                        checked={formData.preferredTimeSlot.includes('Evening')}
+                      checked={formData.preferredTimeSlot === 'Evening'}
                         onChange={handleInputChange}
-                        className="checkbox-input"
+                      style={{ display: 'none' }}
                       />
-                      <span className="checkbox-text">Evening</span>
+                    <span className="time-icon">🌙</span>
+                    <span className="time-text">Evening</span>
                     </label>
-                    <label className="checkbox-label">
+                  <label className={`time-slot-option ${formData.preferredTimeSlot === 'Flexible' ? 'selected' : ''}`}>
                       <input
-                        type="checkbox"
+                      type="radio"
                         name="preferredTimeSlot"
                         value="Flexible"
-                        checked={formData.preferredTimeSlot.includes('Flexible')}
+                      checked={formData.preferredTimeSlot === 'Flexible'}
                         onChange={handleInputChange}
-                        className="checkbox-input"
+                      style={{ display: 'none' }}
                       />
-                      <span className="checkbox-text">Flexible</span>
+                    <span className="time-icon">🔄</span>
+                    <span className="time-text">Flexible</span>
                     </label>
                   </div>
                 </div>
 
+              {/* Location */}
                 <div className="form-group">
                   <label className="form-label">Location / Postcode *</label>
-                  <input
-                    type="text"
-                    name="location"
-                    className="form-input"
-                    placeholder="Enter your location or postcode"
-                    value={formData.location}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Do you want the artist to come to you? *</label>
-                  <div className="radio-group">
-                    <label className="radio-label">
-                      <input
-                        type="radio"
-                        name="artistTravelsToClient"
-                        value="yes"
-                        checked={formData.artistTravelsToClient === true}
-                        onChange={handleInputChange}
-                        className="radio-input"
-                      />
-                      <span className="radio-text">Yes, I'd like the artist to travel to my home</span>
-                    </label>
-                    <label className="radio-label">
-                      <input
-                        type="radio"
-                        name="artistTravelsToClient"
-                        value="no"
-                        checked={formData.artistTravelsToClient === false}
-                        onChange={handleInputChange}
-                        className="radio-input"
-                      />
-                      <span className="radio-text">No, I can travel to the artist</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Step 3: Style Details */}
-            {currentStep === 3 && (
-              <div className="form-step">
-                <div className="step-header">
-                  <h2 className="step-title">Style Preferences</h2>
-                  <p className="step-subtitle">Help us understand your desired henna style</p>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Design Style *</label>
-                  <select
-                    name="designStyle"
-                    className="form-input"
-                    value={formData.designStyle}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Select a style</option>
-                    <option value="Traditional">Traditional</option>
-                    <option value="Modern">Modern</option>
-                    <option value="Arabic">Arabic</option>
-                    <option value="Indian">Indian</option>
-                    <option value="Moroccan">Moroccan</option>
-                    <option value="Minimalist">Minimalist</option>
-                    <option value="Bridal">Bridal</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Design Complexity *</label>
-                  <select
-                    name="designComplexity"
-                    className="form-input"
-                    value={formData.designComplexity}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Select complexity</option>
-                    <option value="Simple">Simple</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Complex">Complex</option>
-                    <option value="Very Complex">Very Complex</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Body Parts to be decorated *</label>
-                  <div className="checkbox-grid">
-                    <label className="checkbox-label">
-                      <input
-                        type="checkbox"
-                        name="bodyPartsToDecorate"
-                        value="Hands"
-                        checked={formData.bodyPartsToDecorate.includes('Hands')}
-                        onChange={handleInputChange}
-                        className="checkbox-input"
-                      />
-                      <span className="checkbox-text">Hands</span>
-                    </label>
-                    <label className="checkbox-label">
-                      <input
-                        type="checkbox"
-                        name="bodyPartsToDecorate"
-                        value="Feet"
-                        checked={formData.bodyPartsToDecorate.includes('Feet')}
-                        onChange={handleInputChange}
-                        className="checkbox-input"
-                      />
-                      <span className="checkbox-text">Feet</span>
-                    </label>
-                    <label className="checkbox-label">
-                      <input
-                        type="checkbox"
-                        name="bodyPartsToDecorate"
-                        value="Arms"
-                        checked={formData.bodyPartsToDecorate.includes('Arms')}
-                        onChange={handleInputChange}
-                        className="checkbox-input"
-                      />
-                      <span className="checkbox-text">Arms</span>
-                    </label>
-                    <label className="checkbox-label">
-                      <input
-                        type="checkbox"
-                        name="bodyPartsToDecorate"
-                        value="Back"
-                        checked={formData.bodyPartsToDecorate.includes('Back')}
-                        onChange={handleInputChange}
-                        className="checkbox-input"
-                      />
-                      <span className="checkbox-text">Back</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Design Inspiration</label>
-                  <textarea
-                    name="designInspiration"
-                    className="form-textarea"
-                    placeholder="Describe your vision or any specific design elements you'd like..."
-                    value={formData.designInspiration}
-                    onChange={handleInputChange}
-                    rows="4"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Step 4: Budget */}
-            {currentStep === 4 && (
-              <div className="form-step">
-                <div className="step-header">
-                  <h2 className="step-title">Budget Range</h2>
-                  <p className="step-subtitle">Help artists provide accurate quotes</p>
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label className="form-label">Minimum Budget (£) *</label>
-                    <input
-                      type="number"
-                      name="minimumBudget"
-                      className="form-input"
-                      placeholder="50"
-                      value={formData.minimumBudget}
-                      onChange={handleInputChange}
-                      min="50"
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Maximum Budget (£) *</label>
-                    <input
-                      type="number"
-                      name="maximumBudget"
-                      className="form-input"
-                      placeholder="500"
-                      value={formData.maximumBudget}
-                      onChange={handleInputChange}
-                      min="50"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label className="form-label">Duration (Hours) *</label>
-                    <input
-                      type="number"
-                      name="duration"
-                      className="form-input"
-                      placeholder="3"
-                      value={formData.duration}
-                      onChange={handleInputChange}
-                      min="1"
-                      max="12"
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Number of People *</label>
-                    <input
-                      type="number"
-                      name="numberOfPeople"
-                      className="form-input"
-                      placeholder="5"
-                      value={formData.numberOfPeople}
-                      onChange={handleInputChange}
-                      min="1"
-                      max="50"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Full Address *</label>
-                  <input
-                    type="text"
-                    name="fullAddress"
-                    className="form-input"
-                    placeholder="123 Main Street"
-                    value={formData.fullAddress}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label className="form-label">City *</label>
-                    <input
-                      type="text"
-                      name="city"
-                      className="form-input"
-                      placeholder="London"
-                      value={formData.city}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Postal Code *</label>
-                    <input
-                      type="text"
-                      name="postalCode"
-                      className="form-input"
-                      placeholder="SW1A 1AA"
-                      value={formData.postalCode}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
+                <p style={{ fontSize: '0.85rem', color: '#888', marginBottom: '1rem' }}>
+                  Click "Get Location" to select your location on the map
+                </p>
                   <button
                     type="button"
-                    className="btn-primary"
                     onClick={() => setShowLocationModal(true)}
-                    style={{ padding: '12px 20px' }}
+                    style={{
+                      padding: '14px 32px',
+                      background: '#faf8f5',
+                      border: '2px solid #CD853F',
+                      borderRadius: '10px',
+                      color: '#8B4513',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      fontSize: '1rem',
+                      boxShadow: '0 2px 8px rgba(205, 133, 63, 0.15)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.background = '#fff8f0';
+                      e.target.style.transform = 'translateY(-2px)';
+                      e.target.style.boxShadow = '0 4px 12px rgba(205, 133, 63, 0.25)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.background = '#faf8f5';
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = '0 2px 8px rgba(205, 133, 63, 0.15)';
+                    }}
                   >
-                    Get Location
+                    <span style={{ fontSize: '1.2rem' }}>📍</span> Get Location
                   </button>
-                  {formData.latitude && formData.longitude && (
-                    <div style={{ 
-                      marginTop: '10px', 
-                      padding: '8px 12px', 
-                      backgroundColor: '#d4edda', 
-                      color: '#155724', 
-                      borderRadius: '4px',
-                      fontSize: '14px',
-                      display: 'inline-block',
-                      border: '1px solid #c3e6cb'
+                  {formData.location && (
+                    <div style={{
+                      marginTop: '1rem',
+                      padding: '12px 16px',
+                      background: '#f0f8f0',
+                      border: '1px solid #c8e6c9',
+                      borderRadius: '8px',
+                      color: '#2e7d32',
+                      fontSize: '0.95rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px'
                     }}>
-                      ✓ Location Selected
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                      </svg>
+                      <span>{formData.location}</span>
                     </div>
                   )}
                 </div>
 
+              {/* Travel Preference */}
                 <div className="form-group">
-                  <label className="form-label">Additional Requests</label>
-                  <textarea
-                    name="additionalRequests"
-                    className="form-textarea"
-                    placeholder="Any special requirements, allergies, or additional information..."
-                    value={formData.additionalRequests}
-                    onChange={handleInputChange}
-                    rows="4"
-                  />
+                  <label className="form-label">Do you want the artist to come to you? *</label>
+                <div className="travel-option-grid">
+                  <label className={`travel-option ${formData.artistTravelsToClient === 'yes' ? 'selected' : ''}`}>
+                      <input
+                        type="radio"
+                        name="artistTravelsToClient"
+                        value="yes"
+                      checked={formData.artistTravelsToClient === 'yes'}
+                        onChange={handleInputChange}
+                      style={{ display: 'none' }}
+                      />
+                    <span className="travel-icon">🚗</span>
+                    <span className="travel-text">Yes, come to my home</span>
+                    </label>
+                  <label className={`travel-option ${formData.artistTravelsToClient === 'no' ? 'selected' : ''}`}>
+                      <input
+                        type="radio"
+                        name="artistTravelsToClient"
+                        value="no"
+                      checked={formData.artistTravelsToClient === 'no'}
+                        onChange={handleInputChange}
+                      style={{ display: 'none' }}
+                      />
+                    <span className="travel-icon">🏡</span>
+                    <span className="travel-text">No, I'll travel to the artist</span>
+                    </label>
+                  <label className={`travel-option ${formData.artistTravelsToClient === 'both' ? 'selected' : ''}`}>
+                      <input
+                        type="radio"
+                        name="artistTravelsToClient"
+                        value="both"
+                      checked={formData.artistTravelsToClient === 'both'}
+                        onChange={handleInputChange}
+                      style={{ display: 'none' }}
+                      />
+                    <span className="travel-icon">🤝</span>
+                    <span className="travel-text">I'm open to both</span>
+                    </label>
+                  </div>
                 </div>
 
-                <div className="form-group">
-                  <label className="form-label">Venue Name (Optional)</label>
-                  <input
-                    type="text"
-                    name="venueName"
-                    className="form-input"
-                    placeholder="Enter venue name if applicable"
-                    value={formData.venueName}
-                    onChange={handleInputChange}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Coverage Preference (for bridal) (Optional)</label>
-                  <select
-                    name="coveragePreference"
-                    className="form-input"
-                    value={formData.coveragePreference}
-                    onChange={handleInputChange}
-                  >
-                    <option value="">Select coverage</option>
-                    <option value="Light">Light Coverage</option>
-                    <option value="Medium">Medium Coverage</option>
-                    <option value="Full">Full Coverage</option>
-                    <option value="Bridal Package">Bridal Package</option>
-                  </select>
+              {/* Venue Name (Optional) */}
+              <div className="form-group">
+                <label className="form-label">Venue Name</label>
+                <input
+                  type="text"
+                  name="venueName"
+                  className="form-input"
+                  placeholder="Enter venue name (optional)"
+                  value={formData.venueName}
+                  onChange={handleInputChange}
+                />
                 </div>
               </div>
             )}
 
-            {/* Step 5: Review */}
-            {currentStep === 5 && (
+          {/* Step 3: Mehndi Style */}
+            {currentStep === 3 && (
               <div className="form-step">
                 <div className="step-header">
-                  <h2 className="step-title">Review Your Request</h2>
-                  <p className="step-subtitle">Please review your details before submitting</p>
+                <h2 className="step-title">Mehndi Style</h2>
+                <p className="step-subtitle">Tell us about your preferred style</p>
                 </div>
 
-                <div className="review-section">
-                  <h3>Contact Information</h3>
-                  <p><strong>Name:</strong> {formData.firstName} {formData.lastName}</p>
-                  <p><strong>Email:</strong> {formData.email}</p>
-                  <p><strong>Phone:</strong> {formData.phoneNumber}</p>
+              {/* Style Preference */}
+                <div className="form-group">
+                <label className="form-label">Style You're Looking For *</label>
+                <div className="style-option-grid">
+                  <label className={`style-option ${formData.stylePreference === 'Bridal Mehndi' ? 'selected' : ''}`}
+                    onClick={() => handleStyleChange('Bridal Mehndi')}
+                    style={{ cursor: 'pointer' }}
+                  >
+                      <input
+                      type="radio"
+                      name="stylePreference"
+                      value="Bridal Mehndi"
+                      checked={formData.stylePreference === 'Bridal Mehndi'}
+                      onChange={() => handleStyleChange('Bridal Mehndi')}
+                      style={{ display: 'none' }}
+                    />
+                    <span>Bridal Mehndi</span>
+                    {formData.stylePreference === 'Bridal Mehndi' && (
+                      <span className="checkmark">✓</span>
+                    )}
+                    </label>
+                  <label className={`style-option ${formData.stylePreference === 'Party Mehndi' ? 'selected' : ''}`}
+                    onClick={() => handleStyleChange('Party Mehndi')}
+                    style={{ cursor: 'pointer' }}
+                  >
+                      <input
+                      type="radio"
+                      name="stylePreference"
+                      value="Party Mehndi"
+                      checked={formData.stylePreference === 'Party Mehndi'}
+                      onChange={() => handleStyleChange('Party Mehndi')}
+                      style={{ display: 'none' }}
+                    />
+                    <span>Party Mehndi</span>
+                    {formData.stylePreference === 'Party Mehndi' && (
+                      <span className="checkmark">✓</span>
+                    )}
+                    </label>
+                  <label className={`style-option ${formData.stylePreference === 'Festival Mehndi' ? 'selected' : ''}`}
+                    onClick={() => handleStyleChange('Festival Mehndi')}
+                    style={{ cursor: 'pointer' }}
+                  >
+                      <input
+                      type="radio"
+                      name="stylePreference"
+                      value="Festival Mehndi"
+                      checked={formData.stylePreference === 'Festival Mehndi'}
+                      onChange={() => handleStyleChange('Festival Mehndi')}
+                      style={{ display: 'none' }}
+                    />
+                    <span>Festival Mehndi</span>
+                    {formData.stylePreference === 'Festival Mehndi' && (
+                      <span className="checkmark">✓</span>
+                    )}
+                    </label>
+                  <label className={`style-option ${formData.stylePreference === 'Casual / Minimal Mehndi' ? 'selected' : ''}`}
+                    onClick={() => handleStyleChange('Casual / Minimal Mehndi')}
+                    style={{ cursor: 'pointer' }}
+                  >
+                      <input
+                      type="radio"
+                      name="stylePreference"
+                      value="Casual / Minimal Mehndi"
+                      checked={formData.stylePreference === 'Casual / Minimal Mehndi'}
+                      onChange={() => handleStyleChange('Casual / Minimal Mehndi')}
+                      style={{ display: 'none' }}
+                    />
+                    <span>Casual / Minimal Mehndi</span>
+                    {formData.stylePreference === 'Casual / Minimal Mehndi' && (
+                      <span className="checkmark">✓</span>
+                    )}
+                    </label>
+                  </div>
                 </div>
 
-                <div className="review-section">
-                  <h3>Event Details</h3>
-                  <p><strong>Event Type:</strong> {formData.eventType.join(', ')} {formData.otherEventType}</p>
-                  <p><strong>Date:</strong> {formData.eventDate}</p>
-                  <p><strong>Time:</strong> {formData.preferredTimeSlot.join(', ')}</p>
-                  <p><strong>Location:</strong> {formData.location}</p>
-                  <p><strong>Artist Travel:</strong> {formData.artistTravelsToClient ? 'Yes' : 'No'}</p>
+              {/* Design Inspiration */}
+                <div className="form-group">
+                  <label className="form-label">Design Inspiration</label>
+                <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '1rem' }}>
+                  Upload images or paste links to share your preferred designs
+                </p>
+                
+                {/* Upload Images */}
+                <div style={{ marginBottom: '1rem' }}>
+                  <label 
+                    className="upload-button"
+                    style={{
+                      display: 'inline-block',
+                      padding: '12px 24px',
+                      background: '#faf8f5',
+                      border: '2px dashed #CD853F',
+                      borderRadius: '10px',
+                      cursor: 'pointer',
+                      color: '#8B4513',
+                      fontWeight: '500',
+                      transition: 'all 0.3s'
+                    }}
+                  >
+                    {uploading ? 'Uploading...' : '📸 Upload Images'}
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      disabled={uploading}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                  </div>
+
+                {/* Paste Link */}
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                    <input
+                    type="url"
+                      className="form-input"
+                    placeholder="Paste image link here..."
+                    value={linkInput}
+                    onChange={(e) => setLinkInput(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddLink();
+                      }
+                    }}
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddLink}
+                    disabled={!linkInput.trim()}
+                    style={{
+                      padding: '12px 24px',
+                      background: '#CD853F',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '10px',
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      opacity: linkInput.trim() ? 1 : 0.6
+                    }}
+                  >
+                    Add
+                  </button>
                 </div>
 
-                <div className="review-section">
-                  <h3>Style Preferences</h3>
-                  <p><strong>Style:</strong> {formData.designStyle}</p>
-                  <p><strong>Complexity:</strong> {formData.designComplexity}</p>
-                  <p><strong>Body Parts:</strong> {formData.bodyPartsToDecorate.join(', ')}</p>
-                  {formData.designInspiration && <p><strong>Inspiration:</strong> {formData.designInspiration}</p>}
+                {/* Uploaded Images Preview */}
+                {uploadedImages.length > 0 && (
+                  <div style={{ 
+                    marginTop: '1rem',
+                    padding: '1rem',
+                    background: '#f9f9f9',
+                    borderRadius: '10px',
+                    border: '1px solid #e0d5c9'
+                  }}>
+                    <strong style={{ display: 'block', marginBottom: '0.5rem', color: '#8B4513' }}>
+                      Your Inspiration Images ({uploadedImages.length}):
+                    </strong>
+                    <div style={{ 
+                      display: 'grid', 
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', 
+                      gap: '0.75rem' 
+                    }}>
+                      {uploadedImages.map((url, index) => (
+                        <div 
+                          key={index}
+                          style={{
+                            position: 'relative',
+                            aspectRatio: '1',
+                            borderRadius: '8px',
+                            overflow: 'hidden',
+                            border: '2px solid #e0d5c9'
+                          }}
+                        >
+                          <img 
+                            src={url} 
+                            alt={`Inspiration ${index + 1}`}
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover'
+                            }}
+                            onError={(e) => {
+                              e.target.src = 'https://via.placeholder.com/100';
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveImage(index)}
+                            style={{
+                              position: 'absolute',
+                              top: '4px',
+                              right: '4px',
+                              width: '24px',
+                              height: '24px',
+                              borderRadius: '50%',
+                              background: 'rgba(255, 0, 0, 0.8)',
+                              color: 'white',
+                              border: 'none',
+                              cursor: 'pointer',
+                              fontSize: '16px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              lineHeight: '1'
+                            }}
+                            title="Remove image"
+                          >
+                            ×
+                          </button>
+                  </div>
+                      ))}
+                  </div>
+                  </div>
+                )}
                 </div>
 
-                <div className="review-section">
-                  <h3>Budget & Additional Info</h3>
-                  <p><strong>Budget:</strong> £{formData.minimumBudget || 0} - £{formData.maximumBudget || 0}</p>
-                  <p><strong>Duration:</strong> {formData.duration || 3} hours</p>
-                  <p><strong>Number of People:</strong> {formData.numberOfPeople || 1}</p>
-                  {formData.fullAddress && <p><strong>Address:</strong> {formData.fullAddress}</p>}
-                  {formData.city && <p><strong>City:</strong> {formData.city}</p>}
-                  {formData.postalCode && <p><strong>Postal Code:</strong> {formData.postalCode}</p>}
-                  {formData.additionalRequests && <p><strong>Additional Requests:</strong> {formData.additionalRequests}</p>}
-                  {formData.venueName && <p><strong>Venue:</strong> {formData.venueName}</p>}
-                  {formData.coveragePreference && <p><strong>Coverage:</strong> {formData.coveragePreference}</p>}
+              {/* Coverage Preference */}
+                <div className="form-group">
+                <label className="form-label">Coverage Preference (for bridal)</label>
+                <select
+                  name="coveragePreference"
+                    className="form-input"
+                  value={formData.coveragePreference}
+                    onChange={handleInputChange}
+                >
+                  <option value="">Select coverage</option>
+                  <option value="Full arms & feet">Full arms & feet</option>
+                  <option value="Hands only">Hands only</option>
+                  <option value="Simple, elegant design">Simple, elegant design</option>
+                  <option value="Not sure yet">Not sure yet</option>
+                </select>
+                </div>
+            </div>
+          )}
+
+          {/* Step 4: Budget & Notes */}
+          {currentStep === 4 && (
+            <div className="form-step">
+              <div className="step-header">
+                <h2 className="step-title">Budget & Notes</h2>
+                <p className="step-subtitle">Help artists tailor their offers to you</p>
+              </div>
+
+              {/* Budget Range */}
+                  <div className="form-group">
+                <label className="form-label">What's your budget range? *</label>
+                <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '1rem' }}>
+                  Helps artists tailor their offers to you.
+                </p>
+                <div className="budget-input-row">
+                  <div className="budget-input">
+                    <span className="currency">£</span>
+                    <input
+                      type="number"
+                      name="budgetFrom"
+                      className="budget-field"
+                      placeholder="From"
+                      value={formData.budgetFrom}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  <div className="budget-input">
+                    <span className="currency">£</span>
+                    <input
+                      type="number"
+                      name="budgetTo"
+                      className="budget-field"
+                      placeholder="To"
+                      value={formData.budgetTo}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Preset Budget Buttons */}
+                <div className="budget-preset-buttons">
+                  <button
+                    type="button"
+                    className={`budget-preset ${formData.budgetFrom === '50' && formData.budgetTo === '100' ? 'selected' : ''}`}
+                    onClick={() => handlePresetBudget('50', '100')}
+                  >
+                    Under £100
+                  </button>
+                  <button
+                    type="button"
+                    className={`budget-preset ${formData.budgetFrom === '100' && formData.budgetTo === '250' ? 'selected' : ''}`}
+                    onClick={() => handlePresetBudget('100', '250')}
+                  >
+                    £100 - £250
+                  </button>
+                  <button
+                    type="button"
+                    className={`budget-preset ${formData.budgetFrom === '250' && formData.budgetTo === '500' ? 'selected' : ''}`}
+                    onClick={() => handlePresetBudget('250', '500')}
+                  >
+                    £250 - £500
+                  </button>
+                  <button
+                    type="button"
+                    className={`budget-preset ${formData.budgetFrom === '500' && formData.budgetTo === '1000' ? 'selected' : ''}`}
+                    onClick={() => handlePresetBudget('500', '1000')}
+                  >
+                    £500+
+                  </button>
+                </div>
+                <p style={{ fontSize: '0.85rem', color: '#888', marginTop: '1rem' }}>
+                  Final price may vary depending on design, travel, and number of people. You'll receive a full quote before confirming your booking.
+                </p>
+              </div>
+
+              {/* Number of People */}
+                <div className="form-group">
+                <label className="form-label">How many people need Mehndi? (for group bookings) *</label>
+                <div className="number-selector">
+                  <button
+                    type="button"
+                    className="number-btn"
+                    onClick={() => handleNumberChange('numberOfPeople', -1)}
+                  >
+                    -
+                  </button>
+                  <span className="number-display">{formData.numberOfPeople}</span>
+                  <button
+                    type="button"
+                    className="number-btn"
+                    onClick={() => handleNumberChange('numberOfPeople', 1)}
+                  >
+                    +
+                  </button>
+                    </div>
+                </div>
+
+              {/* Additional Notes */}
+                <div className="form-group">
+                <label className="form-label">Anything else artists should know?</label>
+                <p style={{ fontSize: '0.85rem', color: '#888', marginBottom: '0.5rem' }}>
+                  E.g. "Please bring your own cones," "We'll be outdoors," "Prefer traditional Indian patterns," "I have a henna allergy – need natural only," "Parking is limited on my road," or "I'm flexible with timing"
+                </p>
+                  <textarea
+                    name="additionalRequests"
+                    className="form-textarea"
+                  placeholder="Write your notes here..."
+                    value={formData.additionalRequests}
+                    onChange={handleInputChange}
+                    rows="4"
+                  />
                 </div>
               </div>
             )}
 
             {/* Error and Success Messages */}
             {error && (
-              <div className="error-message">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10"/>
-                  <line x1="15" y1="9" x2="9" y2="15"/>
-                  <line x1="9" y1="9" x2="15" y2="15"/>
-                </svg>
+            <div className="error-message" style={{
+              backgroundColor: '#fee',
+              color: '#c33',
+              padding: '12px 16px',
+              borderRadius: '8px',
+              marginBottom: '1rem',
+              border: '1px solid #fcc'
+            }}>
                 {error}
               </div>
             )}
             
             {success && (
-              <div className="success-message">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                  <polyline points="22,4 12,14.01 9,11.01"/>
-                </svg>
+            <div className="success-message" style={{
+              backgroundColor: '#dfc',
+              color: '#3a3',
+              padding: '12px 16px',
+              borderRadius: '8px',
+              marginBottom: '1rem',
+              border: '1px solid #9c9'
+            }}>
                 {success}
-              </div>
-            )}
-
-            {tooltipMessage && (
-              <div style={{
-                position: 'fixed',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                backgroundColor: '#333',
-                color: 'white',
-                padding: '12px 20px',
-                borderRadius: '6px',
-                fontSize: '14px',
-                zIndex: 10000,
-                boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                whiteSpace: 'nowrap'
-              }}>
-                {tooltipMessage}
               </div>
             )}
 
@@ -884,13 +1066,12 @@ const BookingForm = () => {
                 </button>
               )}
               
-              {currentStep < 5 ? (
+            {currentStep < 4 ? (
                 <button
                   type="button"
                   className="btn-primary"
                   onClick={handleNextStep}
                   disabled={isLoading}
-                  style={{ background: 'var(--accent-orange)', color: '#fff' }}
                 >
                   Next
                 </button>
@@ -899,21 +1080,8 @@ const BookingForm = () => {
                   type="submit"
                   className="btn-primary btn-submit"
                   disabled={isLoading}
-                  style={{ background: 'var(--accent-orange)', color: '#fff' }}
-                >
-                  {isLoading ? (
-                    <>
-                      {/* <svg className="loading-spinner" viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeDasharray="31.416" strokeDashoffset="31.416">
-                          <animate attributeName="stroke-dasharray" dur="2s" values="0 31.416;15.708 15.708;0 31.416" repeatCount="indefinite"/>
-                          <animate attributeName="stroke-dashoffset" dur="2s" values="0;-15.708;-31.416" repeatCount="indefinite"/>
-                        </circle>
-                      </svg> */}
-                      Submitting...
-                    </>
-                  ) : (
-                    'Submit Request'
-                  )}
+              >
+                {isLoading ? 'Submitting...' : 'Submit Request'}
                 </button>
               )}
             </div>
@@ -921,18 +1089,344 @@ const BookingForm = () => {
         </div>
       </div>
 
-      {/* Location Modal */}
+      <style jsx>{`
+        .booking-container {
+          min-height: 100vh;
+          padding: 2rem 1rem;
+          background: linear-gradient(135deg, #f5f0e8 0%, #e8ddd4 100%);
+        }
+
+        .booking-form-container {
+          max-width: 900px;
+          margin: 0 auto;
+          background: white;
+          border-radius: 20px;
+          padding: 2.5rem;
+          box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        .progress-bar {
+          display: flex;
+          justify-content: center;
+          margin-bottom: 2.5rem;
+          gap: 0.5rem;
+        }
+
+        .progress-step {
+          text-align: center;
+        }
+
+        .step-number {
+          display: inline-block;
+          width: 50px;
+          height: 50px;
+          line-height: 50px;
+          border-radius: 50%;
+          background: #e8ddd4;
+          color: #8B4513;
+          font-weight: bold;
+          margin-bottom: 0.5rem;
+          transition: all 0.3s;
+        }
+
+        .progress-step.active .step-number {
+          background: #D2691E;
+          color: white;
+        }
+
+        .progress-step.current .step-number {
+          background: #CD853F;
+          box-shadow: 0 0 0 5px rgba(205, 133, 63, 0.2);
+        }
+
+        .step-name {
+          font-size: 0.9rem;
+          color: #666;
+        }
+
+        .form-group {
+          margin-bottom: 1.8rem;
+        }
+
+        .form-label {
+          display: block;
+          font-weight: 600;
+          color: #8B4513;
+          margin-bottom: 0.5rem;
+          font-size: 1.05rem;
+        }
+
+        .form-input {
+          width: 100%;
+          padding: 12px 16px;
+          border: 1px solid #e0d5c9;
+          border-radius: 10px;
+          font-size: 1rem;
+          background: #faf8f5;
+          transition: all 0.3s;
+        }
+
+        .form-input:focus {
+          outline: none;
+          border-color: #CD853F;
+          background: white;
+          box-shadow: 0 0 0 3px rgba(205, 133, 63, 0.1);
+        }
+
+        .form-textarea {
+          width: 100%;
+          padding: 12px 16px;
+          border: 1px solid #e0d5c9;
+          border-radius: 10px;
+          font-size: 1rem;
+          background: #faf8f5;
+          font-family: inherit;
+          resize: vertical;
+          transition: all 0.3s;
+        }
+
+        .form-textarea:focus {
+          outline: none;
+          border-color: #CD853F;
+          background: white;
+          box-shadow: 0 0 0 3px rgba(205, 133, 63, 0.1);
+        }
+
+        .event-option-grid, .time-slot-grid, .travel-option-grid, .style-option-grid {
+          display: grid;
+          gap: 1rem;
+        }
+
+        .event-option-grid, .time-slot-grid, .travel-option-grid {
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+
+        .event-option, .time-slot-option, .travel-option, .style-option {
+          display: flex;
+          align-items: center;
+          padding: 16px;
+          border: 2px solid #e0d5c9;
+          border-radius: 12px;
+          background: #faf8f5;
+          cursor: pointer;
+          transition: all 0.3s;
+          gap: 12px;
+          position: relative;
+        }
+
+        .event-option:hover, .time-slot-option:hover, .travel-option:hover, .style-option:hover {
+          border-color: #CD853F;
+          background: white;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(205, 133, 63, 0.15);
+        }
+
+        .event-option.selected, .time-slot-option.selected, .travel-option.selected, .style-option.selected {
+          border-color: #CD853F;
+          background: #fff8f0;
+        }
+
+        .event-emoji, .travel-icon, .time-icon {
+          font-size: 1.5rem;
+        }
+
+        .checkmark {
+          position: absolute;
+          right: 16px;
+          color: #CD853F;
+          font-weight: bold;
+          font-size: 1.2rem;
+        }
+
+        .budget-input-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1rem;
+          margin-bottom: 1rem;
+        }
+
+        .budget-input {
+          display: flex;
+          align-items: center;
+          border: 1px solid #e0d5c9;
+          border-radius: 10px;
+          padding: 8px 16px;
+          background: #faf8f5;
+        }
+
+        .budget-input:focus-within {
+          border-color: #CD853F;
+          background: white;
+          box-shadow: 0 0 0 3px rgba(205, 133, 63, 0.1);
+        }
+
+        .currency {
+          font-weight: 600;
+          color: #8B4513;
+          margin-right: 8px;
+        }
+
+        .budget-field {
+          border: none;
+          background: transparent;
+          font-size: 1rem;
+          flex: 1;
+          outline: none;
+        }
+
+        .budget-preset-buttons {
+          display: flex;
+          gap: 0.75rem;
+          flex-wrap: wrap;
+          margin-bottom: 1rem;
+        }
+
+        .budget-preset {
+          padding: 10px 20px;
+          border: 2px solid #e0d5c9;
+          border-radius: 8px;
+          background: #faf8f5;
+          cursor: pointer;
+          transition: all 0.3s;
+          font-size: 0.95rem;
+          font-weight: 500;
+          color: #8B4513;
+        }
+
+        .budget-preset:hover {
+          border-color: #CD853F;
+          background: white;
+        }
+
+        .budget-preset.selected {
+          background: #CD853F;
+          color: white;
+          border-color: #CD853F;
+        }
+
+        .number-selector {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          border: 1px solid #e0d5c9;
+          border-radius: 10px;
+          background: #faf8f5;
+          padding: 8px;
+          width: fit-content;
+        }
+
+        .number-btn {
+          width: 40px;
+          height: 40px;
+          border: none;
+          border-radius: 8px;
+          background: white;
+          font-size: 1.3rem;
+          font-weight: bold;
+          cursor: pointer;
+          transition: all 0.3s;
+          color: #8B4513;
+        }
+
+        .number-btn:hover {
+          background: #CD853F;
+          color: white;
+          transform: scale(1.1);
+        }
+
+        .number-display {
+          font-size: 1.2rem;
+          font-weight: 600;
+          min-width: 40px;
+          text-align: center;
+        }
+
+        .form-navigation {
+          display: flex;
+          justify-content: space-between;
+          margin-top: 2.5rem;
+          gap: 1rem;
+        }
+
+        .btn-primary, .btn-secondary {
+          padding: 14px 32px;
+          border-radius: 10px;
+          font-size: 1rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s;
+          border: none;
+        }
+
+        .btn-primary {
+          background: linear-gradient(135deg, #CD853F 0%, #D2691E 100%);
+          color: white;
+        }
+
+        .btn-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 20px rgba(205, 133, 63, 0.3);
+        }
+
+        .btn-secondary {
+          background: #faf8f5;
+          color: #8B4513;
+          border: 2px solid #e0d5c9;
+        }
+
+        .btn-secondary:hover {
+          background: white;
+          border-color: #CD853F;
+        }
+
+        .btn-primary:disabled, .btn-secondary:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          transform: none;
+        }
+
+        .upload-button:hover {
+          background: #fff8f0;
+          border-color: #D2691E;
+          transform: translateY(-2px);
+        }
+
+        .upload-button:active {
+          transform: translateY(0);
+        }
+
+        @media (max-width: 768px) {
+          .booking-form-container {
+            padding: 1.5rem;
+          }
+
+          .event-option-grid, .time-slot-grid, .travel-option-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .budget-input-row {
+            grid-template-columns: 1fr;
+          }
+
+          .form-navigation {
+            flex-direction: column;
+          }
+
+          .btn-primary, .btn-secondary {
+            width: 100%;
+          }
+
+          .progress-step-container {
+            display: none;
+          }
+        }
+      `}</style>
+      
+      {/* Get Location Modal */}
       <GetLocationModal 
         isOpen={showLocationModal}
         onClose={() => setShowLocationModal(false)}
-        onLocationSelect={(lat, lng) => {
-          setFormData(prev => ({
-            ...prev,
-            latitude: lat,
-            longitude: lng
-          }));
-          setShowLocationModal(false);
-        }}
+        onLocationSelect={handleLocationSelect}
       />
     </>
   );

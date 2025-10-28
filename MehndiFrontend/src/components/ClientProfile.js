@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { authAPI } from '../services/api';
-import { FaEye, FaEyeSlash, FaUser, FaSignOutAlt, FaEnvelope, FaLock, FaEdit, FaSave, FaTimes } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaUser, FaSignOutAlt, FaEnvelope, FaLock, FaEdit, FaSave, FaTimes, FaPhone } from 'react-icons/fa';
 import { Link, useNavigate } from 'react-router-dom';
 
 const ClientProfile = () => {
@@ -20,10 +20,16 @@ const ClientProfile = () => {
     firstName: '',
     lastName: '',
     email: '',
+    phoneNumber: '',
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   });
+
+  // Get member since date
+  const memberSince = user?.createdAt
+    ? new Date(user.createdAt).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+    : '';
 
   // Initialize form data
   useEffect(() => {
@@ -32,6 +38,7 @@ const ClientProfile = () => {
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         email: user.email || '',
+        phoneNumber: user.phoneNumber || '',
         currentPassword: '',
         newPassword: '',
         confirmPassword: ''
@@ -126,7 +133,8 @@ const ClientProfile = () => {
       const updateData = {
         firstName: formData.firstName,
         lastName: formData.lastName,
-        email: formData.email
+        email: formData.email,
+        phoneNumber: formData.phoneNumber
       };
 
       // Add password fields if they are provided
@@ -168,6 +176,7 @@ const ClientProfile = () => {
       firstName: user?.firstName || '',
       lastName: user?.lastName || '',
       email: user?.email || '',
+      phoneNumber: user?.phoneNumber || '',
       currentPassword: '',
       newPassword: '',
       confirmPassword: ''
@@ -178,291 +187,485 @@ const ClientProfile = () => {
   };
 
   return (
-    <div className="profile-container">
-      <div className="profile-card">
-        <div className="profile-header">
-          <div className="profile-main">
-            <div className="profile-avatar">
-              {user?.userProfileImage ? (
-                <img 
-                  src={user.userProfileImage} 
-                  alt={`${user.firstName} ${user.lastName}`}
-                  className="avatar-image"
-                />
-              ) : (
-                <div className="avatar-placeholder">
-                  <FaUser />
-                </div>
-              )}
-            </div>
-            <div className="profile-info">
-              <h2 className="profile-name">{user?.firstName} {user?.lastName}</h2>
-              <p className="profile-role">Client Account</p>
-              <p className="profile-email">{user?.email}</p>
-            </div>
+    <div style={{ 
+      minHeight: 'inherit', 
+      backgroundColor: 'rgba(249, 243, 234, 0.9)', 
+      padding: '20px',
+      display: 'flex',
+      justifyContent: 'center',
+      borderRadius:'12px'
+    }}>
+      <div style={{
+        maxWidth: '1100px',
+        width: '100%',
+        backgroundColor: 'white',
+        borderRadius: '16px',
+        padding: '32px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+      }}>
+        {/* Profile Completion Status */}
+        <div style={{
+          marginBottom: '32px',
+          paddingBottom: '16px',
+          borderBottom: '2px solid #5C3D2E'
+        }}>
+          <div style={{
+            color: '#5C3D2E',
+            fontSize: '14px',
+            marginBottom: '8px'
+          }}>
+            Profile 100% complete — all contact details verified.
           </div>
-          <button 
-            className={`profile-action-btn ${isEditing ? 'cancel' : 'edit'}`}
-            onClick={isEditing ? handleCancelEdit : () => setIsEditing(true)}
-          >
-            {isEditing ? <><FaTimes /> Cancel</> : <><FaEdit /> Edit Profile</>}
-          </button>
         </div>
 
         {/* Error/Success Messages */}
         {error && (
-          <div className="alert-message error">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none"/>
-              <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" strokeWidth="2"/>
-              <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" strokeWidth="2"/>
-            </svg>
+          <div style={{
+            backgroundColor: '#fee',
+            color: '#c33',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            marginBottom: '20px',
+            border: '1px solid #fcc'
+          }}>
             {error}
           </div>
         )}
 
         {success && (
-          <div className="alert-message success">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none"/>
-              <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" fill="none"/>
-            </svg>
+          <div style={{
+            backgroundColor: '#efe',
+            color: '#3c3',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            marginBottom: '20px',
+            border: '1px solid #cfc'
+          }}>
             {success}
           </div>
         )}
 
-        <div className="profile-content">
-          {/* Combined Profile Form */}
-          <form className="profile-form" onSubmit={handleUpdateProfile}>
-            <div className="form-section">
-              <h3 className="form-section-title">
-                <FaUser className="section-icon" />
-                Profile Information
-              </h3>
-              
-              <div className="form-grid">
-                <div className="form-group">
-                  <label htmlFor="firstName" className="form-label">First Name</label>
-                  <input
-                    type="text"
-                    id="firstName"
-                    name="firstName"
-                    value={formData.firstName}
-                    onChange={handleInputChange}
-                    className="form-input"
-                    placeholder="Enter your first name"
-                    disabled={!isEditing}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="lastName" className="form-label">Last Name</label>
-                  <input
-                    type="text"
-                    id="lastName"
-                    name="lastName"
-                    value={formData.lastName}
-                    onChange={handleInputChange}
-                    className="form-input"
-                    placeholder="Enter your last name"
-                    disabled={!isEditing}
-                    required
-                  />
-                </div>
-
-                <div className="form-group full-width">
-                  <label htmlFor="email" className="form-label">
-                    <FaEnvelope className="input-icon" />
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="form-input"
-                    placeholder="Enter your email address"
-                    disabled={!isEditing}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Password Section - Only show when editing */}
-              {isEditing && (
-                <>
-                  <div className="password-section">
-                    <h4 className="password-title">
-                      <FaLock className="section-icon" />
-                      Change Password (Optional)
-                    </h4>
-                    <p className="password-description">Leave password fields empty if you don't want to change your password.</p>
-                    
-                    <div className="form-grid">
-                      <div className="form-group full-width">
-                        <label htmlFor="currentPassword" className="form-label">Current Password</label>
-                        <div className="password-input-wrapper">
-                          <input
-                            type={showPassword ? "text" : "password"}
-                            id="currentPassword"
-                            name="currentPassword"
-                            value={formData.currentPassword}
-                            onChange={handleInputChange}
-                            className="form-input"
-                            placeholder="Enter current password"
-                          />
-                          <button
-                            type="button"
-                            className="password-toggle"
-                            onClick={() => setShowPassword(!showPassword)}
-                          >
-                            {showPassword ? <FaEyeSlash /> : <FaEye />}
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="form-group">
-                        <label htmlFor="newPassword" className="form-label">New Password</label>
-                        <div className="password-input-wrapper">
-                          <input
-                            type={showNewPassword ? "text" : "password"}
-                            id="newPassword"
-                            name="newPassword"
-                            value={formData.newPassword}
-                            onChange={handleInputChange}
-                            className="form-input"
-                            placeholder="Enter new password"
-                            minLength="6"
-                          />
-                          <button
-                            type="button"
-                            className="password-toggle"
-                            onClick={() => setShowNewPassword(!showNewPassword)}
-                          >
-                            {showNewPassword ? <FaEyeSlash /> : <FaEye />}
-                          </button>
-                        </div>
-                        <small className="form-help">Password must be at least 6 characters long</small>
-                      </div>
-
-                      <div className="form-group">
-                        <label htmlFor="confirmPassword" className="form-label">Confirm New Password</label>
-                        <div className="password-input-wrapper">
-                          <input
-                            type={showConfirmPassword ? "text" : "password"}
-                            id="confirmPassword"
-                            name="confirmPassword"
-                            value={formData.confirmPassword}
-                            onChange={handleInputChange}
-                            className="form-input"
-                            placeholder="Confirm new password"
-                            minLength="6"
-                          />
-                          <button
-                            type="button"
-                            className="password-toggle"
-                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          >
-                            {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {isEditing && (
-                <div className="form-actions">
-                  <button 
-                    type="submit" 
-                    className="btn-primary"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <>
-                        <div className="loading-spinner"></div>
-                        Updating...
-                      </>
-                    ) : (
-                      <>
-                        <FaSave />
-                        Update Profile
-                      </>
-                    )}
-                  </button>
-                </div>
+        {/* Profile Header */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          marginBottom: '32px'
+        }}>
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+            {/* Avatar */}
+            <div style={{
+              width: '80px',
+              height: '80px',
+              borderRadius: '50%',
+              backgroundColor: '#D4C0A0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '32px',
+              fontWeight: '700',
+              color: '#4A2C1D',
+              flexShrink: 0
+            }}>
+              {user?.userProfileImage ? (
+                <img 
+                  src={user.userProfileImage} 
+                  alt={`${user.firstName} ${user.lastName}`}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: '50%',
+                    objectFit: 'cover'
+                  }}
+                />
+              ) : (
+                `${(user?.firstName || 'U')[0]}${(user?.lastName || '')[0] || ''}`
               )}
             </div>
-          </form>
-          {/* Logout Banner Section */}
-          <div style={{
-                    backgroundColor: '#F8F2E6',
-                    padding: '2rem 0',
-                    marginBottom: '20px',
-                    // borderTop: '1px solid rgba(0,0,0,0.1)'
-                  }}>
-                    <div style={{ 
-                      maxWidth: 980, 
-                      margin: '0 auto', 
-                      padding: '0 0.2rem',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
-                    }}>
-                      <div style={{
-                        color: '#666',
-                        fontSize: '1rem',
-                        fontWeight: 400
-                      }}>
-                        Need a break?
-                      </div>
-                      
-                      <Link 
-                        to="/login"
-                        onClick={handleLogoutClick}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          cursor: 'pointer',
-                          color: '#A0522D',
-                          fontSize: '1rem',
-                          fontWeight: 500,
-                          position: 'relative',
-                          padding: '8px 0',
-                          textDecoration: 'none'
-                        }}
-                        onMouseEnter={(e) => {
-                          const underline = e.currentTarget.querySelector('.logout-underline');
-                          underline.style.width = '100%';
-                        }}
-                        onMouseLeave={(e) => {
-                          const underline = e.currentTarget.querySelector('.logout-underline');
-                          underline.style.width = '0%';
-                        }}
-                      >
-                        <FaSignOutAlt style={{ fontSize: '1.1rem' }} />
-                        <span>Logout</span>
-                        <div 
-                          className="logout-underline"
-                          style={{
-                            position: 'absolute',
-                            bottom: '0',
-                            left: '0',
-                            height: '2px',
-                            backgroundColor: '#A0522D',
-                            width: '0%',
-                            transition: 'width 0.5s ease-in-out'
-                          }}
-                        />
-                      </Link>
-                    </div>
-                  </div>
+
+            {/* Name and Info */}
+            <div>
+              <h2 style={{
+                fontSize: '24px',
+                fontWeight: '700',
+                color: '#4A2C1D',
+                margin: '0 0 4px 0'
+              }}>
+                {user?.firstName} {user?.lastName}
+              </h2>
+              <p style={{
+                fontSize: '14px',
+                color: '#7A6A5E',
+                margin: '0 0 4px 0'
+              }}>
+                Client Account
+              </p>
+              {memberSince && (
+                <p style={{
+                  fontSize: '14px',
+                  color: '#7A6A5E',
+                  margin: 0
+                }}>
+                  Member since {memberSince}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Edit Profile Button */}
+          <button 
+            onClick={isEditing ? handleCancelEdit : () => setIsEditing(true)}
+            style={{
+              backgroundColor: '#8B5E3C',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '10px 16px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            <FaEdit />
+            {isEditing ? 'Cancel' : 'Edit Profile'}
+          </button>
         </div>
+
+        {/* Form */}
+        <form onSubmit={handleUpdateProfile}>
+          {/* Personal Information */}
+          <div style={{ marginBottom: '32px' }}>
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#4A2C1D',
+              marginBottom: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <FaUser style={{ fontSize: '16px' }} />
+              Personal Information
+            </h3>
+            
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '16px'
+            }}>
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  color: '#7A6A5E',
+                  marginBottom: '8px'
+                }}>
+                  First Name
+                </label>
+                <input
+                  type="text"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleInputChange}
+                  disabled={!isEditing}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #e0e0e0',
+                    borderRadius: '8px',
+                    backgroundColor: isEditing ? 'white' : '#F0F2F5',
+                    fontSize: '14px'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  color: '#7A6A5E',
+                  marginBottom: '8px'
+                }}>
+                  Last Name
+                </label>
+                <input
+                  type="text"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleInputChange}
+                  disabled={!isEditing}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #e0e0e0',
+                    borderRadius: '8px',
+                    backgroundColor: isEditing ? 'white' : '#F0F2F5',
+                    fontSize: '14px'
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Contact Information */}
+          <div>
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#4A2C1D',
+              marginBottom: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <FaEnvelope style={{ fontSize: '16px' }} />
+              Contact Information
+            </h3>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontSize: '14px',
+                  color: '#7A6A5E',
+                  marginBottom: '8px'
+                }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FaEnvelope style={{ fontSize: '12px' }} />
+                    Email Address
+                  </span>
+                  {user?.isEmailVerified && (
+                    <span style={{
+                      backgroundColor: '#E6F4EA',
+                      color: '#2e7d32',
+                      padding: '4px 12px',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      border: '1px solid #c8e6c9'
+                    }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M9 16.17l-3.88-3.88-1.41 1.41L9 19 20.29 7.71 18.88 6.29z"/>
+                      </svg>
+                      Verified
+                    </span>
+                  )}
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  disabled={!isEditing}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #e0e0e0',
+                    borderRadius: '8px',
+                    backgroundColor: isEditing ? 'white' : '#F0F2F5',
+                    fontSize: '14px'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontSize: '14px',
+                  color: '#7A6A5E',
+                  marginBottom: '8px'
+                }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FaPhone style={{ fontSize: '12px' }} />
+                    Phone Number
+                  </span>
+                  {user?.isPhoneNumberVerified && (
+                    <span style={{
+                      backgroundColor: '#E6F4EA',
+                      color: '#2e7d32',
+                      padding: '4px 12px',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      border: '1px solid #c8e6c9'
+                    }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M9 16.17l-3.88-3.88-1.41 1.41L9 19 20.29 7.71 18.88 6.29z"/>
+                      </svg>
+                      Verified
+                    </span>
+                  )}
+                </label>
+                <input
+                  type="tel"
+                  name="phoneNumber"
+                  value={formData.phoneNumber}
+                  onChange={handleInputChange}
+                  disabled={!isEditing}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #e0e0e0',
+                    borderRadius: '8px',
+                    backgroundColor: isEditing ? 'white' : '#F0F2F5',
+                    fontSize: '14px'
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Change Password (optional) */}
+          {isEditing && (
+            <div style={{ marginTop: '32px' }}>
+              <h3 style={{
+                fontSize: '18px',
+                fontWeight: '600',
+                color: '#4A2C1D',
+                marginBottom: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <FaLock style={{ fontSize: '16px' }} />
+                Change Password (optional)
+              </h3>
+              <p style={{ marginTop: 0, marginBottom: '16px', color: '#7A6A5E', fontSize: '14px' }}>
+                Leave fields empty if you don't want to change your password.
+              </p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={{ display: 'block', fontSize: '14px', color: '#7A6A5E', marginBottom: '8px' }}>Current Password</label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      name="currentPassword"
+                      value={formData.currentPassword}
+                      onChange={handleInputChange}
+                      placeholder="Enter current password"
+                      style={{
+                        width: '100%', padding: '12px', border: '1px solid #e0e0e0', borderRadius: '8px', fontSize: '14px'
+                      }}
+                    />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)}
+                      style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', cursor: 'pointer', color: '#7A6A5E' }}>
+                      {showPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', color: '#7A6A5E', marginBottom: '8px' }}>New Password</label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showNewPassword ? 'text' : 'password'}
+                      name="newPassword"
+                      value={formData.newPassword}
+                      onChange={handleInputChange}
+                      placeholder="Enter new password"
+                      minLength={6}
+                      style={{
+                        width: '100%', padding: '12px', border: '1px solid #e0e0e0', borderRadius: '8px', fontSize: '14px'
+                      }}
+                    />
+                    <button type="button" onClick={() => setShowNewPassword(!showNewPassword)}
+                      style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', cursor: 'pointer', color: '#7A6A5E' }}>
+                      {showNewPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+                  <small style={{ color: '#7A6A5E' }}>At least 6 characters</small>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', color: '#7A6A5E', marginBottom: '8px' }}>Confirm New Password</label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange}
+                      placeholder="Confirm new password"
+                      minLength={6}
+                      style={{
+                        width: '100%', padding: '12px', border: '1px solid #e0e0e0', borderRadius: '8px', fontSize: '14px'
+                      }}
+                    />
+                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', cursor: 'pointer', color: '#7A6A5E' }}>
+                      {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Submit Button (only when editing) */}
+          {isEditing && (
+            <div style={{
+              marginTop: '32px',
+              display: 'flex',
+              justifyContent: 'flex-end'
+            }}>
+              <button 
+                type="submit" 
+                disabled={isLoading}
+                style={{
+                  backgroundColor: '#8B5E3C',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '12px 24px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  opacity: isLoading ? 0.7 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                {isLoading ? (
+                  <>
+                    <div style={{
+                      width: '16px',
+                      height: '16px',
+                      border: '2px solid #fff',
+                      borderTopColor: 'transparent',
+                      borderRadius: '50%',
+                      animation: 'spin 0.8s linear infinite'
+                    }}></div>
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <FaSave />
+                    Save Changes
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+        </form>
       </div>
+
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };

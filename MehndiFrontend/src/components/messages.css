@@ -19,6 +19,11 @@
   gap: 0.5rem;
   flex-wrap: nowrap;
 }
+@media screen and (max-width:1080px) {
+  .proposal-row{
+    overflow-x: scroll;
+  }
+}
 
 @media screen and (max-width: 768px) {
   .dashboard-content .messages-section {
@@ -892,7 +897,7 @@
 /* Profile Tab Section */
 .profile-tab-section {
   padding: 20px;
-  background: #f8f9fa;
+  /* background: #f8f9fa; */
   border-radius: 12px;
   min-height: 400px;
 }
