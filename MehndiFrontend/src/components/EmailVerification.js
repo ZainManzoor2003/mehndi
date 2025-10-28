@@ -106,7 +106,7 @@ const EmailVerification = () => {
                 </div>
                 
                 {/* Button Row */}
-                <div style={{ 
+                {/* <div style={{ 
                   display: 'flex', 
                   flexDirection: 'row',
                   gap: '1rem'
@@ -138,7 +138,7 @@ const EmailVerification = () => {
                   >
                     Proceed to Login
                   </Link>
-                </div>
+                </div> */}
               </div>
             )}
 
@@ -187,7 +187,7 @@ const EmailVerification = () => {
                 </div>
                 
                 {/* Button Row */}
-                <div style={{ 
+                {/* <div style={{ 
                   display: 'flex', 
                   flexDirection: 'row',
                   gap: '1rem'
@@ -219,7 +219,7 @@ const EmailVerification = () => {
                   >
                     Try Signup Again
                   </Link>
-                </div>
+                </div> */}
               </div>
             )}
           </div>

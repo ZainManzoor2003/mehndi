@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import AdminSidebar from './AdminSidebar';
 import { adminAPI } from '../services/api';
 import Select from 'react-select';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import './admin-styles.css';
 
 const ManageArtists = () => {
@@ -19,6 +21,9 @@ const ManageArtists = () => {
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedApplicationRange, setSelectedApplicationRange] = useState('all');
   const [selectedRatingRange, setSelectedRatingRange] = useState('all');
+
+  // Confirmation modal states
+  const [confirmAction, setConfirmAction] = useState(null);
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -194,10 +199,24 @@ const ManageArtists = () => {
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
-  const handleDelete = async (userId) => {
-    if (!window.confirm('Delete this artist?')) return;
-    await adminAPI.deleteUser(userId);
-    await load();
+  const handleDelete = async (userId, userName) => {
+    setConfirmAction({
+      type: 'delete',
+      userId,
+      userName,
+      message: `Delete this artist? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          await adminAPI.deleteUser(userId);
+          toast.success(`${userName} deleted successfully!`);
+          await load();
+          setConfirmAction(null);
+        } catch (error) {
+          toast.error(`Failed to delete ${userName}. ${error.message}`);
+          setConfirmAction(null);
+        }
+      }
+    });
   };
 
   const handleRoleChange = async (userId, userType) => {
@@ -205,9 +224,26 @@ const ManageArtists = () => {
     await load();
   };
 
-  const handleStatusChange = async (userId, status) => {
-    await adminAPI.updateUser(userId, { status });
-    await load();
+  const handleStatusChange = async (userId, status, userName) => {
+    setConfirmAction({
+      type: status === 'suspended' ? 'suspend' : 'reinstate',
+      userId,
+      userName,
+      message: status === 'suspended' 
+        ? `Suspend this artist? They will not be able to apply for new bookings until reinstated.`
+        : `Reinstate this artist? They will be able to apply for new bookings again.`,
+      onConfirm: async () => {
+        try {
+          await adminAPI.updateUser(userId, { status });
+          toast.success(`${userName} ${status === 'suspended' ? 'suspended' : 'reinstated'} successfully!`);
+          await load();
+          setConfirmAction(null);
+        } catch (error) {
+          toast.error(`Failed to ${status === 'suspended' ? 'suspend' : 'reinstate'} ${userName}. ${error.message}`);
+          setConfirmAction(null);
+        }
+      }
+    });
   };
 
   const openEdit = (u) => {
@@ -231,6 +267,18 @@ const ManageArtists = () => {
 
   return (
     <div className="admin_dashboard-layout">
+      <ToastContainer 
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
       <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="admin_dashboard-main-content">
         <button
@@ -643,9 +691,7 @@ const ManageArtists = () => {
                                 {u.status !== 'suspended' ? (
                                   <button
                                     onClick={() => {
-                                      if (window.confirm('Suspend this artist?')) {
-                                        handleStatusChange(u._id, 'suspended');
-                                      }
+                                      handleStatusChange(u._id, 'suspended', `${u.firstName} ${u.lastName}`);
                                     }}
                                     style={{
                                       width: '100%',
@@ -665,9 +711,7 @@ const ManageArtists = () => {
                                 ) : (
                                   <button
                                     onClick={() => {
-                                      if (window.confirm('Reinstate this artist?')) {
-                                        handleStatusChange(u._id, 'active');
-                                      }
+                                      handleStatusChange(u._id, 'active', `${u.firstName} ${u.lastName}`);
                                     }}
                                     style={{
                                       width: '100%',
@@ -687,7 +731,7 @@ const ManageArtists = () => {
                                 )}
                                 {(() => { try { return String(u._id) !== String((JSON.parse(localStorage.getItem('user')||'{}'))._id); } catch { return true; } })() && (
                                   <button
-                                    onClick={() => handleDelete(u._id)}
+                                    onClick={() => handleDelete(u._id, `${u.firstName} ${u.lastName}`)}
                                     style={{
                                       width: '100%',
                                       padding: '0.5rem 1rem',
@@ -911,6 +955,36 @@ const ManageArtists = () => {
                   <button type="submit" className="admin_btn admin_btn-primary">Save</button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Confirmation Modal */}
+        {confirmAction && (
+          <div className="admin_modal-overlay" onClick={() => setConfirmAction(null)}>
+            <div className="admin_confirm-modal" onClick={(e) => e.stopPropagation()}>
+              <h3 className="admin_confirm-title">
+                {confirmAction.type === 'delete' && 'Delete Artist?'}
+                {confirmAction.type === 'suspend' && 'Suspend Artist?'}
+                {confirmAction.type === 'reinstate' && 'Reinstate Artist?'}
+              </h3>
+              <p className="admin_confirm-message">{confirmAction.message}</p>
+              <div className="admin_confirm-actions">
+                <button 
+                  className="admin_btn admin_btn-light" 
+                  onClick={() => setConfirmAction(null)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className={`admin_btn ${confirmAction.type === 'delete' ? 'admin_btn-danger' : 'admin_btn-primary'}`}
+                  onClick={confirmAction.onConfirm}
+                >
+                  {confirmAction.type === 'delete' && 'Delete'}
+                  {confirmAction.type === 'suspend' && 'Suspend'}
+                  {confirmAction.type === 'reinstate' && 'Reinstate'}
+                </button>
+              </div>
             </div>
           </div>
         )}

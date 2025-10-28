@@ -1113,6 +1113,97 @@ input[type="date"]:focus {
   color: var(--admin-text) !important;
 }
 
+/* ========== Confirmation Modal ========== */
+.admin_confirm-modal {
+  background: #ffffff;
+  width: 100%;
+  max-width: 480px;
+  border-radius: 8px;
+  border: none;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.admin_confirm-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+}
+
+.admin_confirm-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  text-align: left;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.admin_confirm-message {
+  margin: 0 0 1.5rem 0;
+  font-size: 0.9375rem;
+  color: #4a4a4a;
+  text-align: left;
+  line-height: 1.5;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.admin_confirm-actions {
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+  justify-content: flex-end;
+}
+
+.admin_confirm-actions .admin_btn {
+  flex: none;
+  min-width: 90px;
+  padding: 0.625rem 1.25rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: system-ui, -apple-system, sans-serif;
+  transition: all 0.2s;
+}
+
+.admin_confirm-actions .admin_btn-light {
+  background: #ffffff;
+  color: #1a1a1a;
+  border: 1px solid #d1d5db;
+}
+
+.admin_confirm-actions .admin_btn-light:hover {
+  background: #ffffff;
+  border-color: #9ca3af;
+}
+
+.admin_btn-danger {
+  background: #1f2937;
+  color: #ffffff;
+  border: none;
+}
+
+.admin_btn-danger:hover {
+  background: #374151;
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.admin_btn-primary {
+  background: #1f2937;
+  color: #ffffff;
+  border: none;
+}
+
+.admin_btn-primary:hover {
+  background: #374151;
+}
+
 /* ========== Animations ========== */
 @keyframes spin {
   from {

@@ -41,6 +41,7 @@ import PaymentSuccess from './components/PaymentSuccess';
 import PaymentCancel from './components/PaymentCancel';
 import PaymentRescheduleBooking from './components/PaymentRescheduleBooking';
 import EmailVerification from './components/EmailVerification';
+import EmailCheck from './components/EmailCheck';
 import AboutUsPage from './components/AboutUsPage';
 import EarnAsArtist from './components/EarnAsArtist';
 
@@ -83,6 +84,11 @@ function App() {
             <Route path="/login" element={
               <PublicRoute>
                 <Login />
+              </PublicRoute>
+            } />
+            <Route path="/check-email" element={
+              <PublicRoute>
+                <EmailCheck />
               </PublicRoute>
             } />
             <Route path="/signup" element={

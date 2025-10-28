@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import AdminSidebar from './AdminSidebar';
 import { adminAPI } from '../services/api';
 import Select from 'react-select';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import './admin-styles.css';
 
 const ManageClients = () => {
@@ -18,6 +20,10 @@ const ManageClients = () => {
   const [userStats, setUserStats] = useState({});
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedRequestRange, setSelectedRequestRange] = useState('all');
+  const [selectedCity, setSelectedCity] = useState(null);
+
+  // Confirmation modal states
+  const [confirmAction, setConfirmAction] = useState(null);
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -32,7 +38,16 @@ const ManageClients = () => {
     { value: 30, label: '30 per page' }
   ];
 
-  // Filter clients based on search term, status, and request range
+  // City options
+  const cityOptions = [
+    { value: '', label: 'All Cities' },
+    { value: 'London', label: 'London' },
+    { value: 'Birmingham', label: 'Birmingham' },
+    { value: 'Manchester', label: 'Manchester' },
+    { value: 'Bradford', label: 'Bradford' }
+  ];
+
+  // Filter clients based on search term, status, request range, and city
   useEffect(() => {
     let filtered = users.filter(user => user.userType === 'client');
 
@@ -70,9 +85,16 @@ const ManageClients = () => {
       });
     }
 
+    // Filter by city
+    if (selectedCity?.value) {
+      filtered = filtered.filter(user => 
+        user.city?.toLowerCase().includes(selectedCity.value.toLowerCase())
+      );
+    }
+
     setFilteredUsers(filtered);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [users, searchTerm, selectedStatus, selectedRequestRange, userStats]);
+  }, [users, searchTerm, selectedStatus, selectedRequestRange, selectedCity, userStats]);
 
   // Pagination logic
   useEffect(() => {
@@ -172,10 +194,24 @@ const ManageClients = () => {
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
-  const handleDelete = async (userId) => {
-    if (!window.confirm('Delete this client?')) return;
-    await adminAPI.deleteUser(userId);
-    await load();
+  const handleDelete = async (userId, userName) => {
+    setConfirmAction({
+      type: 'delete',
+      userId,
+      userName,
+      message: `Delete this client? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          await adminAPI.deleteUser(userId);
+          toast.success(`${userName} deleted successfully!`);
+          await load();
+          setConfirmAction(null);
+        } catch (error) {
+          toast.error(`Failed to delete ${userName}. ${error.message}`);
+          setConfirmAction(null);
+        }
+      }
+    });
   };
 
   const handleRoleChange = async (userId, userType) => {
@@ -183,9 +219,26 @@ const ManageClients = () => {
     await load();
   };
 
-  const handleStatusChange = async (userId, status) => {
-    await adminAPI.updateUser(userId, { status });
-    await load();
+  const handleStatusChange = async (userId, status, userName) => {
+    setConfirmAction({
+      type: status === 'suspended' ? 'suspend' : 'reinstate',
+      userId,
+      userName,
+      message: status === 'suspended' 
+        ? `Suspend this client? They will not be able to post new requests until reinstated.`
+        : `Reinstate this client? They will be able to post new requests again.`,
+      onConfirm: async () => {
+        try {
+          await adminAPI.updateUser(userId, { status });
+          toast.success(`${userName} ${status === 'suspended' ? 'suspended' : 'reinstated'} successfully!`);
+          await load();
+          setConfirmAction(null);
+        } catch (error) {
+          toast.error(`Failed to ${status === 'suspended' ? 'suspend' : 'reinstate'} ${userName}. ${error.message}`);
+          setConfirmAction(null);
+        }
+      }
+    });
   };
 
   const openEdit = (u) => {
@@ -208,6 +261,18 @@ const ManageClients = () => {
 
   return (
     <div className="admin_dashboard-layout">
+      <ToastContainer 
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
       <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="admin_dashboard-main-content">
         <button
@@ -265,7 +330,7 @@ const ManageClients = () => {
             <div className="admin_filter-section">
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: '1fr 1fr 1fr auto',
+                gridTemplateColumns: '1fr 1fr 1fr 1fr auto',
                 gap: '1rem',
                 alignItems: 'end'
               }}>
@@ -406,14 +471,66 @@ const ManageClients = () => {
                   />
                 </div>
 
+                {/* City Filter */}
+                <div className="admin_filter-item">
+                  <label style={{
+                    display: 'block',
+                    marginBottom: '0.5rem',
+                    fontWeight: '600',
+                    color: '#0f172a',
+                    fontSize: '0.875rem'
+                  }}>
+                    Filter by City
+                  </label>
+                  <Select
+                    value={selectedCity}
+                    onChange={setSelectedCity}
+                    options={cityOptions}
+                    placeholder="All Cities"
+                    styles={{
+                      control: (provided, state) => ({
+                        ...provided,
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '8px',
+                        minHeight: '42px',
+                        backgroundColor: '#ffffff',
+                        boxShadow: state.isFocused ? '0 0 0 3px rgba(59, 130, 246, 0.1)' : 'none',
+                        '&:hover': {
+                          borderColor: '#3b82f6'
+                        },
+                        ...(state.isFocused && {
+                          borderColor: '#3b82f6'
+                        })
+                      }),
+                      placeholder: (provided) => ({
+                        ...provided,
+                        color: '#6b7280',
+                        fontSize: '0.875rem'
+                      }),
+                      option: (provided, state) => ({
+                        ...provided,
+                        backgroundColor: state.isSelected ? '#6b7280' : state.isFocused ? '#f8fafc' : '#ffffff',
+                        color: state.isSelected ? '#ffffff' : '#0f172a',
+                        fontSize: '0.875rem'
+                      }),
+                      singleValue: (provided) => ({
+                        ...provided,
+                        color: '#0f172a',
+                        fontSize: '0.875rem'
+                      })
+                    }}
+                  />
+                </div>
+
                 {/* Clear Filters Button */}
-                {(searchTerm || selectedStatus !== 'all' || selectedRequestRange !== 'all') && (
+                {(searchTerm || selectedStatus !== 'all' || selectedRequestRange !== 'all' || selectedCity?.value) && (
                   <div className="admin_filter-item" style={{ display: 'flex', alignItems: 'end' }}>
                     <button
                       onClick={() => {
                         setSearchTerm('');
                         setSelectedStatus('all');
                         setSelectedRequestRange('all');
+                        setSelectedCity(null);
                       }}
                       style={{
                         padding: '0.75rem 1rem',
@@ -457,8 +574,8 @@ const ManageClients = () => {
                   </svg>
                   <h3 style={{ color: '#6b7280', marginBottom: '0.5rem', fontSize: '1.125rem' }}>No clients found</h3>
                   <p style={{ color: '#9ca3af', fontSize: '0.875rem' }}>
-                    {searchTerm 
-                      ? 'Try adjusting your search to see more results.' 
+                    {(searchTerm || selectedStatus !== 'all' || selectedRequestRange !== 'all' || selectedCity?.value) 
+                      ? 'Try adjusting your search or filters to see more results.' 
                       : 'No clients have been registered yet.'}
                   </p>
                 </div>
@@ -468,6 +585,7 @@ const ManageClients = () => {
                     <tr>
                       <th>Name</th>
                       <th>Email</th>
+                      <th>Location</th>
                       <th>Total Requests</th>
                       <th>Status</th>
                       <th>Actions</th>
@@ -478,6 +596,7 @@ const ManageClients = () => {
                       <tr key={u._id}>
                         <td>{u.firstName} {u.lastName}</td>
                         <td>{u.email}</td>
+                        <td>{u.city || 'None'}</td>
                         <td>
                           <span className="admin_badge">
                             {userStats[u._id] || 0}
@@ -520,9 +639,7 @@ const ManageClients = () => {
                                 {u.status !== 'suspended' ? (
                                   <button
                                     onClick={() => {
-                                      if (window.confirm('Suspend this client?')) {
-                                        handleStatusChange(u._id, 'suspended');
-                                      }
+                                      handleStatusChange(u._id, 'suspended', `${u.firstName} ${u.lastName}`);
                                     }}
                                     style={{
                                       width: '100%',
@@ -542,9 +659,7 @@ const ManageClients = () => {
                                 ) : (
                                   <button
                                     onClick={() => {
-                                      if (window.confirm('Reinstate this client?')) {
-                                        handleStatusChange(u._id, 'active');
-                                      }
+                                      handleStatusChange(u._id, 'active', `${u.firstName} ${u.lastName}`);
                                     }}
                                     style={{
                                       width: '100%',
@@ -564,7 +679,7 @@ const ManageClients = () => {
                                 )}
                                 {(() => { try { return String(u._id) !== String((JSON.parse(localStorage.getItem('user')||'{}'))._id); } catch { return true; } })() && (
                                   <button
-                                    onClick={() => handleDelete(u._id)}
+                                    onClick={() => handleDelete(u._id, `${u.firstName} ${u.lastName}`)}
                                     style={{
                                       width: '100%',
                                       padding: '0.5rem 1rem',
@@ -788,6 +903,36 @@ const ManageClients = () => {
                   <button type="submit" className="admin_btn admin_btn-primary">Save</button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Confirmation Modal */}
+        {confirmAction && (
+          <div className="admin_modal-overlay" onClick={() => setConfirmAction(null)}>
+            <div className="admin_confirm-modal" onClick={(e) => e.stopPropagation()}>
+              <h3 className="admin_confirm-title">
+                {confirmAction.type === 'delete' && 'Delete Client?'}
+                {confirmAction.type === 'suspend' && 'Suspend Client?'}
+                {confirmAction.type === 'reinstate' && 'Reinstate Client?'}
+              </h3>
+              <p className="admin_confirm-message">{confirmAction.message}</p>
+              <div className="admin_confirm-actions">
+                <button 
+                  className="admin_btn admin_btn-light" 
+                  onClick={() => setConfirmAction(null)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className={`admin_btn ${confirmAction.type === 'delete' ? 'admin_btn-danger' : 'admin_btn-primary'}`}
+                  onClick={confirmAction.onConfirm}
+                >
+                  {confirmAction.type === 'delete' && 'Delete'}
+                  {confirmAction.type === 'suspend' && 'Suspend'}
+                  {confirmAction.type === 'reinstate' && 'Reinstate'}
+                </button>
+              </div>
             </div>
           </div>
         )}
