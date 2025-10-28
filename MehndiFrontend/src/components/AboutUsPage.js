@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Header from './Header';
 import Footer from './Footer';
 
 const AboutUsPage = () => {
   const [activeSection, setActiveSection] = useState(0);
+  const refundRef = useRef(null);
 
   // Scroll to top on mount
   useEffect(() => {
@@ -12,6 +13,17 @@ const AboutUsPage = () => {
     } catch {
       window.scrollTo(0, 0);
     }
+  }, []);
+
+  // Initial left-right shake animation for the important note box
+  useEffect(() => {
+    if (!refundRef.current) return;
+    const el = refundRef.current;
+    el.classList.add('shake-once');
+    const timer = setTimeout(() => {
+      el.classList.remove('shake-once');
+    }, 900);
+    return () => clearTimeout(timer);
   }, []);
 
   // Scroll tracking for section detection
@@ -120,6 +132,19 @@ const AboutUsPage = () => {
       <Header />
       <ScrollProgressIndicator />
       <main className="main" style={{ paddingTop: '6.5rem' }}>
+        <style>
+          {`
+          @keyframes shakeLR {
+            0% { transform: translateX(0); }
+            20% { transform: translateX(-8px); }
+            40% { transform: translateX(8px); }
+            60% { transform: translateX(-6px); }
+            80% { transform: translateX(6px); }
+            100% { transform: translateX(0); }
+          }
+          .shake-once { animation: shakeLR 0.5s ease; }
+          `}
+        </style>
         <div className="container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.2rem' }}>
           
           {/* Hero Section */}
@@ -222,7 +247,7 @@ const AboutUsPage = () => {
                 </div>
 
                 {/* Second Message */}
-                <div style={{
+                <div ref={refundRef} style={{
                   backgroundColor: '#fef2f2',
                   padding: '1rem 1.25rem',
                   borderRadius: '12px',
@@ -628,14 +653,28 @@ const AboutUsPage = () => {
               margin: '0 auto'
             }}>
               {/* Card 1: Clients Post Requests */}
-              <div style={{ 
-                background: '#fff', 
-                padding: '2rem', 
-                borderRadius: '15px',
-                textAlign: 'center',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                border: '1px solid #f0f0f0'
-              }}>
+              <div 
+                style={{ 
+                  background: '#fff', 
+                  padding: '2rem', 
+                  borderRadius: '15px',
+                  textAlign: 'center',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                  border: '1px solid #f0f0f0',
+                  transition: 'all 0.3s ease',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-8px)';
+                  e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.15)';
+                  e.currentTarget.style.border = '1px solid #d4a574';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.1)';
+                  e.currentTarget.style.border = '1px solid #f0f0f0';
+                }}
+              >
                 <div style={{ 
                   width: '80px', 
                   height: '80px', 
@@ -667,14 +706,28 @@ const AboutUsPage = () => {
               </div>
 
               {/* Card 2: Artists Apply to You */}
-              <div style={{ 
-                background: '#fff', 
-                padding: '2rem', 
-                borderRadius: '15px',
-                textAlign: 'center',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                border: '1px solid #f0f0f0'
-              }}>
+              <div 
+                style={{ 
+                  background: '#fff', 
+                  padding: '2rem', 
+                  borderRadius: '15px',
+                  textAlign: 'center',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                  border: '1px solid #f0f0f0',
+                  transition: 'all 0.3s ease',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-8px)';
+                  e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.15)';
+                  e.currentTarget.style.border = '1px solid #d4a574';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.1)';
+                  e.currentTarget.style.border = '1px solid #f0f0f0';
+                }}
+              >
                 <div style={{ 
                   width: '80px', 
                   height: '80px', 
@@ -706,14 +759,28 @@ const AboutUsPage = () => {
               </div>
 
               {/* Card 3: Book with Confidence */}
-              <div style={{ 
-                background: '#fff', 
-                padding: '2rem', 
-                borderRadius: '15px',
-                textAlign: 'center',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                border: '1px solid #f0f0f0'
-              }}>
+              <div 
+                style={{ 
+                  background: '#fff', 
+                  padding: '2rem', 
+                  borderRadius: '15px',
+                  textAlign: 'center',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                  border: '1px solid #f0f0f0',
+                  transition: 'all 0.3s ease',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-8px)';
+                  e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.15)';
+                  e.currentTarget.style.border = '1px solid #d4a574';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.1)';
+                  e.currentTarget.style.border = '1px solid #f0f0f0';
+                }}
+              >
                 <div style={{ 
                   width: '80px', 
                   height: '80px', 

@@ -1862,7 +1862,7 @@ useEffect(() => {
                           className={`category-filter-btn ${transactionCategoryFilter === 'festive' ? 'active' : ''}`}
                           onClick={() => handleTransactionCategoryFilter('festive')}
                         >
-                          <div className="filter-indicator"></div>
+                          {/* <div className="filter-indicator"></div> */}
                           <span>+</span>
                           Festive
                         </button>
@@ -1870,7 +1870,7 @@ useEffect(() => {
                           className={`category-filter-btn ${transactionCategoryFilter === 'party' ? 'active' : ''}`}
                           onClick={() => handleTransactionCategoryFilter('party')}
                         >
-                          <div className="filter-indicator"></div>
+                          {/* <div className="filter-indicator"></div> */}
                           <span>△</span>
                           Party
                         </button>
@@ -1878,7 +1878,7 @@ useEffect(() => {
                           className={`category-filter-btn ${transactionCategoryFilter === 'casual' ? 'active' : ''}`}
                           onClick={() => handleTransactionCategoryFilter('casual')}
                         >
-                          <div className="filter-indicator"></div>
+                          {/* <div className="filter-indicator"></div> */}
                           <span>+</span>
                           Casual
                         </button>

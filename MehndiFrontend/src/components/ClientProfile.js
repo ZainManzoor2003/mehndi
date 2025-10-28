@@ -659,12 +659,52 @@ const ClientProfile = () => {
             </div>
           )}
         </form>
+      
+      {/* Footer: Need a break? Logout */}
+      <div style={{ marginTop: '24px' }}>
+        <div style={{ height: '1px', backgroundColor: '#e8d9c4', margin: '12px 0 16px 0' }} />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ color: '#7A6A5E', fontSize: '14px' }}>Need a break?</span>
+          <button
+            type="button"
+            onClick={handleLogoutClick}
+            className="logout-underline"
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#8B5E3C',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: 600
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#6f4a30')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = '#8B5E3C')}
+          >
+            <FaSignOutAlt /> Logout
+          </button>
+        </div>
+      </div>
       </div>
 
       <style>{`
         @keyframes spin {
           to { transform: rotate(360deg); }
         }
+        .logout-underline { position: relative; }
+        .logout-underline::after {
+          content: '';
+          position: absolute;
+          left: 0;
+          bottom: -2px;
+          height: 2px;
+          width: 0;
+          background: #8B5E3C;
+          transition: width 0.3s ease;
+        }
+        .logout-underline:hover::after { width: 100%; }
       `}</style>
     </div>
   );

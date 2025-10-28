@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 
@@ -10,8 +10,17 @@ const faqs = [
 ];
 
 const FAQ = () => {
-  const navigate = useNavigate();
   const [openIndex, setOpenIndex] = useState(null);
+
+  // Scroll to top on mount
+  useEffect(() => {
+    try {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch {
+      window.scrollTo(0, 0);
+    }
+  }, []);
+  const navigate = useNavigate();
 
   const toggle = (idx) => {
     setOpenIndex((prev) => (prev === idx ? null : idx));
