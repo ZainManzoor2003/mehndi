@@ -51,32 +51,7 @@ const ManageBookings = () => {
     { value: 'London', label: 'London' },
     { value: 'Birmingham', label: 'Birmingham' },
     { value: 'Manchester', label: 'Manchester' },
-    { value: 'Glasgow', label: 'Glasgow' },
-    { value: 'Liverpool', label: 'Liverpool' },
-    { value: 'Leeds', label: 'Leeds' },
-    { value: 'Edinburgh', label: 'Edinburgh' },
-    { value: 'Bristol', label: 'Bristol' },
-    { value: 'Cardiff', label: 'Cardiff' },
-    { value: 'Sheffield', label: 'Sheffield' },
-    { value: 'Bradford', label: 'Bradford' },
-    { value: 'Leicester', label: 'Leicester' },
-    { value: 'Coventry', label: 'Coventry' },
-    { value: 'Belfast', label: 'Belfast' },
-    { value: 'Nottingham', label: 'Nottingham' },
-    { value: 'Newcastle', label: 'Newcastle upon Tyne' },
-    { value: 'Brighton', label: 'Brighton' },
-    { value: 'Hull', label: 'Hull' },
-    { value: 'Plymouth', label: 'Plymouth' },
-    { value: 'Stoke', label: 'Stoke-on-Trent' },
-    { value: 'Wolverhampton', label: 'Wolverhampton' },
-    { value: 'Derby', label: 'Derby' },
-    { value: 'Swansea', label: 'Swansea' },
-    { value: 'Southampton', label: 'Southampton' },
-    { value: 'Salford', label: 'Salford' },
-    { value: 'Aberdeen', label: 'Aberdeen' },
-    { value: 'Westminster', label: 'Westminster' },
-    { value: 'Portsmouth', label: 'Portsmouth' },
-    { value: 'York', label: 'York' }
+    { value: 'Bradford', label: 'Bradford' }
   ];
 
 

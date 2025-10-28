@@ -8,10 +8,16 @@ const crypto = require('crypto');
 // POST /api/auth/signup
 const signup = async (req, res) => {
   try {
-    const { firstName, lastName, email, password, confirmPassword, userType } = req.body;
+    const { firstName, lastName, email, password, confirmPassword, userType, city } = req.body;
 
+    // Validate required fields
     if (!firstName || !lastName || !email || !password || !confirmPassword || !userType) {
       return res.status(400).json({ success: false, message: 'All fields are required' });
+    }
+
+    // City is mandatory for clients
+    if (userType === 'client' && !city) {
+      return res.status(400).json({ success: false, message: 'City is required for clients' });
     }
 
     if (password !== confirmPassword) {
@@ -23,7 +29,15 @@ const signup = async (req, res) => {
       return res.status(409).json({ success: false, message: 'Email already registered' });
     }
 
-    const user = await User.create({ firstName, lastName, email, password, userType });
+    // Build user data object
+    const userData = { firstName, lastName, email, password, userType };
+    
+    // Add city only if provided (mandatory for clients, optional for artists)
+    if (city) {
+      userData.city = city;
+    }
+
+    const user = await User.create(userData);
     
     // Create wallet for the new user
     await Wallet.create({
@@ -37,58 +51,201 @@ const signup = async (req, res) => {
     await user.save({ validateBeforeSave: false });
 
     // Send verification email
-    const verificationURL = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email/${verificationToken}`;
+    const verificationURL = `${process.env.FRONTEND_URL || 'https://mehndi-client.vercel.app'}/verify-email/${verificationToken}`;
     
-    const message = `Welcome to MehndiMe! Please verify your email by clicking the link below:\n\n${verificationURL}\n\nThis link will expire in 24 hours.\n\nIf you didn't create an account, please ignore this email.`;
+    // Different email content for artists and clients
+    let message, htmlMessage, subject;
     
-    const htmlMessage = `
+    if (userType === 'artist') {
+      // Artist email
+      subject = `🎨 Welcome to MehndiMe, ${firstName}!`;
+      message = `Welcome to MehndiMe!
+
+Hi ${firstName},
+
+Welcome to MehndiMe, the community where talented mehndi artists like you connect with clients who appreciate authentic, beautiful designs.
+
+Before you start applying for bookings and showcasing your artistry, please verify your email address below:
+
+${verificationURL}
+
+For your security, this link will expire in 30 minutes.
+
+Once verified, you'll be able to:
+✨ Create your artist profile and upload your portfolio
+✨ Apply to client requests in your area
+✨ Get discovered by verified clients looking for your style
+
+If you didn't sign up for MehndiMe, you can safely ignore this email.
+
+Warmly,
+The MehndiMe Team`;
+
+      htmlMessage = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
         <div style="text-align: center; margin-bottom: 30px;">
-          <img src="${process.env.FRONTEND_URL || 'http://localhost:3000'}/assets/logo%20icon.png" alt="MehndiMe" style="width: 80px; height: 80px;">
-          <h1 style="color: #d4a574; margin: 10px 0;">Welcome to MehndiMe!</h1>
+          <img src="${process.env.FRONTEND_URL || 'https://mehndi-client.vercel.app'}/assets/logo%20icon.png" alt="MehndiMe" style="width: 80px; height: 80px;">
         </div>
         
         <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-          <h2 style="color: #333; margin-bottom: 20px;">Verify Your Email Address</h2>
+          <h1 style="color: #d4a574; margin: 0 0 10px 0; text-align: center;">You're almost there — verify your artist account!</h1>
+          <p style="text-align: center; color: #666; margin: 0 0 20px 0; font-size: 16px;">Start connecting with clients and showcasing your artistry.</p>
           
-          <p style="color: #666; line-height: 1.6; margin-bottom: 25px;">
-            Hi ${firstName},<br><br>
-            Thank you for signing up with MehndiMe! To complete your registration and start booking amazing mehndi artists, please verify your email address by clicking the button below:
-          </p>
-          
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${verificationURL}" 
-               style="background-color: #d4a574; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; transition: background-color 0.3s;">
-              Verify Email Address
-            </a>
-          </div>
-          
-          <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
-            Or copy and paste this link into your browser:
-          </p>
-          
-          <p style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; word-break: break-all; color: #333; font-size: 14px;">
-            ${verificationURL}
-          </p>
-          
-          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-            <p style="color: #999; font-size: 12px; margin: 0;">
-              This verification link will expire in 24 hours (1 day).<br>
-              If you didn't create an account with MehndiMe, please ignore this email.
+          <div style="border-top: 2px solid #f0f0f0; padding-top: 20px; margin-top: 20px;">
+            <p style="color: #333; font-size: 16px; margin-bottom: 10px;">Hi ${firstName},</p>
+            
+            <p style="color: #666; line-height: 1.6; margin-bottom: 15px;">
+              Welcome to MehndiMe, the community where talented mehndi artists like you connect with clients who appreciate authentic, beautiful designs.
+            </p>
+            
+            <p style="color: #666; line-height: 1.6; margin-bottom: 25px;">
+              Before you start applying for bookings and showcasing your artistry, please verify your email address below:
+            </p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${verificationURL}" 
+                 style="background-color: #d4a574; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; transition: background-color 0.3s;">
+                Verify My Email Address
+              </a>
+            </div>
+            
+            <p style="color: #666; line-height: 1.6; margin-bottom: 10px;">
+              If the button doesn't work, copy and paste this link into your browser:
+            </p>
+            
+            <p style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; word-break: break-all; color: #333; font-size: 14px; margin-bottom: 20px;">
+              ${verificationURL}
+            </p>
+            
+            <p style="color: #333; font-weight: 600; margin-bottom: 10px;">For your security, this link will expire in 30 minutes.</p>
+            
+            <p style="color: #333; font-weight: 600; margin-bottom: 10px;">Once verified, you'll be able to:</p>
+            <ul style="color: #666; line-height: 1.8; margin-bottom: 20px;">
+              <li>Create your artist profile and upload your portfolio</li>
+              <li>Apply to client requests in your area</li>
+              <li>Get discovered by verified clients looking for your style</li>
+            </ul>
+            
+            <p style="color: #666; line-height: 1.6; margin-bottom: 15px;">
+              Need help verifying? Contact our <a href="mailto:support@mehndime.com" style="color: #d4a574; text-decoration: none;">support team</a>.
+            </p>
+            
+            <p style="color: #999; font-size: 12px; margin-bottom: 0;">
+              If you didn't sign up for MehndiMe, you can safely ignore this email.
             </p>
           </div>
         </div>
         
-        <div style="text-align: center; margin-top: 30px; color: #999; font-size: 12px;">
-          <p>© 2024 MehndiMe. All rights reserved.</p>
+        <div style="text-align: center; margin-top: 30px; color: #666;">
+          <p style="margin: 5px 0;">Warmly,<br><strong>The MehndiMe Team</strong></p>
+          <p style="margin: 5px 0; color: #d4a574; font-style: italic;">Empowering artists — one design at a time.</p>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; color: #999; font-size: 12px;">
+          <p style="margin: 5px 0;">© 2025 MehndiMe. All rights reserved.</p>
+          <p style="margin: 5px 0;"><a href="https://www.mehndime.com" style="color: #d4a574; text-decoration: none;">www.mehndime.com</a></p>
         </div>
       </div>
     `;
+    } else {
+      // Client email
+      subject = `Welcome to MehndiMe — Let's Bring Your Mehndi Vision to Life`;
+      message = `Welcome to MehndiMe — Verify Your Client Account
+
+You're just one step away from connecting with amazing mehndi artists!
+
+Hi ${firstName},
+
+Welcome to MehndiMe, the community where you can easily find skilled, authentic mehndi artists for every occasion — from weddings and festivals to simple self-care moments.
+
+Before you start posting requests and exploring artist portfolios, please verify your email address below:
+
+${verificationURL}
+
+For your security, this link will expire in 30 minutes.
+
+Once verified, you'll be able to:
+✨ Post mehndi requests and receive applications from local artists
+✨ Browse portfolios and compare styles
+✨ Hire trusted, verified artists with confidence
+
+If you didn't sign up for MehndiMe, you can safely ignore this email.
+
+Warm regards,
+The MehndiMe Team`;
+
+      htmlMessage = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <img src="${process.env.FRONTEND_URL || 'https://mehndi-client.vercel.app'}/assets/logo%20icon.png" alt="MehndiMe" style="width: 80px; height: 80px;">
+        </div>
+        
+        <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+          <h1 style="color: #d4a574; margin: 0 0 10px 0; text-align: center;">Welcome to MehndiMe — Verify Your Client Account</h1>
+          <p style="text-align: center; color: #666; margin: 0 0 20px 0; font-size: 16px;">You're just one step away from connecting with amazing mehndi artists!</p>
+          
+          <div style="border-top: 2px solid #f0f0f0; padding-top: 20px; margin-top: 20px;">
+            <p style="color: #333; font-size: 16px; margin-bottom: 10px;">Hi ${firstName},</p>
+            
+            <p style="color: #666; line-height: 1.6; margin-bottom: 15px;">
+              Welcome to MehndiMe, the community where you can easily find skilled, authentic mehndi artists for every occasion — from weddings and festivals to simple self-care moments. 💛
+            </p>
+            
+            <p style="color: #666; line-height: 1.6; margin-bottom: 25px;">
+              Before you start posting requests and exploring artist portfolios, please verify your email address below:
+            </p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${verificationURL}" 
+                 style="background-color: #d4a574; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; transition: background-color 0.3s;">
+                Verify My Email Address
+              </a>
+            </div>
+            
+            <p style="color: #666; line-height: 1.6; margin-bottom: 10px;">
+              If the button doesn't work, copy and paste this link into your browser:
+            </p>
+            
+            <p style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; word-break: break-all; color: #333; font-size: 14px; margin-bottom: 20px;">
+              ${verificationURL}
+            </p>
+            
+            <p style="color: #333; font-weight: 600; margin-bottom: 10px;">For your security, this link will expire in 30 minutes.</p>
+            
+            <p style="color: #333; font-weight: 600; margin-bottom: 10px;">Once verified, you'll be able to:</p>
+            <ul style="color: #666; line-height: 1.8; margin-bottom: 20px;">
+              <li>Post mehndi requests and receive applications from local artists</li>
+              <li>Browse portfolios and compare styles</li>
+              <li>Hire trusted, verified artists with confidence</li>
+            </ul>
+            
+            <p style="color: #666; line-height: 1.6; margin-bottom: 15px;">
+              Need help verifying? Contact our <a href="mailto:support@mehndime.com" style="color: #d4a574; text-decoration: none;">support team</a>.
+            </p>
+            
+            <p style="color: #999; font-size: 12px; margin-bottom: 0;">
+              If you didn't sign up for MehndiMe, you can safely ignore this email.
+            </p>
+          </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px; color: #666;">
+          <p style="margin: 5px 0;">Warm regards,<br><strong>The MehndiMe Team</strong></p>
+          <p style="margin: 5px 0; color: #d4a574; font-style: italic;">Bringing peace of mind to your mehndi experience.</p>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; color: #999; font-size: 12px;">
+          <p style="margin: 5px 0;">© 2025 MehndiMe. All rights reserved.</p>
+          <p style="margin: 5px 0;"><a href="https://www.mehndime.com" style="color: #d4a574; text-decoration: none;">www.mehndime.com</a></p>
+        </div>
+      </div>
+    `;
+    }
 
     try {
       await sendEmail({
         email: user.email,
-        subject: 'Verify Your Email - MehndiMe',
+        subject: subject,
         message: message,
         html: htmlMessage
       });

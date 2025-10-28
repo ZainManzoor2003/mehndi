@@ -15,6 +15,7 @@ const Signup = () => {
     firstName: '',
     lastName: '',
     email: '',
+    city: '',
     password: '',
     confirmPassword: '',
     userType: 'client'
@@ -30,6 +31,11 @@ const Signup = () => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
+    
+    // If userType changes, clear city requirement error
+    if (name === 'userType') {
+      setErrors(prev => ({ ...prev, city: '' }));
+    }
   };
 
   const validateForm = () => {
@@ -38,6 +44,12 @@ const Signup = () => {
     if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
     if (!formData.email.trim()) newErrors.email = 'Email is required';
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email is invalid';
+    
+    // City is mandatory for clients, optional for artists
+    if (formData.userType === 'client' && !formData.city.trim()) {
+      newErrors.city = 'City is required';
+    }
+    
     if (!formData.password) newErrors.password = 'Password is required';
     else if (formData.password.length < 6) newErrors.password = 'At least 6 characters';
     if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
@@ -59,6 +71,12 @@ const Signup = () => {
       
       // Show the success message from the backend (email verification sent)
       setSuccess(response.message || 'Registration successful! Please check your email to verify your account.');
+
+      // Redirect to email check screen with email in query string
+      try {
+        const encodedEmail = encodeURIComponent(formData.email);
+        window.location.assign(`/check-email?email=${encodedEmail}`);
+      } catch {}
       
     } catch (error) {
       setErrors({ submit: error.message || 'Registration failed. Please try again.' });
@@ -173,6 +191,27 @@ const Signup = () => {
                 required
               />
               {errors.email && <div className="error-message inline">{errors.email}</div>}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="city" className="form-label">
+                City {formData.userType === 'client' && <span style={{ color: '#ef4444' }}>*</span>}
+              </label>
+              <select
+                id="city"
+                name="city"
+                className="form-input"
+                value={formData.city}
+                onChange={handleInputChange}
+                required={formData.userType === 'client'}
+              >
+                <option value="">Select your city</option>
+                <option value="London">London</option>
+                <option value="Birmingham">Birmingham</option>
+                <option value="Manchester">Manchester</option>
+                <option value="Bradford">Bradford</option>
+              </select>
+              {errors.city && <div className="error-message inline">{errors.city}</div>}
             </div>
 
             <div className="form-row">
