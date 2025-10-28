@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 
 const faqs = [
   { q: 'How do I book a Mehndi artist?', a: 'Simply submit a request with your details. Verified artists will apply, and you can review their portfolios before choosing your favorite.' },
@@ -9,6 +10,7 @@ const faqs = [
 ];
 
 const FAQ = () => {
+  const navigate = useNavigate();
   const [openIndex, setOpenIndex] = useState(null);
 
   const toggle = (idx) => {
@@ -16,9 +18,12 @@ const FAQ = () => {
   };
 
   return (
-    <section className="section" id="faq" style={{color: 'var(--ad-text)', backgroundColor: '#E4C293', padding: '4rem 0' }}>
+    <section className="section" id="faq" style={{ color: 'var(--ad-text)', backgroundColor: '#E4C293', padding: '4rem 0' }}>
       <div className="container" style={{ maxWidth: 980, margin: '0 auto', padding: '0 1.2rem' }}>
-        <h2 className="section__title" style={{fontSize: '3.5rem', color: 'var(--title-color)', textAlign: 'center', marginBottom: '1rem' }}>FAQ</h2>
+        <h2 className="section__title" style={{
+          fontSize: '3.5rem', color: 'var(--title-color)', textAlign: 'center',
+          marginBottom: '1rem'
+        }}>Questions about Mehndi Me</h2>
         <p style={{ textAlign: 'center', fontSize: '1.1rem', color: 'var(--ad-text)', marginBottom: '2.5rem' }}>
           Here are some common questions from our Mehndi community <span style={{ fontSize: '1.5rem' }}>🌿</span>
         </p>
@@ -63,35 +68,35 @@ const FAQ = () => {
                     e.target.style.color = 'var(--ad-text)';
                   }}
                 >
-                  <span style={{color: 'var(--ad-text)', fontWeight: 600, transition: 'color 0.3s ease' }}>{item.q}</span> 
+                  <span style={{ color: 'var(--ad-text)', fontWeight: 600, transition: 'color 0.3s ease' }}>{item.q}</span>
                   {isOpen ? (
-                    <FaChevronUp 
-                      style={{ 
-                        color: '#C79F5B', 
+                    <FaChevronUp
+                      style={{
+                        color: '#C79F5B',
                         fontSize: '1rem',
                         transition: 'transform 0.3s ease'
-                      }} 
+                      }}
                     />
                   ) : (
-                    <FaChevronDown 
-                      style={{ 
-                        color: '#C79F5B', 
+                    <FaChevronDown
+                      style={{
+                        color: '#C79F5B',
                         fontSize: '1rem',
                         transition: 'transform 0.3s ease'
-                      }} 
+                      }}
                     />
                   )}
                 </button>
-                
+
                 <div
                   style={{
-                    maxHeight: isOpen ? '300px' : '0', 
+                    maxHeight: isOpen ? '300px' : '0',
                     overflow: 'hidden',
                     transition: 'max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                   }}
                 >
-                  <div style={{ 
-                    padding: '0 24px 20px 24px', 
+                  <div style={{
+                    padding: '0 24px 20px 24px',
                     color: 'var(--ad-muted)',
                     lineHeight: '1.6',
                     fontSize: '1rem'
@@ -105,7 +110,23 @@ const FAQ = () => {
           })}
         </div>
       </div>
-      
+      <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+        <button
+          onClick={() => navigate('/faq')}
+          style={{
+            backgroundColor: '#5C3D2E',
+            color: '#fff',
+            border: 'none',
+            padding: '12px 24px',
+            borderRadius: '999px',
+            fontWeight: 700,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            cursor: 'pointer'
+          }}
+        >
+          View All FAQs →
+        </button>
+      </div>
     </section>
   );
 };

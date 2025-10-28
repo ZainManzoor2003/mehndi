@@ -23,16 +23,11 @@ const BookingSchema = new mongoose.Schema({
   },
   email: {
     type: String,
-    required: [true, 'Email address is required'],
+    required: false,
     lowercase: true,
     trim: true,
-    match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email']
-  },
-  phoneNumber: {
-    type: String,
-    required: [true, 'Phone number is required'],
-    trim: true,
-    maxlength: 20
+    match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email'],
+    default: ''
   },
 
   // Event Details
@@ -82,26 +77,33 @@ const BookingSchema = new mongoose.Schema({
     maxlength: 200
   },
   artistTravelsToClient: {
-    type: Boolean,
-    required: [true, 'Travel preference is required']
+    type: mongoose.Schema.Types.Mixed, // Allow boolean or string
+    required: [true, 'Travel preference is required'],
+    validate: {
+      validator: function(v) {
+        // Accept boolean values or the string 'both'
+        return typeof v === 'boolean' || v === 'both';
+      },
+      message: 'Travel preference must be true, false, or "both"'
+    }
   },
   fullAddress: {
     type: String,
-    required: [true, 'Full address is required'],
     trim: true,
-    maxlength: 500
+    maxlength: 500,
+    required: false
   },
   city: {
     type: String,
-    required: [true, 'City is required'],
     trim: true,
-    maxlength: 100
+    maxlength: 100,
+    required: false
   },
   postalCode: {
     type: String,
-    required: [true, 'Postal code is required'],
     trim: true,
-    maxlength: 20
+    maxlength: 20,
+    required: false
   },
   latitude: {
     type: Number,
@@ -116,7 +118,8 @@ const BookingSchema = new mongoose.Schema({
   venueName: {
     type: String,
     trim: true,
-    maxlength: 200
+    maxlength: 200,
+    required: false
   },
 
   // Budget and Duration
@@ -138,9 +141,10 @@ const BookingSchema = new mongoose.Schema({
   },
   duration: {
     type: Number,
-    required: [true, 'Duration is required'],
+    default: 3,
     min: [1, 'Duration must be at least 1 hour'],
-    max: [24, 'Duration cannot exceed 24 hours']
+    max: [24, 'Duration cannot exceed 24 hours'],
+    required: false
   },
   numberOfPeople: {
     type: Number,
@@ -154,34 +158,17 @@ const BookingSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Design style is required'],
     trim: true,
-    maxlength: 100
-  },
-  designComplexity: {
-    type: String,
-    required: [true, 'Design complexity is required'],
-    trim: true,
-    maxlength: 100
-  },
-  bodyPartsToDecorate: {
-    type: [String],
-    required: [true, 'Body parts to decorate is required'],
-    enum: ['Hands', 'Feet', 'Arms', 'Back'],
-    validate: {
-      validator: function(v) {
-        return v && v.length > 0;
-      },
-      message: 'At least one body part must be selected'
-    }
+    maxlength: 500
   },
   designInspiration: {
-    type: String,
-    trim: true,
-    maxlength: 1000
+    type: [String],
+    default: []
   },
   coveragePreference: {
     type: String,
     trim: true,
-    maxlength: 100
+    maxlength: 100,
+    required: false
   },
 
   // Additional Information

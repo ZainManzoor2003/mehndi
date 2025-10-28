@@ -1,9 +1,22 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 // Make sure your CSS file is imported
 // import './App.css'; 
 
 const Footer = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const handleLinkClick = (path, requiresAuth = false) => {
+    if (requiresAuth && !user) {
+      navigate('/login');
+    } else {
+      navigate(path);
+    }
+  };
+
   return (
     <footer className="footer" style={{backgroundColor: 'var(--first-color)'}}>
       <div className="footer__container container" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -47,29 +60,29 @@ const Footer = () => {
           <div className="footer__content" style={{ textAlign: 'center', minWidth: '220px' }}>
             <h3 className="footer__title">For Mehndi Artists</h3>
             <ul className="footer__list">
-              <li><a href="#" className="footer__link">Earn as a Mehndi Artist</a></li>
-              <li><a href="#" className="footer__link">Browse Bookings</a></li>
-              <li><a href="#" className="footer__link">Artist Dashboard</a></li>
-              <li><a href="#" className="footer__link">FAQs for Artists</a></li>
+              <li><a href="#" className="footer__link" onClick={(e) => { e.preventDefault(); navigate('/earn-as-artist'); }}>Earn as a Mehndi Artist</a></li>
+              <li><a href="#" className="footer__link" onClick={(e) => { e.preventDefault(); handleLinkClick('/artist-dashboard', true); }}>Browse Bookings</a></li>
+              <li><a href="#" className="footer__link" onClick={(e) => { e.preventDefault(); handleLinkClick('/artist-dashboard', true); }}>Artist Dashboard</a></li>
+              <li><a href="#" className="footer__link" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>FAQs for Artists</a></li>
             </ul>
           </div>
 
           <div className="footer__content" style={{ textAlign: 'center', minWidth: '220px' }}>
             <h3 className="footer__title">For Clients</h3>
             <ul className="footer__list">
-              <li><a href="#" className="footer__link">Request an Artist</a></li>
-              <li><a href="#" className="footer__link">Log In / Sign Up</a></li>
-              <li><a href="#" className="footer__link">FAQs for Clients</a></li>
-              <li><a href="#" className="footer__link">Blog</a></li>
+              <li><a href="#" className="footer__link" onClick={(e) => { e.preventDefault(); handleLinkClick('/booking', true); }}>Request an Artist</a></li>
+              <li><a href="#" className="footer__link" onClick={(e) => { e.preventDefault(); navigate('/login'); }}>Log In / Sign Up</a></li>
+              <li><a href="#" className="footer__link" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>FAQs for Clients</a></li>
+              <li><a href="#" className="footer__link" onClick={(e) => { e.preventDefault(); navigate('/blogs'); }}>Blog</a></li>
             </ul>
           </div>
 
           <div className="footer__content" style={{ textAlign: 'center', minWidth: '220px' }}>
             <h3 className="footer__title">Trust & Transparency</h3>
             <ul className="footer__list">
-              <li><a href="#" className="footer__link">Privacy Policy</a></li>
-              <li><a href="#" className="footer__link">Terms & Conditions</a></li>
-              <li><a href="#" className="footer__link">Code of Conduct</a></li>
+              <li><a href="#" className="footer__link" onClick={(e) => { e.preventDefault(); window.open('/privacy-policy', '_blank'); }}>Privacy Policy</a></li>
+              <li><a href="#" className="footer__link" onClick={(e) => { e.preventDefault(); window.open('/terms-conditions', '_blank'); }}>Terms & Conditions</a></li>
+              <li><a href="#" className="footer__link" onClick={(e) => { e.preventDefault(); window.open('/code-of-conduct', '_blank'); }}>Code of Conduct</a></li>
             </ul>
           </div>
         </div>

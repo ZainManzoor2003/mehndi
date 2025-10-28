@@ -3161,7 +3161,7 @@
   }
   
   .proposal-actions {
-    flex-direction: column;
+    /* flex-direction: column; */
   }
   
   .accept-proposal-btn,
@@ -7838,7 +7838,7 @@ body.dark-theme .scroll-header .henna-line {
   }
   
   .proposal-actions {
-    flex-wrap: wrap;
+    /* flex-wrap: wrap; */
   }
 }
 
@@ -7863,7 +7863,7 @@ body.dark-theme .scroll-header .henna-line {
   }
   
   .artist-info {
-    flex-direction: column;
+    /* flex-direction: column; */
     text-align: center;
   }
   
@@ -10446,10 +10446,6 @@ body.dark-theme .scroll-header .henna-line {
     margin-bottom: 0.5rem;
   } */
   
-  .col-price::before { content: "Price: "; font-weight: var(--font-semi-bold); }
-  .col-status::before { content: "Status: "; font-weight: var(--font-semi-bold); }
-  .col-actions::before { content: "Actions: "; font-weight: var(--font-semi-bold); }
-  
   .proposal-actions {
     margin-top: 0.5rem;
   }
@@ -10479,7 +10475,7 @@ body.dark-theme .scroll-header .henna-line {
   }
   
   .proposal-actions {
-    flex-wrap: wrap;
+    /* flex-wrap: wrap; */
     gap: 0.25rem;
   }
   
@@ -10497,7 +10493,7 @@ body.dark-theme .scroll-header .henna-line {
   }
   
   .artist-info {
-    flex-direction: column;
+    /* flex-direction: column; */
     text-align: center;
     gap: 0.5rem;
   }
@@ -10507,7 +10503,7 @@ body.dark-theme .scroll-header .henna-line {
   }
   
   .proposal-actions {
-    flex-wrap: wrap;
+    /* flex-wrap: wrap; */
     justify-content: center;
   }
 }

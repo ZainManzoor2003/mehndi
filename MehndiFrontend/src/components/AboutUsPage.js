@@ -5,6 +5,15 @@ import Footer from './Footer';
 const AboutUsPage = () => {
   const [activeSection, setActiveSection] = useState(0);
 
+  // Scroll to top on mount
+  useEffect(() => {
+    try {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch {
+      window.scrollTo(0, 0);
+    }
+  }, []);
+
   // Scroll tracking for section detection
   useEffect(() => {
     const handleScroll = () => {

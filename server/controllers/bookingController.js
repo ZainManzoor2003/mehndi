@@ -71,16 +71,12 @@ const createBooking = async (req, res) => {
       firstName,
       lastName,
       email,
-      phoneNumber,
       eventType,
       otherEventType,
       eventDate,
       preferredTimeSlot,
       location,
       artistTravelsToClient,
-      fullAddress,
-      city,
-      postalCode,
       latitude,
       longitude,
       venueName,
@@ -89,18 +85,16 @@ const createBooking = async (req, res) => {
       duration,
       numberOfPeople,
       designStyle,
-      designComplexity,
-      bodyPartsToDecorate,
       designInspiration,
       coveragePreference,
       additionalRequests
     } = req.body;
 
     // Validate required fields
-    if (!firstName || !lastName || !email || !phoneNumber) {
+    if (!firstName || !lastName) {
       return res.status(400).json({
         success: false,
-        message: 'Personal information is required'
+        message: 'Name is required'
       });
     }
 
@@ -132,31 +126,27 @@ const createBooking = async (req, res) => {
       });
     }
 
-    if (typeof artistTravelsToClient !== 'boolean') {
+    // Handle travel preference - can be 'yes', 'no', or 'both'
+    if (artistTravelsToClient === undefined || artistTravelsToClient === null) {
       return res.status(400).json({
         success: false,
         message: 'Travel preference is required'
       });
     }
 
-    if (!fullAddress || !city || !postalCode) {
+    // Address fields are completely removed
+
+    if (!minimumBudget || !maximumBudget || !numberOfPeople) {
       return res.status(400).json({
         success: false,
-        message: 'Address information is required'
+        message: 'Budget and number of people information is required'
       });
     }
 
-    if (!minimumBudget || !maximumBudget || !duration || !numberOfPeople) {
+    if (!designStyle) {
       return res.status(400).json({
         success: false,
-        message: 'Budget and duration information is required'
-      });
-    }
-
-    if (!designStyle || !designComplexity || !bodyPartsToDecorate || bodyPartsToDecorate.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Design preferences are required'
+        message: 'Design style is required'
       });
     }
 
@@ -177,33 +167,42 @@ const createBooking = async (req, res) => {
       });
     }
 
+    // Convert travel preference to boolean or keep as 'both' for database
+    let travelPreference;
+    if (artistTravelsToClient === 'both') {
+      travelPreference = 'both'; // Store as string for 'both' option
+    } else if (artistTravelsToClient === 'yes' || artistTravelsToClient === true) {
+      travelPreference = true;
+    } else if (artistTravelsToClient === 'no' || artistTravelsToClient === false) {
+      travelPreference = false;
+    } else {
+      travelPreference = artistTravelsToClient;
+    }
+
+    // Get email from request or user account
+    const bookingEmail = email || req.user.email || '';
+
     // Create the booking
     const booking = await Booking.create({
       clientId: req.user.id,
       firstName,
       lastName,
-      email,
-      phoneNumber,
+      email: bookingEmail,
       eventType,
       otherEventType: otherEventType || undefined,
       eventDate: eventDateObj,
       preferredTimeSlot,
       location,
-      artistTravelsToClient,
-      fullAddress,
-      city,
-      postalCode,
+      artistTravelsToClient: travelPreference,
       latitude: latitude ? parseFloat(latitude) : undefined,
       longitude: longitude ? parseFloat(longitude) : undefined,
       venueName: venueName || undefined,
       minimumBudget,
       maximumBudget,
-      duration,
+      duration: duration || 3,
       numberOfPeople,
       designStyle,
-      designComplexity,
-      bodyPartsToDecorate,
-      designInspiration: designInspiration || undefined,
+      designInspiration: Array.isArray(designInspiration) ? designInspiration : (designInspiration ? [designInspiration] : []),
       coveragePreference: coveragePreference || undefined,
       additionalRequests: additionalRequests || undefined,
       status: 'pending'
@@ -217,10 +216,10 @@ const createBooking = async (req, res) => {
       const clientName = `${req.user.firstName} ${req.user.lastName}`;
       const notificationData = {
         clientName,
-        bookingName: `${eventType.join(', ')} - ${city}`,
+        bookingName: `${eventType.join(', ')} - ${location}`,
         eventType,
         bookingDate: eventDateObj,
-        location: city,
+        location: location,
         minimumBudget,
         maximumBudget
       };
@@ -414,17 +413,44 @@ const updateBooking = async (req, res) => {
     }
 
     const updatableFields = [
-      'firstName','lastName','email','phoneNumber',
+      'firstName','lastName','email',
       'eventType','otherEventType','eventDate','preferredTimeSlot',
-      'location','artistTravelsToClient','fullAddress','city','postalCode','venueName',
+      'location','artistTravelsToClient','venueName',
       'minimumBudget','maximumBudget','duration','numberOfPeople',
-      'designStyle','designComplexity','bodyPartsToDecorate','designInspiration','coveragePreference',
+      'designStyle','designInspiration','coveragePreference',
       'additionalRequests'
     ];
 
     updatableFields.forEach((field) => {
       if (typeof req.body[field] !== 'undefined') {
-        booking[field] = req.body[field];
+        // Special handling for different fields
+        if (field === 'designInspiration') {
+          // Convert string to array if needed
+          booking[field] = Array.isArray(req.body[field]) ? req.body[field] : (req.body[field] ? [req.body[field]] : []);
+        } else if (field === 'eventType') {
+          // Convert single value to array if needed
+          booking[field] = Array.isArray(req.body[field]) ? req.body[field] : [req.body[field]];
+        } else if (field === 'preferredTimeSlot') {
+          // Convert single value to array if needed
+          booking[field] = Array.isArray(req.body[field]) ? req.body[field] : [req.body[field]];
+        } else if (field === 'artistTravelsToClient') {
+          // Handle travel preference - can be 'yes', 'no', 'both', true, false
+          if (typeof req.body[field] === 'string') {
+            if (req.body[field] === 'both') {
+              booking[field] = 'both';
+            } else if (req.body[field] === 'yes') {
+              booking[field] = true;
+            } else if (req.body[field] === 'no') {
+              booking[field] = false;
+            } else {
+              booking[field] = req.body[field];
+            }
+          } else {
+            booking[field] = req.body[field];
+          }
+        } else {
+          booking[field] = req.body[field];
+        }
       }
     });
 
@@ -437,6 +463,20 @@ const updateBooking = async (req, res) => {
     if (req.body.eventDate) {
       const eventDateObj = new Date(req.body.eventDate);
       booking.eventDate = eventDateObj;
+    }
+
+    // Convert numbers
+    if (req.body.minimumBudget !== undefined) {
+      booking.minimumBudget = Number(req.body.minimumBudget);
+    }
+    if (req.body.maximumBudget !== undefined) {
+      booking.maximumBudget = Number(req.body.maximumBudget);
+    }
+    if (req.body.duration !== undefined) {
+      booking.duration = Number(req.body.duration);
+    }
+    if (req.body.numberOfPeople !== undefined) {
+      booking.numberOfPeople = Number(req.body.numberOfPeople);
     }
 
     // Set status to pending when booking is updated
@@ -602,10 +642,10 @@ const completeBooking = async (req, res) => {
       const clientName = `${req.user.firstName} ${req.user.lastName}`;
       const notificationData = {
         clientName,
-        bookingName: `${booking.eventType?.join(', ') || 'Mehndi'} - ${booking.city}`,
+        bookingName: `${booking.eventType?.join(', ') || 'Mehndi'} - ${booking.location}`,
         eventType: booking.eventType,
         bookingDate: booking.eventDate,
-        location: booking.city
+        location: booking.location
       };
 
       await createNotification(
@@ -975,10 +1015,10 @@ const cancelBooking = async (req, res) => {
       const clientName = `${req.user.firstName} ${req.user.lastName}`;
       const notificationData = {
         clientName,
-        bookingName: `${booking.eventType?.join(', ') || 'Mehndi'} - ${booking.city}`,
+        bookingName: `${booking.eventType?.join(', ') || 'Mehndi'} - ${booking.location}`,
         eventType: booking.eventType,
         bookingDate: booking.eventDate,
-        location: booking.city,
+        location: booking.location,
         cancellationReason
       };
 

@@ -606,29 +606,44 @@ const ArtistDashboard = () => {
       document.body.style.overflow = 'hidden';
       const resp = await bookingsAPI.getBooking(bookingId);
       const b = resp.data || {};
+
+      // Convert eventType array to single value
+      const eventTypeValue = Array.isArray(b.eventType)
+        ? b.eventType[0]
+        : b.eventType || '';
+
+      // Convert preferredTimeSlot array to single value
+      const timeSlotValue = Array.isArray(b.preferredTimeSlot)
+        ? b.preferredTimeSlot[0]
+        : b.preferredTimeSlot || '';
+
+      // Handle travel preference
+      let travelPreference;
+      if (b.artistTravelsToClient === 'both' || b.artistTravelsToClient === 'Both') {
+        travelPreference = 'both';
+      } else if (b.artistTravelsToClient === true || b.artistTravelsToClient === 'yes') {
+        travelPreference = 'yes';
+      } else {
+        travelPreference = 'no';
+      }
+
       setViewForm({
         firstName: b.firstName || '',
         lastName: b.lastName || '',
         email: b.email || '',
-        phoneNumber: b.phoneNumber || '',
-        eventType: b.eventType || [],
+        eventType: eventTypeValue,
         otherEventType: b.otherEventType || '',
         eventDate: b.eventDate ? new Date(b.eventDate).toISOString().substring(0, 10) : '',
-        preferredTimeSlot: b.preferredTimeSlot || [],
+        preferredTimeSlot: timeSlotValue,
         location: b.location || '',
-        artistTravelsToClient: b.artistTravelsToClient === true,
-        fullAddress: b.fullAddress || '',
-        city: b.city || '',
-        postalCode: b.postalCode || '',
+        artistTravelsToClient: travelPreference,
         venueName: b.venueName || '',
         minimumBudget: b.minimumBudget ?? '',
         maximumBudget: b.maximumBudget ?? '',
-        duration: b.duration ?? '',
+        duration: b.duration ?? 3,
         numberOfPeople: b.numberOfPeople ?? '',
         designStyle: b.designStyle || '',
-        designComplexity: b.designComplexity || '',
-        bodyPartsToDecorate: b.bodyPartsToDecorate || [],
-        designInspiration: b.designInspiration || '',
+        designInspiration: Array.isArray(b.designInspiration) ? b.designInspiration : (b.designInspiration ? [b.designInspiration] : []),
         coveragePreference: b.coveragePreference || '',
         additionalRequests: b.additionalRequests || ''
       });
@@ -1540,7 +1555,7 @@ const ArtistDashboard = () => {
         timeline: {
           estimatedDuration: {
             value: parseFloat(proposalData.duration.replace(/[^0-9.]/g, '')), // Extract numeric value
-            unit: proposalData.duration.toLowerCase().includes('day') ? 'days' : 'hours'
+            unit: 'hours'
           }
         },
         experience: {
@@ -2637,14 +2652,28 @@ useEffect(() => {
                     marginBottom: '30px'
                   }}>
                     {/* Bookings Card */}
-                    <div style={{
+                    <div 
+                      style={{
                       backgroundColor: 'white',
                       borderRadius: '12px',
                       textAlign: 'center',
                       padding: '20px',
                       boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                      border: '1px solid #f0f0f0'
-                    }}>
+                        border: '1px solid #f0f0f0',
+                        transition: 'all 0.3s ease',
+                        cursor: 'pointer'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-4px)';
+                        e.currentTarget.style.boxShadow = '0 8px 16px rgba(0,0,0,0.15)';
+                        e.currentTarget.style.borderColor = '#22c55e';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                        e.currentTarget.style.borderColor = '#f0f0f0';
+                      }}
+                    >
                       <div style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -2677,14 +2706,28 @@ useEffect(() => {
                     </div>
 
                     {/* Applications Card */}
-                    <div style={{
+                    <div 
+                      style={{
                       backgroundColor: 'white',
                       borderRadius: '12px',
                       padding: '20px',
                       textAlign: 'center',
                       boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                      border: '1px solid #f0f0f0'
-                    }}>
+                        border: '1px solid #f0f0f0',
+                        transition: 'all 0.3s ease',
+                        cursor: 'pointer'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-4px)';
+                        e.currentTarget.style.boxShadow = '0 8px 16px rgba(0,0,0,0.15)';
+                        e.currentTarget.style.borderColor = '#298AFF';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                        e.currentTarget.style.borderColor = '#f0f0f0';
+                      }}
+                    >
                       <div style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -2717,14 +2760,28 @@ useEffect(() => {
                     </div>
 
                     {/* Conversion Rate Card */}
-                    <div style={{
+                    <div 
+                      style={{
                       backgroundColor: 'white',
                       borderRadius: '12px',
                       padding: '20px',
                       textAlign: 'center',
                       boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                      border: '1px solid #f0f0f0'
-                    }}>
+                        border: '1px solid #f0f0f0',
+                        transition: 'all 0.3s ease',
+                        cursor: 'pointer'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-4px)';
+                        e.currentTarget.style.boxShadow = '0 8px 16px rgba(0,0,0,0.15)';
+                        e.currentTarget.style.borderColor = '#a855f7';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                        e.currentTarget.style.borderColor = '#f0f0f0';
+                      }}
+                    >
                       <div style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -2758,14 +2815,28 @@ useEffect(() => {
                     </div>
 
                     {/* Response Rate Card */}
-                    <div style={{
+                    <div 
+                      style={{
                       backgroundColor: 'white',
                       borderRadius: '12px',
                       padding: '20px',
                       textAlign: 'center',
                       boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                      border: '1px solid #f0f0f0'
-                    }}>
+                        border: '1px solid #f0f0f0',
+                        transition: 'all 0.3s ease',
+                        cursor: 'pointer'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-4px)';
+                        e.currentTarget.style.boxShadow = '0 8px 16px rgba(0,0,0,0.15)';
+                        e.currentTarget.style.borderColor = '#EABF36';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                        e.currentTarget.style.borderColor = '#f0f0f0';
+                      }}
+                    >
                       <div style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -3053,7 +3124,7 @@ useEffect(() => {
                         alignItems: 'center',
                         gap: '4px'
                       }}>
-                        <span>⏰</span> {applicationStats.expired > 0 ? `${applicationStats.expired} expired` : 'No expired'}
+                        <span>⏰</span> {applicationStats.expired > 0 ? `${applicationStats.expired} expired` : 'No expirations'}
                       </div>
                     </div>
                   </div>
@@ -3413,9 +3484,9 @@ useEffect(() => {
                                             title="Download image"
                                           >
                                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" strokeWidth="2" fill="none"/>
-                                              <polyline points="7,10 12,15 17,10" stroke="currentColor" strokeWidth="2" fill="none"/>
-                                              <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" strokeWidth="2"/>
+                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" strokeWidth="2" fill="none" />
+                                                <polyline points="7,10 12,15 17,10" stroke="currentColor" strokeWidth="2" fill="none" />
+                                                <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" strokeWidth="2" />
                                             </svg>
                                           </button>
                                         </div>
@@ -3448,11 +3519,11 @@ useEffect(() => {
                                           <div className="document-content">
                                             <div className="document-icon">
                                               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="2" fill="none"/>
-                                                <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2" fill="none"/>
-                                                <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" strokeWidth="2"/>
-                                                <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" strokeWidth="2"/>
-                                                <polyline points="10,9 9,9 8,9" stroke="currentColor" strokeWidth="2"/>
+                                                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="2" fill="none" />
+                                                  <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2" fill="none" />
+                                                  <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" strokeWidth="2" />
+                                                  <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" strokeWidth="2" />
+                                                  <polyline points="10,9 9,9 8,9" stroke="currentColor" strokeWidth="2" />
                                               </svg>
                                             </div>
                                             <div className="document-details">
@@ -3466,9 +3537,9 @@ useEffect(() => {
                                             title="Download document"
                                           >
                                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" strokeWidth="2" fill="none"/>
-                                              <polyline points="7,10 12,15 17,10" stroke="currentColor" strokeWidth="2" fill="none"/>
-                                              <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" strokeWidth="2"/>
+                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" strokeWidth="2" fill="none" />
+                                                <polyline points="7,10 12,15 17,10" stroke="currentColor" strokeWidth="2" fill="none" />
+                                                <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" strokeWidth="2" />
                                             </svg>
                                           </button>
                                         </div>);
@@ -3942,12 +4013,12 @@ useEffect(() => {
                       <div className="transaction-table-wrapper">
                         <div className="transaction-table">
                           <div className="table-header">
-                            <span className="col-date" style={{color:'white'}}>Date</span>
-                            <span className="col-category" style={{color:'white'}}>Category</span>
-                            <span className="col-client" style={{color:'white'}}>Client</span>
-                            <span className="col-amount" style={{color:'white'}}>Amount</span>
-                            <span className="col-status" style={{color:'white'}}>Status</span>
-                            <span className="col-invoice" style={{color:'white'}}>Invoice</span>
+                            <span className="col-date" style={{ color: 'white' }}>Date</span>
+                            <span className="col-category" style={{ color: 'white' }}>Category</span>
+                            <span className="col-client" style={{ color: 'white' }}>Client</span>
+                            <span className="col-amount" style={{ color: 'white' }}>Amount</span>
+                            <span className="col-status" style={{ color: 'white' }}>Status</span>
+                            <span className="col-invoice" style={{ color: 'white' }}>Invoice</span>
                           </div>
 
                           {getFilteredTransactions().map((transaction) => {
@@ -3974,6 +4045,7 @@ useEffect(() => {
 
                           const getClientName = (transaction) => {
                             // For artists, the client would be the other party
+                              console.log(transaction.artistInfo)
                             return transaction.artistInfo ? 'Client' : 'Unknown Client';
                           };
 
@@ -4312,172 +4384,363 @@ useEffect(() => {
                 zIndex: 9999
               }}>
                 <div className="modal" onClick={(e) => e.stopPropagation()} style={{
-                  maxWidth: '700px',
-                  width: '90%',
-                  maxHeight: '85vh',
-                  display: 'flex',
-                  flexDirection: 'column',
+                  maxWidth: '800px',
+                  maxHeight: '90vh',
+                  width: '95%',
                   backgroundColor: 'white',
-                  borderRadius: '12px',
-                  overflow: 'hidden'
+                  borderRadius: '16px',
+                  boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+                  display: 'flex',
+                  flexDirection: 'column'
                 }}>
-                  <div className="modal-header" style={{ flexShrink: 0 }}>
-                    <h3 className="modal-title">Booking Details</h3>
-                    <button className="modal-close" onClick={closeViewBooking}>×</button>
-                  </div>
-                  <div className="modal-body" style={{
-                    overflowY: 'auto',
-                    flex: 1,
-                    padding: '20px'
+                  <div style={{
+                    padding: '2rem 2.5rem 1.5rem',
+                    borderBottom: '1px solid #e8ddd4',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
                   }}>
-                    <div className="modal-grid">
-                      <div className="form-group">
-                        <label>First name</label>
-                        <input name="firstName" value={viewForm.firstName} disabled />
+                    <h2 style={{
+                      margin: 0,
+                      fontSize: '1.75rem',
+                      fontWeight: '600',
+                      color: '#8B4513'
+                    }}>Booking Details</h2>
+                    <button onClick={closeViewBooking} style={{
+                      background: 'none',
+                      border: 'none',
+                      fontSize: '28px',
+                      color: '#8B4513',
+                      cursor: 'pointer',
+                      width: '32px',
+                      height: '32px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>×</button>
+                  </div>
+                  <div style={{
+                    flex: 1,
+                    overflowY: 'auto',
+                    padding: '2rem 2.5rem'
+                  }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                      {/* Client Name */}
+                      <div>
+                        <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Client Name</label>
+                        <div style={{
+                          padding: '12px 16px',
+                          border: '1px solid #e0d5c9',
+                          borderRadius: '10px',
+                          fontSize: '1rem',
+                          background: '#faf8f5',
+                          color: '#8B4513',
+                          fontWeight: '500'
+                        }}>
+                          {viewForm.firstName} {viewForm.lastName}
                       </div>
-                      <div className="form-group">
-                        <label>Last name</label>
-                        <input name="lastName" value={viewForm.lastName} disabled />
                       </div>
-                      <div className="form-group">
-                        <label>Email</label>
-                        <input name="email" type="email" value={viewForm.email} disabled />
+
+                      {/* Event Type */}
+                      <div>
+                        <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Event Type</label>
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                          gap: '1rem'
+                        }}>
+                          {[
+                            { value: 'Wedding', emoji: '💍' },
+                            { value: 'Eid', emoji: '🌙' },
+                            { value: 'Party', emoji: '🎉' },
+                            { value: 'Festival', emoji: '🎊' }
+                          ].map(opt => (
+                            <div key={opt.value} style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '12px',
+                              padding: '16px',
+                              border: `2px solid ${viewForm.eventType === opt.value ? '#CD853F' : '#e0d5c9'}`,
+                              borderRadius: '12px',
+                              background: viewForm.eventType === opt.value ? '#fff8f0' : '#faf8f5',
+                              transition: 'all 0.3s',
+                              position: 'relative'
+                            }}>
+                              <span style={{ fontSize: '1.5rem' }}>{opt.emoji}</span>
+                              <span style={{ fontSize: '0.95rem', fontWeight: '500' }}>{opt.value}</span>
+                              {viewForm.eventType === opt.value && (
+                                <span style={{ position: 'absolute', right: '16px', color: '#CD853F', fontWeight: 'bold', fontSize: '1.3rem' }}>✓</span>
+                              )}
                       </div>
-                      <div className="form-group">
-                        <label>Phone</label>
-                        <input name="phoneNumber" value={viewForm.phoneNumber} disabled />
+                          ))}
                       </div>
-                      <div className="form-group">
-                        <label>Event date</label>
-                        <input name="eventDate" type="date" value={viewForm.eventDate} disabled />
+                        {viewForm.otherEventType && (
+                          <div style={{
+                            marginTop: '1rem',
+                            padding: '12px 16px',
+                            background: '#faf8f5',
+                            borderRadius: '10px',
+                            border: '1px solid #e0d5c9',
+                            fontSize: '0.95rem',
+                            color: '#8B4513'
+                          }}>
+                            Other: {viewForm.otherEventType}
                       </div>
-                      <div className="form-group full">
-                        <label>Event type</label>
-                        <div className="checkbox-grid">
-                          {['Wedding', 'Eid', 'Party', 'Festival'].map(opt => (
-                            <label key={opt} className="checkbox-label">
-                              <input type="checkbox" checked={(viewForm.eventType || []).includes(opt)} readOnly disabled />
-                              <span>{opt}</span>
-                            </label>
+                        )}
+                        </div>
+
+                      {/* Event Date */}
+                      <div>
+                        <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Event Date</label>
+                        <div style={{
+                          padding: '12px 16px',
+                          border: '1px solid #e0d5c9',
+                          borderRadius: '10px',
+                          fontSize: '1rem',
+                          background: '#faf8f5',
+                          color: '#8B4513'
+                        }}>
+                          {viewForm.eventDate ? new Date(viewForm.eventDate).toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'Not set'}
+                      </div>
+                        </div>
+
+                      {/* Preferred Time Slot */}
+                      <div>
+                        <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Preferred Time Slot</label>
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                          gap: '1rem'
+                        }}>
+                          {[
+                            { value: 'Morning', icon: '☀️' },
+                            { value: 'Afternoon', icon: '🌤️' },
+                            { value: 'Evening', icon: '🌙' },
+                            { value: 'Flexible', icon: '🔄' }
+                          ].map(opt => (
+                            <div key={opt.value} style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '12px',
+                              padding: '16px',
+                              border: `2px solid ${viewForm.preferredTimeSlot === opt.value ? '#CD853F' : '#e0d5c9'}`,
+                              borderRadius: '12px',
+                              background: viewForm.preferredTimeSlot === opt.value ? '#fff8f0' : '#faf8f5',
+                              transition: 'all 0.3s',
+                              position: 'relative'
+                            }}>
+                              <span style={{ fontSize: '1.5rem' }}>{opt.icon}</span>
+                              <span style={{ fontSize: '0.95rem', fontWeight: '500' }}>{opt.value}</span>
+                              {viewForm.preferredTimeSlot === opt.value && (
+                                <span style={{ position: 'absolute', right: '16px', color: '#CD853F', fontWeight: 'bold', fontSize: '1.3rem' }}>✓</span>
+                              )}
+                      </div>
                           ))}
                         </div>
-                        <input
-                          name="otherEventType"
-                          placeholder="Other event type"
-                          value={viewForm.otherEventType}
-                          disabled
-                        />
                       </div>
-                      <div className="form-group full">
-                        <label>Preferred time slot</label>
-                        <div className="checkbox-grid">
-                          {['Morning', 'Afternoon', 'Evening', 'Flexible'].map(opt => (
-                            <label key={opt} className="checkbox-label">
-                              <input type="checkbox" checked={(viewForm.preferredTimeSlot || []).includes(opt)} readOnly disabled />
-                              <span>{opt}</span>
-                            </label>
+
+                      {/* Location */}
+                      <div>
+                        <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Location / Postcode</label>
+                        <div style={{
+                          padding: '12px 16px',
+                          border: '1px solid #e0d5c9',
+                          borderRadius: '10px',
+                          fontSize: '1rem',
+                          background: '#faf8f5',
+                          color: '#8B4513'
+                        }}>
+                          {viewForm.location || 'Not specified'}
+                      </div>
+                      </div>
+
+                      {/* Travel Preference */}
+                      <div>
+                        <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Artist Travel Preference</label>
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                          gap: '1rem'
+                        }}>
+                          {[
+                            { value: 'yes', text: 'Yes, come to my home', icon: '🚗' },
+                            { value: 'no', text: 'No, I\'ll travel to the artist', icon: '🏡' },
+                            { value: 'both', text: 'I\'m open to both', icon: '🤝' }
+                          ].map(opt => (
+                            <div key={opt.value} style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '12px',
+                              padding: '16px',
+                              border: `2px solid ${viewForm.artistTravelsToClient === opt.value ? '#CD853F' : '#e0d5c9'}`,
+                              borderRadius: '12px',
+                              background: viewForm.artistTravelsToClient === opt.value ? '#fff8f0' : '#faf8f5',
+                              transition: 'all 0.3s',
+                              position: 'relative'
+                            }}>
+                              <span style={{ fontSize: '1.5rem' }}>{opt.icon}</span>
+                              <span style={{ fontSize: '0.95rem', fontWeight: '500' }}>{opt.text}</span>
+                              {viewForm.artistTravelsToClient === opt.value && (
+                                <span style={{ position: 'absolute', right: '16px', color: '#CD853F', fontWeight: 'bold', fontSize: '1.3rem' }}>✓</span>
+                              )}
+                      </div>
+                          ))}
+                      </div>
+                      </div>
+
+                      {/* Venue Name */}
+                      {viewForm.venueName && (
+                        <div>
+                          <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Venue Name</label>
+                          <div style={{
+                            padding: '12px 16px',
+                            border: '1px solid #e0d5c9',
+                            borderRadius: '10px',
+                            fontSize: '1rem',
+                            background: '#faf8f5',
+                            color: '#8B4513'
+                          }}>
+                            {viewForm.venueName}
+                      </div>
+                      </div>
+                      )}
+
+                      {/* Design Style */}
+                      <div>
+                        <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Style You're Looking For</label>
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                          gap: '1rem'
+                        }}>
+                          {['Bridal Mehndi', 'Party Mehndi', 'Festival Mehndi', 'Casual / Minimal Mehndi'].map(opt => (
+                            <div key={opt} style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              padding: '16px',
+                              border: `2px solid ${viewForm.designStyle === opt ? '#CD853F' : '#e0d5c9'}`,
+                              borderRadius: '12px',
+                              background: viewForm.designStyle === opt ? '#fff8f0' : '#faf8f5',
+                              transition: 'all 0.3s',
+                              position: 'relative'
+                            }}>
+                              <span style={{ fontSize: '0.95rem', fontWeight: '500' }}>{opt}</span>
+                              {viewForm.designStyle === opt && (
+                                <span style={{ position: 'absolute', right: '16px', color: '#CD853F', fontWeight: 'bold', fontSize: '1.3rem' }}>✓</span>
+                              )}
+                      </div>
+                          ))}
+                      </div>
+                      </div>
+
+                      {/* Design Inspiration */}
+                      {Array.isArray(viewForm.designInspiration) && viewForm.designInspiration.length > 0 && (
+                        <div>
+                          <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Design Inspiration</label>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '0.75rem', padding: '1rem', background: '#f9f9f9', borderRadius: '10px' }}>
+                            {viewForm.designInspiration.map((url, idx) => (
+                              <div key={idx} style={{ aspectRatio: '1', borderRadius: '8px', overflow: 'hidden', border: '2px solid #e0d5c9' }}>
+                                <img src={url} alt={`Inspiration ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => e.target.style.display = 'none'} />
+                              </div>
                           ))}
                         </div>
                       </div>
-                      <div className="form-group full">
-                        <label>Artist travel preference</label>
-                        <div className="radio-group">
-                          <label className="radio-label">
-                            <input type="radio" checked={viewForm.artistTravelsToClient === true} readOnly disabled />
-                            <span>Artist travels to client</span>
-                          </label>
-                          <label className="radio-label">
-                            <input type="radio" checked={viewForm.artistTravelsToClient === false} readOnly disabled />
-                            <span>Client travels to artist</span>
-                          </label>
-                        </div>
+                      )}
+
+                      {/* Coverage Preference */}
+                      {viewForm.coveragePreference && (
+                        <div>
+                          <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Coverage Preference (for bridal)</label>
+                          <div style={{
+                            padding: '12px 16px',
+                            border: '1px solid #e0d5c9',
+                            borderRadius: '10px',
+                            fontSize: '1rem',
+                            background: '#faf8f5',
+                            color: '#8B4513'
+                          }}>
+                            {viewForm.coveragePreference}
                       </div>
-                      <div className="form-group">
-                        <label>Location</label>
-                        <input name="location" value={viewForm.location} disabled />
                       </div>
-                      <div className="form-group">
-                        <label>Address</label>
-                        <input name="fullAddress" value={viewForm.fullAddress} disabled />
+                      )}
+
+                      {/* Budget Range */}
+                      <div>
+                        <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Budget Range</label>
+                        <div style={{
+                          padding: '16px',
+                          border: '1px solid #e0d5c9',
+                          borderRadius: '10px',
+                          fontSize: '1rem',
+                          background: '#faf8f5',
+                          color: '#8B4513',
+                          fontWeight: '600'
+                        }}>
+                          £{viewForm.minimumBudget} - £{viewForm.maximumBudget}
                       </div>
-                      <div className="form-group">
-                        <label>City</label>
-                        <input name="city" value={viewForm.city} disabled />
                       </div>
-                      <div className="form-group">
-                        <label>Postal code</label>
-                        <input name="postalCode" value={viewForm.postalCode} disabled />
-                      </div>
-                      <div className="form-group">
-                        <label>Budget min</label>
-                        <input name="minimumBudget" type="number" value={viewForm.minimumBudget} disabled />
-                      </div>
-                      <div className="form-group">
-                        <label>Budget max</label>
-                        <input name="maximumBudget" type="number" value={viewForm.maximumBudget} disabled />
-                      </div>
-                      <div className="form-group">
-                        <label>Duration (hours)</label>
-                        <input name="duration" type="number" value={viewForm.duration} disabled />
-                      </div>
-                      <div className="form-group">
-                        <label>People</label>
-                        <input name="numberOfPeople" type="number" value={viewForm.numberOfPeople} disabled />
-                      </div>
-                      <div className="form-group">
-                        <label>Design style</label>
-                        <select name="designStyle" value={viewForm.designStyle} disabled>
-                          <option value="">Select style</option>
-                          {['Traditional', 'Modern', 'Arabic', 'Indian', 'Moroccan', 'Minimalist', 'Bridal'].map(opt => (
-                            <option key={opt} value={opt}>{opt}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="form-group">
-                        <label>Complexity</label>
-                        <select name="designComplexity" value={viewForm.designComplexity} disabled>
-                          <option value="">Select complexity</option>
-                          {['Simple', 'Medium', 'Complex', 'Very Complex'].map(opt => (
-                            <option key={opt} value={opt}>{opt}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="form-group full">
-                        <label>Body parts to decorate</label>
-                        <div className="checkbox-grid">
-                          {['Hands', 'Feet', 'Arms', 'Back'].map(opt => (
-                            <label key={opt} className="checkbox-label">
-                              <input type="checkbox" checked={(viewForm.bodyPartsToDecorate || []).includes(opt)} readOnly disabled />
-                              <span>{opt}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="form-group">
-                        <label>Coverage preference</label>
-                        <select name="coveragePreference" value={viewForm.coveragePreference} disabled>
-                          <option value="">Select coverage</option>
-                          {['Light', 'Medium', 'Full', 'Bridal Package'].map(opt => (
-                            <option key={opt} value={opt}>{opt}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="form-group">
-                        <label>Venue name</label>
-                        <input name="venueName" value={viewForm.venueName} disabled />
-                      </div>
-                      <div className="form-group full">
-                        <label>Design inspiration</label>
-                        <textarea name="designInspiration" rows="3" value={viewForm.designInspiration} disabled />
-                      </div>
-                      <div className="form-group full">
-                        <label>Additional requests</label>
-                        <textarea name="additionalRequests" rows="3" value={viewForm.additionalRequests} disabled />
-                      </div>
+
+                      {/* Number of People */}
+                      <div>
+                        <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Number of People</label>
+                        <div style={{
+                          padding: '12px 16px',
+                          border: '1px solid #e0d5c9',
+                          borderRadius: '10px',
+                          fontSize: '1rem',
+                          background: '#faf8f5',
+                          color: '#8B4513'
+                        }}>
+                          {viewForm.numberOfPeople || 1} {viewForm.numberOfPeople === 1 ? 'person' : 'people'}
                     </div>
                   </div>
-                  <div className="modal-footer" style={{ flexShrink: 0, padding: '15px 20px' }}>
-                    <button className="btn-primary" onClick={closeViewBooking}>Close</button>
+
+                      {/* Additional Requests */}
+                      {viewForm.additionalRequests && (
+                        <div>
+                          <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Additional Requests</label>
+                          <div style={{
+                            padding: '12px 16px',
+                            border: '1px solid #e0d5c9',
+                            borderRadius: '10px',
+                            fontSize: '1rem',
+                            background: '#faf8f5',
+                            color: '#8B4513',
+                            lineHeight: '1.5'
+                          }}>
+                            {viewForm.additionalRequests}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{
+                    flexShrink: 0,
+                    borderTop: '1px solid #e8ddd4',
+                    padding: '1.5rem 2.5rem',
+                    display: 'flex',
+                    gap: '1rem',
+                    justifyContent: 'flex-end',
+                    background: '#faf8f5'
+                  }}>
+                    <button onClick={closeViewBooking} style={{
+                      padding: '14px 32px',
+                      fontSize: '1rem',
+                      fontWeight: '600',
+                      color: 'white',
+                      backgroundColor: '#CD853F',
+                      border: 'none',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s',
+                      boxShadow: '0 4px 12px rgba(205, 133, 63, 0.3)'
+                    }} onMouseEnter={(e) => {
+                      e.target.style.transform = 'translateY(-2px)';
+                      e.target.style.boxShadow = '0 6px 16px rgba(205, 133, 63, 0.4)';
+                    }} onMouseLeave={(e) => {
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = '0 4px 12px rgba(205, 133, 63, 0.3)';
+                    }}>Close</button>
                   </div>
                 </div>
               </div>
@@ -4805,7 +5068,8 @@ useEffect(() => {
                               {formErrors.proposedBudget && <span className="error-text" style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px', display: 'block' }}>{formErrors.proposedBudget}</span>}
                             </div>
                             <div className="form-group">
-                              <label className="form-label" style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px', color: '#495057' }}>Estimated Duration *</label>
+                              <label className="form-label" style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px', color: '#495057' }}>
+                                Estimated Duration (hours) *</label>
                               <div className="duration-input-group" style={{ display: 'flex', gap: '8px' }}>
                                 <input
                                   type="number"
@@ -4844,7 +5108,6 @@ useEffect(() => {
                                   }}
                                 >
                                   <option value="hours">Hours</option>
-                                  <option value="days">Days</option>
                                 </select>
                               </div>
                               {formErrors.estimatedDuration && <span className="error-text" style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px', display: 'block' }}>{formErrors.estimatedDuration}</span>}
@@ -4911,7 +5174,10 @@ useEffect(() => {
                                 disabled={applyLoading}
                                 style={{ marginTop: '2px' }}
                               />
-                              <span style={{ color: '#495057' }}>I understand that I cannot withdraw my application after the booking application is accepted.</span>
+                              <span style={{ color: '#495057' }}>I agree to MehndiMe’s Terms & Conditions and Privacy Policy, and understand that all
+                                payments and communication must remain on the MehndiMe platform to ensure protection
+                                for both artists and clients.
+                              </span>
                             </label>
                             {formErrors.agreedToTerms && <span className="error-text" style={{ color: '#dc3545', fontSize: '12px', marginTop: '8px', display: 'block' }}>{formErrors.agreedToTerms}</span>}
                           </div>
@@ -4949,7 +5215,7 @@ useEffect(() => {
                     <button
                       className="submit-btn"
                       onClick={confirmApply}
-                      disabled={applyLoading}
+                      disabled={applyLoading || !applicationForm.terms.agreedToTerms}
                       style={{
                         padding: '12px 24px',
                         fontSize: '14px',

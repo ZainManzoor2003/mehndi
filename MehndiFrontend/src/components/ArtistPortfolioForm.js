@@ -12,6 +12,7 @@ const ArtistPortfolioForm = ({ portfolioData, onSave, onCancel, loading = false,
     },
     availableForTravel: false,
     homeBased: false,
+    travelDistanceKm: '',
     languagesSpoken: '',
     services: {
       bridalMehndi: {
@@ -242,10 +243,12 @@ const ArtistPortfolioForm = ({ portfolioData, onSave, onCancel, loading = false,
       }
     });
 
-    // Social links validation - at least one social link required
-    const hasSocialLinks = Object.values(formData.socials).some(link => link.trim());
-    if (!hasSocialLinks) {
-      newErrors.socials = 'At least one social media link is required';
+    // Travel distance validation when available for travel
+    if (formData.availableForTravel) {
+      const distance = Number(formData.travelDistanceKm);
+      if (!formData.travelDistanceKm || Number.isNaN(distance) || distance <= 0) {
+        newErrors.travelDistanceKm = 'Please enter travel distance in km';
+      }
     }
 
     // Travel & Languages validation
@@ -269,7 +272,8 @@ const ArtistPortfolioForm = ({ portfolioData, onSave, onCancel, loading = false,
     const processedData = {
       ...formData,
       languagesSpoken: formData.languagesSpoken.split(',').map(lang => lang.trim()).filter(Boolean),
-      mediaUrls: formData.portfolioImages
+      mediaUrls: formData.portfolioImages,
+      travelDistanceKm: formData.travelDistanceKm ? Number(formData.travelDistanceKm) : 0
     };
     onSave(processedData);
   };
@@ -758,92 +762,6 @@ const ArtistPortfolioForm = ({ portfolioData, onSave, onCancel, loading = false,
         )}
       </div>
 
-      {/* Social Links Section */}
-      <div style={{
-        backgroundColor: 'white',
-        borderRadius: '12px',
-        padding: '24px',
-        marginBottom: '20px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-          <FaInstagram style={{ color: '#ff6b35', marginRight: '12px', fontSize: '20px' }} />
-          <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '600', color: '#333' }}>
-            Social Links
-          </h2>
-        </div>
-        
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <input
-            type="text"
-            value={formData.socials.instagram}
-            onChange={(e) => handleInputChange('socials', 'instagram', e.target.value)}
-            placeholder="Instagram"
-            style={{
-              width: '100%',
-              padding: '12px',
-              border: '1px solid #e9ecef',
-              borderRadius: '8px',
-              fontSize: '14px',
-              outline: 'none',
-              transition: 'border-color 0.2s ease'
-            }}
-            onFocus={(e) => e.target.style.borderColor = '#ff6b35'}
-            onBlur={(e) => e.target.style.borderColor = '#e9ecef'}
-          />
-          
-          <input
-            type="text"
-            value={formData.socials.tiktok}
-            onChange={(e) => handleInputChange('socials', 'tiktok', e.target.value)}
-            placeholder="TikTok"
-            style={{
-              width: '100%',
-              padding: '12px',
-              border: '1px solid #e9ecef',
-              borderRadius: '8px',
-              fontSize: '14px',
-              outline: 'none',
-              transition: 'border-color 0.2s ease'
-            }}
-            onFocus={(e) => e.target.style.borderColor = '#ff6b35'}
-            onBlur={(e) => e.target.style.borderColor = '#e9ecef'}
-          />
-          
-          <input
-            type="text"
-            value={formData.socials.facebook}
-            onChange={(e) => handleInputChange('socials', 'facebook', e.target.value)}
-            placeholder="Facebook"
-            style={{
-              width: '100%',
-              padding: '12px',
-              border: '1px solid #e9ecef',
-              borderRadius: '8px',
-              fontSize: '14px',
-              outline: 'none',
-              transition: 'border-color 0.2s ease'
-            }}
-            onFocus={(e) => e.target.style.borderColor = '#ff6b35'}
-            onBlur={(e) => e.target.style.borderColor = '#e9ecef'}
-          />
-        </div>
-        
-        {/* Error Message */}
-        {errors.socials && (
-          <div style={{ 
-            color: '#dc3545', 
-            fontSize: '14px', 
-            marginTop: '8px',
-            padding: '8px 12px',
-            backgroundColor: '#f8d7da',
-            border: '1px solid #f5c6cb',
-            borderRadius: '4px'
-          }}>
-            {errors.socials}
-          </div>
-        )}
-      </div>
 
       {/* Travel & Languages Section */}
       <div style={{
@@ -873,6 +791,29 @@ const ArtistPortfolioForm = ({ portfolioData, onSave, onCancel, loading = false,
               Available for Travel
             </label>
           </div>
+          {formData.availableForTravel && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: '28px' }}>
+              <input
+                type="number"
+                min="1"
+                step="1"
+                value={formData.travelDistanceKm}
+                onChange={(e) => handleInputChange('', 'travelDistanceKm', e.target.value)}
+                placeholder="Enter travel distance in km"
+                style={{
+                  width: '220px',
+                  padding: '10px 12px',
+                  border: '1px solid #e9ecef',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  outline: 'none'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#ff6b35'}
+                onBlur={(e) => e.target.style.borderColor = '#e9ecef'}
+              />
+              <span style={{ color: '#6b7280', fontSize: '14px' }}>km</span>
+            </div>
+          )}
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <input
@@ -907,7 +848,7 @@ const ArtistPortfolioForm = ({ portfolioData, onSave, onCancel, loading = false,
         </div>
         
         {/* Error Messages */}
-        {(errors.travel || errors.languagesSpoken) && (
+        {(errors.travel || errors.languagesSpoken || errors.travelDistanceKm) && (
           <div style={{ 
             color: '#dc3545', 
             fontSize: '14px', 
@@ -919,6 +860,7 @@ const ArtistPortfolioForm = ({ portfolioData, onSave, onCancel, loading = false,
           }}>
             {errors.travel && <div>{errors.travel}</div>}
             {errors.languagesSpoken && <div>{errors.languagesSpoken}</div>}
+            {errors.travelDistanceKm && <div>{errors.travelDistanceKm}</div>}
           </div>
         )}
       </div>

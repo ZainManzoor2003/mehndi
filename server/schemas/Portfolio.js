@@ -28,6 +28,7 @@ const PortfolioSchema = new mongoose.Schema(
     // Travel & Languages
     availableForTravel: { type: Boolean, default: false },
     homeBased: { type: Boolean, default: false },
+    travelDistanceKm: { type: Number, min: 0, default: 0 },
     languagesSpoken: { type: [String], default: [] },
 
     // Services & Pricing (structured)
