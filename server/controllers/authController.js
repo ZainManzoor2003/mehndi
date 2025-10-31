@@ -373,9 +373,9 @@ const sendPhoneCode = async (req, res) => {
 
     // Send via Twilio
     try {
-      const accountSid = process.env.TWILIO_ACCOUNT_SID || 'AC971d79b93248024f378e9ac0b5cc5372';
-      const authToken = process.env.TWILIO_AUTH_TOKEN || 'ac43e225480935c7bec0ce4eea8ee982';
-      const fromNumber = process.env.TWILIO_PHONE_NUMBER || '+19785811081';
+      const accountSid = process.env.TWILIO_ACCOUNT_SID ;
+      const authToken = process.env.TWILIO_AUTH_TOKEN;
+      const fromNumber = process.env.TWILIO_PHONE_NUMBER;
       if (!accountSid || !authToken || !fromNumber) {
         console.warn('Twilio env not set; skipping SMS send');
       } else {
