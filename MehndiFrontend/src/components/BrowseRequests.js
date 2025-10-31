@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaHeart, FaRegHeart, FaMapMarkerAlt, FaClock, FaCalendarAlt, FaUsers, FaPoundSign } from 'react-icons/fa';
-import { bookingsAPI, applicationsAPI } from '../services/api';
+import { FaHeart, FaRegHeart, FaMapMarkerAlt, FaClock, FaCalendarAlt, FaUsers, FaPoundSign, FaSearch } from 'react-icons/fa';
+import { FiFilter } from 'react-icons/fi';
+import { bookingsAPI, applicationsAPI, chatAPI } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import BrowseViewBookingModal from './modals/BrowseViewBookingModal';
 import BrowseApplyModal from './modals/BrowseApplyModal';
 
@@ -23,6 +25,7 @@ function timeAgo(iso) {
 
 const BrowseRequests = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [all, setAll] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -35,6 +38,7 @@ const BrowseRequests = () => {
   const [activeBooking, setActiveBooking] = useState(null);
   const [viewForm, setViewForm] = useState(null);
   const [applyBusy, setApplyBusy] = useState(false);
+  const [viewClientId, setViewClientId] = useState(null);
 
   useEffect(() => {
     // scroll to top quickly on mount
@@ -45,13 +49,22 @@ const BrowseRequests = () => {
     const load = async () => {
       setLoading(true); setError('');
       try {
-        const [allRes, savedRes] = await Promise.all([
+        const [allRes, savedRes, myAppliedRes] = await Promise.all([
           bookingsAPI.getAllBookings(),
-          bookingsAPI.getSavedBookings()
+          bookingsAPI.getSavedBookings(),
+          applicationsAPI.getMyAppliedBookings()
         ]);
         const savedSet = new Set((savedRes?.data || []).map(b => b._id));
+        const appliedIds = new Set(((myAppliedRes?.data) || []).map(a => a.bookingId || a.id || a.booking_id));
+        const artistId = user?._id;
         const combined = (allRes?.data || [])
-          .filter(b => b.status === 'pending')
+          .filter(b => {
+            if (b.status !== 'pending') return false;
+            if (appliedIds.has(String(b._id))) return false;
+            const applied = Array.isArray(b.appliedArtists) && artistId ? b.appliedArtists.some(id => String(id) === String(artistId)) : false;
+            const assigned = Array.isArray(b.assignedArtist) && artistId ? b.assignedArtist.some(id => String(id) === String(artistId)) : false;
+            return !applied && !assigned;
+          })
           .map(b => ({ ...b, __saved: savedSet.has(b._id) }));
         setAll(combined);
       } catch (e) {
@@ -87,6 +100,7 @@ const BrowseRequests = () => {
     try {
       const res = await bookingsAPI.getBooking(bookingId);
       const b = res.data || {};
+      setActiveBooking(b);
       const eventTypeValue = Array.isArray(b.eventType) ? b.eventType[0] : b.eventType || '';
       const timeSlotValue = Array.isArray(b.preferredTimeSlot) ? b.preferredTimeSlot[0] : b.preferredTimeSlot || '';
       let travelPreference;
@@ -113,6 +127,7 @@ const BrowseRequests = () => {
         coveragePreference: b.coveragePreference || '',
         additionalRequests: b.additionalRequests || ''
       });
+      try { setViewClientId(b.clientId?._id || b.clientId || null); } catch {}
       setViewOpen(true);
     } catch (e) {
       alert(e.message || 'Failed to load booking');
@@ -142,9 +157,7 @@ const BrowseRequests = () => {
         terms: { agreedToTerms: !!extras.agreed }
       };
       await applicationsAPI.applyToBooking(activeBooking._id, artistDetails);
-      setApplyOpen(false);
-      setActiveBooking(null);
-      navigate('/artist-dashboard/applications');
+      // Do not navigate away; modal will show success state
     } catch (e) {
       alert(e.message || 'Failed to apply');
     } finally {
@@ -152,8 +165,22 @@ const BrowseRequests = () => {
     }
   };
 
+  const handleMessageClient = async () => {
+    try {
+      const clientId = viewClientId || activeBooking?.clientId?._id || activeBooking?.clientId;
+      const artistId = user?._id;
+      if (!clientId || !artistId) return;
+      const res = await chatAPI.ensureChat(clientId, artistId);
+      if (res.success && res.data && res.data._id) {
+        navigate(`/artist-dashboard/messages?chatId=${res.data._id}`);
+      }
+    } catch (e) {
+      alert(e.message || 'Failed to start chat');
+    }
+  };
+
   return (
-    <section style={{ padding: '140px 0 60px' }}>
+    <section style={{ padding: '26px 0 60px' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 16px' }}>
         <button onClick={() => navigate('/artist-dashboard')}
           style={{ display: 'inline-flex', alignItems: 'center', gap: 8, border: 'none', background: 'transparent', color: '#5C3D2E', cursor: 'pointer', fontWeight: 700, marginBottom: 8 }}>
@@ -163,25 +190,38 @@ const BrowseRequests = () => {
         <p style={{ marginTop: 6, color: '#4b5563' }}>Discover mehndi opportunities near you and apply to the ones that inspire you.</p>
 
         {/* Filters */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginTop: 14 }}>
-          <input
-            placeholder="Search by event or keyword..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{ padding: '12px 14px', borderRadius: 12, border: '1px solid #d1d5db' }}
-          />
-          <select value={city} onChange={(e) => setCity(e.target.value)} style={{ padding: '12px 14px', borderRadius: 12, border: '1px solid #d1d5db' }}>
-            <option value="">Filter by City</option>
-            {CITY_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-          <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ padding: '12px 14px', borderRadius: 12, border: '1px solid #d1d5db' }}>
-            <option value="">Filter by Category</option>
-            <option>Wedding</option>
-            <option>Festival</option>
-            <option>Eid</option>
-            <option>Party</option>
-            <option>Other</option>
-          </select>
+        {/* Row 1: Search only */}
+        <div style={{ marginTop: 14 }}>
+          <div style={{ position: 'relative' }}>
+            <FaSearch style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#6b7280' }} />
+            <input
+              placeholder="Search by event or keyword..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{ width: '100%', padding: '12px 14px 12px 40px', borderRadius: 12, border: '1px solid #d1d5db' }}
+            />
+          </div>
+        </div>
+        {/* Row 2: City and Category */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
+          <div style={{ position: 'relative' }}>
+            <FiFilter style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#374151' }} />
+            <select value={city} onChange={(e) => setCity(e.target.value)} style={{ width: '100%', padding: '12px 14px 12px 40px', borderRadius: 12, border: '1px solid #d1d5db' }}>
+              <option value="">Filter by City</option>
+              {CITY_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div style={{ position: 'relative' }}>
+            <FiFilter style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#374151' }} />
+            <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ width: '100%', padding: '12px 14px 12px 40px', borderRadius: 12, border: '1px solid #d1d5db' }}>
+              <option value="">Filter by Category</option>
+              <option>Wedding</option>
+              <option>Festival</option>
+              <option>Eid</option>
+              <option>Party</option>
+              <option>Other</option>
+            </select>
+          </div>
         </div>
 
         {/* Content */}
@@ -190,6 +230,20 @@ const BrowseRequests = () => {
         ) : error ? (
           <div style={{ marginTop: 24, color: 'crimson' }}>{error}</div>
         ) : (
+          filtered.length === 0 ? (
+            <div style={{
+              marginTop: 24,
+              background: '#F3E2BF',
+              border: '1px solid #edd6b3',
+              borderRadius: 14,
+              padding: '28px 20px',
+              textAlign: 'center',
+              color: '#4A2C1D'
+            }}>
+              <div style={{ fontWeight: 800, fontSize: 18 }}>No bookings found</div>
+              <p style={{ marginTop: 6, color: '#6b5544' }}>Try adjusting your search, city, or category filters to discover more client requests.</p>
+            </div>
+          ) : (
           <div style={{ marginTop: 18, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
             {filtered.map(b => (
               <div key={b._id} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, boxShadow: '0 2px 8px rgba(0,0,0,.06)' }}>
@@ -213,9 +267,10 @@ const BrowseRequests = () => {
               </div>
             ))}
           </div>
+          )
         )}
       </div>
-      <BrowseViewBookingModal open={viewOpen} viewForm={viewForm} onClose={() => setViewOpen(false)} onApply={() => { setViewOpen(false); setApplyOpen(true); }} />
+      <BrowseViewBookingModal open={viewOpen} viewForm={viewForm} onClose={() => setViewOpen(false)} onApply={() => { setViewOpen(false); setApplyOpen(true); }} onMessage={handleMessageClient} />
       <BrowseApplyModal open={applyOpen} busy={applyBusy} booking={activeBooking} onClose={() => setApplyOpen(false)} onConfirm={confirmApply} />
     </section>
   );

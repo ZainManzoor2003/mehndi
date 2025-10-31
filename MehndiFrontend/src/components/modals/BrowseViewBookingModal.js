@@ -7,7 +7,7 @@ const modalCard = {
   maxWidth: '800px', maxHeight: '90vh', width: '95%', backgroundColor: 'white', borderRadius: '16px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column'
 };
 
-const BrowseViewBookingModal = ({ open, viewForm, onClose, onApply }) => {
+const BrowseViewBookingModal = ({ open, viewForm, onClose, onApply, onMessage }) => {
   if (!open || !viewForm) return null;
   return (
     <div style={modalBackdrop} onClick={onClose}>
@@ -156,6 +156,9 @@ const BrowseViewBookingModal = ({ open, viewForm, onClose, onApply }) => {
         </div>
         <div style={{ flexShrink: 0, borderTop: '1px solid #e8ddd4', padding: '1.5rem 2.5rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end', background: '#faf8f5' }}>
           <button onClick={onClose} style={{ padding: '14px 32px', fontSize: '1rem', fontWeight: '600', color: 'white', backgroundColor: '#CD853F', border: 'none', borderRadius: '12px', cursor: 'pointer', transition: 'all 0.3s', boxShadow: '0 4px 12px rgba(205, 133, 63, 0.3)' }}>Close</button>
+          {onMessage && (
+            <button onClick={onMessage} style={{ padding: '14px 32px', fontSize: '1rem', fontWeight: '600', color: 'white', backgroundColor: '#A4693D', border: 'none', borderRadius: '12px', cursor: 'pointer' }}>Message Client</button>
+          )}
           <button onClick={onApply} style={{ padding: '14px 32px', fontSize: '1rem', fontWeight: '600', color: 'white', backgroundColor: '#b45309', border: 'none', borderRadius: '12px', cursor: 'pointer' }}>Apply</button>
         </div>
       </div>
