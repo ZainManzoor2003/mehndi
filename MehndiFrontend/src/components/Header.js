@@ -316,7 +316,7 @@ const Header = () => {
               </li>
               {/* Browse Requests - link to artist dashboard applications */}
               <li className="nav__overlay-item">
-                <Link to="/artist-dashboard/applications" className="nav__overlay-link" onClick={closeMenu}>
+                <Link to="/browse-requests" className="nav__overlay-link" onClick={closeMenu}>
                   <span className="nav__overlay-number">
                     <img src="/images/3.png" alt="03" width="64" height="64" />
                   </span>

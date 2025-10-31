@@ -124,9 +124,9 @@ const BrowseApplyModal = ({ open, onClose, onConfirm, busy = false, title = 'App
                         step="0.5"
                         style={{ flex: '2', padding: '12px', border: '1px solid #ced4da', borderRadius: '8px', fontSize: '14px', outline: 'none', transition: 'border-color 0.2s ease', minWidth: '120px' }}
                       />
-                      <select className="form-input" value="hours" disabled style={{ flex: '1', padding: '12px', border: '1px solid #ced4da', borderRadius: '8px', fontSize: '14px', outline: 'none', backgroundColor: 'white', minWidth: '80px' }}>
-                        <option value="hours">Hours</option>
-                      </select>
+                      <div className="form-input" value="hours" disabled style={{ flex: '1', padding: '12px', border: '1px solid #ced4da', borderRadius: '8px', fontSize: '14px', outline: 'none', backgroundColor: 'white', minWidth: '80px' }}>
+                        <span value="hours">Hours</span>
+                      </div>
                     </div>
                     {errors.estimatedDuration && <span className="error-text" style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.estimatedDuration}</span>}
                   </div>
