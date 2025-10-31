@@ -1326,6 +1326,60 @@ const calculateDistance = (lat1, lng1, lat2, lng2) => {
   return R * c;
 };
 
+// @desc    Save/like a booking for the current user
+// @route   POST /api/bookings/:id/save
+// @access  Private (Artist only)
+const saveBooking = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+
+    const userId = req.user.id;
+    if (!booking.savedBy) booking.savedBy = [];
+    if (!booking.savedBy.find((u) => u.toString() === userId)) {
+      booking.savedBy.push(userId);
+      await booking.save();
+    }
+    return res.status(200).json({ success: true, message: 'Saved', data: { saved: true } });
+  } catch (error) {
+    console.error('Save booking error:', error);
+    return res.status(500).json({ success: false, message: 'Server error while saving booking' });
+  }
+};
+
+// @desc    Unsave/unlike a booking for the current user
+// @route   DELETE /api/bookings/:id/save
+// @access  Private (Artist only)
+const unsaveBooking = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+    const userId = req.user.id;
+    booking.savedBy = (booking.savedBy || []).filter((u) => u.toString() !== userId);
+    await booking.save();
+    return res.status(200).json({ success: true, message: 'Unsaved', data: { saved: false } });
+  } catch (error) {
+    console.error('Unsave booking error:', error);
+    return res.status(500).json({ success: false, message: 'Server error while unsaving booking' });
+  }
+};
+
+// @desc    Get current user's saved bookings
+// @route   GET /api/bookings/saved
+// @access  Private (Artist only)
+const getSavedBookings = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const bookings = await Booking.find({ savedBy: { $in: [userId] } })
+      .populate('clientId', 'firstName lastName email')
+      .sort({ createdAt: -1 });
+    return res.status(200).json({ success: true, count: bookings.length, data: bookings });
+  } catch (error) {
+    console.error('Get saved bookings error:', error);
+    return res.status(500).json({ success: false, message: 'Server error while fetching saved bookings' });
+  }
+};
+
 module.exports = {
   createBooking,
   getClientBookings,
@@ -1339,6 +1393,9 @@ module.exports = {
   cancelBooking,
   updateBookingPaymentStatus,
   processRefund,
-  getNearbyBookings
+  getNearbyBookings,
+  saveBooking,
+  unsaveBooking,
+  getSavedBookings
 };
 

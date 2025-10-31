@@ -5,6 +5,8 @@ import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../contexts/AuthContext';
 import { authAPI } from '../services/api';
+import PhoneInput from 'react-phone-input-2';
+import 'react-phone-input-2/lib/style.css';
 // No Header on auth pages
 
 const Signup = () => {
@@ -16,6 +18,7 @@ const Signup = () => {
     lastName: '',
     email: '',
     city: '',
+    phoneNumber: '',
     password: '',
     confirmPassword: '',
     userType: 'client'
@@ -49,6 +52,12 @@ const Signup = () => {
     if (formData.userType === 'client' && !formData.city.trim()) {
       newErrors.city = 'City is required';
     }
+    // Phone required for both (for verification)
+    if (!formData.phoneNumber.trim()) {
+      newErrors.phoneNumber = 'Phone number is required';
+    } else if (!/^\+?\d{10,15}$/.test(formData.phoneNumber.replace(/\s|-/g, ''))) {
+      newErrors.phoneNumber = 'Enter a valid phone number';
+    }
     
     if (!formData.password) newErrors.password = 'Password is required';
     else if (formData.password.length < 6) newErrors.password = 'At least 6 characters';
@@ -75,7 +84,8 @@ const Signup = () => {
       // Redirect to email check screen with email in query string
       try {
         const encodedEmail = encodeURIComponent(formData.email);
-        window.location.assign(`/check-email?email=${encodedEmail}`);
+        const encodedPhone = encodeURIComponent(formData.phoneNumber);
+        window.location.assign(`/check-email?email=${encodedEmail}&phone=${encodedPhone}`);
       } catch {}
       
     } catch (error) {
@@ -212,6 +222,30 @@ const Signup = () => {
                 <option value="Bradford">Bradford</option>
               </select>
               {errors.city && <div className="error-message inline">{errors.city}</div>}
+            </div>
+
+            {/* Phone number (integrated country select) */}
+            <div className="form-group">
+              <label htmlFor="phoneNumber" className="form-label">Phone Number</label>
+              <PhoneInput
+                country={'gb'}
+                onlyCountries={['gb','pk']}
+                preferredCountries={['gb','pk']}
+                inputProps={{ name: 'phoneNumber', id: 'phoneNumber', required: true }}
+                value={formData.phoneNumber}
+                onChange={(value, data) => {
+                  // react-phone-input-2 returns numbers without plus; store with + prefix
+                  const full = value ? `+${value}` : '';
+                  setFormData(prev => ({ ...prev, phoneNumber: full }));
+                  if (errors.phoneNumber) setErrors(prev => ({ ...prev, phoneNumber: '' }));
+                }}
+                placeholder={formData.userType === 'client' ? 'e.g. 7400123456' : 'Your phone number'}
+                inputStyle={{ width: '100%' }}
+                containerStyle={{ width: '100%' }}
+                buttonStyle={{ border: '2px solid #e5e7eb' }}
+                specialLabel={''}
+              />
+              {errors.phoneNumber && <div className="error-message inline">{errors.phoneNumber}</div>}
             </div>
 
             <div className="form-row">

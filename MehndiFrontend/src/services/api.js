@@ -1,5 +1,5 @@
-// const API_BASE_URL = 'http://localhost:5001/api';
-const API_BASE_URL = 'https://mehndi-server.vercel.app/api';
+const API_BASE_URL = 'http://localhost:5001/api';
+// const API_BASE_URL = 'https://mehndi-server.vercel.app/api';
 
 // API utility functions
 const handleResponse = async (response) => {
@@ -129,6 +129,22 @@ export const authAPI = {
     return apiRequest('/auth/resend-verification-email', {
       method: 'POST',
       body: JSON.stringify({ email }),
+    });
+  },
+
+  // Send phone verification code
+  sendPhoneCode: async (email) => {
+    return apiRequest('/auth/send-phone-code', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  },
+
+  // Verify phone code
+  verifyPhoneCode: async (email, code) => {
+    return apiRequest('/auth/verify-phone-code', {
+      method: 'POST',
+      body: JSON.stringify({ email, code }),
     });
   },
 
@@ -478,6 +494,21 @@ export const bookingsAPI = {
       radius: radius.toString()
     });
     return apiRequest(`/bookings/nearby?${queryParams}`);
+  },
+
+  // Get saved bookings for current user
+  getSavedBookings: async () => {
+    return apiRequest('/bookings/saved');
+  },
+
+  // Save/like a booking
+  saveBooking: async (bookingId) => {
+    return apiRequest(`/bookings/${bookingId}/save`, { method: 'POST' });
+  },
+
+  // Unsave/unlike a booking
+  unsaveBooking: async (bookingId) => {
+    return apiRequest(`/bookings/${bookingId}/save`, { method: 'DELETE' });
   },
 
   // Get single booking

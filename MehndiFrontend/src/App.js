@@ -42,8 +42,10 @@ import PaymentCancel from './components/PaymentCancel';
 import PaymentRescheduleBooking from './components/PaymentRescheduleBooking';
 import EmailVerification from './components/EmailVerification';
 import EmailCheck from './components/EmailCheck';
+import PhoneVerify from './components/PhoneVerify';
 import AboutUsPage from './components/AboutUsPage';
 import EarnAsArtist from './components/EarnAsArtist';
+import BrowseRequests from './components/BrowseRequests';
 
 // Main Landing Page Component
 const LandingPage = () => (
@@ -91,6 +93,11 @@ function App() {
                 <EmailCheck />
               </PublicRoute>
             } />
+            <Route path="/verify-phone" element={
+              <PublicRoute>
+                <PhoneVerify />
+              </PublicRoute>
+            } />
             <Route path="/signup" element={
               <PublicRoute>
                 <Signup />
@@ -100,6 +107,11 @@ function App() {
               <PublicRoute>
                 <EmailVerification />
               </PublicRoute>
+            } />
+            <Route path="/browse-requests" element={
+              <RoleProtectedRoute allowedRoles={["artist"]}>
+                <BrowseRequests />
+              </RoleProtectedRoute>
             } />
             <Route path="/about-us" element={
               <PublicWrapper>

@@ -2,8 +2,8 @@ const express = require('express');
 const router = express.Router();
 
 // Auth routes
-const { signup, login, me, updateProfile, googleAuth, getArtistRating, verifyEmail, resendVerificationEmail } = require('../controllers/authController');
-const { createBooking, getClientBookings, getAllBookings, getBookingById, updateBookingStatus, updateBooking, deleteBooking, getPendingBookings, completeBooking, cancelBooking, updateBookingPaymentStatus, processRefund,getNearbyBookings} = require('../controllers/bookingController');
+const { signup, login, me, updateProfile, googleAuth, getArtistRating, verifyEmail, resendVerificationEmail, sendPhoneCode, verifyPhoneCode } = require('../controllers/authController');
+const { createBooking, getClientBookings, getAllBookings, getBookingById, updateBookingStatus, updateBooking, deleteBooking, getPendingBookings, completeBooking, cancelBooking, updateBookingPaymentStatus, processRefund, getNearbyBookings, saveBooking, unsaveBooking, getSavedBookings } = require('../controllers/bookingController');
 const { listBlogs, getBlogById } = require('../controllers/blogController');
 
 const { applyToBooking, getMyAppliedBookings, getApplicationsForBooking, updateApplicationStatus, withdrawApplication, notifyCancellationByArtist, completeApplication, addApplicationNote, getApplicationNotes, getMyApplicationStats } = require('../controllers/applicationController');
@@ -28,6 +28,8 @@ router.put('/api/auth/update-profile', protect, updateProfile);
 router.get('/api/auth/artist-rating/:id', getArtistRating);
 router.get('/api/auth/verify-email/:token', verifyEmail);
 router.post('/api/auth/resend-verification-email', resendVerificationEmail);
+router.post('/api/auth/send-phone-code', sendPhoneCode);
+router.post('/api/auth/verify-phone-code', verifyPhoneCode);
 
 // Booking routes
 router.post('/api/bookings', protect, createBooking);
@@ -35,6 +37,9 @@ router.get('/api/bookings', protect, getClientBookings);
 router.get('/api/bookings/all', protect, getAllBookings);
 router.get('/api/bookings/pending', protect, getPendingBookings);
 router.get('/api/bookings/nearby', protect, getNearbyBookings);
+router.get('/api/bookings/saved', protect, getSavedBookings);
+router.post('/api/bookings/:id/save', protect, saveBooking);
+router.delete('/api/bookings/:id/save', protect, unsaveBooking);
 // Completed bookings list for client should be defined before :id to avoid conflicts
 router.get('/api/bookings/completed', protect, reviewController.listCompletedBookingsForClient);
 router.get('/api/bookings/:id', protect, getBookingById);

@@ -8,7 +8,7 @@ const crypto = require('crypto');
 // POST /api/auth/signup
 const signup = async (req, res) => {
   try {
-    const { firstName, lastName, email, password, confirmPassword, userType, city } = req.body;
+    const { firstName, lastName, email, password, confirmPassword, userType, city, phoneNumber } = req.body;
 
     // Validate required fields
     if (!firstName || !lastName || !email || !password || !confirmPassword || !userType) {
@@ -35,6 +35,11 @@ const signup = async (req, res) => {
     // Add city only if provided (mandatory for clients, optional for artists)
     if (city) {
       userData.city = city;
+    }
+
+    // Phone number (optional server-side validation, required from UI)
+    if (phoneNumber) {
+      userData.phoneNumber = phoneNumber;
     }
 
     const user = await User.create(userData);
@@ -323,6 +328,14 @@ const login = async (req, res) => {
       });
     }
 
+    // Check if phone is verified
+    if (!user.isPhoneVerified) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Please verify your phone number before logging in.' 
+      });
+    }
+
     const token = user.generateToken();
     const safeUser = user.toObject();
     delete safeUser.password;
@@ -334,7 +347,83 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = { signup, login };
+// POST /api/auth/send-phone-code
+const sendPhoneCode = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ success: false, message: 'Email is required' });
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    if (!user.isEmailVerified) return res.status(400).json({ success: false, message: 'Verify email first' });
+
+    // Resolve phone number from discriminators
+    let phone = user.phoneNumber;
+    if (!phone) {
+      const fullUser = await User.findById(user._id).lean();
+      phone = fullUser.phoneNumber; // artist stores at root via discriminator; client too
+    }
+    if (!phone) return res.status(400).json({ success: false, message: 'No phone number on account' });
+
+    // Generate 6-digit code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    user.phoneVerificationCode = code;
+    user.phoneVerificationExpires = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+    await user.save({ validateBeforeSave: false });
+
+    // Send via Twilio
+    try {
+      const accountSid = process.env.TWILIO_ACCOUNT_SID || 'AC971d79b93248024f378e9ac0b5cc5372';
+      const authToken = process.env.TWILIO_AUTH_TOKEN || 'ac43e225480935c7bec0ce4eea8ee982';
+      const fromNumber = process.env.TWILIO_PHONE_NUMBER || '+19785811081';
+      if (!accountSid || !authToken || !fromNumber) {
+        console.warn('Twilio env not set; skipping SMS send');
+      } else {
+        const twilio = require('twilio')(accountSid, authToken);
+        await twilio.messages.create({ to: phone, from: fromNumber, body: `Your MehndiMe verification code is: ${code}` });
+      }
+    } catch (e) {
+      console.error('Twilio send error:', e.message);
+    }
+
+    return res.status(200).json({ success: true, message: 'Verification code sent' });
+  } catch (err) {
+    console.error('sendPhoneCode error:', err);
+    return res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// POST /api/auth/verify-phone-code
+const verifyPhoneCode = async (req, res) => {
+  try {
+    const { email, code } = req.body;
+    if (!email || !code) return res.status(400).json({ success: false, message: 'Email and code are required' });
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    if (!user.phoneVerificationCode || !user.phoneVerificationExpires) {
+      return res.status(400).json({ success: false, message: 'No code to verify. Please request a new code.' });
+    }
+    if (user.phoneVerificationExpires.getTime() < Date.now()) {
+      return res.status(400).json({ success: false, message: 'Code expired. Please request a new code.' });
+    }
+    if (String(user.phoneVerificationCode) !== String(code)) {
+      return res.status(400).json({ success: false, message: 'Invalid code. Please try again.' });
+    }
+
+    user.isPhoneVerified = true;
+    user.phoneVerificationCode = undefined;
+    user.phoneVerificationExpires = undefined;
+    await user.save({ validateBeforeSave: false });
+
+    return res.status(200).json({ success: true, message: 'Phone verified successfully' });
+  } catch (err) {
+    console.error('verifyPhoneCode error:', err);
+    return res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
  
 // GET /api/auth/me (protected)
 const me = async (req, res) => {
@@ -766,6 +855,4 @@ const resendVerificationEmail = async (req, res) => {
   }
 };
 
-module.exports = { signup, login, me, updateProfile, googleAuth, getArtistRating, verifyEmail, resendVerificationEmail };
-
-
+module.exports = { signup, login, me, updateProfile, googleAuth, getArtistRating, verifyEmail, resendVerificationEmail, sendPhoneCode, verifyPhoneCode };

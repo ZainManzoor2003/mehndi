@@ -55,6 +55,7 @@ const BookingForm = () => {
         // Extract shorter location name (city, town, or suburb)
         let locationName = '';
         const address = data.address || {};
+        console.log('address', address);
         
         // Prioritize: city > town > village > suburb > county
         locationName = address.city || 

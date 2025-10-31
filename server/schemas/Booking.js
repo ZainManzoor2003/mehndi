@@ -189,6 +189,14 @@ const BookingSchema = new mongoose.Schema({
     default: ''
   },
 
+  // Saved by artists (likes)
+  savedBy: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }
+  ],
+
   // Booking Status
   status: {
     type: String,

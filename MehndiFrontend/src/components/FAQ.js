@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 
@@ -11,6 +11,8 @@ const faqs = [
 
 const FAQ = () => {
   const [openIndex, setOpenIndex] = useState(null);
+  const contentRefs = useRef([]);
+  const [measuredHeights, setMeasuredHeights] = useState({});
 
   // Scroll to top on mount
   useEffect(() => {
@@ -25,6 +27,18 @@ const FAQ = () => {
   const toggle = (idx) => {
     setOpenIndex((prev) => (prev === idx ? null : idx));
   };
+
+  // Measure heights on mount and when questions change/openIndex toggles
+  useEffect(() => {
+    const next = {};
+    contentRefs.current.forEach((node, i) => {
+      if (node) {
+        // first child holds the actual content with padding
+        next[i] = node.scrollHeight;
+      }
+    });
+    setMeasuredHeights(next);
+  }, [openIndex]);
 
   return (
     <section className="section" id="faq" style={{ color: 'var(--ad-text)', backgroundColor: '#E4C293', padding: '4rem 0' }}>
@@ -71,27 +85,27 @@ const FAQ = () => {
                     transition: 'color 0.3s ease'
                   }}
                   onMouseEnter={(e) => {
-                    e.target.style.color = '#C79F5B';
+                    e.currentTarget.querySelector('.faq-q')?.style && (e.currentTarget.querySelector('.faq-q').style.color = 'var(--accent-orange, #D2691E)');
                   }}
                   onMouseLeave={(e) => {
-                    e.target.style.color = 'var(--ad-text)';
+                    e.currentTarget.querySelector('.faq-q')?.style && (e.currentTarget.querySelector('.faq-q').style.color = 'var(--ad-text)');
                   }}
                 >
-                  <span style={{ color: 'var(--ad-text)', fontWeight: 600, transition: 'color 0.3s ease' }}>{item.q}</span>
+                  <span className="faq-q" style={{ color: 'var(--ad-text)', fontWeight: 600, transition: 'color 0.25s ease' }}>{item.q}</span>
                   {isOpen ? (
                     <FaChevronUp
                       style={{
-                        color: '#C79F5B',
+                        color: 'var(--accent-orange, #D2691E)',
                         fontSize: '1rem',
-                        transition: 'transform 0.3s ease'
+                        transition: 'transform 0.6s ease'
                       }}
                     />
                   ) : (
                     <FaChevronDown
                       style={{
-                        color: '#C79F5B',
+                        color: 'var(--accent-orange, #D2691E)',
                         fontSize: '1rem',
-                        transition: 'transform 0.3s ease'
+                        transition: 'transform 0.6s ease'
                       }}
                     />
                   )}
@@ -99,16 +113,20 @@ const FAQ = () => {
 
                 <div
                   style={{
-                    maxHeight: isOpen ? '300px' : '0',
+                    maxHeight: isOpen ? `${measuredHeights[idx] || 0}px` : '0px',
                     overflow: 'hidden',
-                    transition: 'max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                    transition: 'max-height 0.6s cubic-bezier(0.22, 1, 0.36, 1)',
                   }}
+                  ref={(el) => (contentRefs.current[idx] = el)}
                 >
                   <div style={{
                     padding: '0 24px 20px 24px',
                     color: 'var(--ad-muted)',
-                    lineHeight: '1.6',
-                    fontSize: '1rem'
+                    lineHeight: '1.7',
+                    fontSize: '1rem',
+                    opacity: isOpen ? 1 : 0,
+                    transform: isOpen ? 'translateY(0)' : 'translateY(-4px)',
+                    transition: 'opacity 0.6s ease, transform 0.6s ease'
                   }}>
                     {item.a}
                   </div>

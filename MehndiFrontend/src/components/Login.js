@@ -21,6 +21,8 @@ const Login = () => {
   const [success, setSuccess] = useState('');
   const [showResendModal, setShowResendModal] = useState(false);
   const [resendingEmail, setResendingEmail] = useState(false);
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [resendingCode, setResendingCode] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -75,6 +77,9 @@ const Login = () => {
       if (error.message && error.message.includes('verify your email')) {
         setShowResendModal(true);
         setError('');
+      } else if (error.message && error.message.toLowerCase().includes('verify your phone')) {
+        setShowPhoneModal(true);
+        setError('');
       } else {
         setError(error.message || 'Login failed. Please check your credentials.');
       }
@@ -106,6 +111,26 @@ const Login = () => {
       setError(err.message || 'Failed to send verification email. Please try again.');
     } finally {
       setResendingEmail(false);
+    }
+  };
+
+  const handleResendPhoneCode = async () => {
+    setResendingCode(true);
+    setError('');
+    try {
+      const resp = await authAPI.sendPhoneCode(formData.email);
+      if (resp.success) {
+        setSuccess('Verification code sent to your phone.');
+        setShowPhoneModal(false);
+        // Navigate user to phone verify screen
+        try { window.location.assign(`/verify-phone?email=${encodeURIComponent(formData.email)}`); } catch {}
+      } else {
+        setError(resp.message || 'Failed to send verification code.');
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to send verification code. Please try again.');
+    } finally {
+      setResendingCode(false);
     }
   };
 
@@ -327,6 +352,38 @@ const Login = () => {
                 disabled={resendingEmail}
               >
                 {resendingEmail ? 'Sending...' : 'Resend Email'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Resend Phone Verification Modal */}
+      {showPhoneModal && (
+        <div className="modal-overlay" onClick={() => setShowPhoneModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 className="modal-title">Phone Not Verified</h2>
+              <button className="modal-close" onClick={() => setShowPhoneModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <p>Your phone number has not been verified yet. You need to verify it before logging in.</p>
+              <p>Would you like us to send the 6-digit verification code to the phone linked with <strong>{formData.email}</strong>?</p>
+            </div>
+            <div className="modal-footer">
+              <button 
+                className="modal-cancel-btn" 
+                onClick={() => setShowPhoneModal(false)}
+                disabled={resendingCode}
+              >
+                Cancel
+              </button>
+              <button 
+                className="modal-confirm-btn" 
+                onClick={handleResendPhoneCode}
+                disabled={resendingCode}
+              >
+                {resendingCode ? 'Sending...' : 'Send Code'}
               </button>
             </div>
           </div>

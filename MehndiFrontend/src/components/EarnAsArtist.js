@@ -15,6 +15,7 @@ const responsiveStyles = `
   
   .feature-card:hover {
     transform: translateY(-8px);
+    background-color:rgb(255, 248, 240) !important;
     box-shadow: 0 8px 24px rgba(0,0,0,0.15);
   }
   
@@ -256,7 +257,7 @@ bookings.
 
         {/* Features Section */}
         <section className="responsive-section" style={{
-          padding: '20px 20px',
+          padding: '0 20px',
           backgroundColor: '#E4C293'
         }}>
           <div style={{
@@ -264,11 +265,12 @@ bookings.
             gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
             gap: '32px',
             maxWidth: '1000px',
-            margin: '0 auto'
+            margin: '0 auto',
+            marginBottom: '36px'
           }}>
             {/* Secure Bookings Card */}
             <div className="feature-card" style={{
-              backgroundColor: '#fafafa',
+              backgroundColor: '#fff',
               padding: '32px',
               borderRadius: '12px',
               boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
@@ -295,7 +297,7 @@ bookings.
 
             {/* We Handle the Admin Card */}
             <div className="feature-card" style={{
-              backgroundColor: '#fafafa',
+              backgroundColor: '#fff',
               padding: '32px',
               borderRadius: '12px',
               boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
@@ -336,11 +338,11 @@ bookings.
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
                 gap: '24px',
-                marginBottom: '24px'
+                marginBottom: '36px'
               }}
             >
               {/* Apply to Client Requests */}
-              <div className="how-it-works-card" style={{
+              <div className="feature-card" style={{
                 backgroundColor: '#ffffff',
                 padding: '32px',
                 borderRadius: '12px',
@@ -367,7 +369,7 @@ bookings.
               </div>
 
               {/* Flexible Work */}
-              <div className="how-it-works-card" style={{
+              <div className="feature-card" style={{
                 backgroundColor: '#ffffff',
                 padding: '32px',
                 borderRadius: '12px',
@@ -403,7 +405,7 @@ bookings.
               }}
             >
               {/* Grow Your Brand */}
-              <div className="how-it-works-card" style={{
+              <div className="feature-card" style={{
                 backgroundColor: '#ffffff',
                 padding: '32px',
                 borderRadius: '12px',
@@ -602,26 +604,28 @@ bookings.
               justifyContent: 'center',
               alignItems: 'center',
               gap: '8px',
-              marginBottom: '40px'
-            }}>
-              <div style={{
-                width: '40px',
+              // marginBottom: '40px'
+            }}> <span style={{fontSize: '4.5rem', color: 'var(--accent-orange)'}}>''</span>
+              {/* <div style={{
+                width: '20px',
                 height: '4px',
                 backgroundColor: '#CD853F',
-                borderRadius: '2px'
+                borderRadius: '2px',
+                rotate: '90deg'
               }}></div>
               <div style={{
-                width: '40px',
+                width: '20px',
                 height: '4px',
                 backgroundColor: '#CD853F',
-                borderRadius: '2px'
-              }}></div>
+                borderRadius: '2px',
+                rotate: '90deg'
+              }}></div> */}
             </div>
 
             {/* Testimonial */}
             <blockquote style={{
-              fontSize: '2.2rem',
-              fontWeight: 'bold',
+              fontSize: '1.5rem',
+              // fontWeight: 'bold',
               fontStyle: 'italic',
               color: '#8B4513',
               marginBottom: '24px',

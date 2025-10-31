@@ -1772,6 +1772,8 @@ const ArtistDashboard = () => {
     if (!user) return;
     const params = new URLSearchParams(location.search);
     const chatId = params.get('chatId');
+    const viewBookingId = params.get('viewBooking');
+    const applyBookingIdParam = params.get('applyBooking');
     if (chatId) {
       handleTabChange('messages');
       chatAPI.getChat(chatId).then(res => {
@@ -1800,6 +1802,12 @@ const ArtistDashboard = () => {
           });
         }
       }).catch(() => { });
+    } else if (viewBookingId) {
+      handleTabChange('applications');
+      openViewBooking(viewBookingId);
+    } else if (applyBookingIdParam) {
+      handleTabChange('applications');
+      openApplyModal(applyBookingIdParam);
     }
   }, [location.search, user]);
 
@@ -2311,7 +2319,7 @@ useEffect(() => {
                       <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
                         <button
                           onClick={() => {
-                            handleTabChange('applications');
+                            try { navigate('/browse-requests'); } catch (_) { /* fallback: */ handleTabChange && handleTabChange('applications'); }
                           }}
                           style={{
                             padding: '12px 28px',
@@ -2640,7 +2648,9 @@ useEffect(() => {
                       )}
                     </div>
                     <div className="browse-row">
-                      <button className="browse-requests-btn" onClick={() => handleTabChange('applications')}>Browse All Client Requests</button>
+                      <button className="browse-requests-btn" onClick={() => {
+                            try { navigate('/browse-requests'); } catch (_) { /* fallback: */ handleTabChange && handleTabChange('applications'); }
+                          }}>Browse All Client Requests</button>
                     </div>
                   </div>
 

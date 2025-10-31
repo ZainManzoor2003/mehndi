@@ -13,6 +13,7 @@ const EmailCheck = () => {
   const query = useQuery();
   const navigate = useNavigate();
   const email = query.get('email') || '';
+  const phone = query.get('phone') || '';
 
   const [secondsLeft, setSecondsLeft] = useState(30);
   const [sending, setSending] = useState(false);
@@ -71,8 +72,8 @@ const EmailCheck = () => {
   };
 
   const handleContinueToPhone = () => {
-    // Placeholder next-step: route to login (or replace with phone verification route)
-    navigate('/login');
+    const qs = new URLSearchParams({ email, phone }).toString();
+    navigate(`/verify-phone?${qs}`);
   };
 
   return (

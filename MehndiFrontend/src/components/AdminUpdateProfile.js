@@ -105,7 +105,16 @@ const AdminUpdateProfile = () => {
                   </div>
                   <div className="form-group full-width">
                     <label className="admin_form-label"><FaEnvelope className="input-icon" /> Email Address</label>
-                    <input className="admin_form-input" type="email" value={form.email} onChange={(e)=>setForm({...form, email:e.target.value})} required />
+                    <input 
+                      className="admin_form-input" 
+                      type="email" 
+                      value={form.email} 
+                      onChange={(e)=>setForm({...form, email:e.target.value})} 
+                      required 
+                      disabled 
+                      title="This field is locked and cannot be edited"
+                      style={{ background: '#F3F4F6', color: '#9CA3AF', cursor: 'not-allowed', borderColor: '#e5e7eb' }}
+                    />
                   </div>
                 </div>
 

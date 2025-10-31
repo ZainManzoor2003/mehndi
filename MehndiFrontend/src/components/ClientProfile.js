@@ -463,14 +463,17 @@ const ClientProfile = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  disabled={!isEditing}
+                  disabled={true}
+                  title="This field is locked and cannot be edited"
                   style={{
                     width: '100%',
                     padding: '12px',
-                    border: '1px solid #e0e0e0',
+                    border: '1px solid #e5e7eb',
                     borderRadius: '8px',
-                    backgroundColor: isEditing ? 'white' : '#F0F2F5',
-                    fontSize: '14px'
+                    backgroundColor: '#F3F4F6',
+                    color: '#9CA3AF',
+                    fontSize: '14px',
+                    cursor: 'not-allowed'
                   }}
                 />
               </div>
@@ -488,7 +491,7 @@ const ClientProfile = () => {
                     <FaPhone style={{ fontSize: '12px' }} />
                     Phone Number
                   </span>
-                  {user?.isPhoneNumberVerified && (
+                  {user?.isPhoneVerified && (
                     <span style={{
                       backgroundColor: '#E6F4EA',
                       color: '#2e7d32',
@@ -512,14 +515,17 @@ const ClientProfile = () => {
                   name="phoneNumber"
                   value={formData.phoneNumber}
                   onChange={handleInputChange}
-                  disabled={!isEditing}
+                  disabled={true}
+                  title="This field is locked and cannot be edited"
                   style={{
                     width: '100%',
                     padding: '12px',
-                    border: '1px solid #e0e0e0',
+                    border: '1px solid #e5e7eb',
                     borderRadius: '8px',
-                    backgroundColor: isEditing ? 'white' : '#F0F2F5',
-                    fontSize: '14px'
+                    backgroundColor: '#F3F4F6',
+                    color: '#9CA3AF',
+                    fontSize: '14px',
+                    cursor: 'not-allowed'
                   }}
                 />
               </div>
