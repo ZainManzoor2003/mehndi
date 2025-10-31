@@ -26,6 +26,39 @@ const AllBookings = () => {
   const [linkInput, setLinkInput] = useState('');
   const [uploadingInspiration, setUploadingInspiration] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
+  // Edit modal calendar state
+  const today = new Date();
+  const [editCalOpen, setEditCalOpen] = useState(false);
+  const [editCalEntering, setEditCalEntering] = useState(false);
+  const [editCalYear, setEditCalYear] = useState(today.getFullYear());
+  const [editCalMonth, setEditCalMonth] = useState(today.getMonth());
+
+  const formatISO = (d) => {
+    const y = d.getFullYear();
+    const m = `${d.getMonth() + 1}`.padStart(2, '0');
+    const day = `${d.getDate()}`.padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  const editCalMatrix = (() => {
+    const first = new Date(editCalYear, editCalMonth, 1);
+    const startDay = (first.getDay() + 6) % 7; // Mon=0
+    const daysInMonth = new Date(editCalYear, editCalMonth + 1, 0).getDate();
+    const prevDays = new Date(editCalYear, editCalMonth, 0).getDate();
+    const cells = [];
+    for (let i = 0; i < 42; i++) {
+      const dayNum = i - startDay + 1;
+      let date, inMonth = true;
+      if (dayNum < 1) { inMonth = false; date = new Date(editCalYear, editCalMonth - 1, prevDays + dayNum); }
+      else if (dayNum > daysInMonth) { inMonth = false; date = new Date(editCalYear, editCalMonth + 1, dayNum - daysInMonth); }
+      else { date = new Date(editCalYear, editCalMonth, dayNum); }
+      cells.push({ date, inMonth });
+    }
+    return cells;
+  })();
+
+  const openEditCalendar = () => { setEditCalOpen(true); setTimeout(() => setEditCalEntering(true), 0); };
+  const closeEditCalendar = () => { setEditCalEntering(false); setTimeout(() => setEditCalOpen(false), 180); };
 
   // Handler for uploading design inspiration images
   const handleInspirationImageUpload = async (e) => {
@@ -1063,16 +1096,70 @@ const AllBookings = () => {
                     <div>
                       <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Event Date *</label>
                       <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '0.5rem' }}>Select the date of your occasion</p>
-                      <input name="eventDate" type="date" value={form.eventDate || ''} onChange={handleFormChange} style={{
-                        padding: '12px 16px',
-                        border: '1px solid #e0d5c9',
-                        borderRadius: '10px',
-                        fontSize: '1rem',
-                        background: '#faf8f5',
-                        width: '100%',
-                        outline: 'none',
-                        transition: 'all 0.3s'
-                      }} />
+                      <div style={{ position: 'relative' }}>
+                        <button
+                          type="button"
+                          onClick={() => (editCalOpen ? closeEditCalendar() : openEditCalendar())}
+                          style={{
+                            width: '100%',
+                            height: '48px',
+                            border: '1px solid #e0d5c9',
+                            borderRadius: '10px',
+                            background: '#ffffff',
+                            fontSize: '1rem',
+                            textAlign: 'left',
+                            padding: '0 12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            color: '#0f172a'
+                          }}
+                        >
+                          <span>{form.eventDate ? new Date(form.eventDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) : 'Choose a date'}</span>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
+                        </button>
+                        {editCalOpen && (
+                          <div style={{ position: 'absolute', zIndex: 50, top: 56, left: 0, width: 320, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, boxShadow: '0 12px 30px rgba(15,23,42,0.15)', padding: 12, transition: 'opacity 180ms ease, transform 180ms ease', opacity: editCalEntering ? 1 : 0, transform: editCalEntering ? 'translateY(0) scale(1)' : 'translateY(-6px) scale(0.98)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                              <button type="button" onClick={() => setEditCalYear(editCalYear - 1)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18 }}>◀</button>
+                              <div style={{ fontWeight: 700 }}>{new Date(editCalYear, editCalMonth).toLocaleString('en-GB', { month: 'long', year: 'numeric' })}</div>
+                              <div style={{ display: 'flex', gap: 6 }}>
+                                <button type="button" onClick={() => setEditCalMonth((m) => (m + 11) % 12)} style={{ background: 'none', border: '1px solid #e5e7eb', borderRadius: 6, width: 28, height: 28, cursor: 'pointer' }}>▲</button>
+                                <button type="button" onClick={() => setEditCalMonth((m) => (m + 1) % 12)} style={{ background: 'none', border: '1px solid #e5e7eb', borderRadius: 6, width: 28, height: 28, cursor: 'pointer' }}>▼</button>
+                              </div>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center', fontWeight: 600, color: '#64748b', marginBottom: 6 }}>
+                              {['Mo','Tu','We','Th','Fr','Sa','Su'].map(d => <div key={d} style={{ padding: '6px 0' }}>{d}</div>)}
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+                              {editCalMatrix.map(({ date, inMonth }, idx) => {
+                                const isSelected = form.eventDate && formatISO(new Date(form.eventDate)) === formatISO(date);
+                                const isToday = formatISO(date) === formatISO(today);
+                                return (
+                                  <button
+                                    key={idx}
+                                    type="button"
+                                    onClick={() => { setForm(prev => ({ ...prev, eventDate: formatISO(date) })); closeEditCalendar(); }}
+                                    style={{
+                                      padding: '10px 0',
+                                      borderRadius: 8,
+                                      border: '1px solid ' + (isSelected ? '#2563eb' : '#e5e7eb'),
+                                      background: isSelected ? '#2563eb' : '#ffffff',
+                                      color: isSelected ? '#ffffff' : (inMonth ? '#0f172a' : '#94a3b8'),
+                                      fontWeight: isToday ? 700 : 500,
+                                      cursor: 'pointer'
+                                    }}
+                                  >{date.getDate()}</button>
+                                );
+                              })}
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
+                              <button type="button" onClick={() => { setForm(prev => ({ ...prev, eventDate: '' })); }} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer' }}>Clear</button>
+                              <button type="button" onClick={() => { const d = new Date(); setEditCalYear(d.getFullYear()); setEditCalMonth(d.getMonth()); setForm(prev => ({ ...prev, eventDate: formatISO(d) })); closeEditCalendar(); }} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer' }}>Today</button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                     {/* Preferred Time Slot */}
                     <div>

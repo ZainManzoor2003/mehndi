@@ -4035,7 +4035,7 @@ useEffect(() => {
                           onClick={() => handleTransactionCategoryFilter('festive')}
                         >
                           {/* <div className="filter-indicator"></div> */}
-                          <span>+</span>
+                          <span style={{fontSize:'20px'}}>+</span>
                           Festive
                         </button>
                         <button
@@ -4043,7 +4043,7 @@ useEffect(() => {
                           onClick={() => handleTransactionCategoryFilter('party')}
                         >
                           {/* <div className="filter-indicator"></div> */}
-                          <span>△</span>
+                          <span style={{fontSize:'20px'}}>△</span>
                           Party
                         </button>
                         <button
@@ -4051,7 +4051,7 @@ useEffect(() => {
                           onClick={() => handleTransactionCategoryFilter('casual')}
                         >
                           {/* <div className="filter-indicator"></div> */}
-                          <span>+</span>
+                          <span style={{fontSize:'20px'}}>+</span>
                           Casual
                         </button>
                       </div>
@@ -5173,7 +5173,7 @@ useEffect(() => {
                                     minWidth: '120px'
                                   }}
                                 />
-                                <select
+                                <div
                                   className="form-input"
                                   value={applicationForm.estimatedDuration.unit}
                                   onChange={(e) => handleFormChange('estimatedDuration.unit', e.target.value)}
@@ -5189,8 +5189,8 @@ useEffect(() => {
                                     minWidth: '80px'
                                   }}
                                 >
-                                  <option value="hours">Hours</option>
-                                </select>
+                                  <span value="hours">Hours</span>
+                                </div>
                               </div>
                               {formErrors.estimatedDuration && <span className="error-text" style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px', display: 'block' }}>{formErrors.estimatedDuration}</span>}
                             </div>

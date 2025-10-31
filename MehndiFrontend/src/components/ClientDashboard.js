@@ -1863,7 +1863,7 @@ useEffect(() => {
                           onClick={() => handleTransactionCategoryFilter('festive')}
                         >
                           {/* <div className="filter-indicator"></div> */}
-                          <span>+</span>
+                          <span style={{fontSize:'20px'}}>+</span>
                           Festive
                         </button>
                         <button 
@@ -1871,7 +1871,7 @@ useEffect(() => {
                           onClick={() => handleTransactionCategoryFilter('party')}
                         >
                           {/* <div className="filter-indicator"></div> */}
-                          <span>△</span>
+                          <span style={{fontSize:'20px'}}>△</span>
                           Party
                         </button>
                         <button 
@@ -1879,7 +1879,7 @@ useEffect(() => {
                           onClick={() => handleTransactionCategoryFilter('casual')}
                         >
                           {/* <div className="filter-indicator"></div> */}
-                          <span>+</span>
+                          <span style={{fontSize:'20px'}}>+</span>
                           Casual
                         </button>
                       </div>

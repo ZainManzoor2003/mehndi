@@ -42,7 +42,7 @@ const BrowseRequests = () => {
 
   useEffect(() => {
     // scroll to top quickly on mount
-    try { window.scrollTo(0, 0); } catch {}
+    try { window.scrollTo(0, 0); } catch { }
   }, []);
 
   useEffect(() => {
@@ -57,16 +57,19 @@ const BrowseRequests = () => {
         const savedSet = new Set((savedRes?.data || []).map(b => b._id));
         const appliedIds = new Set(((myAppliedRes?.data) || []).map(a => a.bookingId || a.id || a.booking_id));
         const artistId = user?._id;
+        console.log('all results', allRes)
         const combined = (allRes?.data || [])
           .filter(b => {
-            if (b.status !== 'pending') return false;
+            if(b.status==='pending' || b.status==='in_progress'){
             if (appliedIds.has(String(b._id))) return false;
             const applied = Array.isArray(b.appliedArtists) && artistId ? b.appliedArtists.some(id => String(id) === String(artistId)) : false;
             const assigned = Array.isArray(b.assignedArtist) && artistId ? b.assignedArtist.some(id => String(id) === String(artistId)) : false;
             return !applied && !assigned;
+            }
           })
           .map(b => ({ ...b, __saved: savedSet.has(b._id) }));
         setAll(combined);
+        console.log('combined', combined)
       } catch (e) {
         setError(e.message || 'Failed to load requests');
       } finally { setLoading(false); }
@@ -77,7 +80,7 @@ const BrowseRequests = () => {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return all.filter(b => {
-      const matchesQ = !q || [b.firstName, b.lastName, b.location, ...(b.eventType||[])].join(' ').toLowerCase().includes(q);
+      const matchesQ = !q || [b.firstName, b.lastName, b.location, ...(b.eventType || [])].join(' ').toLowerCase().includes(q);
       const matchesCity = !city || (b.city || b.location || '').toLowerCase().includes(city.toLowerCase());
       const matchesCat = !category || (Array.isArray(b.eventType) && b.eventType.includes(category));
       return matchesQ && matchesCity && matchesCat;
@@ -127,7 +130,7 @@ const BrowseRequests = () => {
         coveragePreference: b.coveragePreference || '',
         additionalRequests: b.additionalRequests || ''
       });
-      try { setViewClientId(b.clientId?._id || b.clientId || null); } catch {}
+      try { setViewClientId(b.clientId?._id || b.clientId || null); } catch { }
       setViewOpen(true);
     } catch (e) {
       alert(e.message || 'Failed to load booking');
@@ -244,29 +247,29 @@ const BrowseRequests = () => {
               <p style={{ marginTop: 6, color: '#6b5544' }}>Try adjusting your search, city, or category filters to discover more client requests.</p>
             </div>
           ) : (
-          <div style={{ marginTop: 18, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
-            {filtered.map(b => (
-              <div key={b._id} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, boxShadow: '0 2px 8px rgba(0,0,0,.06)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ fontWeight: 700 }}>{`${b.designStyle || 'Mehndi'} in ${b.city || b.location || ''}`}</div>
-                  <button onClick={() => toggleSave(b._id, b.__saved)} disabled={!!saving[b._id]} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
-                    {b.__saved ? <FaHeart color="#b45309" /> : <FaRegHeart color="#b45309" />}
-                  </button>
+            <div style={{ marginTop: 18, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+              {filtered.map(b => (
+                <div key={b._id} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, boxShadow: '0 2px 8px rgba(0,0,0,.06)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontWeight: 700 }}>{`${b.designStyle || 'Mehndi'} in ${b.city || b.location || ''}`}</div>
+                    <button onClick={() => toggleSave(b._id, b.__saved)} disabled={!!saving[b._id]} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                      {b.__saved ? <FaHeart color="#b45309" /> : <FaRegHeart color="#b45309" />}
+                    </button>
+                  </div>
+                  <div style={{ marginTop: 10, display: 'grid', gap: 6, color: '#374151', fontSize: 14 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><FaCalendarAlt color="#c2410c" /> {new Date(b.eventDate).toLocaleDateString()} <FaClock style={{ marginLeft: 10 }} color="#c2410c" /> {Array.isArray(b.preferredTimeSlot) ? b.preferredTimeSlot.join(', ') : b.preferredTimeSlot}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><FaMapMarkerAlt color="#c2410c" /> {(b.city ? `${b.city}, ` : '') + (b.location || '')}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><FaUsers color="#c2410c" /> Group Size: {b.numberOfPeople}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><FaPoundSign color="#c2410c" /> Budget: £{b.minimumBudget}–£{b.maximumBudget}</div>
+                    <div style={{ color: '#6b7280', fontSize: 12 }}>Posted {timeAgo(b.createdAt)}</div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+                    <button onClick={() => openView(b._id)} style={{ background: '#5C3D2E', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: 10, fontWeight: 700, cursor: 'pointer' }}>View Details</button>
+                    <button onClick={() => openApply(b._id)} style={{ background: '#b45309', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: 10, fontWeight: 700, cursor: 'pointer' }}>Apply to Booking</button>
+                  </div>
                 </div>
-                <div style={{ marginTop: 10, display: 'grid', gap: 6, color: '#374151', fontSize: 14 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><FaCalendarAlt color="#c2410c" /> {new Date(b.eventDate).toLocaleDateString()} <FaClock style={{ marginLeft: 10 }} color="#c2410c"/> {Array.isArray(b.preferredTimeSlot)? b.preferredTimeSlot.join(', ') : b.preferredTimeSlot}</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><FaMapMarkerAlt color="#c2410c" /> {(b.city ? `${b.city}, ` : '') + (b.location || '')}</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><FaUsers color="#c2410c" /> Group Size: {b.numberOfPeople}</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><FaPoundSign color="#c2410c" /> Budget: £{b.minimumBudget}–£{b.maximumBudget}</div>
-                  <div style={{ color: '#6b7280', fontSize: 12 }}>Posted {timeAgo(b.createdAt)}</div>
-                </div>
-                <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-                  <button onClick={() => openView(b._id)} style={{ background: '#5C3D2E', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: 10, fontWeight: 700, cursor: 'pointer' }}>View Details</button>
-                  <button onClick={() => openApply(b._id)} style={{ background: '#b45309', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: 10, fontWeight: 700, cursor: 'pointer' }}>Apply to Booking</button>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
           )
         )}
       </div>

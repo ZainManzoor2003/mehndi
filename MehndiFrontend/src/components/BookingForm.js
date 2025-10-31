@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import apiService from '../services/api';
@@ -16,11 +16,11 @@ const BookingForm = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadedImages, setUploadedImages] = useState([]);
   const [linkInput, setLinkInput] = useState('');
-  
+
   const [formData, setFormData] = useState({
     // Contact Details
     fullName: '',
-    
+
     // Event Details
     eventType: '',
     otherEventType: '',
@@ -31,12 +31,12 @@ const BookingForm = () => {
     longitude: '',
     artistTravelsToClient: '',
     venueName: '',
-    
+
     // Mehndi Style
     stylePreference: '',
     designInspiration: '',
     coveragePreference: '',
-    
+
     // Budget & Notes
     budgetFrom: '',
     budgetTo: '',
@@ -45,6 +45,46 @@ const BookingForm = () => {
   });
 
   const [showLocationModal, setShowLocationModal] = useState(false);
+  // Calendar popover state
+  const today = new Date();
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [calEntering, setCalEntering] = useState(false);
+  const openCalendar = () => {
+    setShowCalendar(true);
+    // allow next paint then animate in
+    setTimeout(() => setCalEntering(true), 0);
+  };
+  const closeCalendar = () => {
+    setCalEntering(false);
+    setTimeout(() => setShowCalendar(false), 180);
+  };
+  const [calYear, setCalYear] = useState(today.getFullYear());
+  const [calMonth, setCalMonth] = useState(today.getMonth()); // 0-11
+
+  const calMatrix = useMemo(() => {
+    const first = new Date(calYear, calMonth, 1);
+    const startDay = (first.getDay() + 6) % 7; // Mon=0
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+    const prevDays = new Date(calYear, calMonth, 0).getDate();
+    const cells = [];
+    // Fill 42 cells (6 weeks)
+    for (let i = 0; i < 42; i++) {
+      const dayNum = i - startDay + 1;
+      let date, inMonth = true;
+      if (dayNum < 1) { inMonth = false; date = new Date(calYear, calMonth - 1, prevDays + dayNum); }
+      else if (dayNum > daysInMonth) { inMonth = false; date = new Date(calYear, calMonth + 1, dayNum - daysInMonth); }
+      else { date = new Date(calYear, calMonth, dayNum); }
+      cells.push({ date, inMonth });
+    }
+    return cells;
+  }, [calYear, calMonth]);
+
+  const formatISO = (d) => {
+    const y = d.getFullYear();
+    const m = `${d.getMonth() + 1}`.padStart(2, '0');
+    const day = `${d.getDate()}`.padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
 
   // Handler for location selection from modal (store coordinates only; city is chosen via dropdown)
   const handleLocationSelect = (lat, lng) => {
@@ -93,7 +133,7 @@ const BookingForm = () => {
 
   const handleAddLink = () => {
     if (!linkInput.trim()) return;
-    
+
     const newImages = [...uploadedImages, linkInput.trim()];
     setUploadedImages(newImages);
     setFormData(prev => ({
@@ -116,57 +156,58 @@ const BookingForm = () => {
     { id: 1, name: 'Contact' },
     { id: 2, name: 'Event' },
     { id: 3, name: 'Style' },
-    { id: 4, name: 'Budget' }
+    { id: 4, name: 'Budget' },
+    { id: 5, name: 'Review' }
   ];
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
+
     if (type === 'checkbox') {
-        setFormData(prev => ({
-          ...prev,
-          [name]: checked 
-            ? [...prev[name], value]
-            : prev[name].filter(item => item !== value)
-        }));
+      setFormData(prev => ({
+        ...prev,
+        [name]: checked
+          ? [...prev[name], value]
+          : prev[name].filter(item => item !== value)
+      }));
     } else if (type === 'radio') {
       setFormData(prev => ({
         ...prev,
         [name]: value
-        }));
-      } else {
-        setFormData(prev => ({
-          ...prev,
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
         [name]: value
-        }));
-      }
+      }));
+    }
   };
 
   // Special handler for style preference (single selection)
   const handleStyleChange = (value) => {
-      setFormData(prev => ({
-        ...prev,
+    setFormData(prev => ({
+      ...prev,
       stylePreference: value
-      }));
+    }));
   };
 
   const handleNumberChange = (field, increment) => {
-      setFormData(prev => ({
-        ...prev,
+    setFormData(prev => ({
+      ...prev,
       [field]: Math.max(1, prev[field] + increment)
-      }));
+    }));
   };
 
   const handlePresetBudget = (from, to) => {
-      setFormData(prev => ({
-        ...prev,
+    setFormData(prev => ({
+      ...prev,
       budgetFrom: from,
       budgetTo: to
-      }));
+    }));
   };
 
   const handleNextStep = () => {
-    if (currentStep < 4) {
+    if (currentStep < 5) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -182,6 +223,12 @@ const BookingForm = () => {
     setError('');
     setSuccess('');
 
+    // Ensure submission only happens on the Review step
+    if (currentStep !== 5) {
+      setCurrentStep(5);
+      return;
+    }
+
     if (!isAuthenticated) {
       setError('Please log in to submit a booking request');
       return;
@@ -194,8 +241,8 @@ const BookingForm = () => {
       return;
     }
 
-    if (!formData.eventType || !formData.eventDate || !formData.preferredTimeSlot || 
-        !formData.location || !formData.artistTravelsToClient) {
+    if (!formData.eventType || !formData.eventDate || !formData.preferredTimeSlot ||
+      !formData.location || !formData.artistTravelsToClient) {
       setCurrentStep(2);
       setError('Please complete Event Details');
       return;
@@ -206,19 +253,19 @@ const BookingForm = () => {
       setError('Please select a style preference');
       return;
     }
-    if(formData.stylePreference === 'Bridal Mehndi' && !formData.venueName) {
+    if (formData.stylePreference === 'Bridal Mehndi' && !formData.venueName) {
       setCurrentStep(2);
       setError('Venue name is required for bridal mehndi');
       return;
     }
-    if(formData.stylePreference === 'Bridal Mehndi' && !formData.coveragePreference) {
+    if (formData.stylePreference === 'Bridal Mehndi' && !formData.coveragePreference) {
       setCurrentStep(3);
       setError('Coverage preference is required for bridal mehndi');
-      return; 
+      return;
     }
 
     if (!formData.budgetFrom || !formData.budgetTo || !formData.numberOfPeople) {
-        setCurrentStep(4);
+      setCurrentStep(4);
       setError('Please complete Budget information');
       return;
     }
@@ -235,7 +282,7 @@ const BookingForm = () => {
     const eventDate = new Date(formData.eventDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     if (eventDate <= today) {
       setCurrentStep(2);
       setError('Event date must be in the future');
@@ -275,9 +322,9 @@ const BookingForm = () => {
       };
 
       const response = await bookingsAPI.createBooking(bookingData);
-      
+
       setSuccess('Your booking request has been submitted successfully!');
-      
+
       // Redirect after 2 seconds
       setTimeout(() => {
         navigate('/dashboard');
@@ -299,8 +346,8 @@ const BookingForm = () => {
           <div className="progress-bar">
             {steps.map((step, index) => (
               <div key={step.id} className="progress-step-container">
-              <div className={`progress-step ${currentStep >= step.id ? 'active' : ''} ${currentStep === step.id ? 'current' : ''}`}>
-                  <span className="step-number">{step.id}</span>
+                <div className={`progress-step ${currentStep >= step.id ? 'active' : ''} ${currentStep === step.id ? 'current' : ''}`}>
+                  <span className="step-number" style={{width:'50px',height:'50px'}}>{step.id}</span>
                   <span className="step-name">{step.name}</span>
                 </div>
                 {index < steps.length - 1 && (
@@ -310,52 +357,54 @@ const BookingForm = () => {
             ))}
           </div>
 
-        {/* Title */}
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <h1 style={{ 
-            fontSize: '2rem', 
-            color: '#8B4513', 
-            marginBottom: '0.5rem',
-            fontWeight: '600'
-          }}>
-            Post a Mehndi Request
-          </h1>
-          <p style={{ 
-            fontSize: '1.1rem', 
-            color: '#666',
-            fontStyle: 'italic'
-          }}>
-            Tell Us What You Need – Artists Will Apply to You!
-          </p>
-          <p style={{ 
-            fontSize: '0.95rem', 
-            color: '#888',
-            marginTop: '0.5rem'
-          }}>
-            Sit back and let artists send you offers based on your event, budget, and style.
-          </p>
+          {/* Title */}
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+
           </div>
 
-          <form className="booking-form" onSubmit={handleSubmit}>
+          <form className="booking-form">
             {/* Step 1: Contact Details */}
             {currentStep === 1 && (
               <div className="form-step">
-                <div className="step-header">
-                  <h2 className="step-title">Contact Details</h2>
-                <p className="step-subtitle">We'll use your account information</p>
-                </div>
-                
-                  <div className="form-group">
-                <label className="form-label">Full Name *</label>
-                    <input
-                      type="text"
-                  name="fullName"
-                      className="form-input"
-                  placeholder="Enter your full name"
-                  value={formData.fullName}
-                      onChange={handleInputChange}
-                      required
-                    />
+                <h1 style={{
+                  fontSize: '2rem',
+                  color: '#8B4513',
+                  marginBottom: '0.5rem',
+                  fontWeight: '600',
+                  textAlign: 'center'
+                }}>
+                  Post a Mehndi Request
+                </h1>
+                <p style={{
+                  fontSize: '1.1rem',
+                  color: '#666',
+                  fontStyle: 'italic',
+                  textAlign: 'center'
+                }}>
+                  Tell Us What You Need – Artists Will Apply to You!
+                </p>
+                <p style={{
+                  fontSize: '0.95rem',
+                  color: '#888',
+                  marginTop: '0.5rem',
+                  textAlign: 'center',
+                  marginBottom: '50px'
+                }}>
+                  Sit back and let artists send you offers based on your event, budget, and style.
+                </p>
+
+                <div className="form-group">
+                  <label className="form-label">Full Name *</label>
+                  <input
+                    type="text"
+                    name="fullName"
+                    className="form-input"
+                    placeholder="Enter your full name"
+                    value={formData.fullName}
+                    onChange={handleInputChange}
+                    required
+                  />
+                  Your information will be used securely to connect you with artists.
                 </div>
               </div>
             )}
@@ -368,165 +417,239 @@ const BookingForm = () => {
                   <p className="step-subtitle">Tell us about your special occasion</p>
                 </div>
 
-              {/* Event Type */}
+                {/* Event Type */}
                 <div className="form-group">
                   <label className="form-label">Event Type *</label>
-                <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '1rem' }}>
-                  Choose the event you are booking for
-                </p>
-                <div className="event-option-grid">
-                  <label className={`event-option ${formData.eventType === 'Wedding' ? 'selected' : ''}`}>
+                  <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '1rem' }}>
+                    Choose the event you are booking for
+                  </p>
+                  <div className="event-option-grid">
+                    <label className={`event-option ${formData.eventType === 'Wedding' ? 'selected' : ''}`}>
                       <input
-                      type="radio"
+                        type="radio"
                         name="eventType"
                         value="Wedding"
-                      checked={formData.eventType === 'Wedding'}
+                        checked={formData.eventType === 'Wedding'}
                         onChange={handleInputChange}
-                      style={{ display: 'none' }}
-                    />
-                    <span className="event-emoji">💍</span>
-                    <span className="event-text">Wedding</span>
-                    {formData.eventType === 'Wedding' && (
-                      <span className="checkmark">✓</span>
-                    )}
+                        style={{ display: 'none' }}
+                      />
+                      <span className="event-emoji">💍</span>
+                      <span className="event-text">Wedding</span>
+                      {formData.eventType === 'Wedding' && (
+                        <span className="checkmark">✓</span>
+                      )}
                     </label>
-                  <label className={`event-option ${formData.eventType === 'Eid' ? 'selected' : ''}`}>
+                    <label className={`event-option ${formData.eventType === 'Eid' ? 'selected' : ''}`}>
                       <input
-                      type="radio"
+                        type="radio"
                         name="eventType"
                         value="Eid"
-                      checked={formData.eventType === 'Eid'}
+                        checked={formData.eventType === 'Eid'}
                         onChange={handleInputChange}
-                      style={{ display: 'none' }}
-                    />
-                    <span className="event-emoji">🌙</span>
-                    <span className="event-text">Eid</span>
-                    {formData.eventType === 'Eid' && (
-                      <span className="checkmark">✓</span>
-                    )}
+                        style={{ display: 'none' }}
+                      />
+                      <span className="event-emoji">🌙</span>
+                      <span className="event-text">Eid</span>
+                      {formData.eventType === 'Eid' && (
+                        <span className="checkmark">✓</span>
+                      )}
                     </label>
-                  <label className={`event-option ${formData.eventType === 'Party' ? 'selected' : ''}`}>
+                    <label className={`event-option ${formData.eventType === 'Party' ? 'selected' : ''}`}>
                       <input
-                      type="radio"
+                        type="radio"
                         name="eventType"
                         value="Party"
-                      checked={formData.eventType === 'Party'}
+                        checked={formData.eventType === 'Party'}
                         onChange={handleInputChange}
-                      style={{ display: 'none' }}
-                    />
-                    <span className="event-emoji">🎉</span>
-                    <span className="event-text">Party</span>
-                    {formData.eventType === 'Party' && (
-                      <span className="checkmark">✓</span>
-                    )}
+                        style={{ display: 'none' }}
+                      />
+                      <span className="event-emoji">🎉</span>
+                      <span className="event-text">Party</span>
+                      {formData.eventType === 'Party' && (
+                        <span className="checkmark">✓</span>
+                      )}
                     </label>
-                  <label className={`event-option ${formData.eventType === 'Festival' ? 'selected' : ''}`}>
+                    <label className={`event-option ${formData.eventType === 'Festival' ? 'selected' : ''}`}>
                       <input
-                      type="radio"
+                        type="radio"
                         name="eventType"
                         value="Festival"
-                      checked={formData.eventType === 'Festival'}
+                        checked={formData.eventType === 'Festival'}
                         onChange={handleInputChange}
-                      style={{ display: 'none' }}
-                    />
-                    <span className="event-emoji">🎊</span>
-                    <span className="event-text">Festival</span>
-                    {formData.eventType === 'Festival' && (
-                      <span className="checkmark">✓</span>
-                    )}
+                        style={{ display: 'none' }}
+                      />
+                      <span className="event-emoji">🎊</span>
+                      <span className="event-text">Festival</span>
+                      {formData.eventType === 'Festival' && (
+                        <span className="checkmark">✓</span>
+                      )}
+                    </label>
+                    <label className={`event-option ${formData.eventType === 'Other' ? 'selected' : ''}`}>
+                      <input
+                        type="radio"
+                        name="eventType"
+                        value="Other"
+                        checked={formData.eventType === 'Other'}
+                        onChange={handleInputChange}
+                        style={{ display: 'none' }}
+                      />
+                      <span className="event-emoji">📝</span>
+                      <span className="event-text">Other</span>
+                      {formData.eventType === 'Other' && (
+                        <span className="checkmark">✓</span>
+                      )}
                     </label>
                   </div>
-                  <input
-                    type="text"
-                    name="otherEventType"
-                    className="form-input"
-                  style={{ marginTop: '1rem' }}
-                    placeholder="Other:"
-                    value={formData.otherEventType}
-                    onChange={handleInputChange}
-                  />
+                  {formData.eventType === 'Other' && (
+                    <input
+                      type="text"
+                      name="otherEventType"
+                      className="form-input"
+                      style={{ marginTop: '1rem' }}
+                      placeholder="Please specify the event"
+                      value={formData.otherEventType}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  )}
                 </div>
 
-              {/* Event Date */}
+                {/* Event Date */}
                 <div className="form-group">
                   <label className="form-label">Event Date *</label>
-                <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '0.5rem' }}>
-                  Select the date of your occasion
-                </p>
-                  <input
-                    type="date"
-                    name="eventDate"
-                    className="form-input"
-                    value={formData.eventDate}
-                    onChange={handleInputChange}
-                    required
-                  />
+                  <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '0.5rem' }}>
+                    Select the date of your occasion
+                  </p>
+                  <div style={{ position: 'relative' }}>
+                    <button
+                      type="button"
+                      onClick={() => (showCalendar ? closeCalendar() : openCalendar())}
+                      style={{
+                        width: '100%',
+                        height: '48px',
+                        border: '1px solid #ced4da',
+                        borderRadius: '10px',
+                        background: '#ffffff',
+                        fontSize: '16px',
+                        textAlign: 'left',
+                        padding: '0 12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        color: '#0f172a'
+                      }}
+                    >
+                      <span>{formData.eventDate ? new Date(formData.eventDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) : 'Choose a date'}</span>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
+                    </button>
+                    {showCalendar && (
+                      <div style={{ position: 'absolute', zIndex: 50, top: 56, left: 0, width: 320, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, boxShadow: '0 12px 30px rgba(15,23,42,0.15)', padding: 12, transition: 'opacity 180ms ease, transform 180ms ease', opacity: calEntering ? 1 : 0, transform: calEntering ? 'translateY(0) scale(1)' : 'translateY(-6px) scale(0.98)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                          <button type="button" onClick={() => setCalYear(calYear - 1)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18 }}>◀</button>
+                          <div style={{ fontWeight: 700 }}>{new Date(calYear, calMonth).toLocaleString('en-GB', { month: 'long', year: 'numeric' })}</div>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button type="button" onClick={() => setCalMonth((m) => (m + 11) % 12)} style={{ background: 'none', border: '1px solid #e5e7eb', borderRadius: 6, width: 28, height: 28, cursor: 'pointer' }}>▲</button>
+                            <button type="button" onClick={() => setCalMonth((m) => (m + 1) % 12)} style={{ background: 'none', border: '1px solid #e5e7eb', borderRadius: 6, width: 28, height: 28, cursor: 'pointer' }}>▼</button>
+                          </div>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center', fontWeight: 600, color: '#64748b', marginBottom: 6 }}>
+                          {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map(d => <div key={d} style={{ padding: '6px 0' }}>{d}</div>)}
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+                          {calMatrix.map(({ date, inMonth }, idx) => {
+                            const isSelected = formData.eventDate && formatISO(date) === formData.eventDate;
+                            const isToday = formatISO(date) === formatISO(today);
+                            return (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => { setFormData(prev => ({ ...prev, eventDate: formatISO(date) })); closeCalendar(); }}
+                                style={{
+                                  padding: '10px 0',
+                                  borderRadius: 8,
+                                  border: '1px solid ' + (isSelected ? '#2563eb' : '#e5e7eb'),
+                                  background: isSelected ? '#2563eb' : '#ffffff',
+                                  color: isSelected ? '#ffffff' : (inMonth ? '#0f172a' : '#94a3b8'),
+                                  fontWeight: isToday ? 700 : 500,
+                                  cursor: 'pointer'
+                                }}
+                              >{date.getDate()}</button>
+                            );
+                          })}
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
+                          <button type="button" onClick={() => { setFormData(prev => ({ ...prev, eventDate: '' })); }} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer' }}>Clear</button>
+                          <button type="button" onClick={() => { const d = new Date(); setCalYear(d.getFullYear()); setCalMonth(d.getMonth()); setFormData(prev => ({ ...prev, eventDate: formatISO(d) })); closeCalendar(); }} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer' }}>Today</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-              {/* Preferred Time Slot */}
+                {/* Preferred Time Slot */}
                 <div className="form-group">
                   <label className="form-label">Preferred Time Slot *</label>
-                <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '1rem' }}>
-                  Pick one option
-                </p>
-                <div className="time-slot-grid">
-                  <label className={`time-slot-option ${formData.preferredTimeSlot === 'Morning' ? 'selected' : ''}`}>
+                  <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '1rem' }}>
+                    Pick one option
+                  </p>
+                  <div className="time-slot-grid">
+                    <label className={`time-slot-option ${formData.preferredTimeSlot === 'Morning' ? 'selected' : ''}`}>
                       <input
-                      type="radio"
+                        type="radio"
                         name="preferredTimeSlot"
                         value="Morning"
-                      checked={formData.preferredTimeSlot === 'Morning'}
+                        checked={formData.preferredTimeSlot === 'Morning'}
                         onChange={handleInputChange}
-                      style={{ display: 'none' }}
+                        style={{ display: 'none' }}
                       />
-                    <span className="time-icon">☀️</span>
-                    <span className="time-text">Morning</span>
+                      <span className="time-icon">☀️</span>
+                      <span className="time-text">Morning</span>
                     </label>
-                  <label className={`time-slot-option ${formData.preferredTimeSlot === 'Afternoon' ? 'selected' : ''}`}>
+                    <label className={`time-slot-option ${formData.preferredTimeSlot === 'Afternoon' ? 'selected' : ''}`}>
                       <input
-                      type="radio"
+                        type="radio"
                         name="preferredTimeSlot"
                         value="Afternoon"
-                      checked={formData.preferredTimeSlot === 'Afternoon'}
+                        checked={formData.preferredTimeSlot === 'Afternoon'}
                         onChange={handleInputChange}
-                      style={{ display: 'none' }}
+                        style={{ display: 'none' }}
                       />
-                    <span className="time-icon">🌤️</span>
-                    <span className="time-text">Afternoon</span>
+                      <span className="time-icon">🌤️</span>
+                      <span className="time-text">Afternoon</span>
                     </label>
-                  <label className={`time-slot-option ${formData.preferredTimeSlot === 'Evening' ? 'selected' : ''}`}>
+                    <label className={`time-slot-option ${formData.preferredTimeSlot === 'Evening' ? 'selected' : ''}`}>
                       <input
-                      type="radio"
+                        type="radio"
                         name="preferredTimeSlot"
                         value="Evening"
-                      checked={formData.preferredTimeSlot === 'Evening'}
+                        checked={formData.preferredTimeSlot === 'Evening'}
                         onChange={handleInputChange}
-                      style={{ display: 'none' }}
+                        style={{ display: 'none' }}
                       />
-                    <span className="time-icon">🌙</span>
-                    <span className="time-text">Evening</span>
+                      <span className="time-icon">🌙</span>
+                      <span className="time-text">Evening</span>
                     </label>
-                  <label className={`time-slot-option ${formData.preferredTimeSlot === 'Flexible' ? 'selected' : ''}`}>
+                    <label className={`time-slot-option ${formData.preferredTimeSlot === 'Flexible' ? 'selected' : ''}`}>
                       <input
-                      type="radio"
+                        type="radio"
                         name="preferredTimeSlot"
                         value="Flexible"
-                      checked={formData.preferredTimeSlot === 'Flexible'}
+                        checked={formData.preferredTimeSlot === 'Flexible'}
                         onChange={handleInputChange}
-                      style={{ display: 'none' }}
+                        style={{ display: 'none' }}
                       />
-                    <span className="time-icon">🔄</span>
-                    <span className="time-text">Flexible</span>
+                      <span className="time-icon">🔄</span>
+                      <span className="time-text">Flexible</span>
                     </label>
                   </div>
                 </div>
 
-              {/* Location */}
+                {/* Location */}
                 <div className="form-group">
                   <label className="form-label">Location / Postcode *</label>
-                <p style={{ fontSize: '0.85rem', color: '#888', marginBottom: '1rem' }}>
-                  Click "Get Location" to select your location on the map
-                </p>
+                  <p style={{ fontSize: '0.85rem', color: '#888', marginBottom: '1rem' }}>
+                    Click "Get Location" to select your location on the map
+                  </p>
                   <button
                     type="button"
                     onClick={() => setShowLocationModal(true)}
@@ -594,423 +717,422 @@ const BookingForm = () => {
                       gap: '10px'
                     }}>
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
                       </svg>
                       <span>{formData.location}</span>
                     </div>
                   )}
                 </div>
 
-              {/* Travel Preference */}
+                {/* Travel Preference */}
                 <div className="form-group">
                   <label className="form-label">Do you want the artist to come to you? *</label>
-                <div className="travel-option-grid">
-                  <label className={`travel-option ${formData.artistTravelsToClient === 'yes' ? 'selected' : ''}`}>
+                  <div className="travel-option-grid">
+                    <label className={`travel-option ${formData.artistTravelsToClient === 'yes' ? 'selected' : ''}`}>
                       <input
                         type="radio"
                         name="artistTravelsToClient"
                         value="yes"
-                      checked={formData.artistTravelsToClient === 'yes'}
+                        checked={formData.artistTravelsToClient === 'yes'}
                         onChange={handleInputChange}
-                      style={{ display: 'none' }}
+                        style={{ display: 'none' }}
                       />
-                    <span className="travel-icon">🚗</span>
-                    <span className="travel-text">Yes, come to my home</span>
+                      <span className="travel-icon">🚗</span>
+                      <span className="travel-text">Yes, come to my home</span>
                     </label>
-                  <label className={`travel-option ${formData.artistTravelsToClient === 'no' ? 'selected' : ''}`}>
+                    <label className={`travel-option ${formData.artistTravelsToClient === 'no' ? 'selected' : ''}`}>
                       <input
                         type="radio"
                         name="artistTravelsToClient"
                         value="no"
-                      checked={formData.artistTravelsToClient === 'no'}
+                        checked={formData.artistTravelsToClient === 'no'}
                         onChange={handleInputChange}
-                      style={{ display: 'none' }}
+                        style={{ display: 'none' }}
                       />
-                    <span className="travel-icon">🏡</span>
-                    <span className="travel-text">No, I'll travel to the artist</span>
+                      <span className="travel-icon">🏡</span>
+                      <span className="travel-text">No, I'll travel to the artist</span>
                     </label>
-                  <label className={`travel-option ${formData.artistTravelsToClient === 'both' ? 'selected' : ''}`}>
+                    <label className={`travel-option ${formData.artistTravelsToClient === 'both' ? 'selected' : ''}`}>
                       <input
                         type="radio"
                         name="artistTravelsToClient"
                         value="both"
-                      checked={formData.artistTravelsToClient === 'both'}
+                        checked={formData.artistTravelsToClient === 'both'}
                         onChange={handleInputChange}
-                      style={{ display: 'none' }}
+                        style={{ display: 'none' }}
                       />
-                    <span className="travel-icon">🤝</span>
-                    <span className="travel-text">I'm open to both</span>
+                      <span className="travel-icon">🤝</span>
+                      <span className="travel-text">I'm open to both</span>
                     </label>
                   </div>
                 </div>
 
-              {/* Venue Name (Optional) */}
-              <div className="form-group">
-                <label className="form-label">Venue Name * (for bridal only)</label>
-                <input
-                  type="text"
-                  name="venueName"
-                  className="form-input"
-                  placeholder="Enter venue name (optional)"
-                  value={formData.venueName}
-                  onChange={handleInputChange}
-                />
+                {/* Venue Name (Optional) */}
+                <div className="form-group">
+                  <label className="form-label">Venue Name * (for bridal only)</label>
+                  <input
+                    type="text"
+                    name="venueName"
+                    className="form-input"
+                    placeholder="Enter venue name (optional)"
+                    value={formData.venueName}
+                    onChange={handleInputChange}
+                  />
                 </div>
               </div>
             )}
 
-          {/* Step 3: Mehndi Style */}
+            {/* Step 3: Mehndi Style */}
             {currentStep === 3 && (
               <div className="form-step">
                 <div className="step-header">
-                <h2 className="step-title">Mehndi Style</h2>
-                <p className="step-subtitle">Tell us about your preferred style</p>
+                  <h2 className="step-title">Mehndi Style</h2>
+                  <p className="step-subtitle">Tell us about your preferred style</p>
                 </div>
 
-              {/* Style Preference */}
+                {/* Style Preference */}
                 <div className="form-group">
-                <label className="form-label">Style You're Looking For *</label>
-                <div className="style-option-grid">
-                  <label className={`style-option ${formData.stylePreference === 'Bridal Mehndi' ? 'selected' : ''}`}
-                    onClick={() => handleStyleChange('Bridal Mehndi')}
-                    style={{ cursor: 'pointer' }}
-                  >
+                  <label className="form-label">Style You're Looking For *</label>
+                  <div className="style-option-grid">
+                    <label className={`style-option ${formData.stylePreference === 'Bridal Mehndi' ? 'selected' : ''}`}
+                      onClick={() => handleStyleChange('Bridal Mehndi')}
+                      style={{ cursor: 'pointer' }}
+                    >
                       <input
-                      type="radio"
-                      name="stylePreference"
-                      value="Bridal Mehndi"
-                      checked={formData.stylePreference === 'Bridal Mehndi'}
-                      onChange={() => handleStyleChange('Bridal Mehndi')}
-                      style={{ display: 'none' }}
-                    />
-                    <span>Bridal Mehndi</span>
-                    {formData.stylePreference === 'Bridal Mehndi' && (
-                      <span className="checkmark">✓</span>
-                    )}
+                        type="radio"
+                        name="stylePreference"
+                        value="Bridal Mehndi"
+                        checked={formData.stylePreference === 'Bridal Mehndi'}
+                        onChange={() => handleStyleChange('Bridal Mehndi')}
+                        style={{ display: 'none' }}
+                      />
+                      <span>Bridal Mehndi</span>
+                      {formData.stylePreference === 'Bridal Mehndi' && (
+                        <span className="checkmark">✓</span>
+                      )}
                     </label>
-                  <label className={`style-option ${formData.stylePreference === 'Party Mehndi' ? 'selected' : ''}`}
-                    onClick={() => handleStyleChange('Party Mehndi')}
-                    style={{ cursor: 'pointer' }}
-                  >
+                    <label className={`style-option ${formData.stylePreference === 'Party Mehndi' ? 'selected' : ''}`}
+                      onClick={() => handleStyleChange('Party Mehndi')}
+                      style={{ cursor: 'pointer' }}
+                    >
                       <input
-                      type="radio"
-                      name="stylePreference"
-                      value="Party Mehndi"
-                      checked={formData.stylePreference === 'Party Mehndi'}
-                      onChange={() => handleStyleChange('Party Mehndi')}
-                      style={{ display: 'none' }}
-                    />
-                    <span>Party Mehndi</span>
-                    {formData.stylePreference === 'Party Mehndi' && (
-                      <span className="checkmark">✓</span>
-                    )}
+                        type="radio"
+                        name="stylePreference"
+                        value="Party Mehndi"
+                        checked={formData.stylePreference === 'Party Mehndi'}
+                        onChange={() => handleStyleChange('Party Mehndi')}
+                        style={{ display: 'none' }}
+                      />
+                      <span>Party Mehndi</span>
+                      {formData.stylePreference === 'Party Mehndi' && (
+                        <span className="checkmark">✓</span>
+                      )}
                     </label>
-                  <label className={`style-option ${formData.stylePreference === 'Festival Mehndi' ? 'selected' : ''}`}
-                    onClick={() => handleStyleChange('Festival Mehndi')}
-                    style={{ cursor: 'pointer' }}
-                  >
+                    <label className={`style-option ${formData.stylePreference === 'Festival Mehndi' ? 'selected' : ''}`}
+                      onClick={() => handleStyleChange('Festival Mehndi')}
+                      style={{ cursor: 'pointer' }}
+                    >
                       <input
-                      type="radio"
-                      name="stylePreference"
-                      value="Festival Mehndi"
-                      checked={formData.stylePreference === 'Festival Mehndi'}
-                      onChange={() => handleStyleChange('Festival Mehndi')}
-                      style={{ display: 'none' }}
-                    />
-                    <span>Festival Mehndi</span>
-                    {formData.stylePreference === 'Festival Mehndi' && (
-                      <span className="checkmark">✓</span>
-                    )}
+                        type="radio"
+                        name="stylePreference"
+                        value="Festival Mehndi"
+                        checked={formData.stylePreference === 'Festival Mehndi'}
+                        onChange={() => handleStyleChange('Festival Mehndi')}
+                        style={{ display: 'none' }}
+                      />
+                      <span>Festival Mehndi</span>
+                      {formData.stylePreference === 'Festival Mehndi' && (
+                        <span className="checkmark">✓</span>
+                      )}
                     </label>
-                  <label className={`style-option ${formData.stylePreference === 'Casual / Minimal Mehndi' ? 'selected' : ''}`}
-                    onClick={() => handleStyleChange('Casual / Minimal Mehndi')}
-                    style={{ cursor: 'pointer' }}
-                  >
+                    <label className={`style-option ${formData.stylePreference === 'Casual / Minimal Mehndi' ? 'selected' : ''}`}
+                      onClick={() => handleStyleChange('Casual / Minimal Mehndi')}
+                      style={{ cursor: 'pointer' }}
+                    >
                       <input
-                      type="radio"
-                      name="stylePreference"
-                      value="Casual / Minimal Mehndi"
-                      checked={formData.stylePreference === 'Casual / Minimal Mehndi'}
-                      onChange={() => handleStyleChange('Casual / Minimal Mehndi')}
-                      style={{ display: 'none' }}
-                    />
-                    <span>Casual / Minimal Mehndi</span>
-                    {formData.stylePreference === 'Casual / Minimal Mehndi' && (
-                      <span className="checkmark">✓</span>
-                    )}
+                        type="radio"
+                        name="stylePreference"
+                        value="Casual / Minimal Mehndi"
+                        checked={formData.stylePreference === 'Casual / Minimal Mehndi'}
+                        onChange={() => handleStyleChange('Casual / Minimal Mehndi')}
+                        style={{ display: 'none' }}
+                      />
+                      <span>Casual / Minimal Mehndi</span>
+                      {formData.stylePreference === 'Casual / Minimal Mehndi' && (
+                        <span className="checkmark">✓</span>
+                      )}
                     </label>
                   </div>
                 </div>
 
-              {/* Design Inspiration */}
+                {/* Design Inspiration */}
                 <div className="form-group">
                   <label className="form-label">Design Inspiration</label>
-                <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '1rem' }}>
-                  Upload images or paste links to share your preferred designs
-                </p>
-                
-                {/* Upload Images */}
-                <div style={{ marginBottom: '1rem' }}>
-                  <label 
-                    className="upload-button"
-                    style={{
-                      display: 'inline-block',
-                      padding: '12px 24px',
-                      background: '#faf8f5',
-                      border: '2px dashed #CD853F',
-                      borderRadius: '10px',
-                      cursor: 'pointer',
-                      color: '#8B4513',
-                      fontWeight: '500',
-                      transition: 'all 0.3s'
-                    }}
-                  >
-                    {uploading ? 'Uploading...' : '📸 Upload Images'}
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      disabled={uploading}
-                      style={{ display: 'none' }}
-                    />
-                  </label>
+                  <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '1rem' }}>
+                    Upload images or paste links to share your preferred designs
+                  </p>
+
+                  {/* Upload Images */}
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label
+                      className="upload-button"
+                      style={{
+                        display: 'inline-block',
+                        padding: '12px 24px',
+                        background: '#faf8f5',
+                        border: '2px dashed #CD853F',
+                        borderRadius: '10px',
+                        cursor: 'pointer',
+                        color: '#8B4513',
+                        fontWeight: '500',
+                        transition: 'all 0.3s'
+                      }}
+                    >
+                      {uploading ? 'Uploading...' : '📸 Upload Images'}
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        disabled={uploading}
+                        style={{ display: 'none' }}
+                      />
+                    </label>
                   </div>
 
-                {/* Paste Link */}
-                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                  {/* Paste Link */}
+                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
                     <input
-                    type="url"
+                      type="url"
                       className="form-input"
-                    placeholder="Paste image link here..."
-                    value={linkInput}
-                    onChange={(e) => setLinkInput(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleAddLink();
-                      }
-                    }}
-                    style={{ flex: 1 }}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddLink}
-                    disabled={!linkInput.trim()}
-                    style={{
-                      padding: '12px 24px',
-                      background: '#CD853F',
-                      color: 'white',
-                      border: 'none',
+                      placeholder="Paste image link here..."
+                      value={linkInput}
+                      onChange={(e) => setLinkInput(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddLink();
+                        }
+                      }}
+                      style={{ flex: 1 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddLink}
+                      disabled={!linkInput.trim()}
+                      style={{
+                        padding: '12px 24px',
+                        background: '#EA7C25',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '10px',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        // opacity: linkInput.trim() ? 1 : 0.6
+                      }}
+                    >
+                      Add
+                    </button>
+                  </div>
+
+                  {/* Uploaded Images Preview */}
+                  {uploadedImages.length > 0 && (
+                    <div style={{
+                      marginTop: '1rem',
+                      padding: '1rem',
+                      background: '#f9f9f9',
                       borderRadius: '10px',
-                      cursor: 'pointer',
-                      fontWeight: '600',
-                      opacity: linkInput.trim() ? 1 : 0.6
-                    }}
-                  >
-                    Add
-                  </button>
-                </div>
-
-                {/* Uploaded Images Preview */}
-                {uploadedImages.length > 0 && (
-                  <div style={{ 
-                    marginTop: '1rem',
-                    padding: '1rem',
-                    background: '#f9f9f9',
-                    borderRadius: '10px',
-                    border: '1px solid #e0d5c9'
-                  }}>
-                    <strong style={{ display: 'block', marginBottom: '0.5rem', color: '#8B4513' }}>
-                      Your Inspiration Images ({uploadedImages.length}):
-                    </strong>
-                    <div style={{ 
-                      display: 'grid', 
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', 
-                      gap: '0.75rem' 
+                      border: '1px solid #e0d5c9'
                     }}>
-                      {uploadedImages.map((url, index) => (
-                        <div 
-                          key={index}
-                          style={{
-                            position: 'relative',
-                            aspectRatio: '1',
-                            borderRadius: '8px',
-                            overflow: 'hidden',
-                            border: '2px solid #e0d5c9'
-                          }}
-                        >
-                          <img 
-                            src={url} 
-                            alt={`Inspiration ${index + 1}`}
+                      <strong style={{ display: 'block', marginBottom: '0.5rem', color: '#8B4513' }}>
+                        Your Inspiration Images ({uploadedImages.length}):
+                      </strong>
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
+                        gap: '0.75rem'
+                      }}>
+                        {uploadedImages.map((url, index) => (
+                          <div
+                            key={index}
                             style={{
-                              width: '100%',
-                              height: '100%',
-                              objectFit: 'cover'
+                              position: 'relative',
+                              aspectRatio: '1',
+                              borderRadius: '8px',
+                              overflow: 'hidden',
+                              border: '2px solid #e0d5c9'
                             }}
-                            onError={(e) => {
-                              e.target.src = 'https://via.placeholder.com/100';
-                            }}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveImage(index)}
-                            style={{
-                              position: 'absolute',
-                              top: '4px',
-                              right: '4px',
-                              width: '24px',
-                              height: '24px',
-                              borderRadius: '50%',
-                              background: 'rgba(255, 0, 0, 0.8)',
-                              color: 'white',
-                              border: 'none',
-                              cursor: 'pointer',
-                              fontSize: '16px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              lineHeight: '1'
-                            }}
-                            title="Remove image"
                           >
-                            ×
-                          </button>
-                  </div>
-                      ))}
-                  </div>
-                  </div>
-                )}
-                </div>
-
-              {/* Coverage Preference */}
-                <div className="form-group">
-                <label className="form-label">Coverage Preference * (for bridal only)</label>
-                <select
-                  name="coveragePreference"
-                    className="form-input"
-                  value={formData.coveragePreference}
-                    onChange={handleInputChange}
-                >
-                  <option value="">Select coverage</option>
-                  <option value="Full arms & feet">Full arms & feet</option>
-                  <option value="Hands only">Hands only</option>
-                  <option value="Simple, elegant design">Simple, elegant design</option>
-                  <option value="Not sure yet">Not sure yet</option>
-                </select>
-                </div>
-            </div>
-          )}
-
-          {/* Step 4: Budget & Notes */}
-          {currentStep === 4 && (
-            <div className="form-step">
-              <div className="step-header">
-                <h2 className="step-title">Budget & Notes</h2>
-                <p className="step-subtitle">Help artists tailor their offers to you</p>
-              </div>
-
-              {/* Budget Range */}
-                  <div className="form-group">
-                <label className="form-label">What's your budget range? *</label>
-                <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '1rem' }}>
-                  Helps artists tailor their offers to you.
-                </p>
-                <div className="budget-input-row">
-                  <div className="budget-input">
-                    <span className="currency">£</span>
-                    <input
-                      type="number"
-                      name="budgetFrom"
-                      className="budget-field"
-                      placeholder="From"
-                      value={formData.budgetFrom}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  <div className="budget-input">
-                    <span className="currency">£</span>
-                    <input
-                      type="number"
-                      name="budgetTo"
-                      className="budget-field"
-                      placeholder="To"
-                      value={formData.budgetTo}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Preset Budget Buttons */}
-                <div className="budget-preset-buttons">
-                  <button
-                    type="button"
-                    className={`budget-preset ${formData.budgetFrom === '50' && formData.budgetTo === '100' ? 'selected' : ''}`}
-                    onClick={() => handlePresetBudget('50', '100')}
-                  >
-                    Under £100
-                  </button>
-                  <button
-                    type="button"
-                    className={`budget-preset ${formData.budgetFrom === '100' && formData.budgetTo === '250' ? 'selected' : ''}`}
-                    onClick={() => handlePresetBudget('100', '250')}
-                  >
-                    £100 - £250
-                  </button>
-                  <button
-                    type="button"
-                    className={`budget-preset ${formData.budgetFrom === '250' && formData.budgetTo === '500' ? 'selected' : ''}`}
-                    onClick={() => handlePresetBudget('250', '500')}
-                  >
-                    £250 - £500
-                  </button>
-                  <button
-                    type="button"
-                    className={`budget-preset ${formData.budgetFrom === '500' && formData.budgetTo === '1000' ? 'selected' : ''}`}
-                    onClick={() => handlePresetBudget('500', '1000')}
-                  >
-                    £500+
-                  </button>
-                </div>
-                <p style={{ fontSize: '0.85rem', color: '#888', marginTop: '1rem' }}>
-                  Final price may vary depending on design, travel, and number of people. You'll receive a full quote before confirming your booking.
-                </p>
-              </div>
-
-              {/* Number of People */}
-                <div className="form-group">
-                <label className="form-label">How many people need Mehndi? (for group bookings) *</label>
-                <div className="number-selector">
-                  <button
-                    type="button"
-                    className="number-btn"
-                    onClick={() => handleNumberChange('numberOfPeople', -1)}
-                  >
-                    -
-                  </button>
-                  <span className="number-display">{formData.numberOfPeople}</span>
-                  <button
-                    type="button"
-                    className="number-btn"
-                    onClick={() => handleNumberChange('numberOfPeople', 1)}
-                  >
-                    +
-                  </button>
+                            <img
+                              src={url}
+                              alt={`Inspiration ${index + 1}`}
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover'
+                              }}
+                              onError={(e) => {
+                                e.target.src = 'https://via.placeholder.com/100';
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveImage(index)}
+                              style={{
+                                position: 'absolute',
+                                top: '4px',
+                                right: '4px',
+                                width: '24px',
+                                height: '24px',
+                                borderRadius: '50%',
+                                background: 'rgba(255, 0, 0, 0.8)',
+                                color: 'white',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '16px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                lineHeight: '1'
+                              }}
+                              title="Remove image"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
+                  )}
                 </div>
 
-              {/* Additional Notes */}
+                {/* Coverage Preference */}
                 <div className="form-group">
-                <label className="form-label">Anything else artists should know?</label>
-                <p style={{ fontSize: '0.85rem', color: '#888', marginBottom: '0.5rem' }}>
-                  E.g. "Please bring your own cones," "We'll be outdoors," "Prefer traditional Indian patterns," "I have a henna allergy – need natural only," "Parking is limited on my road," or "I'm flexible with timing"
-                </p>
+                  <label className="form-label">Coverage Preference * (for bridal only)</label>
+                  <select
+                    name="coveragePreference"
+                    className="form-input"
+                    value={formData.coveragePreference}
+                    onChange={handleInputChange}
+                  >
+                    <option value="">Select coverage</option>
+                    <option value="Full arms & feet">Full arms & feet</option>
+                    <option value="Hands only">Hands only</option>
+                    <option value="Simple, elegant design">Simple, elegant design</option>
+                    <option value="Not sure yet">Not sure yet</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Step 4: Budget & Notes */}
+            {currentStep === 4 && (
+              <div className="form-step">
+                <div className="step-header">
+                  <h2 className="step-title">Budget & Notes</h2>
+                  <p className="step-subtitle">Help artists tailor their offers to you</p>
+                </div>
+
+                {/* Budget Range */}
+                <div className="form-group">
+                  <label className="form-label">What's your budget range? *</label>
+                  <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '1rem' }}>
+                    Final quotes may vary based on design, travel, and party size. You’ll review and confirm before booking.
+                  </p>
+                  <div className="budget-input-row">
+                    <div className="budget-input">
+                      <span className="currency">£</span>
+                      <input
+                        type="number"
+                        name="budgetFrom"
+                        className="budget-field"
+                        placeholder="From"
+                        value={formData.budgetFrom}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    <div className="budget-input">
+                      <span className="currency">£</span>
+                      <input
+                        type="number"
+                        name="budgetTo"
+                        className="budget-field"
+                        placeholder="To"
+                        value={formData.budgetTo}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Preset Budget Buttons */}
+                  <div className="budget-preset-buttons">
+                    <button
+                      type="button"
+                      className={`budget-preset ${formData.budgetFrom === '50' && formData.budgetTo === '100' ? 'selected' : ''}`}
+                      onClick={() => handlePresetBudget('50', '100')}
+                    >
+                      Under £100
+                    </button>
+                    <button
+                      type="button"
+                      className={`budget-preset ${formData.budgetFrom === '100' && formData.budgetTo === '250' ? 'selected' : ''}`}
+                      onClick={() => handlePresetBudget('100', '250')}
+                    >
+                      £100 - £250
+                    </button>
+                    <button
+                      type="button"
+                      className={`budget-preset ${formData.budgetFrom === '250' && formData.budgetTo === '500' ? 'selected' : ''}`}
+                      onClick={() => handlePresetBudget('250', '500')}
+                    >
+                      £250 - £500
+                    </button>
+                    <button
+                      type="button"
+                      className={`budget-preset ${formData.budgetFrom === '500' && formData.budgetTo === '1000' ? 'selected' : ''}`}
+                      onClick={() => handlePresetBudget('500', '1000')}
+                    >
+                      £500+
+                    </button>
+                  </div>
+                  <p style={{ fontSize: '0.85rem', color: '#888', marginTop: '1rem' }}>
+                    Final price may vary depending on design, travel, and number of people. You'll receive a full quote before confirming your booking.
+                  </p>
+                </div>
+
+                {/* Number of People */}
+                <div className="form-group">
+                  <label className="form-label">How many people need Mehndi? (for group bookings) *</label>
+                  <div className="number-selector">
+                    <button
+                      type="button"
+                      className="number-btn"
+                      onClick={() => handleNumberChange('numberOfPeople', -1)}
+                    >
+                      -
+                    </button>
+                    <span className="number-display">{formData.numberOfPeople}</span>
+                    <button
+                      type="button"
+                      className="number-btn"
+                      onClick={() => handleNumberChange('numberOfPeople', 1)}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                {/* Additional Notes */}
+                <div className="form-group">
+                  <label className="form-label">Anything else artists should know?</label>
                   <textarea
                     name="additionalRequests"
                     className="form-textarea"
-                  placeholder="Write your notes here..."
+                    placeholder="Please bring your own cones, We'll be outdoors, Prefer traditional 
+                    Indian patterns, I have a henna allergy – need natural only, Parking is 
+                    limited on my road, or I'm flexible with timing"
                     value={formData.additionalRequests}
                     onChange={handleInputChange}
                     rows="4"
@@ -1019,63 +1141,107 @@ const BookingForm = () => {
               </div>
             )}
 
+            {/* Step 5: Review */}
+            {currentStep === 5 && (
+              <div className="form-step">
+                <div className="step-header" style={{ textAlign: 'center' }}>
+                  <h2 className="step-title">Review Your Request</h2>
+                  <p className="step-subtitle">Make sure your details look correct before submitting.</p>
+                </div>
+
+                <div style={{
+                  border: '1px solid #e8ddd4', borderRadius: 16, overflow: 'hidden', background: '#fff'
+                }}>
+                  {[
+                    { label: 'Name', value: formData.fullName || '-', step: 1 },
+                    { label: 'Email', value: user?.email || '-', step: 1 },
+                    { label: 'Location', value: formData.location || '-', step: 2 },
+                    { label: 'Event Date', value: formData.eventDate ? new Date(formData.eventDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) : '-', step: 2 },
+                    { label: 'Time Slot', value: formData.preferredTimeSlot || '-', step: 2 },
+                    { label: 'Style', value: formData.stylePreference || '-', step: 3 },
+                    { label: 'Venue Name', value: formData.venueName || '-', step: 2 },
+                    { label: 'Coverage', value: formData.coveragePreference || '-', step: 3 },
+                    { label: 'Budget', value: formData.budgetFrom && formData.budgetTo ? `£${formData.budgetFrom} – £${formData.budgetTo}` : '-', step: 4 },
+                    { label: 'Group Size', value: String(formData.numberOfPeople || 1), step: 4 },
+                    { label: 'Notes', value: formData.additionalRequests || '-', step: 4 }
+                  ].map((row, idx) => (
+                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '14px 18px', borderTop: idx === 0 ? 'none' : '1px solid #f1eadf' }}>
+                      <div>
+                        <div style={{ fontSize: 12, color: '#888' }}>{row.label}</div>
+                        <div style={{ fontWeight: 600, color: '#0f172a' }}>{row.value}</div>
+                      </div>
+                      <button type="button" onClick={() => setCurrentStep(row.step)} style={{ background: 'none', border: 'none', color: '#CD853F', fontWeight: 600, cursor: 'pointer' }}>Edit</button>
+                    </div>
+                  ))}
+                </div>
+
+              </div>
+            )}
+
             {/* Error and Success Messages */}
             {error && (
-            <div className="error-message" style={{
-              backgroundColor: '#fee',
-              color: '#c33',
-              padding: '12px 16px',
-              borderRadius: '8px',
-              marginBottom: '1rem',
-              border: '1px solid #fcc'
-            }}>
+              <div className="error-message" style={{
+                backgroundColor: '#fee',
+                color: '#c33',
+                padding: '12px 16px',
+                borderRadius: '8px',
+                marginBottom: '1rem',
+                border: '1px solid #fcc'
+              }}>
                 {error}
               </div>
             )}
-            
+
             {success && (
-            <div className="success-message" style={{
-              backgroundColor: '#dfc',
-              color: '#3a3',
-              padding: '12px 16px',
-              borderRadius: '8px',
-              marginBottom: '1rem',
-              border: '1px solid #9c9'
-            }}>
+              <div className="success-message" style={{
+                backgroundColor: '#dfc',
+                color: '#3a3',
+                padding: '12px 16px',
+                borderRadius: '8px',
+                marginBottom: '1rem',
+                border: '1px solid #9c9'
+              }}>
                 {success}
               </div>
             )}
 
             {/* Navigation Buttons */}
-            <div className="form-navigation">
-              {currentStep > 1 && (
+            <div className="form-navigation" style={{ flexDirection: currentStep === 5 && 'column' }}>
+              {currentStep > 1 && currentStep < 5 && (
                 <button
                   type="button"
-                  className="btn-secondary"
+                  className="button btn-secondary"
                   onClick={handlePrevStep}
                   disabled={isLoading}
                 >
                   Previous
                 </button>
               )}
-              
-            {currentStep < 4 ? (
+
+              {currentStep < 5 ? (
                 <button
                   type="button"
-                  className="btn-primary"
+                  className="button btn-primary"
                   onClick={handleNextStep}
                   disabled={isLoading}
                 >
                   Next
                 </button>
               ) : (
-                <button
-                  type="submit"
-                  className="btn-primary btn-submit"
-                  disabled={isLoading}
-              >
-                {isLoading ? 'Submitting...' : 'Submit Request'}
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    className="button btn-primary btn-submit"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Submitting...' : 'Submit Request'}
+                  </button>
+                  <p style={{ textAlign: 'center', color: '#888', marginTop: 14 }}>“Once posted, your request will be visible to verified artists
+                    nearby who can apply or message you to bring your vision to life. Your name will only be shared when you reply or
+                    accept an offer.”
+                  </p>
+                </>
               )}
             </div>
           </form>
@@ -1191,7 +1357,7 @@ const BookingForm = () => {
         }
 
         .event-option-grid, .time-slot-grid, .travel-option-grid {
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          // grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         }
 
         .event-option, .time-slot-option, .travel-option, .style-option {
@@ -1359,19 +1525,7 @@ const BookingForm = () => {
         .btn-primary:hover {
           transform: translateY(-2px);
           box-shadow: 0 8px 20px rgba(205, 133, 63, 0.3);
-        }
-
-        .btn-secondary {
-          background: #faf8f5;
-          color: #8B4513;
-          border: 2px solid #e0d5c9;
-        }
-
-        .btn-secondary:hover {
-          background: white;
-          border-color: #CD853F;
-        }
-
+      }
         .btn-primary:disabled, .btn-secondary:disabled {
           opacity: 0.6;
           cursor: not-allowed;
@@ -1387,6 +1541,14 @@ const BookingForm = () => {
         .upload-button:active {
           transform: translateY(0);
         }
+          .button{
+          background:#EA7C25;
+          color:white;
+          }
+          .button:hover{
+          background:#804018;
+          color:white;
+          }
 
         @media (max-width: 768px) {
           .booking-form-container {
@@ -1414,9 +1576,9 @@ const BookingForm = () => {
           }
         }
       `}</style>
-      
+
       {/* Get Location Modal */}
-      <GetLocationModal 
+      <GetLocationModal
         isOpen={showLocationModal}
         onClose={() => setShowLocationModal(false)}
         onLocationSelect={handleLocationSelect}
