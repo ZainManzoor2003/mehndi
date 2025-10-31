@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { FaHeart } from 'react-icons/fa';
 import './messages.css';
 import { useNavigate, useParams, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -109,7 +110,7 @@ const ArtistDashboard = () => {
   });
 
   // Applications (mock data to match screenshot)
-  const [applicationsFilter, setApplicationsFilter] = useState('all');
+  const [applicationsFilter, setApplicationsFilter] = useState('applied');
   const [applications, setApplications] = useState([]);
   const [appsLoading, setAppsLoading] = useState(false);
   const [appsError, setAppsError] = useState('');
@@ -120,6 +121,7 @@ const ArtistDashboard = () => {
   const [viewOpen, setViewOpen] = useState(false);
   const [viewLoading, setViewLoading] = useState(false);
   const [viewForm, setViewForm] = useState(null);
+  const [viewClientId, setViewClientId] = useState(null);
   const [applyOpen, setApplyOpen] = useState(false);
   const [applyBookingId, setApplyBookingId] = useState(null);
   const [applyBookingData, setApplyBookingData] = useState(null);
@@ -647,6 +649,7 @@ const ArtistDashboard = () => {
         coveragePreference: b.coveragePreference || '',
         additionalRequests: b.additionalRequests || ''
       });
+      try { setViewClientId(b.clientId?._id || b.clientId || null); } catch {}
       setViewOpen(true);
     } catch (e) {
       showError(e.message || 'Failed to load booking');
@@ -658,8 +661,51 @@ const ArtistDashboard = () => {
   const closeViewBooking = () => {
     setViewOpen(false);
     setViewForm(null);
+    setViewClientId(null);
     // Restore body scroll when modal closes
     document.body.style.overflow = 'auto';
+  };
+
+  const handleMessageClientFromView = async () => {
+    try {
+      if (!viewClientId || !user?._id) return;
+      const res = await chatAPI.ensureChat(viewClientId, user._id);
+      if (res.success && res.data && res.data._id) {
+        navigate(`/artist-dashboard/messages?chatId=${res.data._id}`);
+      }
+      setViewOpen(false);
+    } catch (e) {
+      showError(e?.message || 'Failed to start chat');
+    }
+  };
+
+  // Load saved (liked) bookings for the current user and display in Applications list
+  const fetchSavedBookings = async () => {
+    try {
+      setAppsLoading(true);
+      const res = await bookingsAPI.getSavedBookings();
+      const artistId = user?._id;
+      const list = (res?.data || []).map((b) => {
+        const applied = Array.isArray(b.appliedArtists) && artistId ? b.appliedArtists.some(id => String(id) === String(artistId)) : false;
+        const assigned = Array.isArray(b.assignedArtist) && artistId ? b.assignedArtist.some(id => String(id) === String(artistId)) : false;
+        const canApply = b.status === 'pending' && !applied && !assigned;
+        return {
+        id: b._id,
+        bookingId: b._id,
+        title: `${b.designStyle || 'Mehndi'} in ${b.city || b.location || ''}`,
+        client: b.clientId ? `${b.clientId.firstName || ''} ${b.clientId.lastName || ''}`.trim() || 'Client' : 'Client',
+        budget: `£${b.minimumBudget ?? 0}–£${b.maximumBudget ?? 0}`,
+        appliedOn: b.createdAt ? new Date(b.createdAt).toLocaleDateString('en-GB') : '',
+        status: 'saved',
+        canApply
+      };
+      });
+      setApplications(list);
+    } catch (e) {
+      setAppsError(e?.message || 'Failed to load saved bookings');
+    } finally {
+      setAppsLoading(false);
+    }
   };
 
   const openApplyModal = (bookingId) => {
@@ -721,11 +767,11 @@ const ArtistDashboard = () => {
       errors.estimatedDuration = 'Please enter a valid estimated duration';
     }
 
-    // Validate proposal message (minimum 20 characters for simplicity)
+    // Validate proposal message (minimum 50 characters)
     if (!applicationForm.proposal.message.trim()) {
       errors.proposalMessage = 'Please write a proposal message';
-    } else if (applicationForm.proposal.message.trim().length < 20) {
-      errors.proposalMessage = 'Proposal message must be at least 20 characters';
+    } else if (applicationForm.proposal.message.trim().length < 50) {
+      errors.proposalMessage = 'Proposal message must be at least 50 characters';
     }
 
     // Validate terms agreement
@@ -825,7 +871,7 @@ const ArtistDashboard = () => {
         fetchArtistUpcomingEvents();
       } else if (activeTab === 'applications') {
         if (applicationsFilter === 'all') {
-          fetchPendingBookings();
+          fetchSavedBookings();
         } else {
           fetchApplicationsByStatus(applicationsFilter);
         }
@@ -1425,7 +1471,7 @@ const ArtistDashboard = () => {
       fetchNearbyBookings(); // Always fetch nearby bookings for dashboard
     } else if (tab === 'applications') {
       if (applicationsFilter === 'all') {
-        fetchPendingBookings();
+        fetchSavedBookings();
       } else {
         fetchApplicationsByStatus(applicationsFilter);
       }
@@ -1587,7 +1633,7 @@ const ArtistDashboard = () => {
           // Refresh current tab data
           if (activeTab === 'applications') {
             if (applicationsFilter === 'all') {
-              fetchPendingBookings();
+              fetchSavedBookings();
             } else {
               fetchApplicationsByStatus(applicationsFilter);
             }
@@ -3141,7 +3187,7 @@ useEffect(() => {
 
                   {/* Filters */}
                   <div className="apps-filters">
-                    {['all', 'applied', 'accepted', 'declined', 'withdrawn', 'expired'].map(f => (
+                    {['applied', 'accepted', 'declined', 'withdrawn', 'expired', 'all'].map(f => (
                       <button
                         key={f}
                         className={`apps-pill ${applicationsFilter === f ? 'active' : ''}`}
@@ -3150,13 +3196,13 @@ useEffect(() => {
                           if (f === 'applied') {
                             fetchAppliedBookings();
                           } else if (f === 'all') {
-                            fetchPendingBookings();
+                            fetchSavedBookings();
                           } else if (['accepted', 'declined', 'withdrawn', 'expired'].includes(f)) {
                             fetchApplicationsByStatus(f);
                           }
                         }}
                       >
-                        {f === 'all' ? 'Active' : (f.charAt(0).toUpperCase() + f.slice(1))}
+                        {f === 'all' ? 'Saved' : (f.charAt(0).toUpperCase() + f.slice(1))}
                       </button>
                     ))}
                   </div>
@@ -3168,28 +3214,43 @@ useEffect(() => {
                     {!appsLoading && !appsError && applications
                       .filter(a => applicationsFilter === 'all' ? true : a.status === applicationsFilter)
                       .map(a => (
-                        <div key={a.id} className="app-card">
+                        <div key={a.id} className="app-card" style={{ position: 'relative' }}>
+                          {applicationsFilter === 'all' && (
+                            <button
+                              onClick={async () => {
+                                try {
+                                  if (a.bookingId) {
+                                    await bookingsAPI.unsaveBooking(a.bookingId);
+                                  } else {
+                                    await bookingsAPI.unsaveBooking(a.id);
+                                  }
+                                  // Refetch the saved list to ensure full sync
+                                  await fetchSavedBookings();
+                                } catch (e) {
+                                  showError(e?.message || 'Failed to unsave booking');
+                                }
+                              }}
+                              title="Unsave"
+                              style={{ position: 'absolute', right: 10, top: 10, background: 'transparent', border: 'none', cursor: 'pointer' }}
+                            >
+                              <FaHeart color="#b45309" />
+                            </button>
+                          )}
                           <h3 className="app-title">{a.title}</h3>
                           <div className="app-meta">
                             <div>Client: {a.client}</div>
                             <div>Budget: {a.budget}</div>
                             <div>Posted on: {a.appliedOn}</div>
                           </div>
-                          <span className={`app-badge ${applicationsFilter === 'all' ? 'active' : a.status}`}
-                            style={
-                              applicationsFilter === 'all'
-                                ? { background: '#16a34a', borderColor: '#16a34a', color: '#ffffff' }
-                                : (applicationsFilter === 'applied'
-                                  ? { background: '#d4af37', borderColor: '#d4af37', color: '#1f2937' }
-                                  : undefined)
-                            }
-                          >
-                            {applicationsFilter === 'all' ? 'Active' : (a.status.charAt(0).toUpperCase() + a.status.slice(1))}
-                          </span>
+                          {applicationsFilter !== 'all' && (
+                            <span className={`app-badge ${a.status}`}>
+                              {a.status.charAt(0).toUpperCase() + a.status.slice(1)}
+                            </span>
+                          )}
                           {/* <p className="app-note">Assigned artists: {a.assignedCount ?? 0}</p> */}
                           <div className="app-actions">
                             <button className="app-btn" onClick={() => openViewBooking(a.id)} disabled={viewLoading}>View Details</button>
-                            {applicationsFilter === 'all' && (
+                            {applicationsFilter === 'all' && a.canApply && (
                               <button className="app-btn apply-now" style={{ marginLeft: '8px' }} onClick={() => openApplyModal(a.id)}>Apply Now</button>
                             )}
                             {applicationsFilter === 'applied' && (
@@ -3400,6 +3461,7 @@ useEffect(() => {
                   </div>
                 </div>
               )}
+              
               {/* Artist View Messages */}
               {activeTab === 'messages' && (
                 <div className="messages-section">
@@ -4733,6 +4795,16 @@ useEffect(() => {
                     justifyContent: 'flex-end',
                     background: '#faf8f5'
                   }}>
+                    <button onClick={handleMessageClientFromView} style={{
+                      padding: '14px 32px',
+                      fontSize: '1rem',
+                      fontWeight: '600',
+                      color: 'white',
+                      backgroundColor: '#A4693D',
+                      border: 'none',
+                      borderRadius: '12px',
+                      cursor: 'pointer'
+                    }}>Message Client</button>
                     <button onClick={closeViewBooking} style={{
                       padding: '14px 32px',
                       fontSize: '1rem',
@@ -5005,7 +5077,7 @@ useEffect(() => {
               <div className="modal-overlay" onClick={closeApplyModal}>
                 <div className="application-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '900px', maxHeight: '90vh', width: '95%' }}>
                   <div className="modal-header">
-                    <h3 className="modal-title">Apply to Booking</h3>
+                    <h3 className="modal-title">Apply to Request</h3>
                     <button className="modal-close" onClick={closeApplyModal}>×</button>
                   </div>
 
@@ -5156,12 +5228,12 @@ useEffect(() => {
                               }}
                             />
                             <small style={{
-                              color: applicationForm.proposal.message.length < 20 ? '#dc3545' : '#28a745',
+                              color: applicationForm.proposal.message.length < 50 ? '#dc3545' : '#28a745',
                               fontSize: '12px',
                               marginTop: '4px',
                               display: 'block'
                             }}>
-                              {applicationForm.proposal.message.length}/20 characters minimum
+                              {applicationForm.proposal.message.length}/50 characters minimum
                             </small>
                             {formErrors.proposalMessage && <span className="error-text" style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px', display: 'block' }}>{formErrors.proposalMessage}</span>}
                           </div>
