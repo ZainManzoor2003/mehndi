@@ -143,11 +143,31 @@ exports.listAllApplications = async (req, res) => {
 // Blogs CRUD
 exports.createBlog = async (req, res) => {
   try {
-    const { title, description, imageUrl } = req.body;
+    const { title, description, imageUrl, minutesToRead, sections } = req.body || {};
     if (!title || !description) {
       return res.status(400).json({ success: false, message: 'Title and description are required' });
     }
-    const blog = await Blog.create({ title: title.trim(), description: description.trim(), imageUrl: (imageUrl || '').trim(), authorId: req.user._id });
+    const minutes = typeof minutesToRead === 'number' ? minutesToRead : Number(minutesToRead);
+    if (!minutes || minutes < 1 || !Number.isInteger(minutes)) {
+      return res.status(400).json({ success: false, message: 'Minutes to read must be a positive integer' });
+    }
+    if (!imageUrl || !String(imageUrl).trim()) {
+      return res.status(400).json({ success: false, message: 'Image is required' });
+    }
+    const safeSections = Array.isArray(sections) ? sections.map(s => ({
+      subtitle: String(s.subtitle || '').trim(),
+      description: String(s.description || ''),
+      imageUrl: String(s.imageUrl || ''),
+      quote: String(s.quote || '')
+    })) : [];
+    const blog = await Blog.create({ 
+      title: title.trim(), 
+      description: description.trim(), 
+      imageUrl: (imageUrl || '').trim(), 
+      minutesToRead: minutes,
+      sections: safeSections,
+      authorId: req.user._id 
+    });
     return res.status(201).json({ success: true, data: blog });
   } catch (err) {
     return res.status(500).json({ success: false, message: 'Server error' });
@@ -166,11 +186,20 @@ exports.listBlogs = async (req, res) => {
 exports.updateBlog = async (req, res) => {
   try {
     const { blogId } = req.params;
-    const { title, description, imageUrl } = req.body;
+    const { title, description, imageUrl, minutesToRead, sections } = req.body || {};
     const update = {};
     if (typeof title !== 'undefined') update.title = title.trim();
     if (typeof description !== 'undefined') update.description = description.trim();
     if (typeof imageUrl !== 'undefined') update.imageUrl = imageUrl.trim();
+    if (typeof minutesToRead !== 'undefined') update.minutesToRead = typeof minutesToRead === 'number' ? minutesToRead : Number(minutesToRead) || undefined;
+    if (typeof sections !== 'undefined') {
+      update.sections = Array.isArray(sections) ? sections.map(s => ({
+        subtitle: String(s.subtitle || '').trim(),
+        description: String(s.description || ''),
+        imageUrl: String(s.imageUrl || ''),
+        quote: String(s.quote || '')
+      })) : [];
+    }
     const blog = await Blog.findByIdAndUpdate(blogId, update, { new: true });
     if (!blog) return res.status(404).json({ success: false, message: 'Blog not found' });
     return res.status(200).json({ success: true, data: blog });

@@ -30,6 +30,7 @@ const ManageArtists = () => {
   const [itemsPerPage, setItemsPerPage] = useState(15);
   const [paginatedUsers, setPaginatedUsers] = useState([]);
   const [selectedItemsPerPage, setSelectedItemsPerPage] = useState({ value: 15, label: '15 per page' });
+  const [hoverId, setHoverId] = useState(null);
 
   // Items per page options
   const itemsPerPageOptions = [
@@ -46,10 +47,14 @@ const ManageArtists = () => {
     if (searchTerm) {
       filtered = filtered.filter(user => {
         const searchLower = searchTerm.toLowerCase();
+        const fullId = String(user._id || '').toLowerCase();
+        const displayId = formatDisplayId('ART', user._id || '').toLowerCase();
         return (
           user.firstName?.toLowerCase().includes(searchLower) ||
           user.lastName?.toLowerCase().includes(searchLower) ||
-          user.email?.toLowerCase().includes(searchLower)
+          user.email?.toLowerCase().includes(searchLower) ||
+          fullId.includes(searchLower) ||
+          displayId.includes(searchLower)
         );
       });
     }
@@ -264,6 +269,29 @@ const ManageArtists = () => {
 
   const artists = users.filter(u => u.userType === 'artist');
   console.log("artists", artists);
+
+  const getLast5Digits = (id) => {
+    if (!id) return '00000';
+    let digits = '';
+    for (let i = id.length - 1; i >= 0 && digits.length < 5; i--) {
+      if (/\d/.test(id[i])) digits = id[i] + digits;
+    }
+    return digits.padStart(5, '0');
+  };
+  const formatDisplayId = (prefix, id) => `${prefix}-${getLast5Digits(id)}`;
+  const copyFullId = async (e, id) => {
+    e?.stopPropagation?.();
+    try { await navigator.clipboard.writeText(String(id)); } catch (err) {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = String(id);
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch {}
+    }
+  };
 
   return (
     <div className="admin_dashboard-layout">
@@ -598,6 +626,7 @@ const ManageArtists = () => {
                 <table className="admin_styled-table">
                   <thead>
                     <tr>
+                      <th>Id</th>
                       <th>Name</th>
                       <th>Email</th>
                       <th>Total Applications</th>
@@ -609,6 +638,20 @@ const ManageArtists = () => {
                   <tbody>
                     {paginatedUsers.map(u => (
                       <tr key={u._id}>
+                        <td onMouseEnter={() => setHoverId(u._id)} onMouseLeave={() => setHoverId(null)}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative' }}>
+                            <span style={{ fontWeight: 600 }}>{formatDisplayId('ART', u._id)}</span>
+                            {hoverId === u._id && (
+                              <button
+                                title="Copy Full ID"
+                                onClick={(e) => { copyFullId(e, u._id); toast.success('ID copied successfully'); }}
+                                style={{ position: 'absolute', bottom: '100%', left: 0, background: '#0b1220', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '0.70rem', padding: '6px 10px', borderRadius: 6, zIndex: 9999, boxShadow: '0 6px 16px rgba(0,0,0,0.18)' }}
+                              >
+                                Copy Full ID
+                              </button>
+                            )}
+                          </div>
+                        </td>
                         <td>{u.firstName} {u.lastName}</td>
                         <td>{u.email}</td>
                         <td style={{ textAlign: 'center' }}>

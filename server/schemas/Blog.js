@@ -1,5 +1,15 @@
 const mongoose = require('mongoose');
 
+const BlogSectionSchema = new mongoose.Schema(
+  {
+    subtitle: { type: String, trim: true, required: [true, 'Section subtitle is required'] },
+    description: { type: String, required: [true, 'Section description is required'] },
+    imageUrl: { type: String, trim: true, default: '' },
+    quote: { type: String, trim: true, default: '' }
+  },
+  { _id: false }
+);
+
 const BlogSchema = new mongoose.Schema(
   {
     title: {
@@ -17,13 +27,15 @@ const BlogSchema = new mongoose.Schema(
     imageUrl: {
       type: String,
       trim: true,
-      default: ''
+      required: [true, 'Image is required']
     },
     authorId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: [true, 'Author is required']
-    }
+    },
+    minutesToRead: { type: Number, min: 1, required: [true, 'Minutes to read is required'] },
+    sections: { type: [BlogSectionSchema], default: [] }
   },
   {
     timestamps: true

@@ -125,7 +125,7 @@ const Blogs = () => {
           ) : filteredBlogs.length === 0 ? (
             <div style={{ textAlign: 'center', gridColumn: '1 / -1' }}>No blogs yet</div>
           ) : (
-            filteredBlogs.map(b => (
+            filteredBlogs.slice(0, 3).map(b => (
               <div key={b._id} className="blog-card" style={{ background: 'transparent', borderRadius: 16, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.21)', border: '1px solid var(--first-color)', transition: 'transform .2s ease, box-shadow .2s ease' }}
                 onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.12)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.08)'; }}
