@@ -616,7 +616,6 @@ exports.updateApplicationStatus = async (req, res) => {
   try {
     const { applicationId } = req.params;
     const { bookingId, status, paymentPaid, remainingPayment, isPaid } = req.body;
-    console.log(isPaid, remainingPayment)
 
     if (!applicationId || !bookingId || !status) {
       return res.status(400).json({ success: false, message: 'applicationId, bookingId and status are required' });
@@ -628,7 +627,7 @@ exports.updateApplicationStatus = async (req, res) => {
     }
 
     // Verify booking ownership
-    const booking = await Booking.findById(bookingId).select('clientId assignedArtist status');
+    const booking = await Booking.findById(bookingId).select('clientId assignedArtist status appliedArtists');
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
@@ -644,6 +643,24 @@ exports.updateApplicationStatus = async (req, res) => {
 
     if (updateResult.matchedCount === 0) {
       return res.status(404).json({ success: false, message: 'Application not found for this booking' });
+    }
+
+    // If declined: remove artist from booking.appliedArtists; if none left, set status to pending
+    if (status === 'declined') {
+      const application = await Application.findById(applicationId);
+      const bookingEntry = application && application.Booking.find(b => b.booking_id.toString() === bookingId.toString());
+      const artistId = bookingEntry && bookingEntry.artist_id;
+      if (artistId && booking) {
+        // Remove artist from appliedArtists
+        if (Array.isArray(booking.appliedArtists)) {
+          booking.appliedArtists = booking.appliedArtists.filter(id => id.toString() !== artistId.toString());
+        }
+        // If no applied artists remain and booking is not confirmed, revert to pending
+        if ((!booking.appliedArtists || booking.appliedArtists.length === 0) && booking.status !== 'confirmed') {
+          booking.status = 'pending';
+        }
+        await booking.save();
+      }
     }
 
     // If accepted, set booking assignedArtist and update payment fields if provided.

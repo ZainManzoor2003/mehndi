@@ -762,6 +762,11 @@ export const transactionAPI = {
     return apiRequest('/transactions/artist-earnings', {
       method: 'GET'
     });
+  },
+  getPlatformTransactions: async () => {
+    return apiRequest('/transactions/platform', {
+      method: 'GET'
+    });
   }
 };
 

@@ -1,5 +1,6 @@
 const Transaction = require('../schemas/Transaction');
 const Booking = require('../schemas/Booking');
+const Application = require('../schemas/Application');
 
 // @desc    Get all transactions
 // @route   GET /api/transactions
@@ -247,6 +248,57 @@ const getArtistEarnings = async (req, res) => {
 module.exports = {
   getAllTransactions,
   getMyTransactions,
-  getArtistEarnings
+  getArtistEarnings,
+  // Export added below
+};
+
+// --------------------- ADDED: Platform transactions for Admin ---------------------
+// @desc    Get platform transactions (half/full) with client/artist names and proposal budget
+// @route   GET /api/transactions/platform
+// @access  Private (Admin)
+module.exports.getPlatformTransactions = async (req, res) => {
+  try {
+    // Filter only half/full transactions
+    const txs = await Transaction.find({ transactionType: { $in: ['half', 'full'] } })
+      .populate('sender', 'firstName lastName')
+      .populate('receiver', 'firstName lastName')
+      .sort({ createdAt: -1 });
+
+    // Map and fetch proposed budget from Application per booking/artist
+    const result = await Promise.all(
+      txs.map(async (t) => {
+        let clientName = t?.sender ? `${t.sender.firstName || ''} ${t.sender.lastName || ''}`.trim() : 'Client';
+        let artistName = t?.receiver ? `${t.receiver.firstName || ''} ${t.receiver.lastName || ''}`.trim() : 'Artist';
+
+        let proposedBudget = null;
+        if (t.bookingId && t.receiver) {
+          const app = await Application.findOne(
+            { 'Booking.booking_id': t.bookingId, 'Booking.artist_id': t.receiver._id },
+            { 'Booking.$': 1 }
+          );
+          if (app && app.Booking && app.Booking[0] && app.Booking[0].artistDetails) {
+            proposedBudget = app.Booking[0].artistDetails.proposedBudget || null;
+          }
+        }
+
+        return {
+          id: t._id,
+          clientName,
+          artistName,
+          gross: proposedBudget, // Artist proposed budget
+          commission: 0, // per requirement
+          payout: proposedBudget, // total value
+          status: t.transactionType === 'full' ? 'Paid' : 'Pending',
+          date: t.createdAt,
+          method: 'Stripe'
+        };
+      })
+    );
+
+    return res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    console.error('Platform transactions error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch platform transactions' });
+  }
 };
 

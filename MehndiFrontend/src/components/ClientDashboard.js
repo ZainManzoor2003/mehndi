@@ -1961,7 +1961,7 @@ useEffect(() => {
                           };
 
                           const getArtistName = (transaction) => {
-                            return transaction.artistName==='Unknown Artist' ? '':transaction.artistName;
+                            return transaction.artistName==='Unknown Artist' ? '--':transaction.artistName;
                           };
 
                           const getAmountDisplay = (transaction) => {

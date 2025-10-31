@@ -46,54 +46,14 @@ const BookingForm = () => {
 
   const [showLocationModal, setShowLocationModal] = useState(false);
 
-  // Handler for location selection from modal
+  // Handler for location selection from modal (store coordinates only; city is chosen via dropdown)
   const handleLocationSelect = (lat, lng) => {
-    // Reverse geocode to get address from coordinates
-    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
-      .then(res => res.json())
-      .then(data => {
-        // Extract shorter location name (city, town, or suburb)
-        let locationName = '';
-        const address = data.address || {};
-        console.log('address', address);
-        
-        // Prioritize: city > town > village > suburb > county
-        locationName = address.city || 
-                      address.town || 
-                      address.village || 
-                      address.suburb || 
-                      address.county || 
-                      '';
-        
-        // If we still don't have a location name, try to get postcode
-        if (!locationName) {
-          locationName = address.postcode ? `Postcode ${address.postcode}` : '';
-        }
-        
-        // Final fallback
-        if (!locationName) {
-          locationName = data.display_name ? data.display_name.split(',').slice(0, 2).join(',') : `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-        }
-        
-        setFormData(prev => ({
-          ...prev,
-          location: locationName,
-          latitude: lat.toString(),
-          longitude: lng.toString()
-        }));
-        setShowLocationModal(false);
-      })
-      .catch(error => {
-        console.error('Geocoding error:', error);
-        // Fallback to just coordinates
-        setFormData(prev => ({
-          ...prev,
-          location: `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
-          latitude: lat.toString(),
-          longitude: lng.toString()
-        }));
-        setShowLocationModal(false);
-      });
+    setFormData(prev => ({
+      ...prev,
+      latitude: lat.toString(),
+      longitude: lng.toString()
+    }));
+    setShowLocationModal(false);
   };
 
   // Cloudinary upload function
@@ -245,6 +205,16 @@ const BookingForm = () => {
       setCurrentStep(3);
       setError('Please select a style preference');
       return;
+    }
+    if(formData.stylePreference === 'Bridal Mehndi' && !formData.venueName) {
+      setCurrentStep(2);
+      setError('Venue name is required for bridal mehndi');
+      return;
+    }
+    if(formData.stylePreference === 'Bridal Mehndi' && !formData.coveragePreference) {
+      setCurrentStep(3);
+      setError('Coverage preference is required for bridal mehndi');
+      return; 
     }
 
     if (!formData.budgetFrom || !formData.budgetTo || !formData.numberOfPeople) {
@@ -588,6 +558,28 @@ const BookingForm = () => {
                   >
                     <span style={{ fontSize: '1.2rem' }}>📍</span> Get Location
                   </button>
+                  {/* City Dropdown */}
+                  <div style={{ marginTop: '12px' }}>
+                    <select
+                      value={formData.location}
+                      onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                      style={{
+                        width: '100%',
+                        height: '44px',
+                        border: '1px solid #ced4da',
+                        borderRadius: '8px',
+                        padding: '0 12px',
+                        background: '#ffffff',
+                        color: '#0f172a'
+                      }}
+                    >
+                      <option value="">Select city</option>
+                      <option value="London">London</option>
+                      <option value="Birmingham">Birmingham</option>
+                      <option value="Manchester">Manchester</option>
+                      <option value="Bradford">Bradford</option>
+                    </select>
+                  </div>
                   {formData.location && (
                     <div style={{
                       marginTop: '1rem',
@@ -654,7 +646,7 @@ const BookingForm = () => {
 
               {/* Venue Name (Optional) */}
               <div className="form-group">
-                <label className="form-label">Venue Name</label>
+                <label className="form-label">Venue Name * (for bridal only)</label>
                 <input
                   type="text"
                   name="venueName"
@@ -893,7 +885,7 @@ const BookingForm = () => {
 
               {/* Coverage Preference */}
                 <div className="form-group">
-                <label className="form-label">Coverage Preference (for bridal)</label>
+                <label className="form-label">Coverage Preference * (for bridal only)</label>
                 <select
                   name="coveragePreference"
                     className="form-input"

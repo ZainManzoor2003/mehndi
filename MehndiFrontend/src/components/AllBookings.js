@@ -219,6 +219,14 @@ const AllBookings = () => {
       } else if (payload.artistTravelsToClient === 'no') {
         payload.artistTravelsToClient = false;
       }
+      if(payload.designStyle === 'Bridal Mehndi' && !payload.venueName) {
+        alert('Venue name is required for bridal mehndi');
+        return;
+      }
+      if(payload.designStyle === 'Bridal Mehndi' && !payload.coveragePreference) {
+        alert('Coverage preference is required for bridal mehndi');
+        return; 
+      }
       
       // Convert designInspiration to array if it's a string
       if (typeof payload.designInspiration === 'string') {
@@ -1112,7 +1120,7 @@ const AllBookings = () => {
                     <div>
                       <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Location / Postcode *</label>
                       <p style={{ fontSize: '0.85rem', color: '#888', marginBottom: '1rem' }}>Click "Get Location" to select your location on the map</p>
-                      <button
+                  <button
                         type="button"
                         onClick={() => setShowLocationModal(true)}
                         style={{
@@ -1143,6 +1151,28 @@ const AllBookings = () => {
                       >
                         <span style={{ fontSize: '1.2rem' }}>📍</span> Get Location
                       </button>
+                  {/* City Dropdown */}
+                  <div style={{ marginTop: '12px' }}>
+                    <select
+                      value={form.location || ''}
+                      onChange={(e) => setForm(prev => ({ ...prev, location: e.target.value }))}
+                      style={{
+                        width: '100%',
+                        height: '44px',
+                        border: '1px solid #ced4da',
+                        borderRadius: '8px',
+                        padding: '0 12px',
+                        background: '#ffffff',
+                        color: '#0f172a'
+                      }}
+                    >
+                      <option value="">Select city</option>
+                      <option value="London">London</option>
+                      <option value="Birmingham">Birmingham</option>
+                      <option value="Manchester">Manchester</option>
+                      <option value="Bradford">Bradford</option>
+                    </select>
+                  </div>
                       {form.location && (
                         <div style={{
                           marginTop: '1rem',

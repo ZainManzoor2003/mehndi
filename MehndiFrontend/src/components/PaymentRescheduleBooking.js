@@ -533,6 +533,28 @@ const PaymentRescheduleBooking = () => {
                                     >
                                         <span style={{ fontSize: '1.2rem' }}>📍</span> Get Location
                                     </button>
+                                    {/* City Dropdown */}
+                                    <div style={{ marginTop: '12px' }}>
+                                        <select
+                                            value={formData.location || ''}
+                                            onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                                            style={{
+                                                width: '100%',
+                                                height: '44px',
+                                                border: '1px solid #ced4da',
+                                                borderRadius: '8px',
+                                                padding: '0 12px',
+                                                background: '#ffffff',
+                                                color: '#0f172a'
+                                            }}
+                                        >
+                                            <option value="">Select city</option>
+                                            <option value="London">London</option>
+                                            <option value="Birmingham">Birmingham</option>
+                                            <option value="Manchester">Manchester</option>
+                                            <option value="Bradford">Bradford</option>
+                                        </select>
+                                    </div>
                                     {formData.location && (
                                         <div style={{
                                             marginTop: '1rem',
