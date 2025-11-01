@@ -3,6 +3,7 @@ const Booking = require('../schemas/Booking');
 const User = require('../schemas/User');
 const Transaction = require('../schemas/Transaction');
 const Notification = require('../schemas/Notification');
+const BookingLog = require('../schemas/BookingLog');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || '');
 
 // Helper function to create notifications
@@ -145,7 +146,7 @@ exports.applyToBooking = async (req, res) => {
     }
 
     // Ensure booking exists and get status
-    const booking = await Booking.findById(bookingId).select('clientId status');
+    const booking = await Booking.findById(bookingId).select('clientId status eventType city eventDate');
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
@@ -202,6 +203,9 @@ exports.applyToBooking = async (req, res) => {
       ]
     });
 
+    // Get previous status from existing booking variable
+    const previousStatus = booking.status;
+
     // Add artist to booking.appliedArtists (no duplicates) and update status to in_progress
     await Booking.updateOne(
       { _id: bookingId },
@@ -217,10 +221,26 @@ exports.applyToBooking = async (req, res) => {
       { $addToSet: { 'artist.appliedApplications': application._id } }
     );
 
+    // Create booking log for artist application
+    await BookingLog.create({
+      bookingId: bookingId,
+      action: 'artist_applied',
+      performedBy: {
+        userId: req.user.id,
+        userType: req.user.userType,
+        name: `${req.user.firstName} ${req.user.lastName}`
+      },
+      applicationId: application._id,
+      artistId: req.user.id,
+      previousValues: { status: previousStatus },
+      newValues: { status: 'in_progress' },
+      statusAtTime: 'in_progress',
+      details: `Artist applied with budget £${proposedBudget} and estimated duration ${estimatedDuration.value} ${estimatedDuration.unit}`
+    });
+
     // Create notification for the client about new application
     try {
       const artistName = `${req.user.firstName} ${req.user.lastName}`;
-      const booking = await Booking.findById(bookingId);
       const client = await User.findById(booking.clientId);
 
       const notificationData = {

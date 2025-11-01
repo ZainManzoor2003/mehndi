@@ -3,7 +3,7 @@ const router = express.Router();
 
 // Auth routes
 const { signup, login, me, updateProfile, googleAuth, getArtistRating, verifyEmail, resendVerificationEmail, sendPhoneCode, verifyPhoneCode } = require('../controllers/authController');
-const { createBooking, getClientBookings, getAllBookings, getBookingById, updateBookingStatus, updateBooking, deleteBooking, getPendingBookings, completeBooking, cancelBooking, updateBookingPaymentStatus, processRefund, getNearbyBookings, saveBooking, unsaveBooking, getSavedBookings } = require('../controllers/bookingController');
+const { createBooking, getClientBookings, getAllBookings, getBookingById, getBookingLogs, updateBookingStatus, updateBooking, deleteBooking, getPendingBookings, completeBooking, cancelBooking, updateBookingPaymentStatus, processRefund, getNearbyBookings, saveBooking, unsaveBooking, getSavedBookings } = require('../controllers/bookingController');
 const { listBlogs, getBlogById } = require('../controllers/blogController');
 
 const { applyToBooking, getMyAppliedBookings, getApplicationsForBooking, updateApplicationStatus, withdrawApplication, notifyCancellationByArtist, completeApplication, addApplicationNote, getApplicationNotes, getMyApplicationStats } = require('../controllers/applicationController');
@@ -43,6 +43,7 @@ router.delete('/api/bookings/:id/save', protect, unsaveBooking);
 // Completed bookings list for client should be defined before :id to avoid conflicts
 router.get('/api/bookings/completed', protect, reviewController.listCompletedBookingsForClient);
 router.get('/api/bookings/:id', protect, getBookingById);
+router.get('/api/bookings/:id/logs', protect, getBookingLogs);
 router.put('/api/bookings/:id/status', protect, updateBookingStatus);
 router.put('/api/bookings/:id/complete', protect, completeBooking);
 router.put('/api/bookings/payment-status', protect, updateBookingPaymentStatus);

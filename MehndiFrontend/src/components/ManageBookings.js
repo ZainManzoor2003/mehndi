@@ -13,6 +13,10 @@ const ManageBookings = () => {
   const [error, setError] = useState('');
   const [selected, setSelected] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showLogsModal, setShowLogsModal] = useState(false);
+  const [selectedBookingForLogs, setSelectedBookingForLogs] = useState(null);
+  const [bookingLogs, setBookingLogs] = useState([]);
+  const [logsLoading, setLogsLoading] = useState(false);
   
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -612,6 +616,27 @@ const ManageBookings = () => {
                         <td>
                           <button className="admin_btn admin_btn-outline" onClick={() => setSelected(b)}>View Details</button>
                         </td>
+                        <td>
+                          <button className="admin_btn admin_btn-outline" 
+                          onClick={async () => {
+                            setSelectedBookingForLogs(b);
+                            setShowLogsModal(true);
+                            setLogsLoading(true);
+                            try {
+                              const response = await api.bookingsAPI.getBookingLogs(b._id);
+                              if (response.success) {
+                                setBookingLogs(response.data || []);
+                              } else {
+                                toast.error('Failed to load booking logs');
+                              }
+                            } catch (error) {
+                              console.error('Error fetching booking logs:', error);
+                              toast.error('Failed to load booking logs');
+                            } finally {
+                              setLogsLoading(false);
+                            }
+                          }}>View Logs</button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -887,6 +912,215 @@ const ManageBookings = () => {
       </div>
       </div>
       </div>
+
+      {/* Booking Logs Modal */}
+      {showLogsModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10000,
+          padding: '20px'
+        }} onClick={() => setShowLogsModal(false)}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            width: '100%',
+            maxWidth: '800px',
+            maxHeight: '90vh',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
+          }} onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div style={{
+              padding: '24px',
+              borderBottom: '1px solid #e5e7eb',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              backgroundColor: '#f9fafb'
+            }}>
+              <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 700, color: '#1f2937' }}>
+                Booking Logs
+              </h2>
+              <button
+                onClick={() => setShowLogsModal(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  color: '#6b7280',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = '#e5e7eb';
+                  e.target.style.color = '#1f2937';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = 'transparent';
+                  e.target.style.color = '#6b7280';
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{
+              padding: '24px',
+              overflowY: 'auto',
+              flex: 1
+            }}>
+              {selectedBookingForLogs && (
+                <div style={{ marginBottom: '20px', padding: '12px', backgroundColor: '#f3f4f6', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '4px' }}>Booking ID</div>
+                  <div style={{ fontSize: '16px', fontWeight: 600, color: '#1f2937' }}>
+                    {formatDisplayId('REQ', selectedBookingForLogs._id)}
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#6b7280', marginTop: '8px' }}>
+                    {selectedBookingForLogs.firstName} {selectedBookingForLogs.lastName} - {selectedBookingForLogs.eventType?.join(', ')}
+                  </div>
+                </div>
+              )}
+
+              {logsLoading ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>Loading logs...</div>
+              ) : bookingLogs.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>No logs found for this booking</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {bookingLogs.map((log, index) => {
+                    const actionLabels = {
+                      'booking_created': 'Booking Created',
+                      'booking_updated': 'Booking Updated',
+                      'booking_cancelled': 'Booking Cancelled',
+                      'booking_deleted': 'Booking Deleted',
+                      'booking_status_changed': 'Status Changed',
+                      'artist_applied': 'Artist Applied',
+                      'application_accepted': 'Application Accepted',
+                      'application_declined': 'Application Declined',
+                      'application_withdrawn': 'Application Withdrawn',
+                      'application_cancelled': 'Application Cancelled',
+                      'booking_completed': 'Booking Completed'
+                    };
+
+                    const actionColors = {
+                      'booking_created': '#10b981',
+                      'booking_updated': '#3b82f6',
+                      'booking_cancelled': '#ef4444',
+                      'booking_deleted': '#991b1b',
+                      'booking_status_changed': '#8b5cf6',
+                      'artist_applied': '#f59e0b',
+                      'application_accepted': '#10b981',
+                      'application_declined': '#ef4444',
+                      'application_withdrawn': '#6b7280',
+                      'application_cancelled': '#ef4444',
+                      'booking_completed': '#10b981'
+                    };
+
+                    const date = new Date(log.createdAt);
+                    const formattedDate = date.toLocaleString('en-GB', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    });
+
+                    return (
+                      <div
+                        key={log._id || index}
+                        style={{
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px',
+                          padding: '16px',
+                          backgroundColor: 'white',
+                          position: 'relative',
+                          paddingLeft: '48px'
+                        }}
+                      >
+                        {/* Timeline dot */}
+                        <div
+                          style={{
+                            position: 'absolute',
+                            left: '16px',
+                            top: '20px',
+                            width: '12px',
+                            height: '12px',
+                            borderRadius: '50%',
+                            backgroundColor: actionColors[log.action] || '#6b7280',
+                            border: '2px solid white',
+                            boxShadow: '0 0 0 2px ' + (actionColors[log.action] || '#6b7280')
+                          }}
+                        />
+                        
+                        {/* Timeline line */}
+                        {index < bookingLogs.length - 1 && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              left: '21px',
+                              top: '32px',
+                              width: '2px',
+                              height: 'calc(100% + 12px)',
+                              backgroundColor: '#e5e7eb'
+                            }}
+                          />
+                        )}
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                          <div>
+                            <div style={{ fontSize: '16px', fontWeight: 600, color: '#1f2937', marginBottom: '4px' }}>
+                              {actionLabels[log.action] || log.action}
+                            </div>
+                            {log.performedBy?.name && (
+                              <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '4px' }}>
+                                By: {log.performedBy.name} ({log.performedBy.userType})
+                              </div>
+                            )}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#9ca3af', whiteSpace: 'nowrap', marginLeft: '16px' }}>
+                            {formattedDate}
+                          </div>
+                        </div>
+
+                        {log.details && (
+                          <div style={{ fontSize: '14px', color: '#4b5563', marginTop: '8px', padding: '8px', backgroundColor: '#f9fafb', borderRadius: '4px' }}>
+                            {log.details}
+                          </div>
+                        )}
+
+                        {log.previousValues && log.newValues && (
+                          <div style={{ fontSize: '13px', color: '#6b7280', marginTop: '8px', fontStyle: 'italic' }}>
+                            Status: {log.previousValues.status || 'N/A'} → {log.newValues.status || 'N/A'}
+                          </div>
+                        )}
+
+                        {log.statusAtTime && (
+                          <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '8px' }}>
+                            Status at time: {log.statusAtTime}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

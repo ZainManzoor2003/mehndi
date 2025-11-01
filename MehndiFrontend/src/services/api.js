@@ -518,6 +518,11 @@ export const bookingsAPI = {
     return apiRequest(`/bookings/${bookingId}`);
   },
 
+  // Get booking logs
+  getBookingLogs: async (bookingId) => {
+    return apiRequest(`/bookings/${bookingId}/logs`);
+  },
+
   // Update booking status
   updateBookingStatus: async (bookingId, status) => {
     return apiRequest(`/bookings/${bookingId}/status`, {

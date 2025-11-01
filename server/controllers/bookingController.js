@@ -4,7 +4,34 @@ const Transaction = require('../schemas/Transaction');
 const Wallet = require('../schemas/Wallet');
 const Application = require('../schemas/Application');
 const Notification = require('../schemas/Notification');
+const BookingLog = require('../schemas/BookingLog');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || '');
+
+// Helper function to create booking logs
+const createBookingLog = async (bookingId, action, performedBy, options = {}) => {
+  try {
+    const logData = {
+      bookingId,
+      action,
+      performedBy: {
+        userId: performedBy.userId || null,
+        userType: performedBy.userType || null,
+        name: performedBy.name || null
+      },
+      applicationId: options.applicationId || null,
+      artistId: options.artistId || null,
+      previousValues: options.previousValues || null,
+      newValues: options.newValues || null,
+      details: options.details || null,
+      statusAtTime: options.statusAtTime || null
+    };
+
+    await BookingLog.create(logData);
+  } catch (error) {
+    console.error('Error creating booking log:', error);
+    // Don't fail the main operation if logging fails
+  }
+};
 
 // Helper function to create notifications
 const createNotification = async (type, targetUserId, triggeredByUserId, targetUserType, bookingId, applicationId, data) => {
@@ -95,7 +122,7 @@ const createBooking = async (req, res) => {
     } = req.body;
 
     // Validate required fields
-    if (!firstName || !lastName) {
+    if (!firstName) {
       return res.status(400).json({
         success: false,
         message: 'Name is required'
@@ -250,6 +277,21 @@ const createBooking = async (req, res) => {
       // Don't fail the booking creation if notifications fail
     }
 
+    // Create booking log
+    await createBookingLog(
+      booking._id,
+      'booking_created',
+      {
+        userId: req.user.id,
+        userType: req.user.userType,
+        name: `${req.user.firstName} ${req.user.lastName}`
+      },
+      {
+        statusAtTime: 'pending',
+        details: `Booking created for ${eventType.join(', ')} event on ${eventDateObj.toLocaleDateString()}`
+      }
+    );
+
     res.status(201).json({
       success: true,
       message: 'Booking created successfully',
@@ -361,6 +403,34 @@ const getPendingBookings = async (req, res) => {
 // @desc    Get single booking by ID
 // @route   GET /api/bookings/:id
 // @access  Private
+// @desc    Get booking logs
+// @route   GET /api/bookings/:id/logs
+// @access  Private
+const getBookingLogs = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const logs = await BookingLog.find({ bookingId: id })
+      .populate('performedBy.userId', 'firstName lastName email userType')
+      .populate('artistId', 'firstName lastName email')
+      .populate('applicationId')
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: logs.length,
+      data: logs
+    });
+  } catch (error) {
+    console.error('Get booking logs error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while fetching booking logs',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+};
+
 const getBookingById = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id)
@@ -483,12 +553,32 @@ const updateBooking = async (req, res) => {
       booking.numberOfPeople = Number(req.body.numberOfPeople);
     }
 
+    // Store previous values for logging
+    const previousStatus = booking.status;
+    
     // Set status to pending when booking is updated
     booking.status = 'pending';
     booking.assignedArtist = [];
     booking.appliedArtists = [];
 
     await booking.save();
+
+    // Create booking log
+    await createBookingLog(
+      booking._id,
+      'booking_updated',
+      {
+        userId: req.user.id,
+        userType: req.user.userType,
+        name: `${req.user.firstName} ${req.user.lastName}`
+      },
+      {
+        previousValues: { status: previousStatus },
+        newValues: { status: 'pending' },
+        statusAtTime: 'pending',
+        details: 'Booking details were updated'
+      }
+    );
 
     res.status(200).json({ success: true, message: 'Booking updated successfully', data: booking });
   } catch (error) {
@@ -570,6 +660,21 @@ const deleteBooking = async (req, res) => {
       // Wait for all notifications to be sent (but don't fail if they fail)
       await Promise.allSettled(notificationPromises);
     }
+
+    // Create booking log before deletion
+    await createBookingLog(
+      req.params.id,
+      'booking_deleted',
+      {
+        userId: req.user.id,
+        userType: req.user.userType,
+        name: `${req.user.firstName} ${req.user.lastName}`
+      },
+      {
+        statusAtTime: booking.status,
+        details: `Booking deleted by client`
+      }
+    );
 
     await booking.deleteOne();
     res.status(200).json({ success: true, message: 'Booking deleted successfully' });
@@ -1096,6 +1201,25 @@ const cancelBooking = async (req, res) => {
       // Don't fail the cancellation if notifications fail
     }
 
+    // Create booking log
+    const previousStatus = 'confirmed'; // Before cancellation it was confirmed
+    await createBookingLog(
+      bookingId,
+      'booking_cancelled',
+      {
+        userId: req.user.id,
+        userType: req.user.userType,
+        name: `${req.user.firstName} ${req.user.lastName}`
+      },
+      {
+        artistId: artistId,
+        previousValues: { status: previousStatus },
+        newValues: { status: 'cancelled' },
+        statusAtTime: 'cancelled',
+        details: `Booking cancelled. Reason: ${cancellationDescription}`
+      }
+    );
+
     return res.status(200).json({
       success: true,
       message: 'Booking cancelled successfully',
@@ -1445,6 +1569,7 @@ module.exports = {
   getClientBookings,
   getAllBookings,
   getBookingById,
+  getBookingLogs,
   updateBookingStatus,
   completeBooking,
   updateBooking,
