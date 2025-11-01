@@ -56,14 +56,14 @@ const Footer = () => {
         </div>
 
         {/* === Middle Row (Now Fully Responsive) === */}
-        <div className="footer-middle-row">
+        <div className="footer-middle-row" style={{justifyContent:'space-around'}}>
           <div className="footer__content" style={{ textAlign: 'center', minWidth: '220px' }}>
             <h3 className="footer__title">For Mehndi Artists</h3>
             <ul className="footer__list">
               <li><a href="#" className="footer__link" onClick={(e) => { e.preventDefault(); navigate('/earn-as-artist'); }}>Earn as a Mehndi Artist</a></li>
               <li><a href="#" className="footer__link" onClick={(e) => { e.preventDefault(); handleLinkClick('/artist-dashboard', true); }}>Browse Bookings</a></li>
               <li><a href="#" className="footer__link" onClick={(e) => { e.preventDefault(); handleLinkClick('/artist-dashboard', true); }}>Artist Dashboard</a></li>
-              <li><a href="#" className="footer__link" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>FAQs for Artists</a></li>
+              <li><a href="#" className="footer__link" onClick={(e) => { e.preventDefault(); handleLinkClick('/faq'); }}>FAQs for Artists</a></li>
             </ul>
           </div>
 
@@ -71,20 +71,20 @@ const Footer = () => {
             <h3 className="footer__title">For Clients</h3>
             <ul className="footer__list">
               <li><a href="#" className="footer__link" onClick={(e) => { e.preventDefault(); handleLinkClick('/booking', true); }}>Request an Artist</a></li>
-              <li><a href="#" className="footer__link" onClick={(e) => { e.preventDefault(); navigate('/login'); }}>Log In / Sign Up</a></li>
-              <li><a href="#" className="footer__link" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>FAQs for Clients</a></li>
+              <li><a href="#" className="footer__link" onClick={(e) => { e.preventDefault(); navigate('/choose-path'); }}>Log In / Sign Up</a></li>
+              <li><a href="#" className="footer__link" onClick={(e) => { e.preventDefault(); handleLinkClick('/faq');}}>FAQs for Clients</a></li>
               <li><a href="#" className="footer__link" onClick={(e) => { e.preventDefault(); navigate('/blogs'); }}>Blog</a></li>
             </ul>
           </div>
 
-          <div className="footer__content" style={{ textAlign: 'center', minWidth: '220px' }}>
+          {/* <div className="footer__content" style={{ textAlign: 'center', minWidth: '220px' }}>
             <h3 className="footer__title">Trust & Transparency</h3>
             <ul className="footer__list">
               <li><a href="#" className="footer__link" onClick={(e) => { e.preventDefault(); window.open('/privacy-policy', '_blank'); }}>Privacy Policy</a></li>
               <li><a href="#" className="footer__link" onClick={(e) => { e.preventDefault(); window.open('/terms-conditions', '_blank'); }}>Terms & Conditions</a></li>
               <li><a href="#" className="footer__link" onClick={(e) => { e.preventDefault(); window.open('/code-of-conduct', '_blank'); }}>Code of Conduct</a></li>
             </ul>
-          </div>
+          </div> */}
         </div>
       </div>
       

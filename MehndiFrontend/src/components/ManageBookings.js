@@ -32,9 +32,10 @@ const ManageBookings = () => {
   const statusOptions = [
     { value: '', label: 'All Statuses' },
     { value: 'pending', label: 'Pending' },
-    { value: 'confirmed', label: 'Confirmed' },
-    { value: 'in_progress', label: 'In Progress' },
+    { value: 'confirmed', label: 'Assigned' },
+    { value: 'in_progress', label: 'Active' },
     { value: 'completed', label: 'Completed' },
+    { value: 'expired', label: 'Expired' },
     { value: 'cancelled', label: 'Cancelled' }
   ];
 
@@ -83,7 +84,7 @@ const ManageBookings = () => {
           booking.eventType?.join(', ').toLowerCase().includes(searchLower) ||
           booking.minimumBudget?.toString().includes(searchTerm) ||
           booking.maximumBudget?.toString().includes(searchTerm) ||
-          booking.city?.toLowerCase().includes(searchLower) ||
+          booking.location?.toLowerCase().includes(searchLower) ||
           booking.fullAddress?.toLowerCase().includes(searchLower) ||
           fullId.includes(searchLower) ||
           displayId.includes(searchLower)
@@ -107,7 +108,7 @@ const ManageBookings = () => {
     // Filter by city
     if (selectedCity?.value) {
       filtered = filtered.filter(booking => 
-        booking.city?.toLowerCase().includes(selectedCity.value.toLowerCase()) ||
+        booking.location?.toLowerCase().includes(selectedCity.value.toLowerCase()) ||
         booking.fullAddress?.toLowerCase().includes(selectedCity.value.toLowerCase())
       );
     }
@@ -295,19 +296,6 @@ const ManageBookings = () => {
               </div>
             </div>
 
-            <div className="admin_stat-card">
-              <div className="admin_stat-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10"/>
-                  <line x1="15" y1="9" x2="9" y2="15"/>
-                  <line x1="9" y1="9" x2="15" y2="15"/>
-                </svg>
-              </div>
-              <div className="admin_stat-info">
-                <h3>Cancelled</h3>
-                <span className="admin_stat-number">{bookings.filter(b => b.status === 'cancelled').length}</span>
-              </div>
-            </div>
           </div>
           {/* Filter Section */}
           <div className="admin_filter-section">
@@ -614,9 +602,10 @@ const ManageBookings = () => {
                         <td>
                           <span className={`admin_status-badge ${b.status}`}>
                             {b.status === 'pending' && 'Pending'}
-                            {b.status === 'confirmed' && 'Confirmed'}
-                            {b.status === 'in_progress' && 'In Progress'}
+                            {b.status === 'confirmed' && 'Assigned'}
+                            {b.status === 'in_progress' && 'Active'}
                             {b.status === 'completed' && 'Completed'}
+                            {b.status === 'expired' && 'Expired'}
                             {b.status === 'cancelled' && 'Cancelled'}
                           </span>
                         </td>
@@ -814,7 +803,6 @@ const ManageBookings = () => {
                     <h3 className="admin_modal-section-title">Client</h3>
                     <div className="admin_detail-row"><span className="admin_detail-label">Name</span><span className="admin_detail-value">{selected.firstName} {selected.lastName}</span></div>
                     <div className="admin_detail-row"><span className="admin_detail-label">Email</span><span className="admin_detail-value">{selected.email}</span></div>
-                    <div className="admin_detail-row"><span className="admin_detail-label">Phone</span><span className="admin_detail-value">{selected.phoneNumber}</span></div>
                   </div>
                   <div className="admin_detail-card">
                     <h3 className="admin_modal-section-title">Event</h3>
@@ -831,8 +819,7 @@ const ManageBookings = () => {
                   </div>
                   <div className="admin_detail-card">
                     <h3 className="admin_modal-section-title">Location</h3>
-                    <div className="admin_detail-row"><span className="admin_detail-label">City</span><span className="admin_detail-value">{selected.city}</span></div>
-                    <div className="admin_detail-row"><span className="admin_detail-label">Address</span><span className="admin_detail-value">{selected.fullAddress}</span></div>
+                    <div className="admin_detail-row"><span className="admin_detail-label">City</span><span className="admin_detail-value">{selected.location}</span></div>
                   </div>
                 </div>
 

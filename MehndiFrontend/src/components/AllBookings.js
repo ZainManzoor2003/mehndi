@@ -7,6 +7,7 @@ import apiService from '../services/api';
 import { FaCalendarAlt, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import CancelAcceptedModal from './modals/CancelAcceptedModal';
 import GetLocationModal from './modals/GetLocationModal';
+import ProposalsPage from './ProposalsPage';
 
 const { bookingsAPI } = apiService;
 
@@ -110,25 +111,25 @@ const AllBookings = () => {
         // Extract shorter location name (city, town, or suburb)
         let locationName = '';
         const address = data.address || {};
-        
+
         // Prioritize: city > town > village > suburb > county
-        locationName = address.city || 
-                      address.town || 
-                      address.village || 
-                      address.suburb || 
-                      address.county || 
-                      '';
-        
+        locationName = address.city ||
+          address.town ||
+          address.village ||
+          address.suburb ||
+          address.county ||
+          '';
+
         // If we still don't have a location name, try to get postcode
         if (!locationName) {
           locationName = address.postcode ? `Postcode ${address.postcode}` : '';
         }
-        
+
         // Final fallback
         if (!locationName) {
           locationName = data.display_name ? data.display_name.split(',').slice(0, 2).join(',') : `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
         }
-        
+
         setForm(prev => ({
           ...prev,
           location: locationName,
@@ -158,10 +159,10 @@ const AllBookings = () => {
   const openEditModal = (booking) => {
     setEditing(booking);
     // Handle eventType - convert array to single value or take first value
-    const eventTypeValue = Array.isArray(booking.eventType) 
-      ? (booking.eventType.length === 1 ? booking.eventType[0] : booking.eventType[0]) 
+    const eventTypeValue = Array.isArray(booking.eventType)
+      ? (booking.eventType.length === 1 ? booking.eventType[0] : booking.eventType[0])
       : booking.eventType || '';
-    
+
     // Handle preferredTimeSlot - convert array to single value
     const timeSlotValue = Array.isArray(booking.preferredTimeSlot)
       ? booking.preferredTimeSlot[0]
@@ -233,17 +234,17 @@ const AllBookings = () => {
     try {
       setSaving(true);
       const payload = { ...form };
-      
+
       // Convert eventType to array
       if (payload.eventType) {
         payload.eventType = [payload.eventType];
       }
-      
+
       // Convert preferredTimeSlot to array
       if (payload.preferredTimeSlot) {
         payload.preferredTimeSlot = [payload.preferredTimeSlot];
       }
-      
+
       // Convert artistTravelsToClient to boolean or 'both'
       if (payload.artistTravelsToClient === 'both') {
         payload.artistTravelsToClient = 'both';
@@ -252,27 +253,27 @@ const AllBookings = () => {
       } else if (payload.artistTravelsToClient === 'no') {
         payload.artistTravelsToClient = false;
       }
-      if(payload.designStyle === 'Bridal Mehndi' && !payload.venueName) {
+      if (payload.designStyle === 'Bridal Mehndi' && !payload.venueName) {
         alert('Venue name is required for bridal mehndi');
         return;
       }
-      if(payload.designStyle === 'Bridal Mehndi' && !payload.coveragePreference) {
+      if (payload.designStyle === 'Bridal Mehndi' && !payload.coveragePreference) {
         alert('Coverage preference is required for bridal mehndi');
-        return; 
+        return;
       }
-      
+
       // Convert designInspiration to array if it's a string
       if (typeof payload.designInspiration === 'string') {
         payload.designInspiration = payload.designInspiration.split('\n').filter(url => url.trim() !== '');
       }
-      
+
       // convert numbers
       ['minimumBudget', 'maximumBudget', 'duration', 'numberOfPeople'].forEach(k => {
         if (payload[k] !== undefined && payload[k] !== null && payload[k] !== '') {
           payload[k] = Number(payload[k]);
         }
       });
-      
+
       await bookingsAPI.updateBooking(editing._id, payload);
       // refresh list
       const refreshed = await bookingsAPI.getMyBookings();
@@ -306,7 +307,7 @@ const AllBookings = () => {
   const [imagePreviews, setImagePreviews] = useState([]);
   const [videoPreview, setVideoPreview] = useState('');
   const [uploading, setUploading] = useState(false);
-  
+
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelTarget, setCancelTarget] = useState(null);
 
@@ -335,7 +336,7 @@ const AllBookings = () => {
   const handleImageSelect = (e) => {
     const files = Array.from(e.target.files || []).slice(0, 3);
     setCompleteImages(files);
-    
+
     // Create previews
     const previews = [];
     files.forEach(file => {
@@ -402,7 +403,7 @@ const AllBookings = () => {
         artistId: cancelTarget.assignedArtist[0]._id,
         cancellationDescription: description
       });
-      
+
       // Refresh bookings
       const refreshed = await bookingsAPI.getMyBookings();
       setAllBookings(refreshed.data || []);
@@ -428,7 +429,7 @@ const AllBookings = () => {
     if (!completeTarget) return;
     try {
       setUploading(true);
-      const imgs = completeImages.slice(0,3);
+      const imgs = completeImages.slice(0, 3);
       const uploaded = [];
       for (const f of imgs) {
         uploaded.push(await uploadToCloudinary(f, 'image'));
@@ -702,7 +703,6 @@ const AllBookings = () => {
           onClose={handleSidebarClose}
           bookingCount={allBookings.length}
         />
-
         {/* Main Content */}
         <div className="dashboard-main-content">
           {/* Mobile Sidebar Toggle */}
@@ -718,6 +718,11 @@ const AllBookings = () => {
           </button>
 
           <div className="bookings-page">
+            <div className="bookings-header">
+              <h1 className="bookings-title">Artist Offers</h1>
+              <p className="bookings-subtitle">Manage all your booking offers</p>
+            </div>
+            <ProposalsPage />
             <div className="bookings-container">
               <div className="bookings-header">
                 <h1 className="bookings-title">All Bookings</h1>
@@ -786,34 +791,37 @@ const AllBookings = () => {
                             <div className="card-actions">
                               {getStatusBadge(booking.status)}
                               {booking.status === 'confirmed' && (
-                                  <button className="btn-secondary" onClick={() => openCancelModal(booking)} style={{marginLeft:'8px', background: '#e74c3c', color: 'white', border: 'none', padding: '14px 20px', fontSize: '0.95rem'}}>Cancel</button>
+                                <button className="btn-secondary" onClick={() => openCancelModal(booking)} style={{ marginLeft: '8px', background: '#e74c3c', color: 'white', border: 'none', padding: '14px 20px', fontSize: '0.95rem' }}>Cancel</button>
                               )}
-                              {booking.status === 'confirmed' && booking.isPaid==='full' && (
-                              <button
-                                className="btn-primary"
-                                onClick={() => {
-                                  const today = new Date();
-                                  const eventDate = new Date(booking.eventDate);
-                                  if (eventDate <= today) {
-                                    openCompleteModal(booking);
-                                  } else {
-                                    openMessageModal('You can only mark as complete once the event date has passed.');
-                                  }
-                                }}
-                                style={{marginLeft:'8px'}}
-                              >
-                                Mark as complete
-                              </button>
-                               )}
+                              {booking.status === 'confirmed' && booking.isPaid === 'full' && (
+                                <button
+                                  className="btn-primary"
+                                  onClick={() => {
+                                    const today = new Date();
+                                    const eventDate = new Date(booking.eventDate);
+                                    if (eventDate <= today) {
+                                      openCompleteModal(booking);
+                                    } else {
+                                      openMessageModal('You can only mark as complete once the event date has passed.');
+                                    }
+                                  }}
+                                  style={{ marginLeft: '8px' }}
+                                >
+                                  Mark as complete
+                                </button>
+                              )}
                               {booking.status == 'pending' &&
-                                <>
-                                  <button className="icon-btn edit" onClick={() => openEditModal(booking)} title="Edit booking">✏️
-                                  </button>
-
-                                  <button className="icon-btn delete" onClick={() => handleDelete(booking)} title="Delete booking">🗑️</button>
-                            </>
+                                <button className="icon-btn edit" onClick={() => openEditModal(booking)} title="Edit booking">✏️
+                                </button>
                               }
-                              </div>
+                              {
+                                booking.status === 'in_progress' || booking.status === 'pending' ?
+                                  <button className="icon-btn delete" onClick={() => handleDelete(booking)} title="Delete booking">🗑️</button>
+                                  : <></>
+                              }
+
+
+                            </div>
                           </div>
 
                           <div className="card-content">
@@ -843,20 +851,20 @@ const AllBookings = () => {
                               <div className="info-item">
                                 <span className="info-label">Duration</span>
                                 <span className="info-value">{booking.duration || 3} hours</span>
-                            </div>
+                              </div>
 
-                            {daysLeft > 0 && (
+                              {daysLeft > 0 && (
                                 <div className="info-item">
                                   <span className="info-label">Days Left</span>
                                   <span className="info-value highlight">{daysLeft} days</span>
-                              </div>
-                            )}
-                            {daysLeft <= 0 && (
+                                </div>
+                              )}
+                              {daysLeft <= 0 && (
                                 <div className="info-item">
                                   <span className="info-label">Status</span>
                                   <span className="info-value highlight">{daysLeft === 0 ? 'Today!' : 'Overdue'}</span>
-                              </div>
-                            )}
+                                </div>
+                              )}
                             </div>
 
                           </div>
@@ -1005,11 +1013,11 @@ const AllBookings = () => {
                   justifyContent: 'space-between',
                   alignItems: 'center'
                 }}>
-                  <h2 style={{ 
-                    margin: 0, 
-                    fontSize: '1.75rem', 
-                    fontWeight: '600', 
-                    color: '#8B4513' 
+                  <h2 style={{
+                    margin: 0,
+                    fontSize: '1.75rem',
+                    fontWeight: '600',
+                    color: '#8B4513'
                   }}>Edit Booking</h2>
                   <button onClick={closeEditModal} style={{
                     background: 'none',
@@ -1035,7 +1043,7 @@ const AllBookings = () => {
                       <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Event Type *</label>
                       <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '1rem' }}>Choose the event you are booking for</p>
                       <div style={{
-                    display: 'grid',
+                        display: 'grid',
                         gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
                         gap: '1rem'
                       }}>
@@ -1116,7 +1124,7 @@ const AllBookings = () => {
                           }}
                         >
                           <span>{form.eventDate ? new Date(form.eventDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) : 'Choose a date'}</span>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
                         </button>
                         {editCalOpen && (
                           <div style={{ position: 'absolute', zIndex: 50, top: 56, left: 0, width: 320, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, boxShadow: '0 12px 30px rgba(15,23,42,0.15)', padding: 12, transition: 'opacity 180ms ease, transform 180ms ease', opacity: editCalEntering ? 1 : 0, transform: editCalEntering ? 'translateY(0) scale(1)' : 'translateY(-6px) scale(0.98)' }}>
@@ -1129,7 +1137,7 @@ const AllBookings = () => {
                               </div>
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center', fontWeight: 600, color: '#64748b', marginBottom: 6 }}>
-                              {['Mo','Tu','We','Th','Fr','Sa','Su'].map(d => <div key={d} style={{ padding: '6px 0' }}>{d}</div>)}
+                              {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map(d => <div key={d} style={{ padding: '6px 0' }}>{d}</div>)}
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
                               {editCalMatrix.map(({ date, inMonth }, idx) => {
@@ -1207,7 +1215,7 @@ const AllBookings = () => {
                     <div>
                       <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Location / Postcode *</label>
                       <p style={{ fontSize: '0.85rem', color: '#888', marginBottom: '1rem' }}>Click "Get Location" to select your location on the map</p>
-                  <button
+                      <button
                         type="button"
                         onClick={() => setShowLocationModal(true)}
                         style={{
@@ -1219,7 +1227,7 @@ const AllBookings = () => {
                           fontWeight: '600',
                           cursor: 'pointer',
                           transition: 'all 0.3s',
-                        display: 'flex',
+                          display: 'flex',
                           alignItems: 'center',
                           gap: '10px',
                           fontSize: '1rem',
@@ -1238,28 +1246,28 @@ const AllBookings = () => {
                       >
                         <span style={{ fontSize: '1.2rem' }}>📍</span> Get Location
                       </button>
-                  {/* City Dropdown */}
-                  <div style={{ marginTop: '12px' }}>
-                    <select
-                      value={form.location || ''}
-                      onChange={(e) => setForm(prev => ({ ...prev, location: e.target.value }))}
-                      style={{
-                        width: '100%',
-                        height: '44px',
-                        border: '1px solid #ced4da',
-                        borderRadius: '8px',
-                        padding: '0 12px',
-                        background: '#ffffff',
-                        color: '#0f172a'
-                      }}
-                    >
-                      <option value="">Select city</option>
-                      <option value="London">London</option>
-                      <option value="Birmingham">Birmingham</option>
-                      <option value="Manchester">Manchester</option>
-                      <option value="Bradford">Bradford</option>
-                    </select>
-                  </div>
+                      {/* City Dropdown */}
+                      <div style={{ marginTop: '12px' }}>
+                        <select
+                          value={form.location || ''}
+                          onChange={(e) => setForm(prev => ({ ...prev, location: e.target.value }))}
+                          style={{
+                            width: '100%',
+                            height: '44px',
+                            border: '1px solid #ced4da',
+                            borderRadius: '8px',
+                            padding: '0 12px',
+                            background: '#ffffff',
+                            color: '#0f172a'
+                          }}
+                        >
+                          <option value="">Select city</option>
+                          <option value="London">London</option>
+                          <option value="Birmingham">Birmingham</option>
+                          <option value="Manchester">Manchester</option>
+                          <option value="Bradford">Bradford</option>
+                        </select>
+                      </div>
                       {form.location && (
                         <div style={{
                           marginTop: '1rem',
@@ -1274,7 +1282,7 @@ const AllBookings = () => {
                           gap: '10px'
                         }}>
                           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
                           </svg>
                           <span>{form.location}</span>
                         </div>
@@ -1294,21 +1302,21 @@ const AllBookings = () => {
                           { value: 'both', text: 'I\'m open to both', icon: '🤝' }
                         ].map(opt => (
                           <label key={opt.value} style={{
-                          display: 'flex',
-                          alignItems: 'center',
+                            display: 'flex',
+                            alignItems: 'center',
                             gap: '12px',
                             padding: '16px',
                             border: `2px solid ${form.artistTravelsToClient === opt.value ? '#CD853F' : '#e0d5c9'}`,
                             borderRadius: '12px',
                             background: form.artistTravelsToClient === opt.value ? '#fff8f0' : '#faf8f5',
-                          cursor: 'pointer',
+                            cursor: 'pointer',
                             transition: 'all 0.3s',
                             position: 'relative'
                           }} onClick={() => setForm(prev => ({ ...prev, artistTravelsToClient: opt.value }))}>
                             <input type="radio" name="artistTravelsToClientRadio" checked={form.artistTravelsToClient === opt.value} onChange={() => setForm(prev => ({ ...prev, artistTravelsToClient: opt.value }))} style={{ display: 'none' }} />
                             <span style={{ fontSize: '1.5rem' }}>{opt.icon}</span>
                             <span style={{ fontSize: '0.95rem', fontWeight: '500' }}>{opt.text}</span>
-                        </label>
+                          </label>
                         ))}
                       </div>
                     </div>
@@ -1369,7 +1377,7 @@ const AllBookings = () => {
                     <div>
                       <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Design Inspiration</label>
                       <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '1rem' }}>Upload images or paste links to share your preferred designs</p>
-                      
+
                       {/* Upload Images */}
                       <div style={{ marginBottom: '1rem' }}>
                         <label
@@ -1502,8 +1510,8 @@ const AllBookings = () => {
                             fontSize: '1rem',
                             flex: 1,
                             outline: 'none'
-                      }} />
-                    </div>
+                          }} />
+                        </div>
                         <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e0d5c9', borderRadius: '10px', padding: '8px 16px', background: '#faf8f5' }}>
                           <span style={{ fontWeight: '600', color: '#8B4513', marginRight: '8px' }}>£</span>
                           <input name="maximumBudget" type="number" value={form.maximumBudget || ''} onChange={handleFormChange} placeholder="To" style={{
@@ -1512,8 +1520,8 @@ const AllBookings = () => {
                             fontSize: '1rem',
                             flex: 1,
                             outline: 'none'
-                      }} />
-                    </div>
+                          }} />
+                        </div>
                       </div>
                       <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
                         {[
@@ -1613,23 +1621,23 @@ const AllBookings = () => {
             </div>
           )}
         </div>
-      </div>
+      </div >
       {completeOpen && (
         <div className="modal-overlay" onClick={closeCompleteModal}>
-          <div className="modal" onClick={(e)=>e.stopPropagation()} style={{ maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
             <div className="modal-header">
               <h3 className="modal-title">Complete Booking</h3>
               <button className="modal-close" onClick={closeCompleteModal}>×</button>
             </div>
             <div className="modal-body">
               <p style={{ marginBottom: '20px', color: '#666' }}>Upload up to 3 images and one video (optional). Files will be uploaded to Cloudinary.</p>
-              
+
               {/* Images Upload Section */}
               <div className="form-group" style={{ marginBottom: '25px' }}>
                 <label style={{ display: 'block', fontWeight: '600', marginBottom: '10px', color: '#333' }}>
                   Images (max 3)
                 </label>
-                <label htmlFor="complete-images-upload" className="upload-label" style={{ 
+                <label htmlFor="complete-images-upload" className="upload-label" style={{
                   display: 'block',
                   padding: '20px',
                   border: '2px dashed #d4a574',
@@ -1640,9 +1648,9 @@ const AllBookings = () => {
                   transition: 'all 0.3s ease'
                 }}>
                   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d4a574" strokeWidth="2" style={{ margin: '0 auto 10px' }}>
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                    <circle cx="8.5" cy="8.5" r="1.5"/>
-                    <polyline points="21 15 16 10 5 21"/>
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <polyline points="21 15 16 10 5 21" />
                   </svg>
                   <p style={{ margin: '0', color: '#d4a574', fontWeight: '600' }}>
                     Click to upload images
@@ -1657,22 +1665,22 @@ const AllBookings = () => {
                   onChange={handleImageSelect}
                   style={{ display: 'none' }}
                 />
-                
+
                 {/* Image Previews */}
                 {imagePreviews.length > 0 && (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginTop: '15px' }}>
                     {imagePreviews.map((preview, index) => (
                       <div key={index} style={{ position: 'relative' }}>
-                        <img 
-                          src={preview} 
-                          alt={`Preview ${index + 1}`} 
-                          style={{ 
-                            width: '100%', 
-                            height: '120px', 
-                            objectFit: 'cover', 
+                        <img
+                          src={preview}
+                          alt={`Preview ${index + 1}`}
+                          style={{
+                            width: '100%',
+                            height: '120px',
+                            objectFit: 'cover',
                             borderRadius: '8px',
                             border: '2px solid #d4a574'
-                          }} 
+                          }}
                         />
                         <button
                           type="button"
@@ -1708,7 +1716,7 @@ const AllBookings = () => {
                 <label style={{ display: 'block', fontWeight: '600', marginBottom: '10px', color: '#333' }}>
                   Video (optional)
                 </label>
-                <label htmlFor="complete-video-upload" className="upload-label" style={{ 
+                <label htmlFor="complete-video-upload" className="upload-label" style={{
                   display: 'block',
                   padding: '20px',
                   border: '2px dashed #d4a574',
@@ -1719,8 +1727,8 @@ const AllBookings = () => {
                   transition: 'all 0.3s ease'
                 }}>
                   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d4a574" strokeWidth="2" style={{ margin: '0 auto 10px' }}>
-                    <polygon points="23 7 16 12 23 17 23 7"/>
-                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                    <polygon points="23 7 16 12 23 17 23 7" />
+                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
                   </svg>
                   <p style={{ margin: '0', color: '#d4a574', fontWeight: '600' }}>
                     Click to upload video
@@ -1734,19 +1742,19 @@ const AllBookings = () => {
                   onChange={handleVideoSelect}
                   style={{ display: 'none' }}
                 />
-                
+
                 {/* Video Preview */}
                 {videoPreview && (
                   <div style={{ marginTop: '15px', position: 'relative' }}>
-                    <video 
-                      src={videoPreview} 
+                    <video
+                      src={videoPreview}
                       controls
-                      style={{ 
-                        width: '100%', 
-                        maxHeight: '200px', 
+                      style={{
+                        width: '100%',
+                        maxHeight: '200px',
                         borderRadius: '8px',
                         border: '2px solid #d4a574'
-                      }} 
+                      }}
                     />
                     <button
                       type="button"
@@ -1783,7 +1791,8 @@ const AllBookings = () => {
             </div>
           </div>
         </div>
-      )}
+      )
+      }
 
       {/* Cancel Booking Modal */}
       <CancelAcceptedModal
@@ -1794,95 +1803,97 @@ const AllBookings = () => {
       />
 
       {/* Message Modal */}
-      {messageModalOpen && (
-        <div className="modal-overlay" onClick={closeMessageModal}>
-          <div 
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              backgroundColor: 'white',
-              borderRadius: '12px',
-              maxWidth: '450px',
-              width: '90%',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)',
-              overflow: 'hidden',
-            }}
-          >
-            {/* Modal Header */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '20px 24px',
-              borderBottom: '1px solid #e5e7eb',
-            }}>
-              <h3 style={{
-                margin: 0,
-                fontSize: '1.25rem',
-                fontWeight: '600',
-                color: '#111827',
-              }}>
-                Notice
-              </h3>
-              <button 
-                onClick={closeMessageModal}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '24px',
-                  color: '#6b7280',
-                  cursor: 'pointer',
-                  padding: '0',
-                  lineHeight: '1',
-                  transition: 'color 0.2s ease'
-                }}
-                onMouseOver={(e) => e.target.style.color = '#111827'}
-                onMouseOut={(e) => e.target.style.color = '#6b7280'}
-              >
-                ×
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div style={{ padding: '24px' }}>
-              <p style={{
-                margin: '0 0 24px 0',
-                fontSize: '1rem',
-                color: '#4b5563',
-                lineHeight: '1.5',
-              }}>
-                {messageModalContent}
-              </p>
-
-              {/* Modal Actions */}
+      {
+        messageModalOpen && (
+          <div className="modal-overlay" onClick={closeMessageModal}>
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                backgroundColor: 'white',
+                borderRadius: '12px',
+                maxWidth: '450px',
+                width: '90%',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)',
+                overflow: 'hidden',
+              }}
+            >
+              {/* Modal Header */}
               <div style={{
                 display: 'flex',
-                gap: '12px',
-                justifyContent: 'flex-end',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '20px 24px',
+                borderBottom: '1px solid #e5e7eb',
               }}>
-                <button 
+                <h3 style={{
+                  margin: 0,
+                  fontSize: '1.25rem',
+                  fontWeight: '600',
+                  color: '#111827',
+                }}>
+                  Notice
+                </h3>
+                <button
                   onClick={closeMessageModal}
                   style={{
-                    padding: '12px 24px',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    color: 'white',
-                    backgroundColor: 'var(--first-color)',
+                    background: 'none',
                     border: 'none',
-                    borderRadius: '8px',
+                    fontSize: '24px',
+                    color: '#6b7280',
                     cursor: 'pointer',
-                    transition: 'all 0.2s ease'
+                    padding: '0',
+                    lineHeight: '1',
+                    transition: 'color 0.2s ease'
                   }}
-                  onMouseOver={(e) => e.target.style.opacity = '0.9'}
-                  onMouseOut={(e) => e.target.style.opacity = '1'}
+                  onMouseOver={(e) => e.target.style.color = '#111827'}
+                  onMouseOut={(e) => e.target.style.color = '#6b7280'}
                 >
-                  OK
+                  ×
                 </button>
+              </div>
+
+              {/* Modal Body */}
+              <div style={{ padding: '24px' }}>
+                <p style={{
+                  margin: '0 0 24px 0',
+                  fontSize: '1rem',
+                  color: '#4b5563',
+                  lineHeight: '1.5',
+                }}>
+                  {messageModalContent}
+                </p>
+
+                {/* Modal Actions */}
+                <div style={{
+                  display: 'flex',
+                  gap: '12px',
+                  justifyContent: 'flex-end',
+                }}>
+                  <button
+                    onClick={closeMessageModal}
+                    style={{
+                      padding: '12px 24px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: 'white',
+                      backgroundColor: 'var(--first-color)',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseOver={(e) => e.target.style.opacity = '0.9'}
+                    onMouseOut={(e) => e.target.style.opacity = '1'}
+                  >
+                    OK
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
-      
+        )
+      }
+
       {/* Get Location Modal */}
       <GetLocationModal
         isOpen={showLocationModal}

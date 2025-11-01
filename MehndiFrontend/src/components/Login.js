@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Header from './Header';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
@@ -23,6 +23,14 @@ const Login = () => {
   const [resendingEmail, setResendingEmail] = useState(false);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [resendingCode, setResendingCode] = useState(false);
+  // Scroll to top on mount
+   useEffect(() => {
+    try {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    } catch {
+      window.scrollTo(0, 0);
+    }
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;

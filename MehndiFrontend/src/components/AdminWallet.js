@@ -95,6 +95,7 @@ const AdminWallet = () => {
       const txRes = await transactionAPI.getPlatformTransactions();
       const txs = Array.isArray(txRes?.data) ? txRes.data : [];
       setWalletTransactions(txs);
+      console.log(txs)
     } catch (e) {
       setError(e?.message || 'Failed to load transactions');
       setWalletTransactions([]);

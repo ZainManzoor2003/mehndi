@@ -6,6 +6,7 @@ import { bookingsAPI, applicationsAPI, chatAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import BrowseViewBookingModal from './modals/BrowseViewBookingModal';
 import BrowseApplyModal from './modals/BrowseApplyModal';
+import { ToastContainer, useToast } from './Toast';
 
 const CITY_OPTIONS = ['London', 'Birmingham', 'Manchester', 'Bradford'];
 
@@ -39,6 +40,7 @@ const BrowseRequests = () => {
   const [viewForm, setViewForm] = useState(null);
   const [applyBusy, setApplyBusy] = useState(false);
   const [viewClientId, setViewClientId] = useState(null);
+  const { toasts, showError, removeToast } = useToast();
 
   useEffect(() => {
     // scroll to top quickly on mount
@@ -160,9 +162,12 @@ const BrowseRequests = () => {
         terms: { agreedToTerms: !!extras.agreed }
       };
       await applicationsAPI.applyToBooking(activeBooking._id, artistDetails);
+      extras.setSuccess(true)
       // Do not navigate away; modal will show success state
     } catch (e) {
-      alert(e.message || 'Failed to apply');
+      extras.setSuccess(false)
+      setApplyOpen(false)
+      showError(e.message || 'Failed to apply');
     } finally {
       setApplyBusy(false);
     }
@@ -275,6 +280,7 @@ const BrowseRequests = () => {
       </div>
       <BrowseViewBookingModal open={viewOpen} viewForm={viewForm} onClose={() => setViewOpen(false)} onApply={() => { setViewOpen(false); setApplyOpen(true); }} onMessage={handleMessageClient} />
       <BrowseApplyModal open={applyOpen} busy={applyBusy} booking={activeBooking} onClose={() => setApplyOpen(false)} onConfirm={confirmApply} />
+     <ToastContainer toasts={toasts} removeToast={removeToast} />
     </section>
   );
 };

@@ -150,8 +150,8 @@ function App() {
                 <AllBookings />
               </RoleProtectedRoute>
             } />
-            <Route path="/proposals" element={<ProposalsPage />} />
-            <Route path="/proposal" element={<ProposalsPage />} />
+            {/* <Route path="/proposals" element={<ProposalsPage />} />
+            <Route path="/proposal" element={<ProposalsPage />} /> */}
             <Route path="/artist-dashboard/:tab?" element={
               <RoleProtectedRoute allowedRoles={["artist"]}>
                 <ArtistDashboard />

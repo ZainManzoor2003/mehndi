@@ -10,7 +10,7 @@ const Blogs = () => {
    // Scroll to top on mount
    useEffect(() => {
     try {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: 'instant' });
     } catch {
       window.scrollTo(0, 0);
     }

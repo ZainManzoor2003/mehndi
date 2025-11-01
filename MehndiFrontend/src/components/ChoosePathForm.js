@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import Header from './Header';
@@ -30,6 +30,14 @@ const ChoosePathForm = () => {
       navigate('/login');
     }
   };
+  // Scroll to top on mount
+   useEffect(() => {
+    try {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    } catch {
+      window.scrollTo(0, 0);
+    }
+  }, []);
 
   return (
     <>

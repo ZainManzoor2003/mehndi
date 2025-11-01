@@ -104,7 +104,8 @@ const Header = () => {
 
   return (
     <>
-      <header className={`header ${isScrolled ? 'scroll-header' : ''}`} id="header" style={{backgroundColor: '#E4C293'}}>
+      <header className={`header ${isScrolled ? 'scroll-header' : ''}`} id="header" 
+      style={{backgroundColor: '#E4C293', boxShadow: isScrolled &&'0 6px 16px rgba(0, 0, 0, 0.1)'}}>
         <nav className="nav container">
           {/* Left: Hamburger Menu */}
           <div className="nav__toggle" id="nav-toggle" onClick={toggleMenu}>

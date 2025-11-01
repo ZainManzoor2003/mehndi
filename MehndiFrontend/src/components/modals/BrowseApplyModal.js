@@ -27,9 +27,9 @@ const BrowseApplyModal = ({ open, onClose, onConfirm, busy = false, title = 'App
   const handleSubmit = async () => {
     if (!validate()) return;
     try {
-      await onConfirm({ proposedBudget, duration, message, agreed });
-      setSuccess(true);
-    } catch (_) {}
+      await onConfirm({ proposedBudget, duration, message, agreed, setSuccess });
+      // setSuccess(true);
+    } catch (_) { }
   };
 
   return (
@@ -59,111 +59,111 @@ const BrowseApplyModal = ({ open, onClose, onConfirm, busy = false, title = 'App
             </div>
           ) : (
             <>
-            {booking && (
-            <div className="booking-card-modal" style={{
-              background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-              border: '1px solid #dee2e6',
-              borderRadius: '12px',
-              margin: '20px',
-              padding: '20px',
-              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
-            }}>
-              <div className="booking-header" style={{ marginBottom: '0', textAlign: 'left', flexDirection: 'column' }}>
-                <h4 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: '600', color: '#2c3e50', textAlign: 'left' }}>
-                  {(booking.designStyle || 'Mehndi') + (booking.city || booking.location ? ` at ${booking.city || booking.location}` : '')}
-                </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#6c757d', justifyContent: 'flex-start' }}>
-                    <span style={{ fontSize: '16px' }}>💰</span>
-                    <span>Client Budget: £{booking.minimumBudget}–£{booking.maximumBudget}</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#6c757d', justifyContent: 'flex-start' }}>
-                    <span style={{ fontSize: '16px' }}>📍</span>
-                    <span>Location: {booking.location || booking.city || 'Not specified'}</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#6c757d', justifyContent: 'flex-start' }}>
-                    <span style={{ fontSize: '16px' }}>📅</span>
-                    <span>Event Date: {booking.eventDate ? new Date(booking.eventDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'TBD'}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="application-form" style={{ padding: '0 20px 20px 20px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div className="form-card" style={{ background: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: '12px', padding: '20px' }}>
-                <h4 className="section-title" style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px', color: '#2c3e50' }}>Budget & Timeline</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                  <div className="form-group">
-                    <label className="form-label" style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px', color: '#495057' }}>Your Proposed Budget (£) *</label>
-                    <input
-                      type="number"
-                      className={`form-input ${errors.proposedBudget ? 'error' : ''}`}
-                      placeholder="450"
-                      value={proposedBudget}
-                      onChange={(e) => setProposedBudget(e.target.value)}
-                      disabled={busy}
-                      min="0"
-                      step="0.01"
-                      style={{ width: '100%', padding: '12px', border: '1px solid #ced4da', borderRadius: '8px', fontSize: '14px', outline: 'none', transition: 'border-color 0.2s ease' }}
-                    />
-                    {errors.proposedBudget && <span className="error-text" style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.proposedBudget}</span>}
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label" style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px', color: '#495057' }}>Estimated Duration (hours) *</label>
-                    <div className="duration-input-group" style={{ display: 'flex', gap: '8px' }}>
-                      <input
-                        type="number"
-                        className={`form-input ${errors.estimatedDuration ? 'error' : ''}`}
-                        placeholder="4"
-                        value={duration}
-                        onChange={(e) => setDuration(e.target.value)}
-                        disabled={busy}
-                        min="0"
-                        step="0.5"
-                        style={{ flex: '2', padding: '12px', border: '1px solid #ced4da', borderRadius: '8px', fontSize: '14px', outline: 'none', transition: 'border-color 0.2s ease', minWidth: '120px' }}
-                      />
-                      <div className="form-input" value="hours" disabled style={{ flex: '1', padding: '12px', border: '1px solid #ced4da', borderRadius: '8px', fontSize: '14px', outline: 'none', backgroundColor: 'white', minWidth: '80px' }}>
-                        <span value="hours">Hours</span>
+              {booking && (
+                <div className="booking-card-modal" style={{
+                  background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+                  border: '1px solid #dee2e6',
+                  borderRadius: '12px',
+                  margin: '20px',
+                  padding: '20px',
+                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                }}>
+                  <div className="booking-header" style={{ marginBottom: '0', textAlign: 'left', flexDirection: 'column' }}>
+                    <h4 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: '600', color: '#2c3e50', textAlign: 'left' }}>
+                      {(booking.designStyle || 'Mehndi') + (booking.city || booking.location ? ` at ${booking.city || booking.location}` : '')}
+                    </h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#6c757d', justifyContent: 'flex-start' }}>
+                        <span style={{ fontSize: '16px' }}>💰</span>
+                        <span>Client Budget: £{booking.minimumBudget}–£{booking.maximumBudget}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#6c757d', justifyContent: 'flex-start' }}>
+                        <span style={{ fontSize: '16px' }}>📍</span>
+                        <span>Location: {booking.location || booking.city || 'Not specified'}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#6c757d', justifyContent: 'flex-start' }}>
+                        <span style={{ fontSize: '16px' }}>📅</span>
+                        <span>Event Date: {booking.eventDate ? new Date(booking.eventDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'TBD'}</span>
                       </div>
                     </div>
-                    {errors.estimatedDuration && <span className="error-text" style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.estimatedDuration}</span>}
+                  </div>
+                </div>
+              )}
+
+              <div className="application-form" style={{ padding: '0 20px 20px 20px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div className="form-card" style={{ background: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: '12px', padding: '20px' }}>
+                    <h4 className="section-title" style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px', color: '#2c3e50' }}>Budget & Timeline</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                      <div className="form-group">
+                        <label className="form-label" style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px', color: '#495057' }}>Your Proposed Budget (£) *</label>
+                        <input
+                          type="number"
+                          className={`form-input ${errors.proposedBudget ? 'error' : ''}`}
+                          placeholder="450"
+                          value={proposedBudget}
+                          onChange={(e) => setProposedBudget(e.target.value)}
+                          disabled={busy}
+                          min="0"
+                          step="0.01"
+                          style={{ width: '100%', padding: '12px', border: '1px solid #ced4da', borderRadius: '8px', fontSize: '14px', outline: 'none', transition: 'border-color 0.2s ease' }}
+                        />
+                        {errors.proposedBudget && <span className="error-text" style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.proposedBudget}</span>}
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label" style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px', color: '#495057' }}>Estimated Duration (hours) *</label>
+                        <div className="duration-input-group" style={{ display: 'flex', gap: '8px' }}>
+                          <input
+                            type="number"
+                            className={`form-input ${errors.estimatedDuration ? 'error' : ''}`}
+                            placeholder="4"
+                            value={duration}
+                            onChange={(e) => setDuration(e.target.value)}
+                            disabled={busy}
+                            min="0"
+                            step="0.5"
+                            style={{ flex: '2', padding: '12px', border: '1px solid #ced4da', borderRadius: '8px', fontSize: '14px', outline: 'none', transition: 'border-color 0.2s ease', minWidth: '120px' }}
+                          />
+                          <div className="form-input" value="hours" disabled style={{ flex: '1', padding: '12px', border: '1px solid #ced4da', borderRadius: '8px', fontSize: '14px', outline: 'none', backgroundColor: 'white', minWidth: '80px' }}>
+                            <span value="hours">Hours</span>
+                          </div>
+                        </div>
+                        {errors.estimatedDuration && <span className="error-text" style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.estimatedDuration}</span>}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="form-card" style={{ background: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: '12px', padding: '20px' }}>
+                    <h4 className="section-title" style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px', color: '#2c3e50' }}>Your Proposal</h4>
+                    <div className="form-group">
+                      <label className="form-label" style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px', color: '#495057' }}>Proposal Message *</label>
+                      <textarea
+                        className={`form-textarea ${errors.proposalMessage ? 'error' : ''}`}
+                        placeholder="Write a message explaining why you're the best fit for this booking. Include your approach and what makes you unique..."
+                        rows="6"
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        disabled={busy}
+                        style={{ width: '100%', padding: '12px', border: '1px solid #ced4da', borderRadius: '8px', fontSize: '14px', outline: 'none', transition: 'border-color 0.2s ease', resize: 'vertical', fontFamily: 'inherit', lineHeight: '1.4' }}
+                      />
+                      <small style={{ color: message.length < 50 ? '#dc3545' : '#28a745', fontSize: '12px', marginTop: '4px', display: 'block' }}>{message.length}/50 characters minimum</small>
+                      {errors.proposalMessage && <span className="error-text" style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.proposalMessage}</span>}
+                    </div>
+                  </div>
+
+                  <div className="form-card" style={{ background: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: '12px', padding: '20px' }}>
+                    <h4 className="section-title" style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px', color: '#2c3e50' }}>Terms & Conditions</h4>
+                    <div className="checkbox-group">
+                      <label className="checkbox-label" style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', fontSize: '14px', lineHeight: '1.4' }}>
+                        <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} disabled={busy} style={{ marginTop: '2px' }} />
+                        <span style={{ color: '#495057' }}>I agree to MehndiMe’s Terms & Conditions and Privacy Policy, and understand that all payments and communication must remain on the MehndiMe platform to ensure protection for both artists and clients.</span>
+                      </label>
+                      {errors.agreedToTerms && <span className="error-text" style={{ color: '#dc3545', fontSize: '12px', marginTop: '8px', display: 'block' }}>{errors.agreedToTerms}</span>}
+                    </div>
                   </div>
                 </div>
               </div>
-
-              <div className="form-card" style={{ background: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: '12px', padding: '20px' }}>
-                <h4 className="section-title" style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px', color: '#2c3e50' }}>Your Proposal</h4>
-                <div className="form-group">
-                  <label className="form-label" style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px', color: '#495057' }}>Proposal Message *</label>
-                  <textarea
-                    className={`form-textarea ${errors.proposalMessage ? 'error' : ''}`}
-                    placeholder="Write a message explaining why you're the best fit for this booking. Include your approach and what makes you unique..."
-                    rows="6"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    disabled={busy}
-                    style={{ width: '100%', padding: '12px', border: '1px solid #ced4da', borderRadius: '8px', fontSize: '14px', outline: 'none', transition: 'border-color 0.2s ease', resize: 'vertical', fontFamily: 'inherit', lineHeight: '1.4' }}
-                  />
-                  <small style={{ color: message.length < 50 ? '#dc3545' : '#28a745', fontSize: '12px', marginTop: '4px', display: 'block' }}>{message.length}/50 characters minimum</small>
-                  {errors.proposalMessage && <span className="error-text" style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.proposalMessage}</span>}
-                </div>
-              </div>
-
-              <div className="form-card" style={{ background: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: '12px', padding: '20px' }}>
-                <h4 className="section-title" style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px', color: '#2c3e50' }}>Terms & Conditions</h4>
-                <div className="checkbox-group">
-                  <label className="checkbox-label" style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', fontSize: '14px', lineHeight: '1.4' }}>
-                    <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} disabled={busy} style={{ marginTop: '2px' }} />
-                    <span style={{ color: '#495057' }}>I agree to MehndiMe’s Terms & Conditions and Privacy Policy, and understand that all payments and communication must remain on the MehndiMe platform to ensure protection for both artists and clients.</span>
-                  </label>
-                  {errors.agreedToTerms && <span className="error-text" style={{ color: '#dc3545', fontSize: '12px', marginTop: '8px', display: 'block' }}>{errors.agreedToTerms}</span>}
-                </div>
-              </div>
-            </div>
-          </div>
-          </>
+            </>
           )}
         </div>
 

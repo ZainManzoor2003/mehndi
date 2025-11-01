@@ -109,12 +109,12 @@ exports.applyToBooking = async (req, res) => {
       await user.save();
 
       console.log("Onboarding link:", accountLink.url);
-      
-      return res.status(200).json({ 
-        success: false, 
-        message: 'Stripe account setup required', 
+
+      return res.status(200).json({
+        success: false,
+        message: 'Stripe account setup required',
         requiresOnboarding: true,
-        onboardingUrl: accountLink.url 
+        onboardingUrl: accountLink.url
       });
     }
 
@@ -160,9 +160,10 @@ exports.applyToBooking = async (req, res) => {
       'Booking.booking_id': bookingId,
       'Booking.artist_id': req.user.id
     });
-
     if (existingApplication) {
-      return res.status(400).json({ success: false, message: 'You have already applied to this booking' });
+      return res.status(400).json({
+        success: false, message: `You cannot apply to this booking beacuse your request is ${existingApplication.Booking[0].status}`
+      });
     }
 
     // Create a new application document with the booking ref and detailed artist information
@@ -221,7 +222,7 @@ exports.applyToBooking = async (req, res) => {
       const artistName = `${req.user.firstName} ${req.user.lastName}`;
       const booking = await Booking.findById(bookingId);
       const client = await User.findById(booking.clientId);
-      
+
       const notificationData = {
         artistName,
         clientName: `${client.firstName} ${client.lastName}`,
@@ -418,11 +419,10 @@ exports.withdrawApplication = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Only artists can withdraw applications' });
     }
 
-    const application = await Application.findOne({ 'Booking.artist_id': req.user.id });
+    const application = await Application.findOne({ 'Booking.artist_id': req.user.id, 'Booking.booking_id': bookingId });
     if (!application) {
       return res.status(404).json({ success: false, message: 'Application not found' });
     }
-
     const bookingEntry = application.Booking.find(b => b.booking_id.toString() === bookingId);
     if (!bookingEntry) {
       return res.status(404).json({ success: false, message: 'You have not applied to this booking' });
@@ -433,8 +433,8 @@ exports.withdrawApplication = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Cannot withdraw an accepted application. Please contact the client to cancel.' });
     }
 
-    // Remove the booking entry from application
-    application.Booking = application.Booking.filter(b => b.booking_id.toString() !== bookingId);
+    // Update the booking entry status to 'withdrawn' instead of removing it
+    bookingEntry.status = 'withdrawn';
     await application.save();
 
     // Remove artist from booking.appliedArtists
@@ -448,7 +448,7 @@ exports.withdrawApplication = async (req, res) => {
       const booking = await Booking.findById(bookingId);
       const client = await User.findById(booking.clientId);
       const artistName = `${req.user.firstName} ${req.user.lastName}`;
-      
+
       const notificationData = {
         artistName,
         clientName: `${client.firstName} ${client.lastName}`,
@@ -675,7 +675,7 @@ exports.updateApplicationStatus = async (req, res) => {
           booking.assignedArtist = [...(booking.assignedArtist || []), artistId];
         }
         booking.status = 'confirmed';
-        
+
         // Handle payment fields - check if booking is half paid and use artist's proposed budget
         if (typeof isPaid !== 'undefined') {
           if (booking.isPaid === 'half' && isPaid === 'full') {
@@ -694,7 +694,7 @@ exports.updateApplicationStatus = async (req, res) => {
               booking.remainingPayment = String(remainingPayment);
             }
             booking.isPaid = isPaid;
-            
+
             // Create transaction for the payment
             if (isPaid && (isPaid === 'half')) {
               const transaction = new Transaction({
@@ -706,10 +706,10 @@ exports.updateApplicationStatus = async (req, res) => {
               });
               await transaction.save();
             }
-            
+
           }
         }
-        
+
         await booking.save();
       }
     }
@@ -719,7 +719,7 @@ exports.updateApplicationStatus = async (req, res) => {
       const application = await Application.findById(applicationId);
       const bookingEntry = application.Booking.find(b => b.booking_id.toString() === bookingId.toString());
       const artistId = bookingEntry && bookingEntry.artist_id;
-      
+
       if (artistId) {
         const clientName = `${req.user.firstName} ${req.user.lastName}`;
         const notificationData = {
@@ -778,12 +778,12 @@ exports.notifyCancellationByArtist = async (req, res) => {
     // Update application with cancellation details
     const updateResult = await Application.updateOne(
       { 'Booking.booking_id': bookingId, 'Booking.artist_id': req.user.id },
-      { 
-        $set: { 
-          'Booking.$[elem].status': 'cancelled',
+      {
+        $set: {
+          'Booking.$[elem].status': 'cancelled by artist',
           'Booking.$[elem].cancellationReason': reason,
           'Booking.$[elem].cancellationDescription': description || null
-        } 
+        }
       },
       { arrayFilters: [{ 'elem.booking_id': bookingId }] }
     );

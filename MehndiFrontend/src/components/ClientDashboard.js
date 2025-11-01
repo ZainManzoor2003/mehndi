@@ -1343,7 +1343,7 @@ useEffect(() => {
                                     backgroundColor: '#e8f5e8',
                                     cursor: 'pointer'
                                   }}
-                                  onClick={() => navigate('/dashboard/proposals')}
+                                  onClick={() => navigate('/dashboard/bookings')}
                                 >
                                   <span className="notification-icon"><FaEnvelope  ></FaEnvelope ></span>
                                   <div className="notification-content">
@@ -1546,11 +1546,11 @@ useEffect(() => {
               )}
 
               {/* Proposals Tab (full page view) */}
-              {activeTab === 'proposals' && (
+              {/* {activeTab === 'proposals' && (
                 <div className="proposals-view">
                   <ProposalsPage />
                 </div>
-              )}
+              )} */}
 
               {/* Wallet View */}
               {activeTab === 'wallet' && (

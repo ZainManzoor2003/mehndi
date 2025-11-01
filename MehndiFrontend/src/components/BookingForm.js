@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import apiService from '../services/api';
 import GetLocationModal from './modals/GetLocationModal';
@@ -337,17 +337,30 @@ const BookingForm = () => {
       setIsLoading(false);
     }
   };
+   // Scroll to top on mount
+     useEffect(() => {
+      try {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      } catch {
+        window.scrollTo(0, 0);
+      }
+    }, [currentStep]);
 
   return (
     <>
       <div className="booking-container">
+        <div style={{textAlign: 'center', marginBottom: '16px' }}>
+          <Link to="/dashboard" style={{ color: '#6b4f3b', textDecoration: 'none' }}>← Back to Dashboard</Link>
+        </div>
         <div className="booking-form-container">
           {/* Progress Bar */}
           <div className="progress-bar">
             {steps.map((step, index) => (
               <div key={step.id} className="progress-step-container">
                 <div className={`progress-step ${currentStep >= step.id ? 'active' : ''} ${currentStep === step.id ? 'current' : ''}`}>
-                  <span className="step-number" style={{width:'50px',height:'50px'}}>{step.id}</span>
+                  <span className="step-number" style={{width:'50px',height:'50px', 
+                    background:currentStep>step.id ? '#804018':'#EA7C25'
+                  }}>{step.id}</span>
                   <span className="step-name">{step.name}</span>
                 </div>
                 {index < steps.length - 1 && (
@@ -404,7 +417,8 @@ const BookingForm = () => {
                     onChange={handleInputChange}
                     required
                   />
-                  Your information will be used securely to connect you with artists.
+                  <span style={{color:'rgb(136, 136, 136)',fontSize:'0.9rem'}}>Your information will be used securely to connect you with artists.</span>
+                
                 </div>
               </div>
             )}
@@ -1036,8 +1050,8 @@ const BookingForm = () => {
                 {/* Budget Range */}
                 <div className="form-group">
                   <label className="form-label">What's your budget range? *</label>
-                  <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '1rem' }}>
-                    Final quotes may vary based on design, travel, and party size. You’ll review and confirm before booking.
+                  <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '1rem',fontWeight:'bold' }}>
+                    Helps verified artists tailor accurate offers for your event.
                   </p>
                   <div className="budget-input-row">
                     <div className="budget-input">
@@ -1098,7 +1112,8 @@ const BookingForm = () => {
                     </button>
                   </div>
                   <p style={{ fontSize: '0.85rem', color: '#888', marginTop: '1rem' }}>
-                    Final price may vary depending on design, travel, and number of people. You'll receive a full quote before confirming your booking.
+                    Final quotes may vary based on design, travel, and party size. You’ll review and confirm before booking.
+
                   </p>
                 </div>
 
@@ -1113,7 +1128,7 @@ const BookingForm = () => {
                     >
                       -
                     </button>
-                    <span className="number-display">{formData.numberOfPeople}</span>
+                    <span className="number-display" style={{color:'black', fontWeight:'lighter'}}>{formData.numberOfPeople}</span>
                     <button
                       type="button"
                       className="number-btn"
@@ -1268,7 +1283,7 @@ const BookingForm = () => {
           display: flex;
           justify-content: center;
           margin-bottom: 2.5rem;
-          gap: 0.5rem;
+          gap: 0rem;
         }
 
         .progress-step {
@@ -1277,25 +1292,15 @@ const BookingForm = () => {
 
         .step-number {
           display: inline-block;
-          width: 50px;
-          height: 50px;
+          width: 55px !important;
+          height: 55px !important;
           line-height: 50px;
           border-radius: 50%;
           background: #e8ddd4;
-          color: #8B4513;
           font-weight: bold;
           margin-bottom: 0.5rem;
           transition: all 0.3s;
-        }
-
-        .progress-step.active .step-number {
-          background: #D2691E;
-          color: white;
-        }
-
-        .progress-step.current .step-number {
-          background: #CD853F;
-          box-shadow: 0 0 0 5px rgba(205, 133, 63, 0.2);
+          font-size: 1.1rem !important;
         }
 
         .step-name {

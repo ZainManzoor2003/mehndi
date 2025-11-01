@@ -38,12 +38,14 @@ const FullFAQ = () => {
   const contentRefs = useRef([]);
   const [heights, setHeights] = useState({});
 
-  // Scroll to top quickly on mount
-  useEffect(() => {
-    try {
-      window.scrollTo(0, 0);
-    } catch {}
-  }, []);
+ // Scroll to top on mount
+    useEffect(() => {
+     try {
+       window.scrollTo({ top: 0, behavior: 'instant' });
+     } catch {
+       window.scrollTo(0, 0);
+     }
+   }, []);
 
   const items = tab === 'clients' ? CLIENT_FAQS : ARTIST_FAQS;
   const filtered = useMemo(() => {
@@ -64,7 +66,7 @@ const FullFAQ = () => {
 
   return (
     <section style={{ padding: '150px 0 60px', scrollMarginTop: 100 }}>
-      <div style={{ maxWidth: 980, margin: '0 auto',borderRadius:'12px', padding: '30px 16px', backgroundColor: 'rgb(246, 231, 205)' }}>
+      <div style={{ maxWidth: 980, margin: '0 auto', borderRadius: '12px', padding: '30px 16px', backgroundColor: 'rgb(246, 231, 205)' }}>
         <h1 style={{ textAlign: 'center', color: '#4A2C1D', fontSize: '42px', margin: 0 }}>Frequently Asked Questions</h1>
         <p style={{ textAlign: 'center', color: '#6b5544', marginTop: 8 }}>Find quick answers to common questions from our Mehndi Me community 🌿</p>
 
@@ -157,12 +159,17 @@ const FullFAQ = () => {
           boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
         }}>
           <div style={{ color: '#4A2C1D', fontWeight: 700, fontSize: 20, marginBottom: 6 }}>Still need help?</div>
-          <p style={{ marginTop: 0, color: '#6b5544' }}>We’re a small team, but we love hearing from our community! If you can't find what you're looking for, send us a quick message and we'll get back to you soon</p>
-          <button onClick={() => navigate('/contact')}
+          <p style={{ marginTop: '20px', color: '#6b5544' }}>Still need help? We're a small team and love hearing from our community. Email us at{' '}
+            <a href="mailto:team.mehndime@gmail.com" style={{ color: '#5C3D2E', textDecoration: 'underline', fontWeight: 600 }}>
+              team.mehndime@gmail.com
+            </a>{' '}
+            and we'll get back to you soon.</p>
+
+          {/* <button onClick={() => navigate('/contact')}
             style={{
               background: '#5C3D2E', color: '#fff', border: 'none',
               padding: '12px 24px', borderRadius: 14, fontWeight: 700, cursor: 'pointer',marginTop: '30px'
-            }}>Contact Mehndi Me Team →</button>
+            }}>Contact Mehndi Me Team →</button> */}
         </div>
       </div>
     </section>

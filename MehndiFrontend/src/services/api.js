@@ -314,6 +314,8 @@ export const adminAPI = {
   // Applications status summary
   getApplicationStatusSummary: async () => apiRequest('/admin/applications/status'),
   getAllApplications: async () => apiRequest('/admin/applications'),
+  rejectApplication: async (applicationId, bookingId) => apiRequest('/admin/applications/reject', { method: 'PUT', body: JSON.stringify({ applicationId, bookingId }) }),
+  cancelApplication: async (applicationId, bookingId) => apiRequest('/admin/applications/cancel', { method: 'POST', body: JSON.stringify({ applicationId, bookingId }) }),
 
   // Blogs
   listBlogs: async () => apiRequest('/admin/blogs'),

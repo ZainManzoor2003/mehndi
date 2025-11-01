@@ -33,7 +33,8 @@ const NotificationSchema = new mongoose.Schema(
         'application_submitted',
         'application_accepted',
         'application_declined',
-        'application_withdrawn'
+        'application_withdrawn',
+        'booking_deleted_application_deleted'
       ],
       required: [true, 'Notification type is required']
     },
@@ -59,7 +60,7 @@ const NotificationSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Booking',
       required: function() {
-        return ['booking_created', 'booking_cancelled', 'booking_completed', 'application_submitted', 'application_accepted', 'application_declined', 'application_withdrawn'].includes(this.type);
+        return ['booking_created', 'booking_cancelled', 'booking_completed', 'application_submitted', 'application_accepted', 'application_declined', 'application_withdrawn', 'booking_deleted_application_deleted'].includes(this.type);
       }
     },
     

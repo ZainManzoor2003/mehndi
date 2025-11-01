@@ -49,6 +49,10 @@ const createNotification = async (type, targetUserId, triggeredByUserId, targetU
         notificationData.title = 'Application Withdrawn';
         notificationData.message = `${data.artistName} has withdrawn their application for your ${data.eventType?.join(', ') || 'mehndi'} booking`;
         break;
+      case 'booking_deleted_application_deleted':
+        notificationData.title = 'Booking Deleted';
+        notificationData.message = `The ${data.eventType?.join(', ') || 'mehndi'} booking you applied for has been deleted by the client. Your application has been automatically removed.`;
+        break;
       default:
         notificationData.title = 'Notification';
         notificationData.message = 'You have a new notification';
@@ -509,6 +513,62 @@ const deleteBooking = async (req, res) => {
 
     if (booking.status === 'completed') {
       return res.status(400).json({ success: false, message: 'Cannot delete a completed booking' });
+    }
+
+    // Find all applications that reference this booking
+    const applications = await Application.find({ 
+      'Booking.booking_id': req.params.id 
+    });
+
+    // Collect artist IDs from applications that will be deleted
+    const affectedArtistIds = new Set();
+    if (applications.length > 0) {
+      applications.forEach(app => {
+        const bookingEntry = app.Booking.find(
+          b => b.booking_id.toString() === req.params.id
+        );
+        if (bookingEntry) {
+          affectedArtistIds.add(bookingEntry.artist_id.toString());
+        }
+      });
+
+      // Delete all applications that have this booking
+      await Application.deleteMany({
+        'Booking.booking_id': req.params.id
+      });
+
+      // Get client information for notifications
+      const client = await User.findById(req.user.id);
+      const clientName = client ? `${client.firstName} ${client.lastName}` : 'The client';
+
+      // Send notifications to all affected artists
+      const notificationPromises = Array.from(affectedArtistIds).map(async (artistId) => {
+        try {
+          const notificationData = {
+            clientName,
+            artistName: '',
+            eventType: booking.eventType,
+            bookingDate: booking.eventDate,
+            location: booking.city || booking.location
+          };
+
+          await createNotification(
+            'booking_deleted_application_deleted',
+            artistId,
+            req.user.id,
+            'artist',
+            req.params.id,
+            null,
+            notificationData
+          );
+        } catch (notificationError) {
+          console.error(`Error creating notification for artist ${artistId}:`, notificationError);
+          // Don't fail the deletion if notifications fail
+        }
+      });
+
+      // Wait for all notifications to be sent (but don't fail if they fail)
+      await Promise.allSettled(notificationPromises);
     }
 
     await booking.deleteOne();

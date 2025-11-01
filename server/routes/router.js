@@ -122,6 +122,8 @@ router.get('/api/admin/users/:userId/applications', protect, adminOnly, adminCon
 
 router.get('/api/admin/applications/status', protect, adminOnly, adminController.getApplicationsStatus);
 router.get('/api/admin/applications', protect, adminOnly, adminController.listAllApplications);
+router.put('/api/admin/applications/reject', protect, adminOnly, adminController.rejectApplication);
+router.post('/api/admin/applications/cancel', protect, adminOnly, adminController.notifyCancellationByAdmin);
 
 router.post('/api/admin/blogs', protect, adminOnly, adminController.createBlog);
 router.get('/api/admin/blogs', protect, adminOnly, adminController.listBlogs);

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import Header from './Header';
@@ -15,7 +15,14 @@ const ChooseYourPath = () => {
     // Navigate to signup page (could be expanded to go directly to artist signup)
     console.log('Artist path selected');
   };
-
+// Scroll to top on mount
+ useEffect(() => {
+  try {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  } catch {
+    window.scrollTo(0, 0);
+  }
+}, []);
   return (
     <>
       <Header />

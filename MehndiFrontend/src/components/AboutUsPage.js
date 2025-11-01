@@ -9,7 +9,7 @@ const AboutUsPage = () => {
   // Scroll to top on mount
   useEffect(() => {
     try {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0,behavior:'instant' });
     } catch {
       window.scrollTo(0, 0);
     }
@@ -895,7 +895,7 @@ const AboutUsPage = () => {
               fontWeight: 'bold',
               lineHeight: '1.2'
             }}>
-              It's more than a booking platform — it's a movement to protect your vision, your celebration, and your art.
+              It's more than a booking platform — it's a movement to protect your Vision, your Celebration, and your Art.
             </h2>
             <p style={{ 
               fontSize: '1.2rem', 
@@ -907,18 +907,7 @@ const AboutUsPage = () => {
             }}>
               Whether you're a bride, a planner, a family member, or an artist — join us in shaping the future of mehndi.
             </p>
-            <button style={{
-              backgroundColor: 'var(--accent-orange)',
-              color: 'white',
-              border: 'none',
-              padding: '1rem 2.5rem',
-              borderRadius: '8px',
-              fontSize: '1.1rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
-            }}
+            <button className='home__cta-button'
             onMouseEnter={(e) => {
               e.target.style.backgroundColor = '#804018';
               e.target.style.transform = 'translateY(-2px)';
@@ -929,7 +918,7 @@ const AboutUsPage = () => {
               e.target.style.transform = 'translateY(0)';
               e.target.style.boxShadow = '0 4px 15px rgba(0,0,0,0.1)';
             }}>
-              Join the Movement
+              Join the Movement →
             </button>
           </section>
 

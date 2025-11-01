@@ -3,6 +3,7 @@ const User = require('../schemas/User');
 const Blog = require('../schemas/Blog');
 const Application = require('../schemas/Application');
 const Booking = require('../schemas/Booking');
+const Notification = require('../schemas/Notification');
 
 // Users
 exports.listUsers = async (req, res) => {
@@ -115,6 +116,7 @@ exports.listAllApplications = async (req, res) => {
           _id: 1,
           applicationId: '$_id',
           status: '$Booking.status',
+          cancellationReason:'$Booking.cancellationReason',
           artist: { _id: '$artist._id', firstName: '$artist.firstName', lastName: '$artist.lastName', email: '$artist.email' },
           booking: { 
             _id: '$booking._id', 
@@ -137,6 +139,271 @@ exports.listAllApplications = async (req, res) => {
   } catch (err) {
     console.error('Error in listAllApplications:', err);
     return res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// Helper function to create notifications
+const createNotification = async (type, targetUserId, triggeredByUserId, targetUserType, bookingId, applicationId, data) => {
+  try {
+    const notificationData = {
+      targetUserId,
+      triggeredByUserId,
+      targetUserType,
+      type,
+      bookingId,
+      applicationId,
+      data
+    };
+
+    // Set title and message based on type
+    switch (type) {
+      case 'application_declined':
+        notificationData.title = 'Application Declined by Admin';
+        notificationData.message = `Your application for ${data.clientName || 'a client'}'s ${data.eventType?.join(', ') || 'mehndi'} booking has been declined by admin`;
+        break;
+      default:
+        notificationData.title = 'Notification';
+        notificationData.message = 'You have a new notification';
+    }
+
+    const notification = await Notification.create(notificationData);
+    return notification;
+  } catch (error) {
+    console.error('Error creating notification:', error);
+    return null;
+  }
+};
+
+// @desc    Admin rejects an application (admin rejects an application)
+// @route   PUT /api/admin/applications/reject
+// @access  Private (Admin only)
+exports.rejectApplication = async (req, res) => {
+  try {
+    const { applicationId, bookingId } = req.body;
+
+    if (!applicationId || !bookingId) {
+      return res.status(400).json({ success: false, message: 'applicationId and bookingId are required' });
+    }
+
+    // Verify application exists and get the booking entry
+    const application = await Application.findById(applicationId);
+    if (!application) {
+      return res.status(404).json({ success: false, message: 'Application not found' });
+    }
+
+    const bookingEntry = application.Booking.find(b => b.booking_id.toString() === bookingId.toString());
+    if (!bookingEntry) {
+      return res.status(404).json({ success: false, message: 'Booking entry not found in this application' });
+    }
+
+    // Check if already accepted or completed
+    if (bookingEntry.status === 'accepted') {
+      return res.status(400).json({ success: false, message: 'Cannot reject an accepted application' });
+    }
+
+    // Update the booking entry status to 'declined'
+    bookingEntry.status = 'declined';
+    await application.save();
+
+    // Get booking and artist information for notification
+    const booking = await Booking.findById(bookingId);
+    const artistId = bookingEntry.artist_id;
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    // Get client information
+    const client = await User.findById(booking.clientId);
+    const clientName = client ? `${client.firstName} ${client.lastName}` : 'The client';
+
+    // Remove artist from booking.appliedArtists if still present
+    if (booking.appliedArtists && Array.isArray(booking.appliedArtists)) {
+      booking.appliedArtists = booking.appliedArtists.filter(id => id.toString() !== artistId.toString());
+      // If no applied artists remain and booking is not confirmed, revert to pending
+      if (booking.appliedArtists.length === 0 && booking.status !== 'confirmed') {
+        booking.status = 'pending';
+      }
+      await booking.save();
+    }
+
+    // Create notification for the artist about application rejection by admin
+    try {
+      const notificationData = {
+        clientName,
+        artistName: '',
+        bookingName: `${booking.eventType?.join(', ') || 'Mehndi'} - ${booking.city || booking.location}`,
+        eventType: booking.eventType,
+        bookingDate: booking.eventDate,
+        location: booking.city || booking.location,
+        proposedBudget: bookingEntry.artistDetails?.proposedBudget
+      };
+
+      await createNotification(
+        'application_declined',
+        artistId,
+        req.user.id,
+        'artist',
+        bookingId,
+        applicationId,
+        notificationData
+      );
+    } catch (notificationError) {
+      console.error('Error creating rejection notification:', notificationError);
+      // Don't fail the rejection if notifications fail
+    }
+
+    return res.status(200).json({ success: true, message: 'Application rejected successfully' });
+  } catch (error) {
+    console.error('Reject application error:', error);
+    return res.status(500).json({ success: false, message: 'Server error while rejecting application', error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' });
+  }
+};
+
+// @desc    Admin cancels an accepted application -> notify client by email
+// @route   POST /api/admin/applications/cancel
+// @access  Private (Admin only)
+exports.notifyCancellationByAdmin = async (req, res) => {
+  try {
+    const { applicationId, bookingId } = req.body;
+
+    if (!applicationId || !bookingId) {
+      return res.status(400).json({ success: false, message: 'applicationId and bookingId are required' });
+    }
+
+    // Verify application exists and get the booking entry
+    const application = await Application.findById(applicationId);
+    if (!application) {
+      return res.status(404).json({ success: false, message: 'Application not found' });
+    }
+
+    const bookingEntry = application.Booking.find(b => b.booking_id.toString() === bookingId.toString());
+    if (!bookingEntry) {
+      return res.status(404).json({ success: false, message: 'Booking entry not found in this application' });
+    }
+
+    // Check if application is accepted
+    if (bookingEntry.status !== 'accepted') {
+      return res.status(400).json({ success: false, message: 'Can only cancel accepted applications' });
+    }
+
+    // Update application with cancellation (no reason/description required for admin)
+    bookingEntry.status = 'cancelled';
+    await application.save();
+
+    // Get booking and client
+    const booking = await Booking.findById(bookingId).select('clientId eventType firstName lastName eventDate preferredTimeSlot assignedArtist');
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    const client = await User.findById(booking.clientId).select('email firstName lastName');
+    if (!client || !client.email) {
+      return res.status(404).json({ success: false, message: 'Client email not found' });
+    }
+
+    // Get artist details
+    const artistId = bookingEntry.artist_id || booking.assignedArtist;
+    const artist = await User.findById(artistId).select('firstName lastName email phoneNumber');
+    if (!artist) {
+      return res.status(404).json({ success: false, message: 'Artist not found' });
+    }
+
+    // Send email
+    const nodemailer = require('nodemailer');
+    const transport = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER || "ahmadmurtaza2233@gmail.com",
+        pass: process.env.EMAIL_PASS || "czhupnxmdckqhydy",
+      },
+    });
+
+    const eventType = Array.isArray(booking.eventType) ? booking.eventType.join(', ') : (booking.eventType || 'Mehndi');
+    const eventDate = booking.eventDate ? new Date(booking.eventDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
+    const eventTime = Array.isArray(booking.preferredTimeSlot) ? booking.preferredTimeSlot.join(', ') : 'Not specified';
+
+    // Base URL for frontend (adjust as needed)
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const relistUrl = `${frontendUrl}/payment-reschedule-booking/relist/${bookingId}/${artistId}/${booking.clientId}`;
+    const refundUrl = `${frontendUrl}/payment-reschedule-booking/refund/${bookingId}/${artistId}/${booking.clientId}`;
+
+    const html = `
+      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,sans-serif;font-size:15px;color:#333;max-width:600px;margin:0 auto;padding:20px;background-color:#f9f9f9;">
+        <div style="background-color:white;padding:40px 35px;border-radius:12px;box-shadow:0 2px 15px rgba(0,0,0,0.08);">
+          
+          <h2 style="color:#333;margin-top:0;font-size:22px;font-weight:600;">Hi ${client.firstName},</h2>
+          
+          <p style="line-height:1.6;color:#555;">
+            We're reaching out to let you know that the admin has cancelled your booking with <strong>${artist.firstName} ${artist.lastName}</strong> 
+            for your appointment on <strong>${eventDate}</strong> at <strong>${eventTime}</strong>.
+          </p>
+
+          <div style="background-color:#fef2f2;padding:15px;border-radius:8px;margin:20px 0;border-left:4px solid #dc2626;">
+            <p style="margin:0;color:#991b1b;font-size:14px;"><strong>Admin Cancellation:</strong></p>
+            <p style="margin:8px 0 0 0;color:#555;">This booking has been cancelled by our admin team. We apologize for any inconvenience this may cause.</p>
+          </div>
+          
+          <p style="line-height:1.6;color:#555;margin-top:25px;">
+            You can now choose how you'd like to proceed:
+          </p>
+
+          <div style="background-color:#f9fafb;padding:20px;border-radius:10px;margin:20px 0;">
+            <div style="margin-bottom:20px;">
+              <p style="margin:0 0 8px 0;font-weight:600;color:#333;">1. Relist your booking request</p>
+              <p style="margin:0;color:#666;font-size:14px;line-height:1.5;">
+                We'll make your request live again so other artists can apply. 
+                Your 50% deposit will carry over — no need to pay again unless the new artist's rate is higher.
+              </p>
+            </div>
+            <div>
+              <p style="margin:0 0 8px 0;font-weight:600;color:#333;">2. Request a full refund</p>
+              <p style="margin:0;color:#666;font-size:14px;line-height:1.5;">
+                Prefer not to wait? We'll return your deposit in full.
+              </p>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:15px;margin:30px 0;">
+            <a href="${relistUrl}" style="flex:1;text-decoration:none;">
+              <div style="background-color:#d4a574;color:white;padding:14px 24px;border-radius:8px;text-align:center;font-weight:600;font-size:15px;cursor:pointer;">
+                🔄 Relist My Booking
+              </div>
+            </a>
+            <a href="${refundUrl}" style="flex:1;text-decoration:none;">
+              <div style="background-color:#10b981;color:white;padding:14px 24px;border-radius:8px;text-align:center;font-weight:600;font-size:15px;cursor:pointer;">
+                💸 Request Refund
+              </div>
+            </a>
+          </div>
+
+          <div style="background-color:#fffbeb;padding:15px;border-radius:8px;margin:25px 0;border-left:4px solid #f59e0b;">
+            <p style="margin:0;color:#92400e;font-size:14px;line-height:1.5;">
+              🔔 <strong>Note:</strong> If no new artists apply within 48 hours, we'll refund your deposit automatically — or you can contact us for help.
+            </p>
+          </div>
+          
+          <p style="line-height:1.6;color:#555;margin-top:25px;">
+            Thanks for your understanding — and if you need help updating your request or finding someone new, we're always here.
+          </p>
+          
+          <p style="margin-top:30px;color:#888;font-size:13px;border-top:1px solid #eee;padding-top:20px;">
+            — The Mehndi Me Team 💝
+          </p>
+        </div>
+      </div>`;
+
+    await transport.sendMail({
+      from: process.env.EMAIL_USER,
+      to: client.email,
+      subject: "Booking Cancelled by Admin — We'll Help You Rebook or Refund Your Deposit",
+      html,
+    });
+
+    return res.status(200).json({ success: true, message: 'Cancellation email sent to client.' });
+  } catch (error) {
+    console.error('notifyCancellationByAdmin error:', error);
+    return res.status(500).json({ success: false, message: 'Server error while sending cancellation email', error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' });
   }
 };
 
