@@ -31,7 +31,7 @@ const getAllTransactions = async (req, res) => {
 const getMyTransactions = async (req, res) => {
   try {
     const userId = req.user._id;
-    
+
     // Get all transactions where user is sender or receiver
     const transactions = await Transaction.find({
       $or: [
@@ -39,23 +39,23 @@ const getMyTransactions = async (req, res) => {
         { receiver: userId }
       ]
     })
-    .populate('sender', 'firstName lastName email userType')
-    .populate('receiver', 'firstName lastName email userType')
-    .populate({
-      path: 'bookingId',
-      select: 'eventType eventDate minimumBudget maximumBudget assignedArtist clientId firstName lastName',
-      populate: {
-        path: 'assignedArtist',
-        select: 'firstName lastName email userType'
-      }
-    })
-    .sort({ createdAt: -1 });
+      .populate('sender', 'firstName lastName email userType')
+      .populate('receiver', 'firstName lastName email userType')
+      .populate({
+        path: 'bookingId',
+        select: 'eventType eventDate minimumBudget maximumBudget assignedArtist clientId firstName lastName',
+        populate: {
+          path: 'assignedArtist',
+          select: 'firstName lastName email userType'
+        }
+      })
+      .sort({ createdAt: -1 });
 
     // Format transactions for frontend
     const formattedTransactions = transactions.map(transaction => {
       const isSender = transaction.sender._id.toString() === userId.toString();
       const booking = transaction.bookingId;
-      
+
       // Determine the artist information
       let artistInfo = null;
       if (booking && booking.assignedArtist && booking.assignedArtist.length > 0) {
@@ -90,13 +90,13 @@ const getMyTransactions = async (req, res) => {
       // Format event name and category
       let eventName = 'Unknown Event';
       let category = 'Event';
-      
+
       if (booking && booking.eventType) {
         if (Array.isArray(booking.eventType)) {
           eventName = booking.eventType.join(', ');
           // Determine category from event type based on schema enum values
           const eventTypes = booking.eventType;
-          
+
           if (eventTypes.includes('Wedding')) {
             category = 'Bridal';
           } else if (eventTypes.includes('Festival') || eventTypes.includes('Eid')) {
@@ -108,7 +108,7 @@ const getMyTransactions = async (req, res) => {
           }
         } else {
           eventName = booking.eventType;
-          
+
           if (booking.eventType === 'Wedding') {
             category = 'Bridal';
           } else if (booking.eventType === 'Festival' || booking.eventType === 'Eid') {
@@ -124,7 +124,7 @@ const getMyTransactions = async (req, res) => {
       // Determine transaction status text
       let statusText = 'Paid';
       let statusClass = 'paid';
-      
+
       switch (transaction.transactionType) {
         case 'half':
           statusText = 'Deposit Paid';
@@ -201,18 +201,18 @@ const getMyTransactions = async (req, res) => {
 const getArtistEarnings = async (req, res) => {
   try {
     const userId = req.user._id;
-    
+
     // Get current date for this month calculation
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-    
+
     // Get all transactions where user is receiver and transactionType is 'full'
     const lifetimeTransactions = await Transaction.find({
       receiver: userId,
       transactionType: 'full'
     });
-    
+
     // Get this month's transactions where user is receiver and transactionType is 'full'
     const thisMonthTransactions = await Transaction.find({
       receiver: userId,
@@ -222,13 +222,13 @@ const getArtistEarnings = async (req, res) => {
         $lte: endOfMonth
       }
     });
-    
+
     // Calculate lifetime earnings
     const lifetimeEarnings = lifetimeTransactions.reduce((sum, transaction) => sum + transaction.amount, 0);
-    
+
     // Calculate this month's earnings
     const thisMonthEarnings = thisMonthTransactions.reduce((sum, transaction) => sum + transaction.amount, 0);
-    
+
     return res.status(200).json({
       success: true,
       data: {

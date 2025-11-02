@@ -56,7 +56,7 @@ const CancelAcceptedModal = ({
     }
     setError('');
     if (typeof onConfirm === 'function') {
-      onConfirm({ 
+      onConfirm({
         reason: reason,
         description: description.trim() || null
       });
@@ -103,7 +103,7 @@ const CancelAcceptedModal = ({
               Cancel Booking
             </h3>
           </div>
-          <button 
+          <button
             onClick={onClose}
             style={{
               background: 'none',
@@ -134,6 +134,17 @@ const CancelAcceptedModal = ({
           }}>
             This action <span style={{ color: '#dc2626', fontWeight: 700 }}>cannot be undone</span>. {showReasonDropdown ? 'The client' : 'The artist'} will be notified immediately.
           </p>
+          <p style={{
+            margin: '0 0 20px 0',
+            fontSize: '14px',
+            color: '#666',
+            lineHeight: '1.6'
+          }}>
+            “Please note: All cancellations incur a 10% admin fee to cover payment processing and
+            administrative costs.
+            If you choose to rebook within 3 months with the same artist, we’ll waive this fee and apply
+            your existing deposit to your new booking.”
+          </p>
 
           {showReasonDropdown ? (
             <>
@@ -147,8 +158,8 @@ const CancelAcceptedModal = ({
                 }}>
                   Reason for cancellation
                 </label>
-                <select 
-                  value={reason} 
+                <select
+                  value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   style={{
                     width: '100%',
@@ -224,8 +235,8 @@ const CancelAcceptedModal = ({
           )}
 
           {error && (
-            <div style={{ 
-              fontSize: '13px', 
+            <div style={{
+              fontSize: '13px',
               color: '#dc2626',
               marginBottom: '16px',
               padding: '10px',
@@ -242,7 +253,7 @@ const CancelAcceptedModal = ({
             gap: '12px',
             marginTop: '24px'
           }}>
-            <button 
+            <button
               onClick={onClose}
               style={{
                 padding: '12px 24px',
@@ -260,7 +271,7 @@ const CancelAcceptedModal = ({
             >
               Keep Booking
             </button>
-            <button 
+            <button
               onClick={handleConfirm}
               style={{
                 padding: '12px 24px',

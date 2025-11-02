@@ -1013,9 +1013,10 @@ const cancelBooking = async (req, res) => {
         daysUntilEvent: diffDays
       });
     } else if (diffDays >= 7 && diffDays <= 14 && paidAmount > 0) {
-      // 7-14 days: 50% refund to client, 50% to admin
-      const refundAmount = paidAmount * 0.5; // 50% refund to client
-      const adminFee = paidAmount * 0.5; // 50% admin fee
+      // 7-14 days: 40% refund to client, 10% to admin, 50% to artist
+      const refundAmount = paidAmount * 0.4; // 40% refund to client
+      const adminFee = paidAmount * 0.1; // 10% admin fee
+      const artistAmount = paidAmount * 0.5; // 50% to artist
 
       // Find admin user and their wallet
       const adminUser = await User.findOne({ userType: 'admin' });
@@ -1036,11 +1037,11 @@ const cancelBooking = async (req, res) => {
         });
       }
 
-      // Add 50% fee to admin wallet
+      // Add 10% fee to admin wallet
       adminWallet.walletAmount += adminFee;
       await adminWallet.save();
 
-      // Add 50% refund to client's wallet
+      // Add 40% refund to client's wallet
       let clientWallet = await Wallet.findOne({ userId: req.user.id });
       if (!clientWallet) {
         console.log('Client wallet not found for user:', req.user.id);
@@ -1054,10 +1055,30 @@ const cancelBooking = async (req, res) => {
       clientWallet.walletAmount += refundAmount;
       await clientWallet.save();
 
-      console.log('Client wallet updated (50% refund):', {
+      console.log('Client wallet updated (40% refund):', {
         userId: req.user.id,
         refundAmount: refundAmount,
         newBalance: clientWallet.walletAmount
+      });
+
+      // Find artist wallet and add 50% to it
+      let artistWallet = await Wallet.findOne({ userId: artistId });
+      if (!artistWallet) {
+        console.log('Artist wallet not found for user:', artistId);
+        return res.status(500).json({
+          success: false,
+          message: 'Artist wallet not found'
+        });
+      }
+
+      // Add 50% to artist wallet
+      artistWallet.walletAmount += artistAmount;
+      await artistWallet.save();
+
+      console.log('Artist wallet updated (50%):', {
+        userId: artistId,
+        artistAmount: artistAmount,
+        newBalance: artistWallet.walletAmount
       });
 
       // Find the original transaction to update
@@ -1068,16 +1089,17 @@ const cancelBooking = async (req, res) => {
       });
 
       if (originalTransaction) {
-        // Update original transaction to refund type with 50% amount
+        // Update original transaction to refund type with 40% amount
         originalTransaction.amount = refundAmount;
         originalTransaction.transactionType = 'refund';
         originalTransaction.updatedAt = new Date();
         await originalTransaction.save();
 
-        console.log('Transaction updated for 50% refund:', {
+        console.log('Transaction updated for 40% refund:', {
           originalAmount: paidAmount,
           refundAmount: refundAmount,
-          adminFee: adminFee
+          adminFee: adminFee,
+          artistAmount: artistAmount
         });
       } else {
         console.log('No original transaction found for booking:', bookingId);
@@ -1100,36 +1122,68 @@ const cancelBooking = async (req, res) => {
         daysUntilEvent: diffDays
       });
     } else {
-      // Less than 7 days: No refund, create admin fee transaction
+      // Less than 7 days: 90% to artist, 10% to admin
       if (diffDays < 7 && paidAmount > 0) {
+        const artistAmount = paidAmount * 0.9; // 90% to artist
+        const adminFee = paidAmount * 0.1; // 10% to admin
+
         // Find admin user
         const adminUser = await User.findOne({ userType: 'admin' });
-        if (adminUser) {
-          let adminWallet = await Wallet.findOne({ userId: adminUser._id });
-          if (!adminWallet) {
-            adminWallet = new Wallet({ userId: adminUser._id, walletAmount: 0 });
-          }
-
-          // Add full amount to admin wallet as fee
-          adminWallet.walletAmount += paidAmount;
-          await adminWallet.save();
-
-          // Create admin fee transaction
-          const adminTransaction = new Transaction({
-            sender: req.user.id,
-            receiver: adminUser._id,
-            bookingId: bookingId,
-            amount: paidAmount,
-            transactionType: 'admin-fee'
-          });
-          await adminTransaction.save();
-
-          console.log('Admin fee processed (less than 7 days):', {
-            totalPaid: paidAmount,
-            adminFee: paidAmount,
-            daysUntilEvent: diffDays
+        if (!adminUser) {
+          console.log('No admin user found');
+          return res.status(500).json({
+            success: false,
+            message: 'Admin user not found'
           });
         }
+
+        let adminWallet = await Wallet.findOne({ userId: adminUser._id });
+        if (!adminWallet) {
+          adminWallet = new Wallet({ userId: adminUser._id, walletAmount: 0 });
+        }
+
+        // Add 10% fee to admin wallet
+        adminWallet.walletAmount += adminFee;
+        await adminWallet.save();
+
+        // Find artist wallet and add 90% to it
+        let artistWallet = await Wallet.findOne({ userId: artistId });
+        if (!artistWallet) {
+          console.log('Artist wallet not found for user:', artistId);
+          return res.status(500).json({
+            success: false,
+            message: 'Artist wallet not found'
+          });
+        }
+
+        // Add 90% to artist wallet
+        artistWallet.walletAmount += artistAmount;
+        await artistWallet.save();
+
+        console.log('Artist wallet updated (90%):', {
+          userId: artistId,
+          artistAmount: artistAmount,
+          newBalance: artistWallet.walletAmount
+        });
+
+        // Create admin fee transaction
+        const adminTransaction = new Transaction({
+          sender: req.user.id,
+          receiver: adminUser._id,
+          bookingId: bookingId,
+          amount: adminFee,
+          transactionType: 'admin-fee'
+        });
+        await adminTransaction.save();
+
+
+
+        console.log('Fee processed (less than 7 days):', {
+          totalPaid: paidAmount,
+          artistAmount: artistAmount,
+          adminFee: adminFee,
+          daysUntilEvent: diffDays
+        });
       } else {
         console.log('No refund processed:', {
           daysUntilEvent: diffDays,
