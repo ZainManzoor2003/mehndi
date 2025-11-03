@@ -6,16 +6,19 @@ import { useAuth } from '../contexts/AuthContext';
 import ArtistSidebar from './ArtistSidebar';
 import apiService, { chatAPI } from '../services/api';
 import CancelAcceptedModal from './modals/CancelAcceptedModal';
+import BrowseViewBookingModal from './modals/BrowseViewBookingModal';
+import BrowseApplyModal from './modals/BrowseApplyModal';
 import MarkCompleteProofModal from './modals/MarkCompleteProofModal';
 import socket, { buildDirectRoomId, joinRoom, sendRoomMessage, sendTyping, signalOnline, onPresenceUpdate } from '../services/socket';
 import { ToastContainer, useToast } from './Toast';
 import ArtistPortfolioForm from './ArtistPortfolioForm';
-import { FaCalendarAlt, FaCheckCircle, FaClock, FaSignOutAlt, FaStickyNote, FaEye, FaWallet, FaCommentDots, FaStar, FaMoneyBillWave, FaCalendarCheck, FaHourglassHalf, FaArrowCircleUp, FaExclamationTriangle, FaEnvelope, FaTimes, FaArrowLeft, FaHandPeace, FaTrash } from 'react-icons/fa';
+import { FaCalendarAlt, FaCheckCircle, FaClock, FaSignOutAlt, FaStickyNote, FaEye, FaWallet, FaCommentDots, FaStar, FaMoneyBillWave, FaCalendarCheck, FaHourglassHalf, FaArrowCircleUp, FaExclamationTriangle, FaEnvelope, FaTimes, FaArrowLeft, FaHandPeace, FaTrash, FaRegBookmark, FaBookmark } from 'react-icons/fa';
 const { proposalsAPI, authAPI, bookingsAPI, applicationsAPI, portfoliosAPI, walletAPI, transactionAPI, notificationAPI } = apiService;
 
 const ArtistDashboard = () => {
   const navigate = useNavigate();
   const { tab } = useParams();
+  const location = useLocation();
   const { user, isAuthenticated, logout } = useAuth();
   const artistName = user ? `${user.firstName} ${user.lastName}` : 'Artist';
   const { toasts, removeToast, showSuccess, showError, showWarning } = useToast();
@@ -30,6 +33,14 @@ const ArtistDashboard = () => {
   const [onlineUserIds, setOnlineUserIds] = useState(new Set());
   const messagesEndRef = useRef(null);
   const DEFAULT_AVATAR = 'https://www.gravatar.com/avatar/?d=mp&s=80';
+  const [headerBooking, setHeaderBooking] = useState(null);
+  const [headerExpanded, setHeaderExpanded] = useState(false);
+  const [viewHeaderOpen, setViewHeaderOpen] = useState(false);
+  const [applyHeaderOpen, setApplyHeaderOpen] = useState(false);
+  const [applyBusyHeader, setApplyBusyHeader] = useState(false);
+  const [headerSaved, setHeaderSaved] = useState(false);
+  const [headerSaving, setHeaderSaving] = useState(false);
+  const [headerApplied, setHeaderApplied] = useState(false);
 
   useEffect(() => {
     if (!user || !isAuthenticated) return;
@@ -45,6 +56,53 @@ const ArtistDashboard = () => {
     document.addEventListener('visibilitychange', onVisibility);
     return () => { if (off) off(); document.removeEventListener('visibilitychange', onVisibility); };
   }, [user, isAuthenticated]);
+
+  // Load booking for request-summary banner when coming from BrowseRequests
+  useEffect(() => {
+    const params = new URLSearchParams(location.search || '');
+    const bookingId = params.get('bookingId');
+    if (!bookingId) { setHeaderBooking(null); return; }
+    (async () => {
+      try {
+        const res = await bookingsAPI.getBooking(bookingId);
+        setHeaderBooking(res.data || null);
+      } catch (_) { setHeaderBooking(null); }
+    })();
+  }, [location.search]);
+
+  // Load saved state for header booking
+  useEffect(() => {
+    (async () => {
+      try {
+        if (!headerBooking?._id) return;
+        const saved = await bookingsAPI.getSavedBookings();
+        const setIds = new Set((saved?.data || []).map(b => String(b._id)));
+        setHeaderSaved(setIds.has(String(headerBooking._id)));
+        // applied state
+        try {
+          const myApplied = await applicationsAPI.getMyAppliedBookings();
+          const appliedIds = new Set((myApplied?.data || []).map(a => String(a.bookingId || a.id || a.booking_id)));
+          setHeaderApplied(appliedIds.has(String(headerBooking._id)));
+        } catch {}
+      } catch {}
+    })();
+  }, [headerBooking?._id]);
+
+  const toggleHeaderSave = async () => {
+    if (!headerBooking?._id) return;
+    try {
+      setHeaderSaving(true);
+      if (headerSaved) await bookingsAPI.unsaveBooking(headerBooking._id);
+      else await bookingsAPI.saveBooking(headerBooking._id);
+      setHeaderSaved(!headerSaved);
+    } catch (e) {
+      showError(e.message || 'Failed to update');
+    } finally {
+      setHeaderSaving(false);
+    }
+  };
+
+  // (moved below where chatMessages is declared)
 
   // Application stats state
   const [applicationStats, setApplicationStats] = useState({
@@ -1315,6 +1373,21 @@ const ArtistDashboard = () => {
   const [currentChat, setCurrentChat] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
 
+  // If booking not in URL, try to derive from chat messages attachment of type 'booking'
+  useEffect(() => {
+    if (headerBooking || !Array.isArray(chatMessages) || chatMessages.length === 0) return;
+    try {
+      for (let idx = chatMessages.length - 1; idx >= 0; idx--) {
+        const m = chatMessages[idx];
+        const att = (m.attachments || []).find(a => a.type === 'booking' && a.filename);
+        if (att && att.filename) {
+          bookingsAPI.getBooking(att.filename).then(res => setHeaderBooking(res.data || null)).catch(() => {});
+          break;
+        }
+      }
+    } catch {}
+  }, [chatMessages, headerBooking]);
+
   // Wallet
   const [walletSummary, setWalletSummary] = useState({ totalPaid: 0, remainingBalance: 0 });
   const [walletTransactions, setWalletTransactions] = useState([]);
@@ -1813,7 +1886,6 @@ const ArtistDashboard = () => {
   }, [user, activeTab]);
 
   // If chatId is provided in query, open messages tab and select that chat; add to list if missing
-  const location = useLocation();
   useEffect(() => {
     if (!user) return;
     const params = new URLSearchParams(location.search);
@@ -1879,7 +1951,7 @@ const ArtistDashboard = () => {
   //   };
   // }, [user, currentChat]);
 
-  // The FIXED code
+// Realtime incoming messages (single listener with de-duplication)
 useEffect(() => {
   if (!user) return;
   const onMessage = (incoming) => {
@@ -1889,41 +1961,17 @@ useEffect(() => {
     
     console.log('DEBUG: Received socket message:', incoming);
     
-    setChatMessages(prev => [...prev, {
-      id: incoming.id,
-      sender: incoming.senderId,
-      text: incoming.message || incoming.text || '',
-      attachments: incoming.attachments || [],
-      createdAt: new Date().toISOString(),
-    }]);
-  };
-  const onTyping = ({ userId, isTyping }) => {
-    // optional: typing state
-  };
-  socket.on('message', onMessage);
-  socket.on('typing', onTyping);
-  return () => {
-    socket.off('message', onMessage);
-    socket.off('typing', onTyping);
-  };
-}, [user, currentChat]);
-
-useEffect(() => {
-  if (!user) return;
-  const onMessage = (incoming) => {
-    if (!currentChat || String(incoming.senderId) === String(user?._id)) {
-      return;
-    }
-    
-    console.log('DEBUG: Received socket message:', incoming);
-    
-    setChatMessages(prev => [...prev, {
-      id: incoming.id,
-      sender: incoming.senderId,
-      text: incoming.message || incoming.text || '',
-      attachments: incoming.attachments || [],
-      createdAt: new Date().toISOString(),
-    }]);
+    setChatMessages(prev => {
+      const already = prev.some(m => String(m.id || m._id) === String(incoming.id || incoming._id));
+      if (already) return prev;
+      return [...prev, {
+        id: incoming.id || incoming._id || Date.now(),
+        sender: incoming.senderId,
+        text: incoming.message || incoming.text || '',
+        attachments: incoming.attachments || [],
+        createdAt: new Date().toISOString(),
+      }];
+    });
   };
   const onTyping = ({ userId, isTyping }) => {
     // optional: typing state
@@ -3512,24 +3560,72 @@ useEffect(() => {
                     <div className="chat-area">
                       {selectedConversation ? (
                         <>
-                          {/* Chat Header */}
+                          {/* Chat Header - replaced with selected booking section when coming from request */}
                           <div className="chat-header">
-                            <div className="chat-client-info">
-                              <img src={(selectedConversation.client?.userProfileImage) || selectedConversation.clientImage || DEFAULT_AVATAR} alt={selectedConversation.clientName || (selectedConversation.client ? `${selectedConversation.client.firstName} ${selectedConversation.client.lastName}` : 'User')} />
-                              <div>
-                                <h3>{selectedConversation.clientName || (selectedConversation.client ? `${selectedConversation.client.firstName} ${selectedConversation.client.lastName}` : 'User')}</h3>
-                                {(() => {
-                                  const otherId = selectedConversation.client?._id || selectedConversation.clientId || selectedConversation.id;
-                                  const online = otherId ? onlineUserIds.has(String(otherId)) : false;
-                                  return <span className={`status-text ${online ? 'online' : 'offline'}`}>{online ? 'Online' : 'Offline'}</span>;
-                                })()}
+                            {headerBooking ? (
+                              <div style={{ width: '100%', background: '#FFF7E6', border: '1px solid #f5e0b8', borderRadius: 12, padding: 12 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                    {(() => {
+                                      const label = (Array.isArray(headerBooking.eventType) ? headerBooking.eventType[0] : headerBooking.eventType) || headerBooking.designStyle || 'M';
+                                      const initial = String(label || 'M').trim().charAt(0).toUpperCase();
+                                      return (
+                                        <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#F5D9A6', color: '#8B5E34', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>{initial}</div>
+                                      );
+                                    })()}
+                                    <div>
+                                      <div style={{ fontWeight: 700, color: '#1f2937' }}>{(Array.isArray(headerBooking.eventType) ? headerBooking.eventType[0] : headerBooking.eventType) || headerBooking.designStyle || 'Mehndi'}</div>
+                                      <div style={{ fontSize: 12, color: '#6b7280' }}>
+                                        {headerBooking.eventDate ? new Date(headerBooking.eventDate).toLocaleString('en-GB', { day: '2-digit', month: 'short' }) : 'TBD'} · {headerBooking.preferredTimeSlot || '-'} · {(headerBooking.city || headerBooking.location) || '-'}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                    <button onClick={toggleHeaderSave} disabled={headerSaving} style={{ border: 'none', background: 'transparent', color: '#374151', cursor: headerSaving ? 'not-allowed' : 'pointer', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                      {headerSaved ? <FaBookmark /> : <FaRegBookmark />}
+                                      <span>{headerSaved ? 'Saved' : 'Save'}</span>
+                                    </button>
+                                    <button onClick={() => setHeaderExpanded(v => !v)} style={{ border: 'none', background: 'transparent', color: '#b45309', cursor: 'pointer', fontWeight: 700 }}>{headerExpanded ? 'Hide' : 'View'}</button>
+                                  </div>
+                                </div>
+                                {headerExpanded && (
+                                  <>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 10, color: '#4A2C1D' }}>
+                                      <div><strong>Event:</strong> {(headerBooking.designStyle || 'Mehndi')}{(headerBooking.city || headerBooking.location) ? ` at ${headerBooking.city || headerBooking.location}` : ''}</div>
+                                      <div><strong>Date:</strong> {headerBooking.eventDate ? new Date(headerBooking.eventDate).toLocaleString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'TBD'}</div>
+                                      <div><strong>Location:</strong> {headerBooking.location || headerBooking.city || '-'}</div>
+                                      <div><strong>Group Size:</strong> {headerBooking.numberOfPeople ?? '-'}</div>
+                                      <div><strong>Budget:</strong> £{headerBooking.minimumBudget ?? '-'}–£{headerBooking.maximumBudget ?? '-'}</div>
+                                    </div>
+                                    <div style={{ textAlign: 'right', marginTop: 10 }}>
+                                      <button onClick={() => setViewHeaderOpen(true)} style={{ background: '#5C3D2E', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 10, fontWeight: 700, cursor: 'pointer' }}>View Full Request Form</button>
+                                    </div>
+                                  </>
+                                )}
                               </div>
-                            </div>
+                            ) : (
+                              <div className="chat-client-info">
+                                <img src={(selectedConversation.client?.userProfileImage) || selectedConversation.clientImage || DEFAULT_AVATAR} alt={selectedConversation.clientName || (selectedConversation.client ? `${selectedConversation.client.firstName} ${selectedConversation.client.lastName}` : 'User')} />
+                                <div>
+                                  <h3>{selectedConversation.clientName || (selectedConversation.client ? `${selectedConversation.client.firstName} ${selectedConversation.client.lastName}` : 'User')}</h3>
+                                  {(() => {
+                                    const otherId = selectedConversation.client?._id || selectedConversation.clientId || selectedConversation.id;
+                                    const online = otherId ? onlineUserIds.has(String(otherId)) : false;
+                                    return <span className={`status-text ${online ? 'online' : 'offline'}`}>{online ? 'Online' : 'Offline'}</span>;
+                                  })()}
+                                </div>
+                              </div>
+                            )}
                           </div>
 
                           {/* Messages List */}
                           <div className="messages-list">
-                            {chatMessages.map((message, idx) => (
+                            {chatMessages.filter(message => !(
+                              (!message.text || !String(message.text).trim()) &&
+                              Array.isArray(message.attachments) &&
+                              message.attachments.length === 1 &&
+                              message.attachments[0]?.type === 'booking'
+                            )).map((message, idx) => (
                               <div
                                 key={message.id || idx}
                                 className={`message ${String(message.sender) === String(user?._id) || message.senderId === 'artist' ? 'sent' : 'received'}`}
@@ -3705,6 +3801,63 @@ useEffect(() => {
                   </div>
                 </div>
               )}
+
+              {/* Modal to show full request details from messages header */}
+              <BrowseViewBookingModal
+                open={viewHeaderOpen}
+                viewForm={headerBooking ? {
+                  firstName: '',
+                  lastName: '',
+                  email: headerBooking.email || '',
+                  eventType: Array.isArray(headerBooking.eventType) ? headerBooking.eventType[0] : headerBooking.eventType || '',
+                  otherEventType: headerBooking.otherEventType || '',
+                  eventDate: headerBooking.eventDate ? new Date(headerBooking.eventDate).toISOString().substring(0, 10) : '',
+                  preferredTimeSlot: Array.isArray(headerBooking.preferredTimeSlot) ? headerBooking.preferredTimeSlot[0] : headerBooking.preferredTimeSlot || '',
+                  location: headerBooking.location || '',
+                  artistTravelsToClient: (headerBooking.artistTravelsToClient === 'both' || headerBooking.artistTravelsToClient === 'Both') ? 'both' : (headerBooking.artistTravelsToClient === true || headerBooking.artistTravelsToClient === 'yes') ? 'yes' : 'no',
+                  venueName: headerBooking.venueName || '',
+                  minimumBudget: headerBooking.minimumBudget ?? '',
+                  maximumBudget: headerBooking.maximumBudget ?? '',
+                  duration: headerBooking.duration ?? 3,
+                  numberOfPeople: headerBooking.numberOfPeople ?? '',
+                  designStyle: headerBooking.designStyle || '',
+                  designInspiration: Array.isArray(headerBooking.designInspiration) ? headerBooking.designInspiration : (headerBooking.designInspiration ? [headerBooking.designInspiration] : []),
+                  coveragePreference: headerBooking.coveragePreference || '',
+                  additionalRequests: headerBooking.additionalRequests || ''
+                } : null}
+                onClose={() => setViewHeaderOpen(false)}
+                onApply={() => { if (!headerApplied) { setViewHeaderOpen(false); setApplyHeaderOpen(true); } }}
+                applied={headerApplied}
+              />
+
+              <BrowseApplyModal
+                open={applyHeaderOpen}
+                busy={applyBusyHeader}
+                booking={headerBooking}
+                onClose={() => setApplyHeaderOpen(false)}
+                onConfirm={async ({ proposedBudget, duration, message, agreed, setSuccess }) => {
+                  if (!headerBooking?._id) return;
+                  try {
+                    setApplyBusyHeader(true);
+                    const artistDetails = {
+                      proposedBudget: parseFloat(proposedBudget),
+                      estimatedDuration: { value: parseFloat(duration), unit: 'hours' },
+                      availability: { isAvailableOnDate: true, canTravelToLocation: true, travelDistance: '' },
+                      experience: { relevantExperience: '', yearsOfExperience: '', portfolioHighlights: '' },
+                      proposal: { message: message || '', whyInterested: '', additionalNotes: '' },
+                      terms: { agreedToTerms: !!agreed }
+                    };
+                    await applicationsAPI.applyToBooking(headerBooking._id, artistDetails);
+                    setSuccess(true);
+                  } catch (e) {
+                    setSuccess(false);
+                    setApplyHeaderOpen(false);
+                    showError(e.message || 'Failed to apply');
+                  } finally {
+                    setApplyBusyHeader(false);
+                  }
+                }}
+              />
 
               {/* Schedule (placeholder) */}
               {activeTab === 'schedule' && (

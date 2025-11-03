@@ -68,6 +68,7 @@ const BrowseRequests = () => {
             const assigned = Array.isArray(b.assignedArtist) && artistId ? b.assignedArtist.some(id => String(id) === String(artistId)) : false;
             return !applied && !assigned;
             }
+            return false;
           })
           .map(b => ({ ...b, __saved: savedSet.has(b._id) }));
         setAll(combined);
@@ -77,7 +78,7 @@ const BrowseRequests = () => {
       } finally { setLoading(false); }
     };
     load();
-  }, []);
+  }, [user?._id]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -180,7 +181,14 @@ const BrowseRequests = () => {
       if (!clientId || !artistId) return;
       const res = await chatAPI.ensureChat(clientId, artistId);
       if (res.success && res.data && res.data._id) {
-        navigate(`/artist-dashboard/messages?chatId=${res.data._id}`);
+        // Send a hidden booking-context attachment (filtered from UI)
+        try {
+          if (activeBooking) {
+            await chatAPI.sendMessage(res.data._id, '', [{ type: 'booking', url: '', filename: String(activeBooking._id) }]);
+          }
+        } catch (_) { }
+        const qs = new URLSearchParams({ chatId: res.data._id, bookingId: activeBooking?._id || '' }).toString();
+        navigate(`/artist-dashboard/messages?${qs}`);
       }
     } catch (e) {
       alert(e.message || 'Failed to start chat');
@@ -269,7 +277,7 @@ const BrowseRequests = () => {
                     <div style={{ color: '#6b7280', fontSize: 12 }}>Posted {timeAgo(b.createdAt)}</div>
                   </div>
                   <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-                    <button onClick={() => openView(b._id)} style={{ background: '#5C3D2E', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: 10, fontWeight: 700, cursor: 'pointer' }}>View Details</button>
+                    <button onClick={() => openView(b._id)} style={{ background: '#5C3D2E', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: 10, fontWeight: 700, cursor: 'pointer' }}>View Full Request Form</button>
                     <button onClick={() => openApply(b._id)} style={{ background: '#b45309', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: 10, fontWeight: 700, cursor: 'pointer' }}>Apply to Booking</button>
                   </div>
                 </div>
