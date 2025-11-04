@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import DashboardSidebar from './DashboardSidebar';
 import apiService, { chatAPI, reviewsAPI } from '../services/api';
+import BrowseViewBookingModal from './modals/BrowseViewBookingModal';
 import socket, { buildDirectRoomId, joinRoom, sendRoomMessage, sendTyping, signalOnline, onPresenceUpdate } from '../services/socket';
 import ProposalsPage from './ProposalsPage';
 import ClientProfile from './ClientProfile';
@@ -39,6 +40,9 @@ const ClientDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const messagesEndRef = useRef(null);
   const [typingUserId, setTypingUserId] = useState(null);
+  const [headerBooking, setHeaderBooking] = useState(null);
+  const [headerExpanded, setHeaderExpanded] = useState(false);
+  const [viewHeaderOpen, setViewHeaderOpen] = useState(false);
 
   // Real proposals data from backend
   const [realProposals, setRealProposals] = useState([]);
@@ -192,6 +196,33 @@ const ClientDashboard = () => {
 
   const [notifications, setNotifications] = useState([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
+  // Load booking for header summary when opening a chat from a request
+  useEffect(() => {
+    const params = new URLSearchParams(location.search || '');
+    const bookingId = params.get('bookingId');
+    if (!bookingId) { setHeaderBooking(null); return; }
+    (async () => {
+      try {
+        const res = await bookingsAPI.getBooking(bookingId);
+        setHeaderBooking(res.data || null);
+      } catch (_) { setHeaderBooking(null); }
+    })();
+  }, [location.search]);
+
+  // If bookingId not in URL, try to detect from a special attachment in messages
+  useEffect(() => {
+    if (headerBooking || !Array.isArray(chatMessages) || chatMessages.length === 0) return;
+    try {
+      for (let idx = chatMessages.length - 1; idx >= 0; idx--) {
+        const m = chatMessages[idx];
+        const att = (m.attachments || []).find(a => a.type === 'booking' && a.filename);
+        if (att && att.filename) {
+          bookingsAPI.getBooking(att.filename).then(res => setHeaderBooking(res.data || null)).catch(() => {});
+          break;
+        }
+      }
+    } catch {}
+  }, [chatMessages, headerBooking]);
 
   // Fetch notifications for the current user
   const fetchNotifications = useCallback(async () => {
@@ -2480,8 +2511,53 @@ useEffect(() => {
                           </div>
 
                           {/* Messages List */}
+                          {/* Request Summary Banner (collapsible) */}
+                          {headerBooking && (
+                            <div style={{ background: '#FFF7E6', border: '1px solid #f5e0b8', borderRadius: 12, padding: 12, margin: '10px 12px 0 12px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                  {(() => {
+                                    const label = (Array.isArray(headerBooking.eventType) ? headerBooking.eventType[0] : headerBooking.eventType) || headerBooking.designStyle || 'M';
+                                    const initial = String(label || 'M').trim().charAt(0).toUpperCase();
+                                    return (
+                                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#F5D9A6', color: '#8B5E34', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>{initial}</div>
+                                    );
+                                  })()}
+                                  <div>
+                                    <div style={{ fontWeight: 700, color: '#1f2937' }}>{(Array.isArray(headerBooking.eventType) ? headerBooking.eventType[0] : headerBooking.eventType) || headerBooking.designStyle || 'Mehndi'}</div>
+                                    <div style={{ fontSize: 12, color: '#6b7280' }}>
+                                      {headerBooking.eventDate ? new Date(headerBooking.eventDate).toLocaleString('en-GB', { day: '2-digit', month: 'short' }) : 'TBD'} · {headerBooking.preferredTimeSlot || '-'} · {(headerBooking.city || headerBooking.location) || '-'}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div>
+                                  <button onClick={() => setHeaderExpanded(v => !v)} style={{ border: 'none', background: 'transparent', color: '#b45309', cursor: 'pointer', fontWeight: 700 }}>{headerExpanded ? 'Hide' : 'View'}</button>
+                                </div>
+                              </div>
+                              {headerExpanded ? (
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 10, color: '#4A2C1D' }}>
+                                  <div><strong>Event:</strong> {(headerBooking.designStyle || 'Mehndi')}{(headerBooking.city || headerBooking.location) ? ` at ${headerBooking.city || headerBooking.location}` : ''}</div>
+                                  <div><strong>Date:</strong> {headerBooking.eventDate ? new Date(headerBooking.eventDate).toLocaleString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'TBD'}</div>
+                                  <div><strong>Location:</strong> {headerBooking.location || headerBooking.city || '-'}</div>
+                                  <div><strong>Group Size:</strong> {headerBooking.numberOfPeople ?? '-'}</div>
+                                  <div><strong>Budget:</strong> £{headerBooking.minimumBudget ?? '-'}–£{headerBooking.maximumBudget ?? '-'}</div>
+                                </div>
+                              ) : null}
+                              {headerExpanded && (
+                                <div style={{ textAlign: 'right', marginTop: 10 }}>
+                                  <button onClick={() => setViewHeaderOpen(true)} style={{ background: '#5C3D2E', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 10, fontWeight: 700, cursor: 'pointer' }}>View Request Details</button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
                           <div className="messages-list">
-                            {chatMessages.map((message, idx) => (
+                            {chatMessages.filter(message => !(
+                              (!message.text || !String(message.text).trim()) &&
+                              Array.isArray(message.attachments) &&
+                              message.attachments.length === 1 &&
+                              message.attachments[0]?.type === 'booking'
+                            )).map((message, idx) => (
                               <div
                                 key={message.id || idx}
                                 className={`message ${String(message.sender) === String(user?._id) || message.senderId === 'user' ? 'sent' : 'received'}`}
@@ -2657,6 +2733,33 @@ useEffect(() => {
                   </div>
                 </div>
               )}
+
+              {/* Modal to show full request details (client) */}
+              <BrowseViewBookingModal
+                open={viewHeaderOpen}
+                viewForm={headerBooking ? {
+                  firstName: '',
+                  lastName: '',
+                  email: headerBooking.email || '',
+                  eventType: Array.isArray(headerBooking.eventType) ? headerBooking.eventType[0] : headerBooking.eventType || '',
+                  otherEventType: headerBooking.otherEventType || '',
+                  eventDate: headerBooking.eventDate ? new Date(headerBooking.eventDate).toISOString().substring(0, 10) : '',
+                  preferredTimeSlot: Array.isArray(headerBooking.preferredTimeSlot) ? headerBooking.preferredTimeSlot[0] : headerBooking.preferredTimeSlot || '',
+                  location: headerBooking.location || '',
+                  artistTravelsToClient: (headerBooking.artistTravelsToClient === 'both' || headerBooking.artistTravelsToClient === 'Both') ? 'both' : (headerBooking.artistTravelsToClient === true || headerBooking.artistTravelsToClient === 'yes') ? 'yes' : 'no',
+                  venueName: headerBooking.venueName || '',
+                  minimumBudget: headerBooking.minimumBudget ?? '',
+                  maximumBudget: headerBooking.maximumBudget ?? '',
+                  duration: headerBooking.duration ?? 3,
+                  numberOfPeople: headerBooking.numberOfPeople ?? '',
+                  designStyle: headerBooking.designStyle || '',
+                  designInspiration: Array.isArray(headerBooking.designInspiration) ? headerBooking.designInspiration : (headerBooking.designInspiration ? [headerBooking.designInspiration] : []),
+                  coveragePreference: headerBooking.coveragePreference || '',
+                  additionalRequests: headerBooking.additionalRequests || ''
+                } : null}
+                onClose={() => setViewHeaderOpen(false)}
+                showApply={false}
+              />
 
               {activeTab === 'bookings' && (
                 <div className="bookings-tab-section">

@@ -7,7 +7,7 @@ const modalCard = {
   maxWidth: '800px', maxHeight: '90vh', width: '95%', backgroundColor: 'white', borderRadius: '16px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column'
 };
 
-const BrowseViewBookingModal = ({ open, viewForm, onClose, onApply, onMessage }) => {
+const BrowseViewBookingModal = ({ open, viewForm, onClose, onApply, onMessage, showApply = true, applied = false }) => {
   if (!open || !viewForm) return null;
   return (
     <div style={modalBackdrop} onClick={onClose}>
@@ -19,8 +19,8 @@ const BrowseViewBookingModal = ({ open, viewForm, onClose, onApply, onMessage })
         <div style={{ flex: 1, overflowY: 'auto', padding: '2rem 2.5rem' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Client Name</label>
-              <div style={{ padding: '12px 16px', border: '1px solid #e0d5c9', borderRadius: '10px', fontSize: '1rem', background: '#faf8f5', color: '#8B4513', fontWeight: '500' }}>{viewForm.firstName} {viewForm.lastName}</div>
+              <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Client</label>
+              <div style={{ padding: '12px 16px', border: '1px solid #e0d5c9', borderRadius: '10px', fontSize: '1rem', background: '#faf8f5', color: '#8B4513', fontWeight: '500' }}>Verified Client</div>
             </div>
 
             <div>
@@ -159,7 +159,9 @@ const BrowseViewBookingModal = ({ open, viewForm, onClose, onApply, onMessage })
           {onMessage && (
             <button onClick={onMessage} style={{ padding: '14px 32px', fontSize: '1rem', fontWeight: '600', color: 'white', backgroundColor: '#A4693D', border: 'none', borderRadius: '12px', cursor: 'pointer' }}>Message Client</button>
           )}
-          <button onClick={onApply} style={{ padding: '14px 32px', fontSize: '1rem', fontWeight: '600', color: 'white', backgroundColor: '#b45309', border: 'none', borderRadius: '12px', cursor: 'pointer' }}>Apply</button>
+          {showApply && (
+            <button onClick={onApply} disabled={applied} style={{ padding: '14px 32px', fontSize: '1rem', fontWeight: '600', color: 'white', backgroundColor: applied ? '#9ca3af' : '#b45309', border: 'none', borderRadius: '12px', cursor: applied ? 'not-allowed' : 'pointer' }}>{applied ? 'Already Applied' : 'Apply'}</button>
+          )}
         </div>
       </div>
     </div>
