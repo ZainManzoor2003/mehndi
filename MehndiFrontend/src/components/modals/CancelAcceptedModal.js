@@ -134,17 +134,19 @@ const CancelAcceptedModal = ({
           }}>
             This action <span style={{ color: '#dc2626', fontWeight: 700 }}>cannot be undone</span>. {showReasonDropdown ? 'The client' : 'The artist'} will be notified immediately.
           </p>
-          <p style={{
-            margin: '0 0 20px 0',
-            fontSize: '14px',
-            color: '#666',
-            lineHeight: '1.6'
-          }}>
-            “Please note: All cancellations incur a 10% admin fee to cover payment processing and
-            administrative costs.
-            If you choose to rebook within 3 months with the same artist, we’ll waive this fee and apply
-            your existing deposit to your new booking.”
-          </p>
+          {!showReasonDropdown &&
+            <p style={{
+              margin: '0 0 20px 0',
+              fontSize: '14px',
+              color: '#666',
+              lineHeight: '1.6'
+            }}>
+              “Please note: All cancellations incur a 10% admin fee to cover payment processing and
+              administrative costs.
+              If you choose to rebook within 3 months with the same artist, we’ll waive this fee and apply
+              your existing deposit to your new booking.”
+            </p>
+          }
 
           {showReasonDropdown ? (
             <>

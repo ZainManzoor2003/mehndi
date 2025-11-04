@@ -21,6 +21,13 @@ const transactionSchema = new mongoose.Schema({
     required: true,
     min: 0
   },
+  // Optional platform commission (amount), if applicable
+  commission: {
+    type: Number,
+    required: false,
+    min: 0,
+    default: 0
+  },
   transactionType: {
     type: String,
     required: true,

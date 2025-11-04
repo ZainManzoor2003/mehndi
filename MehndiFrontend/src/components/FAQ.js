@@ -140,16 +140,7 @@ const FAQ = () => {
       <div style={{ textAlign: 'center', marginTop: '2rem' }}>
         <button
           onClick={() => navigate('/faq')}
-          style={{
-            backgroundColor: '#5C3D2E',
-            color: '#fff',
-            border: 'none',
-            padding: '12px 24px',
-            borderRadius: '999px',
-            fontWeight: 700,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            cursor: 'pointer'
-          }}
+         className='home__cta-button'
         >
           View All FAQs →
         </button>

@@ -17,7 +17,7 @@ const ManageBookings = () => {
   const [selectedBookingForLogs, setSelectedBookingForLogs] = useState(null);
   const [bookingLogs, setBookingLogs] = useState([]);
   const [logsLoading, setLogsLoading] = useState(false);
-  
+
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState(null);
@@ -103,15 +103,15 @@ const ManageBookings = () => {
 
     // Filter by event type
     if (selectedEventType?.value) {
-      filtered = filtered.filter(booking => 
-        booking.eventType?.includes(selectedEventType.value) || 
+      filtered = filtered.filter(booking =>
+        booking.eventType?.includes(selectedEventType.value) ||
         booking.otherEventType?.toLowerCase().includes(selectedEventType.value.toLowerCase())
       );
     }
 
     // Filter by city
     if (selectedCity?.value) {
-      filtered = filtered.filter(booking => 
+      filtered = filtered.filter(booking =>
         booking.location?.toLowerCase().includes(selectedCity.value.toLowerCase()) ||
         booking.fullAddress?.toLowerCase().includes(selectedCity.value.toLowerCase())
       );
@@ -119,7 +119,7 @@ const ManageBookings = () => {
 
     // Filter by user type (client type)
     if (selectedUserType?.value) {
-      filtered = filtered.filter(booking => 
+      filtered = filtered.filter(booking =>
         booking.userType === selectedUserType.value
       );
     }
@@ -165,7 +165,7 @@ const ManageBookings = () => {
   const getPageNumbers = () => {
     const pages = [];
     const maxVisiblePages = 5;
-    
+
     if (totalPages <= maxVisiblePages) {
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
@@ -173,12 +173,12 @@ const ManageBookings = () => {
     } else {
       const startPage = Math.max(1, currentPage - 2);
       const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-      
+
       for (let i = startPage; i <= endPage; i++) {
         pages.push(i);
       }
     }
-    
+
     return pages;
   };
 
@@ -188,6 +188,7 @@ const ManageBookings = () => {
       try {
         const res = await api.bookingsAPI.getAllBookings();
         setBookings(res.data || []);
+        console.log('bookings', res.data)
       } catch (e) {
         setError(e.message);
       } finally {
@@ -215,7 +216,7 @@ const ManageBookings = () => {
         ta.select();
         document.execCommand('copy');
         document.body.removeChild(ta);
-      } catch {}
+      } catch { }
     }
   };
 
@@ -234,665 +235,710 @@ const ManageBookings = () => {
             <line x1="3" y1="18" x2="21" y2="18" />
           </svg>
         </button>
-      <div className="admin_dashboard-container">
-      <div className="admin_dashboard-content">
-        <div className="admin_bookings-header">
-          <h2 className="admin_bookings-title">Manage Bookings</h2>
-          <p className="admin_bookings-subtitle">Manage all platform bookings</p>
-        </div>
-
-        {error && <p className="admin_error">{error}</p>}
-        {loading ? (
-          <p>Loading...</p>
-        ) : (
-          <>
-            {/* Booking Stats Cards */}
-          <div className="admin_booking-stats">
-            <div className="admin_stat-card">
-              <div className="admin_stat-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-                  <line x1="8" y1="21" x2="16" y2="21" />
-                  <line x1="12" y1="17" x2="12" y2="21" />
-                </svg>
-              </div>
-              <div className="admin_stat-info">
-                <h3>Total Bookings</h3>
-                <span className="admin_stat-number">{bookings.length}</span>
-              </div>
+        <div className="admin_dashboard-container">
+          <div className="admin_dashboard-content">
+            <div className="admin_bookings-header">
+              <h2 className="admin_bookings-title">Manage Bookings</h2>
+              <p className="admin_bookings-subtitle">Manage all platform bookings</p>
             </div>
 
-            <div className="admin_stat-card">
-              <div className="admin_stat-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                  <polyline points="22,4 12,14.01 9,11.01"/>
-                </svg>
-              </div>
-              <div className="admin_stat-info">
-                <h3>Confirmed</h3>
-                <span className="admin_stat-number">{bookings.filter(b => b.status === 'confirmed').length}</span>
-              </div>
-            </div>
-
-            <div className="admin_stat-card">
-              <div className="admin_stat-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10"/>
-                  <polyline points="12,6 12,12 16,14"/>
-                </svg>
-              </div>
-              <div className="admin_stat-info">
-                <h3>Pending</h3>
-                <span className="admin_stat-number">{bookings.filter(b => b.status === 'pending').length}</span>
-              </div>
-            </div>
-
-            <div className="admin_stat-card">
-              <div className="admin_stat-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="20,6 9,17 4,12"/>
-                </svg>
-              </div>
-              <div className="admin_stat-info">
-                <h3>Completed</h3>
-                <span className="admin_stat-number">{bookings.filter(b => b.status === 'completed').length}</span>
-              </div>
-            </div>
-
-          </div>
-          {/* Filter Section */}
-          <div className="admin_filter-section">
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: (searchTerm || selectedStatus?.value || selectedEventType?.value || selectedCity?.value) ? '1fr 1fr 1fr 1fr auto' : '1fr 1fr 1fr 1fr',
-                gap: '1rem',
-                alignItems: 'end'
-              }}>
-                {/* Search Input */}
-                <div className="admin_filter-item">
-                  <label style={{
-                    display: 'block',
-                    marginBottom: '0.5rem',
-                    fontWeight: '600',
-                    color: '#0f172a',
-                    fontSize: '0.875rem'
-                  }}>
-                    Search Bookings
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Search by client, event, budget..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      border: '2px solid #e5e7eb',
-                      borderRadius: '8px',
-                      fontSize: '0.875rem',
-                      transition: 'border-color 0.2s',
-                      backgroundColor: '#ffffff'
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = '#3b82f6';
-                      e.target.style.backgroundColor = '#ffffff';
-                      e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = '#e5e7eb';
-                      e.target.style.backgroundColor = '#ffffff';
-                      e.target.style.boxShadow = 'none';
-                    }}
-                  />
-                </div>
-
-                {/* Status Dropdown */}
-                <div className="admin_filter-item">
-                  <label style={{
-                    display: 'block',
-                    marginBottom: '0.5rem',
-                    fontWeight: '600',
-                    color: '#0f172a',
-                    fontSize: '0.875rem'
-                  }}>
-                    Filter by Status
-                  </label>
-                  <Select
-                    value={selectedStatus}
-                    onChange={setSelectedStatus}
-                    options={statusOptions}
-                    placeholder="All Statuses"
-                    styles={{
-                      control: (provided, state) => ({
-                        ...provided,
-                        border: '2px solid #e5e7eb',
-                        borderRadius: '8px',
-                        minHeight: '42px',
-                        backgroundColor: '#ffffff',
-                        boxShadow: state.isFocused ? '0 0 0 3px rgba(59, 130, 246, 0.1)' : 'none',
-                        '&:hover': {
-                          borderColor: '#3b82f6'
-                        },
-                        ...(state.isFocused && {
-                          borderColor: '#3b82f6'
-                        }),
-                        ...(state.isFocused && {
-                          borderColor: '#3b82f6',
-                          backgroundColor: '#ffffff'
-                        })
-                      }),
-                      placeholder: (provided) => ({
-                        ...provided,
-                        color: '#6b7280',
-                        fontSize: '0.875rem'
-                      }),
-                      option: (provided, state) => ({
-                        ...provided,
-                        backgroundColor: state.isSelected ? '#6b7280' : state.isFocused ? '#f8fafc' : '#ffffff',
-                        color: state.isSelected ? '#ffffff' : '#0f172a',
-                        fontSize: '0.875rem'
-                      }),
-                      singleValue: (provided) => ({
-                        ...provided,
-                        color: '#0f172a',
-                        fontSize: '0.875rem'
-                      })
-                    }}
-                  />
-                </div>
-
-                {/* Event Type Dropdown */}
-                <div className="admin_filter-item">
-                  <label style={{
-                    display: 'block',
-                    marginBottom: '0.5rem',
-                    fontWeight: '600',
-                    color: '#0f172a',
-                    fontSize: '0.875rem'
-                  }}>
-                    Filter by Event Type
-                  </label>
-                  <Select
-                    value={selectedEventType}
-                    onChange={setSelectedEventType}
-                    options={eventTypeOptions}
-                    placeholder="All Event Types"
-                    styles={{
-                      control: (provided, state) => ({
-                        ...provided,
-                        border: '2px solid #e5e7eb',
-                        borderRadius: '8px',
-                        minHeight: '42px',
-                        backgroundColor: '#ffffff',
-                        boxShadow: state.isFocused ? '0 0 0 3px rgba(59, 130, 246, 0.1)' : 'none',
-                        '&:hover': {
-                          borderColor: '#3b82f6'
-                        },
-                        ...(state.isFocused && {
-                          borderColor: '#3b82f6'
-                        }),
-                        ...(state.isFocused && {
-                          borderColor: '#3b82f6',
-                          backgroundColor: '#ffffff'
-                        })
-                      }),
-                      placeholder: (provided) => ({
-                        ...provided,
-                        color: '#6b7280',
-                        fontSize: '0.875rem'
-                      }),
-                      option: (provided, state) => ({
-                        ...provided,
-                        backgroundColor: state.isSelected ? '#6b7280' : state.isFocused ? '#f8fafc' : '#ffffff',
-                        color: state.isSelected ? '#ffffff' : '#0f172a',
-                        fontSize: '0.875rem'
-                      }),
-                      singleValue: (provided) => ({
-                        ...provided,
-                        color: '#0f172a',
-                        fontSize: '0.875rem'
-                      })
-                    }}
-                  />
-                </div>
-
-                {/* City Dropdown */}
-                <div className="admin_filter-item">
-                  <label style={{
-                    display: 'block',
-                    marginBottom: '0.5rem',
-                    fontWeight: '600',
-                    color: '#0f172a',
-                    fontSize: '0.875rem'
-                  }}>
-                    Filter by City
-                  </label>
-                  <Select
-                    value={selectedCity}
-                    onChange={setSelectedCity}
-                    options={cityOptions}
-                    placeholder="All Cities"
-                    styles={{
-                      control: (provided, state) => ({
-                        ...provided,
-                        border: '2px solid #e5e7eb',
-                        borderRadius: '8px',
-                        minHeight: '42px',
-                        backgroundColor: '#ffffff',
-                        boxShadow: state.isFocused ? '0 0 0 3px rgba(59, 130, 246, 0.1)' : 'none',
-                        '&:hover': {
-                          borderColor: '#3b82f6'
-                        },
-                        ...(state.isFocused && {
-                          borderColor: '#3b82f6'
-                        }),
-                        ...(state.isFocused && {
-                          borderColor: '#3b82f6',
-                          backgroundColor: '#ffffff'
-                        })
-                      }),
-                      placeholder: (provided) => ({
-                        ...provided,
-                        color: '#6b7280',
-                        fontSize: '0.875rem'
-                      }),
-                      option: (provided, state) => ({
-                        ...provided,
-                        backgroundColor: state.isSelected ? '#6b7280' : state.isFocused ? '#f8fafc' : '#ffffff',
-                        color: state.isSelected ? '#ffffff' : '#0f172a',
-                        fontSize: '0.875rem'
-                      }),
-                      singleValue: (provided) => ({
-                        ...provided,
-                        color: '#0f172a',
-                        fontSize: '0.875rem'
-                      })
-                    }}
-                  />
-                </div>
-
-                {/* Clear Filters Button */}
-                {(searchTerm || selectedStatus?.value || selectedEventType?.value || selectedCity?.value || selectedUserType?.value) && (
-                  <div className="admin_filter-item" style={{ display: 'flex', alignItems: 'end' }}>
-                    <button
-                      onClick={() => {
-                        setSearchTerm('');
-                        setSelectedStatus(null);
-                        setSelectedEventType(null);
-                        setSelectedCity(null);
-                        setSelectedUserType(null);
-                      }}
-                      style={{
-                        padding: '0.75rem 1rem',
-                        backgroundColor: 'transparent',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '6px',
-                        color: '#6b7280',
-                        fontSize: '0.875rem',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        whiteSpace: 'nowrap'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.target.style.borderColor = '#3b82f6';
-                        e.target.style.color = '#3b82f6';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.target.style.borderColor = '#e5e7eb';
-                        e.target.style.color = '#6b7280';
-                      }}
-                    >
-                      Clear Filters
-                    </button>
+            {error && <p className="admin_error">{error}</p>}
+            {loading ? (
+              <p>Loading...</p>
+            ) : (
+              <>
+                {/* Booking Stats Cards */}
+                <div className="admin_booking-stats">
+                  <div className="admin_stat-card">
+                    <div className="admin_stat-icon">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                        <line x1="8" y1="21" x2="16" y2="21" />
+                        <line x1="12" y1="17" x2="12" y2="21" />
+                      </svg>
+                    </div>
+                    <div className="admin_stat-info">
+                      <h3>Total Bookings</h3>
+                      <span className="admin_stat-number">{bookings.length}</span>
+                    </div>
                   </div>
-                )}
-              </div>
-            </div>
-            <div className="admin_table-responsive" style={{ marginTop: '1rem' }}>
-              {paginatedBookings.length === 0 && filteredBookings.length === 0 ? (
-                <div style={{
-                  textAlign: 'center',
-                  padding: '3rem 1rem',
-                  backgroundColor: '#ffffff',
-                  borderRadius: '8px',
-                  border: '1px solid #e5e7eb'
-                }}>
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.5" style={{ marginBottom: '1rem' }}>
-                    <circle cx="11" cy="11" r="8"/>
-                    <path d="m21 21-4.35-4.35"/>
-                  </svg>
-                  <h3 style={{ color: '#6b7280', marginBottom: '0.5rem', fontSize: '1.125rem' }}>No bookings found</h3>
-                  <p style={{ color: '#9ca3af', fontSize: '0.875rem' }}>
-                    {searchTerm || selectedStatus?.value || selectedEventType?.value || selectedCity?.value || selectedUserType?.value
-                      ? 'Try adjusting your filters to see more results.' 
-                      : 'No bookings have been created yet.'}
-                  </p>
-                </div>
-              ) : (
-                <table className="admin_styled-table">
-                  <thead>
-                    <tr>
-                      <th>Id</th>
-                      <th>Client</th>
-                      <th>Event</th>
-                      <th>Date</th>
-                      <th>Budget</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedBookings.map(b => (
-                      <tr key={b._id}>
-                        <td onMouseEnter={() => setHoverId(b._id)} onMouseLeave={() => setHoverId(null)}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative' }}>
-                            <span style={{ fontWeight: 600 }}>{formatDisplayId('REQ', b._id)}</span>
-                            {hoverId === b._id && (
-                              <button
-                                title="Copy Full ID"
-                                onClick={(e) => { copyFullId(e, b._id); toast.success('ID copied successfully'); }}
-                                style={{ position: 'absolute', bottom: '100%', left: 0, background: '#0b1220', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '0.70rem', padding: '6px 10px', borderRadius: 6, zIndex: 9999, boxShadow: '0 6px 16px rgba(0,0,0,0.18)' }}
-                              >
-                                Copy Full ID
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                        <td>{b.firstName} {b.lastName}</td>
-                        <td>{(b.eventType && b.eventType.join(', ')) || b.otherEventType}</td>
-                        <td>{new Date(b.eventDate).toLocaleDateString()}</td>
-                        <td>£{b.minimumBudget} - £{b.maximumBudget}</td>
-                        <td>
-                          <span className={`admin_status-badge ${b.status}`}>
-                            {b.status === 'pending' && 'Pending'}
-                            {b.status === 'confirmed' && 'Assigned'}
-                            {b.status === 'in_progress' && 'Active'}
-                            {b.status === 'completed' && 'Completed'}
-                            {b.status === 'expired' && 'Expired'}
-                            {b.status === 'cancelled' && 'Cancelled'}
-                          </span>
-                        </td>
-                        <td>
-                          <button className="admin_btn admin_btn-outline" onClick={() => setSelected(b)}>View Details</button>
-                        </td>
-                        <td>
-                          <button className="admin_btn admin_btn-outline" 
-                          onClick={async () => {
-                            setSelectedBookingForLogs(b);
-                            setShowLogsModal(true);
-                            setLogsLoading(true);
-                            try {
-                              const response = await api.bookingsAPI.getBookingLogs(b._id);
-                              if (response.success) {
-                                setBookingLogs(response.data || []);
-                              } else {
-                                toast.error('Failed to load booking logs');
-                              }
-                            } catch (error) {
-                              console.error('Error fetching booking logs:', error);
-                              toast.error('Failed to load booking logs');
-                            } finally {
-                              setLogsLoading(false);
-                            }
-                          }}>View Logs</button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
 
-            {/* Pagination Component */}
-            {filteredBookings.length > 0 && (
-              <div className="admin_pagination-container" style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginTop: '2rem',
-                padding: '1rem 0',
-                borderTop: '1px solid #e5e7eb'
-              }}>
-                {/* Items per page selector */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>Show:</span>
-                  <Select
-                    value={selectedItemsPerPage}
-                    onChange={handleItemsPerPageChange}
-                    options={itemsPerPageOptions}
-                    menuPlacement="top"
-                    styles={{
-                      control: (provided, state) => ({
-                        ...provided,
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '6px',
-                        minHeight: '36px',
-                        width: '120px',
-                        backgroundColor: '#ffffff',
-                        boxShadow: state.isFocused ? '0 0 0 3px rgba(59, 130, 246, 0.1)' : 'none',
-                        '&:hover': {
-                          borderColor: '#3b82f6'
-                        },
-                        ...(state.isFocused && {
-                          borderColor: '#3b82f6'
-                        })
-                      }),
-                      placeholder: (provided) => ({
-                        ...provided,
-                        color: '#6b7280',
-                        fontSize: '0.75rem'
-                      }),
-                      option: (provided, state) => ({
-                        ...provided,
-                        backgroundColor: state.isSelected ? '#6b7280' : state.isFocused ? '#f8fafc' : '#ffffff',
-                        color: state.isSelected ? '#ffffff' : '#0f172a',
-                        fontSize: '0.75rem'
-                      }),
-                      singleValue: (provided) => ({
-                        ...provided,
+                  <div className="admin_stat-card">
+                    <div className="admin_stat-icon">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                        <polyline points="22,4 12,14.01 9,11.01" />
+                      </svg>
+                    </div>
+                    <div className="admin_stat-info">
+                      <h3>Confirmed</h3>
+                      <span className="admin_stat-number">{bookings.filter(b => b.status === 'confirmed').length}</span>
+                    </div>
+                  </div>
+
+                  <div className="admin_stat-card">
+                    <div className="admin_stat-icon">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12,6 12,12 16,14" />
+                      </svg>
+                    </div>
+                    <div className="admin_stat-info">
+                      <h3>Pending</h3>
+                      <span className="admin_stat-number">{bookings.filter(b => b.status === 'pending').length}</span>
+                    </div>
+                  </div>
+
+                  <div className="admin_stat-card">
+                    <div className="admin_stat-icon">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="20,6 9,17 4,12" />
+                      </svg>
+                    </div>
+                    <div className="admin_stat-info">
+                      <h3>Completed</h3>
+                      <span className="admin_stat-number">{bookings.filter(b => b.status === 'completed').length}</span>
+                    </div>
+                  </div>
+
+                </div>
+                {/* Filter Section */}
+                <div className="admin_filter-section">
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: (searchTerm || selectedStatus?.value || selectedEventType?.value || selectedCity?.value) ? '1fr 1fr 1fr 1fr auto' : '1fr 1fr 1fr 1fr',
+                    gap: '1rem',
+                    alignItems: 'end'
+                  }}>
+                    {/* Search Input */}
+                    <div className="admin_filter-item">
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.5rem',
+                        fontWeight: '600',
                         color: '#0f172a',
-                        fontSize: '0.75rem'
-                      })
-                    }}
-                  />
-                  <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-                    of {filteredBookings.length} bookings
-                  </span>
+                        fontSize: '0.875rem'
+                      }}>
+                        Search Bookings
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Search by client, event, budget..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: '2px solid #e5e7eb',
+                          borderRadius: '8px',
+                          fontSize: '0.875rem',
+                          transition: 'border-color 0.2s',
+                          backgroundColor: '#ffffff'
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.borderColor = '#3b82f6';
+                          e.target.style.backgroundColor = '#ffffff';
+                          e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = '#e5e7eb';
+                          e.target.style.backgroundColor = '#ffffff';
+                          e.target.style.boxShadow = 'none';
+                        }}
+                      />
+                    </div>
+
+                    {/* Status Dropdown */}
+                    <div className="admin_filter-item">
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.5rem',
+                        fontWeight: '600',
+                        color: '#0f172a',
+                        fontSize: '0.875rem'
+                      }}>
+                        Filter by Status
+                      </label>
+                      <Select
+                        value={selectedStatus}
+                        onChange={setSelectedStatus}
+                        options={statusOptions}
+                        placeholder="All Statuses"
+                        styles={{
+                          control: (provided, state) => ({
+                            ...provided,
+                            border: '2px solid #e5e7eb',
+                            borderRadius: '8px',
+                            minHeight: '42px',
+                            backgroundColor: '#ffffff',
+                            boxShadow: state.isFocused ? '0 0 0 3px rgba(59, 130, 246, 0.1)' : 'none',
+                            '&:hover': {
+                              borderColor: '#3b82f6'
+                            },
+                            ...(state.isFocused && {
+                              borderColor: '#3b82f6'
+                            }),
+                            ...(state.isFocused && {
+                              borderColor: '#3b82f6',
+                              backgroundColor: '#ffffff'
+                            })
+                          }),
+                          placeholder: (provided) => ({
+                            ...provided,
+                            color: '#6b7280',
+                            fontSize: '0.875rem'
+                          }),
+                          option: (provided, state) => ({
+                            ...provided,
+                            backgroundColor: state.isSelected ? '#6b7280' : state.isFocused ? '#f8fafc' : '#ffffff',
+                            color: state.isSelected ? '#ffffff' : '#0f172a',
+                            fontSize: '0.875rem'
+                          }),
+                          singleValue: (provided) => ({
+                            ...provided,
+                            color: '#0f172a',
+                            fontSize: '0.875rem'
+                          })
+                        }}
+                      />
+                    </div>
+
+                    {/* Event Type Dropdown */}
+                    <div className="admin_filter-item">
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.5rem',
+                        fontWeight: '600',
+                        color: '#0f172a',
+                        fontSize: '0.875rem'
+                      }}>
+                        Filter by Event Type
+                      </label>
+                      <Select
+                        value={selectedEventType}
+                        onChange={setSelectedEventType}
+                        options={eventTypeOptions}
+                        placeholder="All Event Types"
+                        styles={{
+                          control: (provided, state) => ({
+                            ...provided,
+                            border: '2px solid #e5e7eb',
+                            borderRadius: '8px',
+                            minHeight: '42px',
+                            backgroundColor: '#ffffff',
+                            boxShadow: state.isFocused ? '0 0 0 3px rgba(59, 130, 246, 0.1)' : 'none',
+                            '&:hover': {
+                              borderColor: '#3b82f6'
+                            },
+                            ...(state.isFocused && {
+                              borderColor: '#3b82f6'
+                            }),
+                            ...(state.isFocused && {
+                              borderColor: '#3b82f6',
+                              backgroundColor: '#ffffff'
+                            })
+                          }),
+                          placeholder: (provided) => ({
+                            ...provided,
+                            color: '#6b7280',
+                            fontSize: '0.875rem'
+                          }),
+                          option: (provided, state) => ({
+                            ...provided,
+                            backgroundColor: state.isSelected ? '#6b7280' : state.isFocused ? '#f8fafc' : '#ffffff',
+                            color: state.isSelected ? '#ffffff' : '#0f172a',
+                            fontSize: '0.875rem'
+                          }),
+                          singleValue: (provided) => ({
+                            ...provided,
+                            color: '#0f172a',
+                            fontSize: '0.875rem'
+                          })
+                        }}
+                      />
+                    </div>
+
+                    {/* City Dropdown */}
+                    <div className="admin_filter-item">
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.5rem',
+                        fontWeight: '600',
+                        color: '#0f172a',
+                        fontSize: '0.875rem'
+                      }}>
+                        Filter by City
+                      </label>
+                      <Select
+                        value={selectedCity}
+                        onChange={setSelectedCity}
+                        options={cityOptions}
+                        placeholder="All Cities"
+                        styles={{
+                          control: (provided, state) => ({
+                            ...provided,
+                            border: '2px solid #e5e7eb',
+                            borderRadius: '8px',
+                            minHeight: '42px',
+                            backgroundColor: '#ffffff',
+                            boxShadow: state.isFocused ? '0 0 0 3px rgba(59, 130, 246, 0.1)' : 'none',
+                            '&:hover': {
+                              borderColor: '#3b82f6'
+                            },
+                            ...(state.isFocused && {
+                              borderColor: '#3b82f6'
+                            }),
+                            ...(state.isFocused && {
+                              borderColor: '#3b82f6',
+                              backgroundColor: '#ffffff'
+                            })
+                          }),
+                          placeholder: (provided) => ({
+                            ...provided,
+                            color: '#6b7280',
+                            fontSize: '0.875rem'
+                          }),
+                          option: (provided, state) => ({
+                            ...provided,
+                            backgroundColor: state.isSelected ? '#6b7280' : state.isFocused ? '#f8fafc' : '#ffffff',
+                            color: state.isSelected ? '#ffffff' : '#0f172a',
+                            fontSize: '0.875rem'
+                          }),
+                          singleValue: (provided) => ({
+                            ...provided,
+                            color: '#0f172a',
+                            fontSize: '0.875rem'
+                          })
+                        }}
+                      />
+                    </div>
+
+                    {/* Clear Filters Button */}
+                    {(searchTerm || selectedStatus?.value || selectedEventType?.value || selectedCity?.value || selectedUserType?.value) && (
+                      <div className="admin_filter-item" style={{ display: 'flex', alignItems: 'end' }}>
+                        <button
+                          onClick={() => {
+                            setSearchTerm('');
+                            setSelectedStatus(null);
+                            setSelectedEventType(null);
+                            setSelectedCity(null);
+                            setSelectedUserType(null);
+                          }}
+                          style={{
+                            padding: '0.75rem 1rem',
+                            backgroundColor: 'transparent',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '6px',
+                            color: '#6b7280',
+                            fontSize: '0.875rem',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            whiteSpace: 'nowrap'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.target.style.borderColor = '#3b82f6';
+                            e.target.style.color = '#3b82f6';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.borderColor = '#e5e7eb';
+                            e.target.style.color = '#6b7280';
+                          }}
+                        >
+                          Clear Filters
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="admin_table-responsive" style={{ marginTop: '1rem' }}>
+                  {paginatedBookings.length === 0 && filteredBookings.length === 0 ? (
+                    <div style={{
+                      textAlign: 'center',
+                      padding: '3rem 1rem',
+                      backgroundColor: '#ffffff',
+                      borderRadius: '8px',
+                      border: '1px solid #e5e7eb'
+                    }}>
+                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.5" style={{ marginBottom: '1rem' }}>
+                        <circle cx="11" cy="11" r="8" />
+                        <path d="m21 21-4.35-4.35" />
+                      </svg>
+                      <h3 style={{ color: '#6b7280', marginBottom: '0.5rem', fontSize: '1.125rem' }}>No bookings found</h3>
+                      <p style={{ color: '#9ca3af', fontSize: '0.875rem' }}>
+                        {searchTerm || selectedStatus?.value || selectedEventType?.value || selectedCity?.value || selectedUserType?.value
+                          ? 'Try adjusting your filters to see more results.'
+                          : 'No bookings have been created yet.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <table className="admin_styled-table">
+                      <thead>
+                        <tr>
+                          <th>Id</th>
+                          <th>Client</th>
+                          <th>Event</th>
+                          <th>Date</th>
+                          <th>Budget</th>
+                          <th>Status</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paginatedBookings.map(b => (
+                          <tr key={b._id}>
+                            <td onMouseEnter={() => setHoverId(b._id)} onMouseLeave={() => setHoverId(null)}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative' }}>
+                                <span style={{ fontWeight: 600 }}>{formatDisplayId('REQ', b._id)}</span>
+                                {hoverId === b._id && (
+                                  <button
+                                    title="Copy Full ID"
+                                    onClick={(e) => { copyFullId(e, b._id); toast.success('ID copied successfully'); }}
+                                    style={{ position: 'absolute', bottom: '100%', left: 0, background: '#0b1220', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '0.70rem', padding: '6px 10px', borderRadius: 6, zIndex: 9999, boxShadow: '0 6px 16px rgba(0,0,0,0.18)' }}
+                                  >
+                                    Copy Full ID
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                            <td>{b.firstName} {b.lastName}</td>
+                            <td>{(b.eventType && b.eventType.join(', ')) || b.otherEventType}</td>
+                            <td>{new Date(b.eventDate).toLocaleDateString()}</td>
+                            <td>£{b.minimumBudget} - £{b.maximumBudget}</td>
+                            <td>
+                              <span className={`admin_status-badge ${b.status}`}>
+                                {b.status === 'pending' && 'Pending'}
+                                {b.status === 'confirmed' && 'Assigned'}
+                                {b.status === 'in_progress' && 'Active'}
+                                {b.status === 'completed' && 'Completed'}
+                                {b.status === 'expired' && 'Expired'}
+                                {b.status === 'cancelled' && 'Cancelled'}
+                              </span>
+                            </td>
+                            <td>
+                              {b.reinstate &&
+
+                                <button className="admin_btn"
+                                  style={{
+                                    backgroundColor: 'red',
+                                    color: 'white', marginRight: '5px'
+                                  }}
+                                  onClick={async () => {
+                                    try {
+                                      const bookingId = b._id;
+                                      const userId = b.clientId?._id || b.clientId;
+                                      const artistId = b.assignedArtist && b.assignedArtist.length > 0 
+                                        ? (b.assignedArtist[0]?._id || b.assignedArtist[0]) 
+                                        : null;
+
+                                      if (!artistId) {
+                                        toast.error('No artist assigned to this booking');
+                                        return;
+                                      }
+
+                                      const response = await api.adminAPI.processRefundByAdmin({
+                                        bookingId,
+                                        userId,
+                                        artistId
+                                      });
+
+                                      if (response.success) {
+                                        toast.success('Refund processed successfully');
+                                        // Refresh bookings list
+                                        const res = await api.bookingsAPI.getAllBookings();
+                                        if (res.success) {
+                                          setBookings(res.data || []);
+                                        }
+                                      } else {
+                                        toast.error(response.message || 'Failed to process refund');
+                                      }
+                                    } catch (error) {
+                                      console.error('Error processing refund:', error);
+                                      toast.error('Failed to process refund');
+                                    }
+                                  }}>Reinstate
+                                </button>
+                              }
+
+                              <button className="admin_btn admin_btn-outline" onClick={() => setSelected(b)}>View Details</button>
+
+                            </td>
+                            <td>
+                              <button className="admin_btn admin_btn-outline"
+                                onClick={async () => {
+                                  setSelectedBookingForLogs(b);
+                                  setShowLogsModal(true);
+                                  setLogsLoading(true);
+                                  try {
+                                    const response = await api.bookingsAPI.getBookingLogs(b._id);
+                                    if (response.success) {
+                                      setBookingLogs(response.data || []);
+                                    } else {
+                                      toast.error('Failed to load booking logs');
+                                    }
+                                  } catch (error) {
+                                    console.error('Error fetching booking logs:', error);
+                                    toast.error('Failed to load booking logs');
+                                  } finally {
+                                    setLogsLoading(false);
+                                  }
+                                }}>View Logs</button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
 
-                {/* Pagination controls */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  {/* Previous button */}
-                  <button
-                    onClick={handlePreviousPage}
-                    disabled={currentPage === 1}
-                    style={{
-                      padding: '0.5rem 0.75rem',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '6px',
-                      backgroundColor: currentPage === 1 ? '#ffffff' : '#ffffff',
-                      color: currentPage === 1 ? '#9ca3af' : '#0f172a',
-                      fontSize: '0.875rem',
-                      cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-                      transition: 'all 0.2s',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.25rem'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (currentPage !== 1) {
-                        e.target.style.borderColor = '#3b82f6';
-                        e.target.style.color = '#3b82f6';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (currentPage !== 1) {
-                        e.target.style.borderColor = '#e5e7eb';
-                        e.target.style.color = '#0f172a';
-                      }
-                    }}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <polyline points="15,18 9,12 15,6"/>
-                    </svg>
-                    Previous
-                  </button>
+                {/* Pagination Component */}
+                {filteredBookings.length > 0 && (
+                  <div className="admin_pagination-container" style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginTop: '2rem',
+                    padding: '1rem 0',
+                    borderTop: '1px solid #e5e7eb'
+                  }}>
+                    {/* Items per page selector */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>Show:</span>
+                      <Select
+                        value={selectedItemsPerPage}
+                        onChange={handleItemsPerPageChange}
+                        options={itemsPerPageOptions}
+                        menuPlacement="top"
+                        styles={{
+                          control: (provided, state) => ({
+                            ...provided,
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '6px',
+                            minHeight: '36px',
+                            width: '120px',
+                            backgroundColor: '#ffffff',
+                            boxShadow: state.isFocused ? '0 0 0 3px rgba(59, 130, 246, 0.1)' : 'none',
+                            '&:hover': {
+                              borderColor: '#3b82f6'
+                            },
+                            ...(state.isFocused && {
+                              borderColor: '#3b82f6'
+                            })
+                          }),
+                          placeholder: (provided) => ({
+                            ...provided,
+                            color: '#6b7280',
+                            fontSize: '0.75rem'
+                          }),
+                          option: (provided, state) => ({
+                            ...provided,
+                            backgroundColor: state.isSelected ? '#6b7280' : state.isFocused ? '#f8fafc' : '#ffffff',
+                            color: state.isSelected ? '#ffffff' : '#0f172a',
+                            fontSize: '0.75rem'
+                          }),
+                          singleValue: (provided) => ({
+                            ...provided,
+                            color: '#0f172a',
+                            fontSize: '0.75rem'
+                          })
+                        }}
+                      />
+                      <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                        of {filteredBookings.length} bookings
+                      </span>
+                    </div>
 
-                  {/* Page numbers */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                    {getPageNumbers().map((pageNum) => (
+                    {/* Pagination controls */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      {/* Previous button */}
                       <button
-                        key={pageNum}
-                        onClick={() => handlePageChange(pageNum)}
+                        onClick={handlePreviousPage}
+                        disabled={currentPage === 1}
                         style={{
                           padding: '0.5rem 0.75rem',
-                          border: `1px solid ${currentPage === pageNum ? '#3b82f6' : '#e5e7eb'}`,
+                          border: '1px solid #e5e7eb',
                           borderRadius: '6px',
-                          backgroundColor: currentPage === pageNum ? '#3b82f6' : '#ffffff',
-                          color: currentPage === pageNum ? '#ffffff' : '#0f172a',
+                          backgroundColor: currentPage === 1 ? '#ffffff' : '#ffffff',
+                          color: currentPage === 1 ? '#9ca3af' : '#0f172a',
                           fontSize: '0.875rem',
-                          cursor: 'pointer',
+                          cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
                           transition: 'all 0.2s',
-                          minWidth: '40px'
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.25rem'
                         }}
                         onMouseEnter={(e) => {
-                          if (currentPage !== pageNum) {
+                          if (currentPage !== 1) {
                             e.target.style.borderColor = '#3b82f6';
-                            e.target.style.backgroundColor = '#f8fafc';
+                            e.target.style.color = '#3b82f6';
                           }
                         }}
                         onMouseLeave={(e) => {
-                          if (currentPage !== pageNum) {
+                          if (currentPage !== 1) {
                             e.target.style.borderColor = '#e5e7eb';
-                            e.target.style.backgroundColor = '#ffffff';
+                            e.target.style.color = '#0f172a';
                           }
                         }}
                       >
-                        {pageNum}
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="15,18 9,12 15,6" />
+                        </svg>
+                        Previous
                       </button>
-                    ))}
-                  </div>
 
-                  {/* Next button */}
-                  <button
-                    onClick={handleNextPage}
-                    disabled={currentPage === totalPages}
-                    style={{
-                      padding: '0.5rem 0.75rem',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '6px',
-                      backgroundColor: currentPage === totalPages ? '#ffffff' : '#ffffff',
-                      color: currentPage === totalPages ? '#9ca3af' : '#0f172a',
-                      fontSize: '0.875rem',
-                      cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-                      transition: 'all 0.2s',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.25rem'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (currentPage !== totalPages) {
-                        e.target.style.borderColor = '#3b82f6';
-                        e.target.style.color = '#3b82f6';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (currentPage !== totalPages) {
-                        e.target.style.borderColor = '#e5e7eb';
-                        e.target.style.color = '#0f172a';
-                      }
-                    }}
-                  >
-                    Next
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <polyline points="9,18 15,12 9,6"/>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-
-        {selected && (
-          <div className="admin_modal-overlay" onClick={() => setSelected(null)}>
-            <div className="admin_payment-modal" onClick={(e)=>e.stopPropagation()} style={{ maxWidth: '700px', maxHeight: '90vh', overflowY: 'auto' }}>
-              <div className="admin_modal-header">
-                <h2 className="admin_modal-title">Booking Details</h2>
-                <button className="admin_modal-close" onClick={() => setSelected(null)}>×</button>
-              </div>
-              <div className="admin_modal-body">
-                <div className="admin_details-grid">
-                  <div className="admin_detail-card">
-                    <h3 className="admin_modal-section-title">Client</h3>
-                    <div className="admin_detail-row"><span className="admin_detail-label">Name</span><span className="admin_detail-value">{selected.firstName} {selected.lastName}</span></div>
-                    <div className="admin_detail-row"><span className="admin_detail-label">Email</span><span className="admin_detail-value">{selected.email}</span></div>
-                  </div>
-                  <div className="admin_detail-card">
-                    <h3 className="admin_modal-section-title">Event</h3>
-                    <div className="admin_detail-row"><span className="admin_detail-label">Type</span><span className="admin_detail-value">{(selected.eventType && selected.eventType.join(', ')) || selected.otherEventType}</span></div>
-                    <div className="admin_detail-row"><span className="admin_detail-label">Date</span><span className="admin_detail-value">{selected.eventDate ? new Date(selected.eventDate).toLocaleDateString() : ''}</span></div>
-                    <div className="admin_detail-row"><span className="admin_detail-label">Time</span><span className="admin_detail-value">{(selected.preferredTimeSlot && selected.preferredTimeSlot.join(', '))}</span></div>
-                  </div>
-                  <div className="admin_detail-card">
-                    <h3 className="admin_modal-section-title">Budget</h3>
-                    <div className="admin_badges">
-                      <span className="admin_badge">Min £{selected.minimumBudget}</span>
-                      <span className="badge outline">Max £{selected.maximumBudget}</span>
-                    </div>
-                  </div>
-                  <div className="admin_detail-card">
-                    <h3 className="admin_modal-section-title">Location</h3>
-                    <div className="admin_detail-row"><span className="admin_detail-label">City</span><span className="admin_detail-value">{selected.location}</span></div>
-                  </div>
-                </div>
-
-                {/* Images Section */}
-                {selected.images && selected.images.length > 0 && (
-                  <div className="admin_detail-card" style={{ marginTop: '1.5rem' }}>
-                    <h3 className="admin_modal-section-title">Uploaded Images</h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '15px', marginTop: '10px' }}>
-                      {selected.images.map((img, idx) => (
-                        <div key={idx} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', border: '2px solid #eab308' }}>
-                          <img 
-                            src={img} 
-                            alt={`Upload ${idx + 1}`}
-                            style={{ 
-                              width: '100%', 
-                              height: '150px', 
-                              objectFit: 'cover',
-                              cursor: 'pointer'
+                      {/* Page numbers */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        {getPageNumbers().map((pageNum) => (
+                          <button
+                            key={pageNum}
+                            onClick={() => handlePageChange(pageNum)}
+                            style={{
+                              padding: '0.5rem 0.75rem',
+                              border: `1px solid ${currentPage === pageNum ? '#3b82f6' : '#e5e7eb'}`,
+                              borderRadius: '6px',
+                              backgroundColor: currentPage === pageNum ? '#3b82f6' : '#ffffff',
+                              color: currentPage === pageNum ? '#ffffff' : '#0f172a',
+                              fontSize: '0.875rem',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s',
+                              minWidth: '40px'
                             }}
-                            onClick={() => window.open(img, '_blank')}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                            onMouseEnter={(e) => {
+                              if (currentPage !== pageNum) {
+                                e.target.style.borderColor = '#3b82f6';
+                                e.target.style.backgroundColor = '#f8fafc';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (currentPage !== pageNum) {
+                                e.target.style.borderColor = '#e5e7eb';
+                                e.target.style.backgroundColor = '#ffffff';
+                              }
+                            }}
+                          >
+                            {pageNum}
+                          </button>
+                        ))}
+                      </div>
 
-                {/* Video Section */}
-                {selected.video && (
-                  <div className="admin_detail-card" style={{ marginTop: '1.5rem' }}>
-                    <h3 className="admin_modal-section-title">Uploaded Video</h3>
-                    <div style={{ marginTop: '10px', borderRadius: '8px', overflow: 'hidden', border: '2px solid #eab308' }}>
-                      <video 
-                        controls
-                        style={{ 
-                          width: '100%', 
-                          maxHeight: '400px',
-                          backgroundColor: '#000'
+                      {/* Next button */}
+                      <button
+                        onClick={handleNextPage}
+                        disabled={currentPage === totalPages}
+                        style={{
+                          padding: '0.5rem 0.75rem',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '6px',
+                          backgroundColor: currentPage === totalPages ? '#ffffff' : '#ffffff',
+                          color: currentPage === totalPages ? '#9ca3af' : '#0f172a',
+                          fontSize: '0.875rem',
+                          cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                          transition: 'all 0.2s',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.25rem'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (currentPage !== totalPages) {
+                            e.target.style.borderColor = '#3b82f6';
+                            e.target.style.color = '#3b82f6';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (currentPage !== totalPages) {
+                            e.target.style.borderColor = '#e5e7eb';
+                            e.target.style.color = '#0f172a';
+                          }
                         }}
                       >
-                        <source src={selected.video} type="video/mp4" />
-                        <source src={selected.video} type="video/webm" />
-                        <source src={selected.video} type="video/ogg" />
-                        Your browser does not support the video tag.
-                      </video>
+                        Next
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="9,18 15,12 9,6" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
                 )}
+              </>
+            )}
+
+            {selected && (
+              <div className="admin_modal-overlay" onClick={() => setSelected(null)}>
+                <div className="admin_payment-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '700px', maxHeight: '90vh', overflowY: 'auto' }}>
+                  <div className="admin_modal-header">
+                    <h2 className="admin_modal-title">Booking Details</h2>
+                    <button className="admin_modal-close" onClick={() => setSelected(null)}>×</button>
+                  </div>
+                  <div className="admin_modal-body">
+                    <div className="admin_details-grid">
+                      <div className="admin_detail-card">
+                        <h3 className="admin_modal-section-title">Client</h3>
+                        <div className="admin_detail-row"><span className="admin_detail-label">Name</span><span className="admin_detail-value">{selected.firstName} {selected.lastName}</span></div>
+                        <div className="admin_detail-row"><span className="admin_detail-label">Email</span><span className="admin_detail-value">{selected.email}</span></div>
+                      </div>
+                      <div className="admin_detail-card">
+                        <h3 className="admin_modal-section-title">Event</h3>
+                        <div className="admin_detail-row"><span className="admin_detail-label">Type</span><span className="admin_detail-value">{(selected.eventType && selected.eventType.join(', ')) || selected.otherEventType}</span></div>
+                        <div className="admin_detail-row"><span className="admin_detail-label">Date</span><span className="admin_detail-value">{selected.eventDate ? new Date(selected.eventDate).toLocaleDateString() : ''}</span></div>
+                        <div className="admin_detail-row"><span className="admin_detail-label">Time</span><span className="admin_detail-value">{(selected.preferredTimeSlot && selected.preferredTimeSlot.join(', '))}</span></div>
+                      </div>
+                      <div className="admin_detail-card">
+                        <h3 className="admin_modal-section-title">Budget</h3>
+                        <div className="admin_badges">
+                          <span className="admin_badge">Min £{selected.minimumBudget}</span>
+                          <span className="badge outline">Max £{selected.maximumBudget}</span>
+                        </div>
+                      </div>
+                      <div className="admin_detail-card">
+                        <h3 className="admin_modal-section-title">Location</h3>
+                        <div className="admin_detail-row"><span className="admin_detail-label">City</span><span className="admin_detail-value">{selected.location}</span></div>
+                      </div>
+                    </div>
+
+                    {/* Images Section */}
+                    {selected.images && selected.images.length > 0 && (
+                      <div className="admin_detail-card" style={{ marginTop: '1.5rem' }}>
+                        <h3 className="admin_modal-section-title">Uploaded Images</h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '15px', marginTop: '10px' }}>
+                          {selected.images.map((img, idx) => (
+                            <div key={idx} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', border: '2px solid #eab308' }}>
+                              <img
+                                src={img}
+                                alt={`Upload ${idx + 1}`}
+                                style={{
+                                  width: '100%',
+                                  height: '150px',
+                                  objectFit: 'cover',
+                                  cursor: 'pointer'
+                                }}
+                                onClick={() => window.open(img, '_blank')}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Video Section */}
+                    {selected.video && (
+                      <div className="admin_detail-card" style={{ marginTop: '1.5rem' }}>
+                        <h3 className="admin_modal-section-title">Uploaded Video</h3>
+                        <div style={{ marginTop: '10px', borderRadius: '8px', overflow: 'hidden', border: '2px solid #eab308' }}>
+                          <video
+                            controls
+                            style={{
+                              width: '100%',
+                              maxHeight: '400px',
+                              backgroundColor: '#000'
+                            }}
+                          >
+                            <source src={selected.video} type="video/mp4" />
+                            <source src={selected.video} type="video/webm" />
+                            <source src={selected.video} type="video/ogg" />
+                            Your browser does not support the video tag.
+                          </video>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="admin_status-row">
                       <span className="admin_detail-label">Status</span>
@@ -904,13 +950,13 @@ const ManageBookings = () => {
                         {selected.status === 'cancelled' && 'Cancelled'}
                       </span>
                     </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        )}
+            )}
 
-      </div>
-      </div>
+          </div>
+        </div>
       </div>
 
       {/* Booking Logs Modal */}
@@ -1064,7 +1110,7 @@ const ManageBookings = () => {
                             boxShadow: '0 0 0 2px ' + (actionColors[log.action] || '#6b7280')
                           }}
                         />
-                        
+
                         {/* Timeline line */}
                         {index < bookingLogs.length - 1 && (
                           <div

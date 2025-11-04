@@ -3,7 +3,7 @@ const router = express.Router();
 
 // Auth routes
 const { signup, login, me, updateProfile, googleAuth, getArtistRating, verifyEmail, resendVerificationEmail, sendPhoneCode, verifyPhoneCode } = require('../controllers/authController');
-const { createBooking, getClientBookings, getAllBookings, getBookingById, getBookingLogs, updateBookingStatus, updateBooking, deleteBooking, getPendingBookings, completeBooking, cancelBooking, updateBookingPaymentStatus, processRefund, getNearbyBookings, saveBooking, unsaveBooking, getSavedBookings } = require('../controllers/bookingController');
+const { createBooking, getClientBookings, getAllBookings, getBookingById, getBookingLogs, updateBookingStatus, updateBooking, deleteBooking, getPendingBookings, completeBooking, cancelBooking, updateBookingPaymentStatus, processRefund, processRefundByAdmin, getNearbyBookings, saveBooking, unsaveBooking, getSavedBookings } = require('../controllers/bookingController');
 const { listBlogs, getBlogById } = require('../controllers/blogController');
 
 const { applyToBooking, getMyAppliedBookings, getApplicationsForBooking, updateApplicationStatus, withdrawApplication, notifyCancellationByArtist, completeApplication, addApplicationNote, getApplicationNotes, getMyApplicationStats } = require('../controllers/applicationController');
@@ -125,6 +125,8 @@ router.get('/api/admin/applications/status', protect, adminOnly, adminController
 router.get('/api/admin/applications', protect, adminOnly, adminController.listAllApplications);
 router.put('/api/admin/applications/reject', protect, adminOnly, adminController.rejectApplication);
 router.post('/api/admin/applications/cancel', protect, adminOnly, adminController.notifyCancellationByAdmin);
+
+router.post('/api/admin/bookings/refund', protect, adminOnly, processRefundByAdmin);
 
 router.post('/api/admin/blogs', protect, adminOnly, adminController.createBlog);
 router.get('/api/admin/blogs', protect, adminOnly, adminController.listBlogs);

@@ -816,6 +816,10 @@ exports.notifyCancellationByArtist = async (req, res) => {
     const booking = await Booking.findById(bookingId).select('clientId eventType firstName lastName eventDate preferredTimeSlot');
     if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
 
+    // Set reinstate status to true
+    booking.reinstate = true;
+    await booking.save();
+
     const client = await User.findById(booking.clientId).select('email firstName lastName');
     if (!client || !client.email) return res.status(404).json({ success: false, message: 'Client email not found' });
 

@@ -257,9 +257,9 @@ const createBooking = async (req, res) => {
 
       // Find all artists to notify them about the new booking
       const artists = await User.find({ userType: 'artist' }).select('_id');
-      
+
       // Create notifications for all artists
-      const notificationPromises = artists.map(artist => 
+      const notificationPromises = artists.map(artist =>
         createNotification(
           'booking_created',
           artist._id,
@@ -300,7 +300,7 @@ const createBooking = async (req, res) => {
 
   } catch (error) {
     console.error('Booking creation error:', error);
-    
+
     if (error.name === 'ValidationError') {
       const errors = Object.values(error.errors).map(err => err.message);
       return res.status(400).json({
@@ -482,16 +482,16 @@ const updateBooking = async (req, res) => {
     }
 
     // Prevent updates when completed or cancelled
-    if (['completed', 'cancelled','in_progress'].includes(booking.status)) {
+    if (['completed', 'cancelled', 'in_progress'].includes(booking.status)) {
       return res.status(400).json({ success: false, message: `Cannot edit a ${booking.status} booking` });
     }
 
     const updatableFields = [
-      'firstName','lastName','email',
-      'eventType','otherEventType','eventDate','preferredTimeSlot',
-      'location','artistTravelsToClient','venueName',
-      'minimumBudget','maximumBudget','duration','numberOfPeople',
-      'designStyle','designInspiration','coveragePreference',
+      'firstName', 'lastName', 'email',
+      'eventType', 'otherEventType', 'eventDate', 'preferredTimeSlot',
+      'location', 'artistTravelsToClient', 'venueName',
+      'minimumBudget', 'maximumBudget', 'duration', 'numberOfPeople',
+      'designStyle', 'designInspiration', 'coveragePreference',
       'additionalRequests'
     ];
 
@@ -555,9 +555,10 @@ const updateBooking = async (req, res) => {
 
     // Store previous values for logging
     const previousStatus = booking.status;
-    
+
     // Set status to pending when booking is updated
     booking.status = 'pending';
+    booking.reinstate = false;
     booking.assignedArtist = [];
     booking.appliedArtists = [];
 
@@ -606,8 +607,8 @@ const deleteBooking = async (req, res) => {
     }
 
     // Find all applications that reference this booking
-    const applications = await Application.find({ 
-      'Booking.booking_id': req.params.id 
+    const applications = await Application.find({
+      'Booking.booking_id': req.params.id
     });
 
     // Collect artist IDs from applications that will be deleted
@@ -759,7 +760,7 @@ const completeBooking = async (req, res) => {
     try {
       const assignedArtist = await User.findById(assignedArtistId);
       assignedArtistStripeAccountId = assignedArtist && assignedArtist.stripeAccountId ? assignedArtist.stripeAccountId : null;
-    } catch (_) {}
+    } catch (_) { }
 
     if (!assignedArtistStripeAccountId) {
       return res.status(400).json({ success: false, message: 'Assigned artist is missing Stripe account' });
@@ -777,7 +778,21 @@ const completeBooking = async (req, res) => {
       if (!artistWallet) {
         artistWallet = new Wallet({ userId: assignedArtistId, walletAmount: 0 });
       }
-      artistWallet.walletAmount += amountPaid;
+      // Determine if artist account is older than one month to apply 15% commission
+      let commissionAmount = 0;
+      try {
+        const artistDoc = await User.findById(assignedArtistId).select('createdAt');
+        if (artistDoc && artistDoc.createdAt) {
+          const accountAgeMs = Date.now() - new Date(artistDoc.createdAt).getTime();
+          const oneMonthMs = 30 * 24 * 60 * 60 * 1000;
+          if (accountAgeMs >= oneMonthMs) {
+            commissionAmount = Math.round(amountPaid * 0.15 * 100) / 100; // 15%
+          }
+        }
+      } catch (_) { /* ignore commission calc errors, default to 0 */ }
+
+      const payoutAmount = Math.max(0, amountPaid - commissionAmount);
+      artistWallet.walletAmount += payoutAmount;
       await artistWallet.save();
 
       // Record transaction of type 'full' with logged-in client as sender
@@ -786,6 +801,7 @@ const completeBooking = async (req, res) => {
         receiver: assignedArtistId,
         bookingId: booking._id,
         amount: amountPaid,
+        commission: commissionAmount,
         transactionType: 'full'
       });
       await tx.save();
@@ -906,11 +922,11 @@ const cancelBooking = async (req, res) => {
 
     // Update application status to cancelled for this booking and artist
     await Application.updateOne(
-      { 
+      {
         'Booking.booking_id': bookingId,
         'Booking.artist_id': artistId
       },
-      { 
+      {
         $set: { 'Booking.$.status': 'cancelled' }
       }
     );
@@ -996,15 +1012,15 @@ const cancelBooking = async (req, res) => {
         console.log('No original transaction found for booking:', bookingId);
       }
 
-      // Create admin transaction record
-      const adminTransaction = new Transaction({
-        sender: req.user.id,
-        receiver: adminUser._id, // Admin user ID
-        bookingId: bookingId,
-        amount: adminFee,
-        transactionType: 'admin-fee'
-      });
-      await adminTransaction.save();
+      // // Create admin transaction record
+      // const adminTransaction = new Transaction({
+      //   sender: req.user.id,
+      //   receiver: adminUser._id, // Admin user ID
+      //   bookingId: bookingId,
+      //   amount: adminFee,
+      //   transactionType: 'admin-fee'
+      // });
+      // await adminTransaction.save();
 
       console.log('Refund processed:', {
         totalPaid: paidAmount,
@@ -1014,9 +1030,26 @@ const cancelBooking = async (req, res) => {
       });
     } else if (diffDays >= 7 && diffDays <= 14 && paidAmount > 0) {
       // 7-14 days: 40% refund to client, 10% to admin, 50% to artist
-      const refundAmount = paidAmount * 0.4; // 40% refund to client
-      const adminFee = paidAmount * 0.1; // 10% admin fee
-      const artistAmount = paidAmount * 0.5; // 50% to artist
+      // Check artist account creation date to adjust admin fee
+      const artist = await User.findById(artistId);
+      if (!artist) {
+        return res.status(404).json({
+          success: false,
+          message: 'Artist not found'
+        });
+      }
+
+      const accountCreationDate = new Date(artist.createdAt);
+      const oneMonthAgo = new Date();
+      oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+
+      // If artist account was created more than one month ago, reduce admin fee to 5%
+      // If less than one month, charge normal 10% admin fee
+      const adminFeePercentage = accountCreationDate < oneMonthAgo ? 0.0 : 0.1;
+
+      const refundAmount = paidAmount * 0.5; // 50% refund to client
+      const adminFee = paidAmount * adminFeePercentage;
+      const artistAmount = paidAmount - refundAmount - adminFee; // Remaining to artist
 
       // Find admin user and their wallet
       const adminUser = await User.findOne({ userType: 'admin' });
@@ -1061,7 +1094,7 @@ const cancelBooking = async (req, res) => {
         newBalance: clientWallet.walletAmount
       });
 
-      // Find artist wallet and add 50% to it
+      // Find artist wallet and add 40% to it
       let artistWallet = await Wallet.findOne({ userId: artistId });
       if (!artistWallet) {
         console.log('Artist wallet not found for user:', artistId);
@@ -1071,7 +1104,7 @@ const cancelBooking = async (req, res) => {
         });
       }
 
-      // Add 50% to artist wallet
+      // Add 40% to artist wallet
       artistWallet.walletAmount += artistAmount;
       await artistWallet.save();
 
@@ -1105,15 +1138,15 @@ const cancelBooking = async (req, res) => {
         console.log('No original transaction found for booking:', bookingId);
       }
 
-      // Create admin transaction record
-      const adminTransaction = new Transaction({
-        sender: req.user.id,
-        receiver: adminUser._id, // Admin user ID
-        bookingId: bookingId,
-        amount: adminFee,
-        transactionType: 'admin-fee'
-      });
-      await adminTransaction.save();
+      // // Create admin transaction record
+      // const adminTransaction = new Transaction({
+      //   sender: req.user.id,
+      //   receiver: adminUser._id, // Admin user ID
+      //   bookingId: bookingId,
+      //   amount: adminFee,
+      //   transactionType: 'admin-fee'
+      // });
+      // await adminTransaction.save();
 
       console.log('50% refund processed:', {
         totalPaid: paidAmount,
@@ -1124,8 +1157,25 @@ const cancelBooking = async (req, res) => {
     } else {
       // Less than 7 days: 90% to artist, 10% to admin
       if (diffDays < 7 && paidAmount > 0) {
-        const artistAmount = paidAmount * 0.9; // 90% to artist
-        const adminFee = paidAmount * 0.1; // 10% to admin
+        // Check artist account creation date to adjust admin fee
+        const artist = await User.findById(artistId);
+        if (!artist) {
+          return res.status(404).json({
+            success: false,
+            message: 'Artist not found'
+          });
+        }
+
+        const accountCreationDate = new Date(artist.createdAt);
+        const oneMonthAgo = new Date();
+        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+
+        // If artist account was created more than one month ago, reduce admin fee to 5%
+        // If less than one month, charge normal 10% admin fee
+        const adminFeePercentage = accountCreationDate < oneMonthAgo ? 0.0 : 0.1;
+
+        const adminFee = paidAmount * adminFeePercentage;
+        const artistAmount = paidAmount - adminFee; // Remaining to artist
 
         // Find admin user
         const adminUser = await User.findOne({ userType: 'admin' });
@@ -1166,15 +1216,15 @@ const cancelBooking = async (req, res) => {
           newBalance: artistWallet.walletAmount
         });
 
-        // Create admin fee transaction
-        const adminTransaction = new Transaction({
-          sender: req.user.id,
-          receiver: adminUser._id,
-          bookingId: bookingId,
-          amount: adminFee,
-          transactionType: 'admin-fee'
-        });
-        await adminTransaction.save();
+        // // Create admin fee transaction
+        // const adminTransaction = new Transaction({
+        //   sender: req.user.id,
+        //   receiver: adminUser._id,
+        //   bookingId: bookingId,
+        //   amount: adminFee,
+        //   transactionType: 'admin-fee'
+        // });
+        // await adminTransaction.save();
 
 
 
@@ -1295,7 +1345,7 @@ const cancelBooking = async (req, res) => {
 // @access  Private (Client only)
 const updateBookingPaymentStatus = async (req, res) => {
   try {
-    const { isPaid, remainingPayment, bookingId, artistId} = req.body;
+    const { isPaid, remainingPayment, bookingId, artistId } = req.body;
 
     // Validate required fields
     if (!isPaid) {
@@ -1341,14 +1391,14 @@ const updateBookingPaymentStatus = async (req, res) => {
 
     // Update booking payment fields
     booking.isPaid = isPaid;
-    
+
     // Add remaining amount to existing paymentPaid amount
     const existingPaymentPaid = Number(booking.paymentPaid) || 0;
     const remainingAmount = Number(remainingPayment) || 0;
     const totalPaidAmount = existingPaymentPaid + remainingAmount;
-    
+
     booking.paymentPaid = String(totalPaidAmount);
-    
+
     if (remainingPayment !== undefined) {
       booking.remainingPayment = String(0);
     }
@@ -1439,10 +1489,11 @@ const processRefund = async (req, res) => {
     userWallet.walletAmount += refundAmount;
     await userWallet.save();
 
-    
+
 
     // Reset booking status and payment fields
-    booking.status = 'cancelled';
+    booking.status = 'pending';
+    booking.reinstate = false;
     booking.paymentPaid = '0';
     booking.remainingPayment = '0';
     booking.isPaid = 'none';
@@ -1459,15 +1510,15 @@ const processRefund = async (req, res) => {
     });
 
     // Create refund transaction record
-      const refundTransaction = new Transaction({
-        sender: artistId,
-        receiver: userId,
-        bookingId: bookingId,
-        amount: refundAmount,
-        transactionType: 'refund'
-      });
-      await refundTransaction.save();
-      console.log('Refund transaction created:', refundTransaction);
+    const refundTransaction = new Transaction({
+      sender: artistId,
+      receiver: userId,
+      bookingId: bookingId,
+      amount: refundAmount,
+      transactionType: 'refund'
+    });
+    await refundTransaction.save();
+    console.log('Refund transaction created:', refundTransaction);
 
     return res.status(200).json({
       success: true,
@@ -1488,6 +1539,92 @@ const processRefund = async (req, res) => {
     })
   }
 }
+
+// @desc    Process refund for booking by admin
+// @route   POST /api/admin/bookings/refund
+// @access  Private (Admin only)
+const processRefundByAdmin = async (req, res) => {
+  try {
+    const { bookingId, userId, artistId } = req.body;
+
+    if (!bookingId || !userId || !artistId) {
+      return res.status(400).json({
+        success: false,
+        message: 'bookingId, userId, and artistId are required'
+      });
+    }
+
+    // Find the booking
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    // Admin can process refund for any booking, no ownership check needed
+
+    // Add refund amount to user's wallet
+    let userWallet = await Wallet.findOne({ userId: userId });
+    if (!userWallet) {
+      userWallet = new Wallet({ userId: userId, walletAmount: 0 });
+    }
+
+    const refundAmount = Number(booking.paymentPaid) || 0;
+    userWallet.walletAmount += refundAmount;
+    await userWallet.save();
+
+    // Reset booking status and payment fields
+    booking.status = 'pending';
+    booking.reinstate = false;
+    booking.paymentPaid = '0';
+    booking.remainingPayment = '0';
+    booking.isPaid = 'none';
+    booking.assignedArtist = []; // Clear assigned artists array
+    booking.appliedArtists = []; // Clear applied artists array
+    await booking.save();
+
+    console.log('Refund processed by admin:', {
+      bookingId: bookingId,
+      userId: userId,
+      artistId: artistId,
+      refundAmount: refundAmount,
+      newWalletBalance: userWallet.walletAmount,
+      processedBy: req.user.id
+    });
+
+    // Create refund transaction record
+    const refundTransaction = new Transaction({
+      sender: artistId,
+      receiver: userId,
+      bookingId: bookingId,
+      amount: refundAmount,
+      transactionType: 'refund'
+    });
+    await refundTransaction.save();
+    console.log('Refund transaction created:', refundTransaction);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Refund processed successfully by admin',
+      data: {
+        bookingId: booking._id,
+        refundAmount: refundAmount,
+        newWalletBalance: userWallet.walletAmount,
+        bookingStatus: booking.status
+      }
+    });
+
+  } catch (error) {
+    console.error('Process refund by admin error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while processing refund',
+    })
+  }
+}
+
 // @desc    Get nearby bookings within 3km radius
 // @route   GET /api/bookings/nearby
 // @access  Private (Artist only)
@@ -1516,14 +1653,14 @@ const getNearbyBookings = async (req, res) => {
     // Filter bookings within radius using Haversine formula
     const nearbyBookings = bookings.filter(booking => {
       if (!booking.latitude || !booking.longitude) return false;
-      
+
       const R = 6371; // Earth's radius in kilometers
       const dLat = (booking.latitude - userLat) * Math.PI / 180;
       const dLng = (booking.longitude - userLng) * Math.PI / 180;
-      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(userLat * Math.PI / 180) * Math.cos(booking.latitude * Math.PI / 180) *
-                Math.sin(dLng/2) * Math.sin(dLng/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(userLat * Math.PI / 180) * Math.cos(booking.latitude * Math.PI / 180) *
+        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
       const distance = R * c;
 
       return distance <= radiusKm;
@@ -1557,10 +1694,10 @@ const calculateDistance = (lat1, lng1, lat2, lng2) => {
   const R = 6371; // Earth's radius in kilometers
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLng/2) * Math.sin(dLng/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 };
 
@@ -1632,6 +1769,7 @@ module.exports = {
   cancelBooking,
   updateBookingPaymentStatus,
   processRefund,
+  processRefundByAdmin,
   getNearbyBookings,
   saveBooking,
   unsaveBooking,

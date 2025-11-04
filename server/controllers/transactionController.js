@@ -259,7 +259,7 @@ module.exports = {
 module.exports.getPlatformTransactions = async (req, res) => {
   try {
     // Filter only half/full transactions
-    const txs = await Transaction.find({ transactionType: { $in: ['half', 'full'] } })
+    const txs = await Transaction.find({ transactionType: { $in: ['full'] } })
       .populate('sender', 'firstName lastName')
       .populate('receiver', 'firstName lastName')
       .sort({ createdAt: -1 });
@@ -289,6 +289,7 @@ module.exports.getPlatformTransactions = async (req, res) => {
           commission: 0, // per requirement
           payout: proposedBudget, // total value
           status: t.transactionType === 'full' ? 'Paid' : 'Pending',
+          commission:t.commission,
           date: t.createdAt,
           method: 'Stripe'
         };

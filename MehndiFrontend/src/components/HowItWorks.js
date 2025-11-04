@@ -285,32 +285,12 @@ const HowItWorks = () => {
         <div style={{ textAlign: 'center', marginTop: '150px' }}>
           {activeTab === 'clients' ? (
             <div>
-              <button onClick={() => navigate('/booking')} style={{
-                backgroundColor: '#4A2C1D',
-                color: 'white',
-                border: 'none',
-                padding: '20px 40px',
-                borderRadius: '16px',
-                fontWeight: 700,
-                fontSize: '18px',
-                cursor: 'pointer',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-              }}>Post Your Mehndi Request</button>
+              <button onClick={() => navigate('/booking')} className='home__cta-button'>Post Your Mehndi Request</button>
               <div style={{ marginTop: '10px', color: '#6b6b6b' }}>It only takes 2 minutes — get offers today.</div>
             </div>
           ) : (
             <div>
-              <button onClick={() => navigate('/signup')} style={{
-                backgroundColor: '#4A2C1D',
-                color: 'white',
-                border: 'none',
-                padding: '20px 40px',
-                borderRadius: '16px',
-                fontWeight: 700,
-                fontSize: '18px',
-                cursor: 'pointer',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-              }}>Join as an Artist</button>
+              <button onClick={() => navigate('/signup')} className='home__cta-button'>Join as an Artist</button>
               <div style={{ marginTop: '10px', color: '#6b6b6b' }}>Sign up today — 0% commission for your first 3 months.</div>
             </div>
           )}

@@ -344,6 +344,14 @@ export const adminAPI = {
     const queryString = new URLSearchParams(params).toString();
     return apiRequest(`/admin/analytics/activity-by-city?${queryString}`);
   },
+
+  // Bookings refund
+  processRefundByAdmin: async ({ bookingId, userId, artistId }) => {
+    return apiRequest('/admin/bookings/refund', {
+      method: 'POST',
+      body: JSON.stringify({ bookingId, userId, artistId }),
+    });
+  },
 };
 
 // Public Blogs API

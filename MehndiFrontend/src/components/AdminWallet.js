@@ -39,7 +39,8 @@ const AdminWallet = () => {
   const kpi = useMemo(() => {
     const totalGross = filteredTransactions.reduce((s, r) => s + (Number(r.gross) || 0), 0);
     const totalPayout = filteredTransactions.reduce((s, r) => s + (Number(r.payout) || 0), 0);
-    return { totalGross, commission: 0, totalPayout };
+    const commission = filteredTransactions.reduce((s, r) => s + (Number(r.commission) || 0), 0);
+    return { totalGross, commission, totalPayout };
   }, [filteredTransactions]);
 
   const handleExportCSV = useCallback(() => {
@@ -352,7 +353,7 @@ const AdminWallet = () => {
                           <td style={{ color: '#0f172a' }}>{row.clientName}</td>
                           <td style={{ color: '#0f172a' }}>{row.artistName}</td>
                           <td style={{ color: '#0f172a', fontWeight: 700 }}>{row.gross != null ? formatGBP(row.gross) : '—'}</td>
-                          <td style={{ color: '#0f172a' }}>{formatGBP(0)}</td>
+                          <td style={{ color: '#0f172a' }}>{formatGBP(row.commission)}</td>
                           <td style={{ color: '#0f172a' }}>{formatGBP(row.payout)}</td>
                           <td>
                             <span className={`admin_status-badge ${row.status === 'Paid' ? 'completed' : 'pending'}`}>{row.status}</span>

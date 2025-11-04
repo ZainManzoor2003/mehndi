@@ -245,6 +245,12 @@ const BookingSchema = new mongoose.Schema({
     default: false
   },
 
+  // Reinstatement status
+  reinstate: {
+    type: Boolean,
+    default: false
+  },
+
   // Artist Assignment (can be multiple)
   assignedArtist: [
     {
