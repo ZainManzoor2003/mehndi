@@ -46,6 +46,8 @@ import PhoneVerify from './components/PhoneVerify';
 import AboutUsPage from './components/AboutUsPage';
 import EarnAsArtist from './components/EarnAsArtist';
 import BrowseRequests from './components/BrowseRequests';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsAndConditions from './components/TermsAndConditions';
 
 // Main Landing Page Component
 const LandingPage = () => (
@@ -121,6 +123,16 @@ function App() {
             <Route path="/earn-as-artist" element={
               <PublicWrapper>
                 <EarnAsArtist />
+              </PublicWrapper>
+            } />
+            <Route path="/privacy-policy" element={
+              <PublicWrapper>
+                <PrivacyPolicy />
+              </PublicWrapper>
+            } />
+            <Route path="/terms-conditions" element={
+              <PublicWrapper>
+                <TermsAndConditions />
               </PublicWrapper>
             } />
             <Route path="/booking" element={

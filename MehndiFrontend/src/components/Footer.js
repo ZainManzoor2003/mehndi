@@ -77,14 +77,14 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* <div className="footer__content" style={{ textAlign: 'center', minWidth: '220px' }}>
+          <div className="footer__content" style={{ textAlign: 'center', minWidth: '220px' }}>
             <h3 className="footer__title">Trust & Transparency</h3>
             <ul className="footer__list">
-              <li><a href="#" className="footer__link" onClick={(e) => { e.preventDefault(); window.open('/privacy-policy', '_blank'); }}>Privacy Policy</a></li>
-              <li><a href="#" className="footer__link" onClick={(e) => { e.preventDefault(); window.open('/terms-conditions', '_blank'); }}>Terms & Conditions</a></li>
-              <li><a href="#" className="footer__link" onClick={(e) => { e.preventDefault(); window.open('/code-of-conduct', '_blank'); }}>Code of Conduct</a></li>
+              <li><a href="#" className="footer__link" onClick={(e) => { e.preventDefault(); navigate('/privacy-policy'); }}>Privacy Policy</a></li>
+              <li><a href="#" className="footer__link" onClick={(e) => { e.preventDefault(); navigate('/terms-conditions'); }}>Terms & Conditions</a></li>
+              {/* <li><a href="#" className="footer__link" onClick={(e) => { e.preventDefault(); navigate('/'); }}>Code of Conduct</a></li> */}
             </ul>
-          </div> */}
+          </div>
         </div>
       </div>
       
