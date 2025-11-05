@@ -105,6 +105,12 @@ const BookingSchema = new mongoose.Schema({
     maxlength: 20,
     required: false
   },
+  zipCode: {
+    type: String,
+    trim: true,
+    maxlength: 20,
+    required: false
+  },
   latitude: {
     type: Number,
     min: [-90, 'Latitude must be between -90 and 90'],
