@@ -1473,8 +1473,8 @@ const processRefund = async (req, res) => {
       });
     }
 
-    // Check if booking status is confirmed
-    if (booking.status !== 'confirmed') {
+    // Check if booking is cancelled from artist side
+    if (booking.reinstate !== true) {
       return res.status(400).json({
         success: false,
         message: 'Refund cannot be proceesed for this booking'
