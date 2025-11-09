@@ -162,7 +162,7 @@ const BookingSchema = new mongoose.Schema({
   // Design Preferences
   designStyle: {
     type: String,
-    required: [true, 'Design style is required'],
+    required: false,
     trim: true,
     maxlength: 500
   },

@@ -128,7 +128,6 @@ const BrowseRequests = () => {
         maximumBudget: b.maximumBudget ?? '',
         duration: b.duration ?? 3,
         numberOfPeople: b.numberOfPeople ?? '',
-        designStyle: b.designStyle || '',
         designInspiration: Array.isArray(b.designInspiration) ? b.designInspiration : (b.designInspiration ? [b.designInspiration] : []),
         coveragePreference: b.coveragePreference || '',
         additionalRequests: b.additionalRequests || ''
@@ -264,7 +263,7 @@ const BrowseRequests = () => {
               {filtered.map(b => (
                 <div key={b._id} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, boxShadow: '0 2px 8px rgba(0,0,0,.06)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontWeight: 700 }}>{`${b.designStyle || 'Mehndi'} in ${b.city || b.location || ''}`}</div>
+                    <div style={{ fontWeight: 700 }}>{`${Array.isArray(b.eventType) ? b.eventType[0] : b.eventType || 'Mehndi'} in ${b.city || b.location || ''}`}</div>
                     <button onClick={() => toggleSave(b._id, b.__saved)} disabled={!!saving[b._id]} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
                       {b.__saved ? <FaHeart color="#b45309" /> : <FaRegHeart color="#b45309" />}
                     </button>

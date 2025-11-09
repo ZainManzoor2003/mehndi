@@ -158,7 +158,7 @@ const AboutUsPage = () => {
             <div style={{ marginBottom: '3rem' }}>
               <h1 style={{ 
                 fontSize: '3.5rem', 
-                color: 'var(--ad-text)', 
+                color: '#8B4513', 
                 marginBottom: '1rem',
                 fontWeight: '700',
                 lineHeight: '1.2'
@@ -167,7 +167,7 @@ const AboutUsPage = () => {
               </h1>
               <p style={{ 
                 fontSize: '1.5rem', 
-                color: 'var(--ad-text)', 
+                color: '#8B4513', 
                 fontStyle: 'italic',
                 fontWeight: '400',
                 margin: 0
@@ -316,7 +316,7 @@ const AboutUsPage = () => {
               <div>
                 <p style={{ 
                   fontSize: '1.2rem', 
-                  color: 'var(--ad-text)', 
+                  color: '#8B4513', 
                   lineHeight: '1.2',
                   marginBottom: '1rem'
                 }}>
@@ -324,7 +324,7 @@ const AboutUsPage = () => {
                 </p>
                 <p style={{ 
                   fontSize: '1.2rem', 
-                  color: 'var(--ad-text)', 
+                  color: '#8B4513', 
                   lineHeight: '1.2',
                   marginBottom: '1.5rem'
                 }}>
@@ -332,7 +332,7 @@ const AboutUsPage = () => {
                 </p>
                 <p style={{ 
                   fontSize: '1.2rem', 
-                  color: 'var(--ad-text)', 
+                  color: '#8B4513', 
                   lineHeight: '1.2',
                   marginBottom: '1rem'
                 }}>
@@ -340,7 +340,7 @@ const AboutUsPage = () => {
                 </p>
                 <p style={{ 
                   fontSize: '1.2rem', 
-                  color: 'var(--ad-text)', 
+                  color: '#8B4513', 
                   lineHeight: '1.2',
                   marginBottom: '1rem'
                 }}>
@@ -348,7 +348,7 @@ const AboutUsPage = () => {
                 </p>
                 <p style={{ 
                   fontSize: '1.2rem', 
-                  color: 'var(--ad-text)', 
+                  color: '#8B4513', 
                   lineHeight: '1.2'
                 }}>
                   making plans.
@@ -356,12 +356,12 @@ const AboutUsPage = () => {
               </div>
               <div style={{ 
                 background: '#fff', 
-                padding: '2rem', 
+                padding: '1rem', 
                 borderRadius: '15px',
                 boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
                 position: 'relative'
               }}>
-                <div style={{
+                {/* <div style={{
                   position: 'absolute',
                   top: '1rem',
                   left: '1rem',
@@ -373,15 +373,15 @@ const AboutUsPage = () => {
                   fontWeight: '600'
                 }}>
                   Real Moment
-                </div>
+                </div> */}
                 <div style={{
-                  height: '200px',
+                  height: '300px',
                   borderRadius: '10px',
-                  marginTop: '2rem',
+                  // marginTop: '2rem',
                   overflow: 'hidden'
                 }}>
                   <img 
-                    src="https://images.unsplash.com/photo-1680490964820-7afb13f2e35c?q=80&w=400&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" 
+                    src="/images/about 1.png" 
                     alt="Henna cones prepared on a tray"
                     style={{
                       width: '100%',
@@ -404,12 +404,12 @@ const AboutUsPage = () => {
             }}>
               <div style={{ 
                 background: '#fff', 
-                padding: '2rem', 
+                padding: '1rem', 
                 borderRadius: '15px',
                 boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
                 position: 'relative'
               }}>
-                <div style={{
+                {/* <div style={{
                   position: 'absolute',
                   top: '1rem',
                   left: '1rem',
@@ -421,15 +421,15 @@ const AboutUsPage = () => {
                   fontWeight: '600'
                 }}>
                   Silence
-                </div>
+                </div> */}
                 <div style={{
-                  height: '200px',
+                  height: '300px',
                   borderRadius: '10px',
-                  marginTop: '2rem',
+                  // marginTop: '2rem',
                   overflow: 'hidden'
                 }}>
                   <img 
-                    src="https://images.unsplash.com/photo-1680490964820-7afb13f2e35c?q=80&w=400&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" 
+                    src="/images/about 2.png" 
                     alt="Beautiful mehndi design in progress"
                     style={{
                       width: '100%',
@@ -442,7 +442,7 @@ const AboutUsPage = () => {
               <div>
                 <p style={{ 
                   fontSize: '1.2rem', 
-                  color: 'var(--ad-text)', 
+                  color: '#8B4513', 
                   lineHeight: '1.6',
                   marginBottom: '1rem'
                 }}>
@@ -450,7 +450,7 @@ const AboutUsPage = () => {
                 </p>
                 <div style={{ 
                   fontSize: '2rem', 
-                  color: 'var(--ad-text)', 
+                  color: '#8B4513', 
                   lineHeight: '1.4',
                   fontWeight: 'bold',
                   marginBottom: '1rem'
@@ -503,7 +503,7 @@ const AboutUsPage = () => {
               <div>
                 <p style={{ 
                   fontSize: '1.2rem', 
-                  color: 'var(--ad-text)', 
+                  color: '#8B4513', 
                   lineHeight: '1',
                   marginBottom: '1rem'
                 }}>
@@ -511,7 +511,7 @@ const AboutUsPage = () => {
                 </p>
                 <p style={{ 
                   fontSize: '1.2rem', 
-                  color: 'var(--ad-text)', 
+                  color: '#8B4513', 
                   lineHeight: '1',
                   marginBottom: '1rem'
                 }}>
@@ -519,7 +519,7 @@ const AboutUsPage = () => {
                 </p>
                 <p style={{ 
                   fontSize: '1.2rem', 
-                  color: 'var(--ad-text)', 
+                  color: '#8B4513', 
                   lineHeight: '1',
                   marginBottom: '1rem'
                 }}>
@@ -527,7 +527,7 @@ const AboutUsPage = () => {
                 </p>
                 <p style={{ 
                   fontSize: '1.2rem', 
-                  color: 'var(--ad-text)', 
+                  color: '#8B4513', 
                   lineHeight: '1',
                   marginBottom: '1.5rem'
                 }}>
@@ -535,7 +535,7 @@ const AboutUsPage = () => {
                 </p>
                 <p style={{ 
                   fontSize: '1.2rem', 
-                  color: 'var(--ad-text)', 
+                  color: '#8B4513', 
                   lineHeight: '1',
                   marginBottom: '1rem'
                 }}>
@@ -543,7 +543,7 @@ const AboutUsPage = () => {
                 </p>
                 <p style={{ 
                   fontSize: '1.2rem', 
-                  color: 'var(--ad-text)', 
+                  color: '#8B4513', 
                   lineHeight: '1',
                   marginBottom: '1rem'
                 }}>
@@ -551,7 +551,7 @@ const AboutUsPage = () => {
                 </p>
                 <p style={{ 
                   fontSize: '1.2rem', 
-                  color: 'var(--ad-text)', 
+                  color: '#8B4513', 
                   lineHeight: '1',
                   marginBottom: '1rem'
                 }}>
@@ -559,7 +559,7 @@ const AboutUsPage = () => {
                 </p>
                 <p style={{ 
                   fontSize: '1.2rem', 
-                  color: 'var(--ad-text)', 
+                  color: '#8B4513', 
                   lineHeight: '1',
                   marginBottom: '1rem'
                 }}>
@@ -567,7 +567,7 @@ const AboutUsPage = () => {
                 </p>
                 <p style={{ 
                   fontSize: '1.2rem', 
-                  color: 'var(--ad-text)', 
+                  color: '#8B4513', 
                   lineHeight: '1'
                 }}>
                   reliable way to connect at the right time.
@@ -575,12 +575,12 @@ const AboutUsPage = () => {
               </div>
               <div style={{ 
                 background: '#fff', 
-                padding: '2rem', 
+                padding: '1rem', 
                 borderRadius: '15px',
                 boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
                 position: 'relative'
               }}>
-                <div style={{
+                {/* <div style={{
                   position: 'absolute',
                   top: '1rem',
                   left: '1rem',
@@ -592,15 +592,15 @@ const AboutUsPage = () => {
                   fontWeight: '600'
                 }}>
                   Common Story
-                </div>
+                </div> */}
                 <div style={{
-                  height: '200px',
+                  height: '300px',
                   borderRadius: '10px',
-                  marginTop: '2rem',
+                  // marginTop: '2rem',
                   overflow: 'hidden'
                 }}>
                   <img 
-                    src="https://images.unsplash.com/photo-1680490964820-7afb13f2e35c?q=80&w=400&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" 
+                    src="/images/about 3.png" 
                     alt="Final mehndi design on wedding day"
                     style={{
                       width: '100%',
@@ -632,7 +632,7 @@ const AboutUsPage = () => {
             </p>
             <h2 style={{ 
               fontSize: '3rem', 
-              color: 'var(--ad-text)', 
+              color: '#8B4513', 
               fontWeight: 'bold',
               lineHeight: '1.2',
               // maxWidth: '900px',
@@ -689,7 +689,7 @@ const AboutUsPage = () => {
                 <span style={{fontSize: '2rem'}}>📝</span>
                 </div>
                 <h3 style={{ 
-                  color: 'var(--ad-text)', 
+                  color: '#8B4513', 
                   marginBottom: '1rem',
                   fontSize: '1.3rem',
                   fontWeight: 'bold'
@@ -697,7 +697,7 @@ const AboutUsPage = () => {
                   Clients Post Requests
                 </h3>
                 <p style={{ 
-                  color: '#666', 
+                  color: '#8B4513', 
                   lineHeight: '1.6',
                   fontSize: '1rem'
                 }}>
@@ -742,7 +742,7 @@ const AboutUsPage = () => {
                   <span style={{fontSize: '2rem'}}>🎨</span>
                 </div>
                 <h3 style={{ 
-                  color: 'var(--ad-text)', 
+                  color: '#8B4513', 
                   marginBottom: '1rem',
                   fontSize: '1.3rem',
                   fontWeight: 'bold'
@@ -750,7 +750,7 @@ const AboutUsPage = () => {
                   Artists Apply to You
                 </h3>
                 <p style={{ 
-                  color: '#666', 
+                  color: '#8B4513', 
                   lineHeight: '1.6',
                   fontSize: '1rem'
                 }}>
@@ -795,7 +795,7 @@ const AboutUsPage = () => {
                   <span style={{fontSize: '2rem'}}>🛡️</span>    
                 </div>
                 <h3 style={{ 
-                  color: 'var(--ad-text)', 
+                  color: '#8B4513', 
                   marginBottom: '1rem',
                   fontSize: '1.3rem',
                   fontWeight: 'bold'
@@ -803,7 +803,7 @@ const AboutUsPage = () => {
                   Book with Confidence
                 </h3>
                 <p style={{ 
-                  color: '#666', 
+                  color: '#8B4513', 
                   lineHeight: '1.6',
                   fontSize: '1rem'
                 }}>
@@ -832,7 +832,7 @@ const AboutUsPage = () => {
             }}>
               <p style={{ 
                 fontSize: '1.3rem', 
-                color: 'var(--ad-text)', 
+                color: '#8B4513', 
                 lineHeight: '1.6',
                 marginBottom: '1rem',
                 fontStyle: 'italic'
@@ -841,7 +841,7 @@ const AboutUsPage = () => {
               </p>
               <p style={{ 
                 fontSize: '1rem', 
-                color: 'var(--ad-text)', 
+                color: '#8B4513', 
                 fontWeight: '500'
               }}>
                 — Zara & Imran, London
@@ -874,7 +874,7 @@ const AboutUsPage = () => {
               </div>
               <span style={{
                 fontSize: '1rem',
-                color: 'var(--ad-text)',
+                color: '#8B4513',
                 fontWeight: '500'
               }}>
                 Verified contact details and reviews keep bookings safe.
@@ -890,7 +890,7 @@ const AboutUsPage = () => {
           }}>
             <h2 style={{ 
               fontSize: '2.65rem', 
-              color: 'var(--ad-text)', 
+              color: '#8B4513', 
               marginBottom: '1rem',
               fontWeight: 'bold',
               lineHeight: '1.2'
@@ -899,7 +899,7 @@ const AboutUsPage = () => {
             </h2>
             <p style={{ 
               fontSize: '1.2rem', 
-              color: 'var(--ad-text)', 
+              color: '#8B4513', 
               marginBottom: '3rem',
               lineHeight: '1.6',
               // maxWidth: '800px',

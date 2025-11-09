@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
-import { FaLock, FaCalendarCheck, FaSearchDollar, FaHandshake, FaChartLine, FaMapPin, FaClock, FaStar, FaSearch, 
+import { FaLock, FaHandshake, FaMapPin, FaClock, FaStar, FaSearch, 
   FaBriefcase, FaCalendarAlt } from 'react-icons/fa';
 
 // Add responsive styles
@@ -188,7 +188,6 @@ const responsiveStyles = `
 `;
 
 const EarnAsArtist = () => {
-  const navigate = useNavigate();
   // Scroll to top on mount
  useEffect(() => {
   try {
@@ -197,10 +196,6 @@ const EarnAsArtist = () => {
     window.scrollTo(0, 0);
   }
 }, []);
-
-  const handleJoinAsArtist = () => {
-    navigate('/signup');
-  };
 
   return (
     <>
@@ -232,17 +227,12 @@ const EarnAsArtist = () => {
               Join <strong>Mehndi Me</strong>, the platform built for mehndi artists — where your creativity is celebrated, your time is respected, and your talent turns into steady
 bookings.
             </p>
-            <button
-              onClick={handleJoinAsArtist}
-              className="nav__cta-button"
-              style={{
-                fontSize: '1.1rem',
-                padding: '0.75rem 1.5rem',
-                borderRadius:'10px'
-              }}
+            <Link
+              to="/signup"
+              className="home__cta-button"
             >
               Join as an Artist
-            </button>
+            </Link>
                 <p style={{
                   fontSize: '1rem',
                   color: '#8B4513',
@@ -489,12 +479,21 @@ bookings.
                     </p>
                   </div>
                   <div className="flip-card-back">
+                    <h3 style={{
+                      fontSize: '1.2rem',
+                      fontWeight: 'bold',
+                      color: '#8B4513',
+                      marginBottom: '12px',
+                      textAlign: 'left'
+                    }}>
+                      Join as a Founding Artist
+                    </h3>
                     <p style={{
                       lineHeight: '1.6',
                       fontSize: '1rem',
                       textAlign: 'left'
                     }}>
-                      That's why we tell you from day one that after your first 3 months, we charge a 15% commission — no surprises, no hidden fees.
+                      Get 0% commission for your first month and keep 100% of your earnings. After that, our 10% commission applies — simple, transparent, no hidden fees.
                     </p>
                   </div>
                 </div>
@@ -696,35 +695,12 @@ bookings.
               }}>
                 Create your artist profile in minutes and start getting booked by clients who love your style.
               </p>
-              <button
-                onClick={handleJoinAsArtist}
-                style={{
-                  backgroundColor: '#CD853F',
-                  color: 'white',
-                  border: 'none',
-                  padding: '16px 32px',
-                  borderRadius: '12px',
-                  fontSize: '1.1rem',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 12px rgba(205, 133, 63, 0.3)',
-                  transition: 'all 0.3s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  margin: '0 auto'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.transform = 'translateY(-2px)';
-                  e.target.style.boxShadow = '0 6px 16px rgba(205, 133, 63, 0.4)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = '0 4px 12px rgba(205, 133, 63, 0.3)';
-                }}
+              <Link
+                to="/signup"
+                className="home__cta-button"
               >
                 Get Started →
-              </button>
+              </Link>
             </div>
           </div>
         </section>

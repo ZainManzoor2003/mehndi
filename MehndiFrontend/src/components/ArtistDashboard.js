@@ -458,7 +458,6 @@ const ArtistDashboard = () => {
         fullClientName: `${b.firstName} ${b.lastName}`,
         location: b.location || b.city || '',
         city: b.city || '',
-        designStyle: b.designStyle || '',
         designComplexity: b.designComplexity || '',
         numberOfPeople: b.numberOfPeople || 0,
         duration: b.duration || 0,
@@ -702,7 +701,6 @@ const ArtistDashboard = () => {
         maximumBudget: b.maximumBudget ?? '',
         duration: b.duration ?? 3,
         numberOfPeople: b.numberOfPeople ?? '',
-        designStyle: b.designStyle || '',
         designInspiration: Array.isArray(b.designInspiration) ? b.designInspiration : (b.designInspiration ? [b.designInspiration] : []),
         coveragePreference: b.coveragePreference || '',
         additionalRequests: b.additionalRequests || ''
@@ -750,7 +748,7 @@ const ArtistDashboard = () => {
         return {
         id: b._id,
         bookingId: b._id,
-        title: `${b.designStyle || 'Mehndi'} in ${b.city || b.location || ''}`,
+        title: `${Array.isArray(b.eventType) ? b.eventType[0] : b.eventType || 'Mehndi'} in ${b.city || b.location || ''}`,
         client: b.clientId ? `${b.clientId.firstName || ''} ${b.clientId.lastName || ''}`.trim() || 'Client' : 'Client',
         budget: `£${b.minimumBudget ?? 0}–£${b.maximumBudget ?? 0}`,
         appliedOn: b.createdAt ? new Date(b.createdAt).toLocaleDateString('en-GB') : '',
@@ -3567,14 +3565,14 @@ useEffect(() => {
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                     {(() => {
-                                      const label = (Array.isArray(headerBooking.eventType) ? headerBooking.eventType[0] : headerBooking.eventType) || headerBooking.designStyle || 'M';
+                                      const label = (Array.isArray(headerBooking.eventType) ? headerBooking.eventType[0] : headerBooking.eventType) || 'M';
                                       const initial = String(label || 'M').trim().charAt(0).toUpperCase();
                                       return (
                                         <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#F5D9A6', color: '#8B5E34', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>{initial}</div>
                                       );
                                     })()}
                                     <div>
-                                      <div style={{ fontWeight: 700, color: '#1f2937' }}>{(Array.isArray(headerBooking.eventType) ? headerBooking.eventType[0] : headerBooking.eventType) || headerBooking.designStyle || 'Mehndi'}</div>
+                                      <div style={{ fontWeight: 700, color: '#1f2937' }}>{(Array.isArray(headerBooking.eventType) ? headerBooking.eventType[0] : headerBooking.eventType) || 'Mehndi'}</div>
                                       <div style={{ fontSize: 12, color: '#6b7280' }}>
                                         {headerBooking.eventDate ? new Date(headerBooking.eventDate).toLocaleString('en-GB', { day: '2-digit', month: 'short' }) : 'TBD'} · {headerBooking.preferredTimeSlot || '-'} · {(headerBooking.city || headerBooking.location) || '-'}
                                       </div>
@@ -3591,7 +3589,7 @@ useEffect(() => {
                                 {headerExpanded && (
                                   <>
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 10, color: '#4A2C1D' }}>
-                                      <div><strong>Event:</strong> {(headerBooking.designStyle || 'Mehndi')}{(headerBooking.city || headerBooking.location) ? ` at ${headerBooking.city || headerBooking.location}` : ''}</div>
+                                      <div><strong>Event:</strong> {(Array.isArray(headerBooking.eventType) ? headerBooking.eventType[0] : headerBooking.eventType) || 'Mehndi'}{(headerBooking.city || headerBooking.location) ? ` at ${headerBooking.city || headerBooking.location}` : ''}</div>
                                       <div><strong>Date:</strong> {headerBooking.eventDate ? new Date(headerBooking.eventDate).toLocaleString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'TBD'}</div>
                                       <div><strong>Location:</strong> {headerBooking.location || headerBooking.city || '-'}</div>
                                       <div><strong>Group Size:</strong> {headerBooking.numberOfPeople ?? '-'}</div>
@@ -3820,7 +3818,6 @@ useEffect(() => {
                   maximumBudget: headerBooking.maximumBudget ?? '',
                   duration: headerBooking.duration ?? 3,
                   numberOfPeople: headerBooking.numberOfPeople ?? '',
-                  designStyle: headerBooking.designStyle || '',
                   designInspiration: Array.isArray(headerBooking.designInspiration) ? headerBooking.designInspiration : (headerBooking.designInspiration ? [headerBooking.designInspiration] : []),
                   coveragePreference: headerBooking.coveragePreference || '',
                   additionalRequests: headerBooking.additionalRequests || ''
@@ -4830,33 +4827,6 @@ useEffect(() => {
                       </div>
                       )}
 
-                      {/* Design Style */}
-                      <div>
-                        <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Style You're Looking For</label>
-                        <div style={{
-                          display: 'grid',
-                          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                          gap: '1rem'
-                        }}>
-                          {['Bridal Mehndi', 'Party Mehndi', 'Festival Mehndi', 'Casual / Minimal Mehndi'].map(opt => (
-                            <div key={opt} style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              padding: '16px',
-                              border: `2px solid ${viewForm.designStyle === opt ? '#CD853F' : '#e0d5c9'}`,
-                              borderRadius: '12px',
-                              background: viewForm.designStyle === opt ? '#fff8f0' : '#faf8f5',
-                              transition: 'all 0.3s',
-                              position: 'relative'
-                            }}>
-                              <span style={{ fontSize: '0.95rem', fontWeight: '500' }}>{opt}</span>
-                              {viewForm.designStyle === opt && (
-                                <span style={{ position: 'absolute', right: '16px', color: '#CD853F', fontWeight: 'bold', fontSize: '1.3rem' }}>✓</span>
-                              )}
-                      </div>
-                          ))}
-                      </div>
-                      </div>
 
                       {/* Design Inspiration */}
                       {Array.isArray(viewForm.designInspiration) && viewForm.designInspiration.length > 0 && (

@@ -21,7 +21,7 @@ const ArtistIcon = ({ size = 18 }) => (
 );
 
 const HowItWorks = () => {
-  const [activeTab, setActiveTab] = useState('artists');
+  const [activeTab, setActiveTab] = useState('clients');
   const [leafDecorations, setLeafDecorations] = useState([]);
   const navigate=useNavigate()
   const mainRef = useRef(null);
@@ -291,7 +291,7 @@ const HowItWorks = () => {
           ) : (
             <div>
               <button onClick={() => navigate('/signup')} className='home__cta-button'>Join as an Artist</button>
-              <div style={{ marginTop: '10px', color: '#6b6b6b' }}>Sign up today — 0% commission for your first 3 months.</div>
+              <div style={{ marginTop: '10px', color: '#6b6b6b' }}>Sign up today — 0% commission for your first month.</div>
             </div>
           )}
         </div>

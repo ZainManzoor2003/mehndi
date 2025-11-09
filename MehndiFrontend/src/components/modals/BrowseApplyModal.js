@@ -70,7 +70,7 @@ const BrowseApplyModal = ({ open, onClose, onConfirm, busy = false, title = 'App
                 }}>
                   <div className="booking-header" style={{ marginBottom: '0', textAlign: 'left', flexDirection: 'column' }}>
                     <h4 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: '600', color: '#2c3e50', textAlign: 'left' }}>
-                      {(booking.designStyle || 'Mehndi') + (booking.city || booking.location ? ` at ${booking.city || booking.location}` : '')}
+                      {(Array.isArray(booking.eventType) ? booking.eventType[0] : booking.eventType || 'Mehndi') + (booking.city || booking.location ? ` at ${booking.city || booking.location}` : '')}
                     </h4>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#6c757d', justifyContent: 'flex-start' }}>

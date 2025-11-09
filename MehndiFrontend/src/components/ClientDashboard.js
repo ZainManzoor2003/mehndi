@@ -2517,14 +2517,14 @@ useEffect(() => {
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                   {(() => {
-                                    const label = (Array.isArray(headerBooking.eventType) ? headerBooking.eventType[0] : headerBooking.eventType) || headerBooking.designStyle || 'M';
+                                    const label = (Array.isArray(headerBooking.eventType) ? headerBooking.eventType[0] : headerBooking.eventType) || 'M';
                                     const initial = String(label || 'M').trim().charAt(0).toUpperCase();
                                     return (
                                       <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#F5D9A6', color: '#8B5E34', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>{initial}</div>
                                     );
                                   })()}
                                   <div>
-                                    <div style={{ fontWeight: 700, color: '#1f2937' }}>{(Array.isArray(headerBooking.eventType) ? headerBooking.eventType[0] : headerBooking.eventType) || headerBooking.designStyle || 'Mehndi'}</div>
+                                    <div style={{ fontWeight: 700, color: '#1f2937' }}>{(Array.isArray(headerBooking.eventType) ? headerBooking.eventType[0] : headerBooking.eventType) || 'Mehndi'}</div>
                                     <div style={{ fontSize: 12, color: '#6b7280' }}>
                                       {headerBooking.eventDate ? new Date(headerBooking.eventDate).toLocaleString('en-GB', { day: '2-digit', month: 'short' }) : 'TBD'} · {headerBooking.preferredTimeSlot || '-'} · {(headerBooking.city || headerBooking.location) || '-'}
                                     </div>
@@ -2536,7 +2536,7 @@ useEffect(() => {
                               </div>
                               {headerExpanded ? (
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 10, color: '#4A2C1D' }}>
-                                  <div><strong>Event:</strong> {(headerBooking.designStyle || 'Mehndi')}{(headerBooking.city || headerBooking.location) ? ` at ${headerBooking.city || headerBooking.location}` : ''}</div>
+                                  <div><strong>Event:</strong> {(Array.isArray(headerBooking.eventType) ? headerBooking.eventType[0] : headerBooking.eventType) || 'Mehndi'}{(headerBooking.city || headerBooking.location) ? ` at ${headerBooking.city || headerBooking.location}` : ''}</div>
                                   <div><strong>Date:</strong> {headerBooking.eventDate ? new Date(headerBooking.eventDate).toLocaleString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'TBD'}</div>
                                   <div><strong>Location:</strong> {headerBooking.location || headerBooking.city || '-'}</div>
                                   <div><strong>Group Size:</strong> {headerBooking.numberOfPeople ?? '-'}</div>
@@ -2752,7 +2752,6 @@ useEffect(() => {
                   maximumBudget: headerBooking.maximumBudget ?? '',
                   duration: headerBooking.duration ?? 3,
                   numberOfPeople: headerBooking.numberOfPeople ?? '',
-                  designStyle: headerBooking.designStyle || '',
                   designInspiration: Array.isArray(headerBooking.designInspiration) ? headerBooking.designInspiration : (headerBooking.designInspiration ? [headerBooking.designInspiration] : []),
                   coveragePreference: headerBooking.coveragePreference || '',
                   additionalRequests: headerBooking.additionalRequests || ''

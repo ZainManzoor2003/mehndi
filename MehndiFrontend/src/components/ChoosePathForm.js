@@ -101,7 +101,7 @@ const styles = {
   container: {
     minHeight: '100vh',
     marginTop: '6.5rem',
-    background: 'linear-gradient(135deg, #F8E1B8 0%, #F0CFA1 50%, #EBC792 100%)',
+    // background: 'linear-gradient(135deg, #F8E1B8 0%, #F0CFA1 50%, #EBC792 100%)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

@@ -102,19 +102,6 @@ const BrowseViewBookingModal = ({ open, viewForm, onClose, onApply, onMessage, s
               </div>
             )}
 
-            <div>
-              <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Style You're Looking For</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
-                {['Bridal Mehndi', 'Party Mehndi', 'Festival Mehndi', 'Casual / Minimal Mehndi'].map(opt => (
-                  <div key={opt} style={{ display: 'flex', alignItems: 'center', padding: '16px', border: `2px solid ${viewForm.designStyle === opt ? '#CD853F' : '#e0d5c9'}`, borderRadius: '12px', background: viewForm.designStyle === opt ? '#fff8f0' : '#faf8f5', transition: 'all 0.3s', position: 'relative' }}>
-                    <span style={{ fontSize: '0.95rem', fontWeight: '500' }}>{opt}</span>
-                    {viewForm.designStyle === opt && (
-                      <span style={{ position: 'absolute', right: '16px', color: '#CD853F', fontWeight: 'bold', fontSize: '1.3rem' }}>✓</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
 
             {Array.isArray(viewForm.designInspiration) && viewForm.designInspiration.length > 0 && (
               <div>

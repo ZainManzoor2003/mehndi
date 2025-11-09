@@ -347,14 +347,14 @@ const Header = () => {
                   <span className="nav__overlay-text">Blog</span>
                 </Link>
               </li>
-              {/* FAQ - scroll to FAQ section */}
+              {/* FAQ - link to FullFAQ page */}
               <li className="nav__overlay-item">
-                <a href="#faq" className="nav__overlay-link" onClick={(e) => handleNavClick(e, '#faq')}>
+                <Link to="/faq" className="nav__overlay-link" onClick={closeMenu}>
                   <span className="nav__overlay-number">
                     <img src="/images/6.png" alt="06" width="64" height="64" />
                   </span>
                   <span className="nav__overlay-text">FAQ</span>
-                </a>
+                </Link>
               </li>
               {/* About Us - navigate to page */}
               <li className="nav__overlay-item">

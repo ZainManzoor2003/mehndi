@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
 
 const CLIENT_FAQS = [
   { q: 'How do I find a Mehndi artist near me?', a: 'Post your request with date and location. Artists near you will apply with offers, availability and portfolio links.' },
@@ -17,21 +16,23 @@ const ARTIST_FAQS = [
   { q: 'Can I set travel distance?', a: 'Yes. Set “Available for travel” and your travel distance in km in your portfolio settings.' }
 ];
 
-const Pill = ({ active, onClick, children }) => (
-  <button onClick={onClick} style={{
-    background: active ? '#5C3D2E' : '#EDD6B3',
-    color: active ? '#fff' : '#5C3D2E',
-    border: 'none',
-    padding: '12px 18px',
-    borderRadius: '14px',
-    fontWeight: 700,
-    cursor: 'pointer',
-    marginRight: '10px'
-  }}>{children}</button>
+// Simple inline SVG icons to match HowItWorks
+const ClientIcon = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.8"/>
+    <path d="M4 20c0-3.314 3.582-6 8-6s8 2.686 8 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+  </svg>
 );
 
+const ArtistIcon = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M4 17l9-9 3 3-9 9H4v-3z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
+    <path d="M13 8l2-2 3 3-2 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+
 const FullFAQ = () => {
-  const navigate = useNavigate();
   const [tab, setTab] = useState('clients');
   const [query, setQuery] = useState('');
   const [openIdx, setOpenIdx] = useState(null);
@@ -70,9 +71,21 @@ const FullFAQ = () => {
         <h1 style={{ textAlign: 'center', color: '#4A2C1D', fontSize: '42px', margin: 0 }}>Frequently Asked Questions</h1>
         <p style={{ textAlign: 'center', color: '#6b5544', marginTop: 8 }}>Find quick answers to common questions from our Mehndi Me community 🌿</p>
 
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 18 }}>
-          <Pill active={tab === 'clients'} onClick={() => { setTab('clients'); setOpenIdx(null); }}>For Clients</Pill>
-          <Pill active={tab === 'artists'} onClick={() => { setTab('artists'); setOpenIdx(null); }}>For Artists</Pill>
+        <div className="how-it-works__tabs" style={{ marginTop: 18 }}>
+          <button 
+            className={`how-it-works__tab ${tab === 'clients' ? 'active' : ''}`}
+            onClick={() => { setTab('clients'); setOpenIdx(null); }}
+          >
+            <span className="tab-icon"><ClientIcon /></span>
+            Clients
+          </button>
+          <button 
+            className={`how-it-works__tab ${tab === 'artists' ? 'active' : ''}`}
+            onClick={() => { setTab('artists'); setOpenIdx(null); }}
+          >
+            <span className="tab-icon"><ArtistIcon /></span>
+            Artists
+          </button>
         </div>
 
         {/* Search */}

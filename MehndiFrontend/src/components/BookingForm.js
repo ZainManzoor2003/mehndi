@@ -34,7 +34,6 @@ const BookingForm = () => {
     venueName: '',
 
     // Mehndi Style
-    stylePreference: '',
     designInspiration: '',
     coveragePreference: '',
 
@@ -202,6 +201,11 @@ const BookingForm = () => {
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
 
+    // Clear error when user starts typing/selecting
+    if (error) {
+      setError('');
+    }
+
     if (type === 'checkbox') {
       setFormData(prev => ({
         ...prev,
@@ -222,13 +226,30 @@ const BookingForm = () => {
     }
   };
 
-  // Special handler for style preference (single selection)
-  const handleStyleChange = (value) => {
+  // Special handler for budget fields to prevent negative numbers
+  const handleBudgetChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Clear error when user starts typing
+    if (error) {
+      setError('');
+    }
+
+    // Remove any negative signs, minus signs, or non-numeric characters except empty string
+    let cleanValue = value.replace(/[^0-9]/g, '');
+    
+    // If the value is empty, allow it (for clearing the field)
+    if (value === '') {
+      cleanValue = '';
+    }
+    
+    // Update the form data with cleaned value
     setFormData(prev => ({
       ...prev,
-      stylePreference: value
+      [name]: cleanValue
     }));
   };
+
 
   const handleNumberChange = (field, increment) => {
     setFormData(prev => ({
@@ -245,8 +266,131 @@ const BookingForm = () => {
     }));
   };
 
+  // Validation functions for each step
+  const validateStep1 = () => {
+    if (!formData.fullName || !formData.fullName.trim()) {
+      setError('Please enter your full name');
+      return false;
+    }
+    // Check if full name has at least one space (first and last name)
+    if (!formData.fullName.trim().includes(' ')) {
+      setError('Please enter your full name with first and last name separated by a space (e.g., "Mudassar Ali")');
+      return false;
+    }
+    // Check if there's at least one character before and after the space
+    const nameParts = formData.fullName.trim().split(/\s+/);
+    if (nameParts.length < 2 || nameParts[0].length === 0 || nameParts[1].length === 0) {
+      setError('Please enter both first and last name separated by a space');
+      return false;
+    }
+    return true;
+  };
+
+  const validateStep2 = () => {
+    if (!formData.eventType) {
+      setError('Please select an event type');
+      return false;
+    }
+    if (formData.eventType === 'Other' && !formData.otherEventType?.trim()) {
+      setError('Please specify the event type');
+      return false;
+    }
+    if (!formData.eventDate) {
+      setError('Please select an event date');
+      return false;
+    }
+    // Check if event date is in the future
+    const eventDate = new Date(formData.eventDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (eventDate <= today) {
+      setError('Event date must be in the future');
+      return false;
+    }
+    if (!formData.preferredTimeSlot) {
+      setError('Please select a preferred time slot');
+      return false;
+    }
+    if (!formData.location) {
+      setError('Please select a city');
+      return false;
+    }
+    if (!formData.latitude || !formData.longitude) {
+      setError('Please select your location on the map');
+      return false;
+    }
+    if (!formData.artistTravelsToClient) {
+      setError('Please select travel preference');
+      return false;
+    }
+    // Venue name is optional, but if Wedding is selected, it's recommended (not required)
+    return true;
+  };
+
+  const validateStep3 = () => {
+    // Step 3 only has optional fields (design inspiration and coverage preference)
+    // Coverage preference is only required for Wedding events
+    if (formData.eventType === 'Wedding' && !formData.coveragePreference) {
+      setError('Coverage preference is required for wedding events');
+      return false;
+    }
+    return true;
+  };
+
+  const validateStep4 = () => {
+    if (!formData.budgetFrom || !formData.budgetTo) {
+      setError('Please enter budget range');
+      return false;
+    }
+    const budgetFrom = parseFloat(formData.budgetFrom);
+    const budgetTo = parseFloat(formData.budgetTo);
+    
+    if (isNaN(budgetFrom) || isNaN(budgetTo)) {
+      setError('Please enter valid budget amounts');
+      return false;
+    }
+    
+    if (budgetFrom < 0 || budgetTo < 0) {
+      setError('Budget amounts cannot be negative');
+      return false;
+    }
+    
+    if (budgetTo <= budgetFrom) {
+      setError('Maximum budget must be greater than minimum budget');
+      return false;
+    }
+    
+    if (!formData.numberOfPeople || formData.numberOfPeople < 1) {
+      setError('Please specify the number of people (minimum 1)');
+      return false;
+    }
+    
+    return true;
+  };
+
   const handleNextStep = () => {
-    if (currentStep < 5) {
+    setError('');
+    
+    // Validate current step before proceeding
+    let isValid = false;
+    switch (currentStep) {
+      case 1:
+        isValid = validateStep1();
+        break;
+      case 2:
+        isValid = validateStep2();
+        break;
+      case 3:
+        isValid = validateStep3();
+        break;
+      case 4:
+        isValid = validateStep4();
+        break;
+      default:
+        isValid = true;
+    }
+    
+    if (isValid && currentStep < 5) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -287,19 +431,10 @@ const BookingForm = () => {
       return;
     }
 
-    if (!formData.stylePreference) {
+    // Check if event type is Wedding and requires coverage preference
+    if (formData.eventType === 'Wedding' && !formData.coveragePreference) {
       setCurrentStep(3);
-      setError('Please select a style preference');
-      return;
-    }
-    if (formData.stylePreference === 'Bridal Mehndi' && !formData.venueName) {
-      setCurrentStep(2);
-      setError('Venue name is required for bridal mehndi');
-      return;
-    }
-    if (formData.stylePreference === 'Bridal Mehndi' && !formData.coveragePreference) {
-      setCurrentStep(3);
-      setError('Coverage preference is required for bridal mehndi');
+      setError('Coverage preference is required for wedding events');
       return;
     }
 
@@ -354,14 +489,13 @@ const BookingForm = () => {
         minimumBudget: budgetFrom,
         maximumBudget: budgetTo,
         numberOfPeople: parseInt(formData.numberOfPeople),
-        designStyle: formData.stylePreference,
         designInspiration: uploadedImages.length > 0 ? uploadedImages : [],
         coveragePreference: formData.coveragePreference || undefined,
         additionalRequests: formData.additionalRequests || undefined,
         duration: 3
       };
 
-      const response = await bookingsAPI.createBooking(bookingData);
+      await bookingsAPI.createBooking(bookingData);
 
       setSuccess('Your booking request has been submitted successfully!');
 
@@ -389,7 +523,7 @@ const BookingForm = () => {
   return (
     <>
       <div className="booking-container">
-        <div style={{textAlign: 'center', marginBottom: '16px' }}>
+        <div style={{textAlign: 'left', marginBottom: '16px', maxWidth: '900px', margin: '0 auto 10px' }}>
           <Link to="/dashboard" style={{ color: '#6b4f3b', textDecoration: 'none' }}>← Back to Dashboard</Link>
         </div>
         <div className="booking-form-container">
@@ -658,6 +792,9 @@ const BookingForm = () => {
                       />
                       <span className="time-icon">☀️</span>
                       <span className="time-text">Morning</span>
+                      {formData.preferredTimeSlot === 'Morning' && (
+                        <span className="checkmark">✓</span>
+                      )}
                     </label>
                     <label className={`time-slot-option ${formData.preferredTimeSlot === 'Afternoon' ? 'selected' : ''}`}>
                       <input
@@ -670,6 +807,9 @@ const BookingForm = () => {
                       />
                       <span className="time-icon">🌤️</span>
                       <span className="time-text">Afternoon</span>
+                      {formData.preferredTimeSlot === 'Afternoon' && (
+                        <span className="checkmark">✓</span>
+                      )}
                     </label>
                     <label className={`time-slot-option ${formData.preferredTimeSlot === 'Evening' ? 'selected' : ''}`}>
                       <input
@@ -682,6 +822,9 @@ const BookingForm = () => {
                       />
                       <span className="time-icon">🌙</span>
                       <span className="time-text">Evening</span>
+                      {formData.preferredTimeSlot === 'Evening' && (
+                        <span className="checkmark">✓</span>
+                      )}
                     </label>
                     <label className={`time-slot-option ${formData.preferredTimeSlot === 'Flexible' ? 'selected' : ''}`}>
                       <input
@@ -694,6 +837,9 @@ const BookingForm = () => {
                       />
                       <span className="time-icon">🔄</span>
                       <span className="time-text">Flexible</span>
+                      {formData.preferredTimeSlot === 'Flexible' && (
+                        <span className="checkmark">✓</span>
+                      )}
                     </label>
                   </div>
                 </div>
@@ -827,6 +973,9 @@ const BookingForm = () => {
                       />
                       <span className="travel-icon">🚗</span>
                       <span className="travel-text">Yes, come to my home</span>
+                      {formData.artistTravelsToClient === 'yes' && (
+                        <span className="checkmark">✓</span>
+                      )}
                     </label>
                     <label className={`travel-option ${formData.artistTravelsToClient === 'no' ? 'selected' : ''}`}>
                       <input
@@ -839,6 +988,9 @@ const BookingForm = () => {
                       />
                       <span className="travel-icon">🏡</span>
                       <span className="travel-text">No, I'll travel to the artist</span>
+                      {formData.artistTravelsToClient === 'no' && (
+                        <span className="checkmark">✓</span>
+                      )}
                     </label>
                     <label className={`travel-option ${formData.artistTravelsToClient === 'both' ? 'selected' : ''}`}>
                       <input
@@ -851,13 +1003,16 @@ const BookingForm = () => {
                       />
                       <span className="travel-icon">🤝</span>
                       <span className="travel-text">I'm open to both</span>
+                      {formData.artistTravelsToClient === 'both' && (
+                        <span className="checkmark">✓</span>
+                      )}
                     </label>
                   </div>
                 </div>
 
                 {/* Venue Name (Optional) */}
                 <div className="form-group">
-                  <label className="form-label">Venue Name * (for bridal only)</label>
+                  <label className="form-label">Venue Name</label>
                   <input
                     type="text"
                     name="venueName"
@@ -874,83 +1029,8 @@ const BookingForm = () => {
             {currentStep === 3 && (
               <div className="form-step">
                 <div className="step-header">
-                  <h2 className="step-title">Mehndi Style</h2>
-                  <p className="step-subtitle">Tell us about your preferred style</p>
-                </div>
-
-                {/* Style Preference */}
-                <div className="form-group">
-                  <label className="form-label">Style You're Looking For *</label>
-                  <div className="style-option-grid">
-                    <label className={`style-option ${formData.stylePreference === 'Bridal Mehndi' ? 'selected' : ''}`}
-                      onClick={() => handleStyleChange('Bridal Mehndi')}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <input
-                        type="radio"
-                        name="stylePreference"
-                        value="Bridal Mehndi"
-                        checked={formData.stylePreference === 'Bridal Mehndi'}
-                        onChange={() => handleStyleChange('Bridal Mehndi')}
-                        style={{ display: 'none' }}
-                      />
-                      <span>Bridal Mehndi</span>
-                      {formData.stylePreference === 'Bridal Mehndi' && (
-                        <span className="checkmark">✓</span>
-                      )}
-                    </label>
-                    <label className={`style-option ${formData.stylePreference === 'Party Mehndi' ? 'selected' : ''}`}
-                      onClick={() => handleStyleChange('Party Mehndi')}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <input
-                        type="radio"
-                        name="stylePreference"
-                        value="Party Mehndi"
-                        checked={formData.stylePreference === 'Party Mehndi'}
-                        onChange={() => handleStyleChange('Party Mehndi')}
-                        style={{ display: 'none' }}
-                      />
-                      <span>Party Mehndi</span>
-                      {formData.stylePreference === 'Party Mehndi' && (
-                        <span className="checkmark">✓</span>
-                      )}
-                    </label>
-                    <label className={`style-option ${formData.stylePreference === 'Festival Mehndi' ? 'selected' : ''}`}
-                      onClick={() => handleStyleChange('Festival Mehndi')}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <input
-                        type="radio"
-                        name="stylePreference"
-                        value="Festival Mehndi"
-                        checked={formData.stylePreference === 'Festival Mehndi'}
-                        onChange={() => handleStyleChange('Festival Mehndi')}
-                        style={{ display: 'none' }}
-                      />
-                      <span>Festival Mehndi</span>
-                      {formData.stylePreference === 'Festival Mehndi' && (
-                        <span className="checkmark">✓</span>
-                      )}
-                    </label>
-                    <label className={`style-option ${formData.stylePreference === 'Casual / Minimal Mehndi' ? 'selected' : ''}`}
-                      onClick={() => handleStyleChange('Casual / Minimal Mehndi')}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <input
-                        type="radio"
-                        name="stylePreference"
-                        value="Casual / Minimal Mehndi"
-                        checked={formData.stylePreference === 'Casual / Minimal Mehndi'}
-                        onChange={() => handleStyleChange('Casual / Minimal Mehndi')}
-                        style={{ display: 'none' }}
-                      />
-                      <span>Casual / Minimal Mehndi</span>
-                      {formData.stylePreference === 'Casual / Minimal Mehndi' && (
-                        <span className="checkmark">✓</span>
-                      )}
-                    </label>
-                  </div>
+                  <h2 className="step-title">Design Inspiration</h2>
+                  <p className="step-subtitle">Share your preferred designs</p>
                 </div>
 
                 {/* Design Inspiration */}
@@ -1095,21 +1175,23 @@ const BookingForm = () => {
                 </div>
 
                 {/* Coverage Preference */}
-                <div className="form-group">
-                  <label className="form-label">Coverage Preference * (for bridal only)</label>
-                  <select
-                    name="coveragePreference"
-                    className="form-input"
-                    value={formData.coveragePreference}
-                    onChange={handleInputChange}
-                  >
-                    <option value="">Select coverage</option>
-                    <option value="Full arms & feet">Full arms & feet</option>
-                    <option value="Hands only">Hands only</option>
-                    <option value="Simple, elegant design">Simple, elegant design</option>
-                    <option value="Not sure yet">Not sure yet</option>
-                  </select>
-                </div>
+                {formData.eventType === 'Wedding' && (
+                  <div className="form-group">
+                    <label className="form-label">Coverage Preference * (for wedding events)</label>
+                    <select
+                      name="coveragePreference"
+                      className="form-input"
+                      value={formData.coveragePreference}
+                      onChange={handleInputChange}
+                    >
+                      <option value="">Select coverage</option>
+                      <option value="Full arms & feet">Full arms & feet</option>
+                      <option value="Hands only">Hands only</option>
+                      <option value="Simple, elegant design">Simple, elegant design</option>
+                      <option value="Not sure yet">Not sure yet</option>
+                    </select>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1131,24 +1213,36 @@ const BookingForm = () => {
                     <div className="budget-input">
                       <span className="currency">£</span>
                       <input
-                        type="number"
+                        type="text"
                         name="budgetFrom"
                         className="budget-field"
                         placeholder="From"
                         value={formData.budgetFrom}
-                        onChange={handleInputChange}
+                        onChange={handleBudgetChange}
+                        onKeyPress={(e) => {
+                          // Prevent typing minus sign, plus sign, or 'e' (scientific notation)
+                          if (e.key === '-' || e.key === '+' || e.key === 'e' || e.key === 'E') {
+                            e.preventDefault();
+                          }
+                        }}
                         required
                       />
                     </div>
                     <div className="budget-input">
                       <span className="currency">£</span>
                       <input
-                        type="number"
+                        type="text"
                         name="budgetTo"
                         className="budget-field"
                         placeholder="To"
                         value={formData.budgetTo}
-                        onChange={handleInputChange}
+                        onChange={handleBudgetChange}
+                        onKeyPress={(e) => {
+                          // Prevent typing minus sign, plus sign, or 'e' (scientific notation)
+                          if (e.key === '-' || e.key === '+' || e.key === 'e' || e.key === 'E') {
+                            e.preventDefault();
+                          }
+                        }}
                         required
                       />
                     </div>
@@ -1248,7 +1342,6 @@ const BookingForm = () => {
                     { label: 'Postcode', value: formData.zipCode || '-', step: 2 },
                     { label: 'Event Date', value: formData.eventDate ? new Date(formData.eventDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) : '-', step: 2 },
                     { label: 'Time Slot', value: formData.preferredTimeSlot || '-', step: 2 },
-                    { label: 'Style', value: formData.stylePreference || '-', step: 3 },
                     { label: 'Venue Name', value: formData.venueName || '-', step: 2 },
                     { label: 'Coverage', value: formData.coveragePreference || '-', step: 3 },
                     { label: 'Budget', value: formData.budgetFrom && formData.budgetTo ? `£${formData.budgetFrom} – £${formData.budgetTo}` : '-', step: 4 },
@@ -1451,6 +1544,14 @@ const BookingForm = () => {
           transition: all 0.3s;
           gap: 12px;
           position: relative;
+        }
+
+        .time-slot-option .checkmark, .travel-option .checkmark {
+          position: absolute;
+          right: 16px;
+          color: #CD853F;
+          font-weight: bold;
+          font-size: 1.2rem;
         }
 
         .event-option:hover, .time-slot-option:hover, .travel-option:hover, .style-option:hover {
