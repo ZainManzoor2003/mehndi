@@ -210,7 +210,7 @@ const Blogs = () => {
                 width: "100%",
                 objectFit: "cover",
                 borderRadius: 18,
-                boxShadow: "0 10px 20px rgba(0,0,0,0.35)",
+                boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
                 border: "1px solid rgba(255,255,255,0.15)",
                 overflow: "hidden",
                 background: `url(https://images.unsplash.com/photo-1680490964820-7afb13f2e35c?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.1.0) center/cover`,
