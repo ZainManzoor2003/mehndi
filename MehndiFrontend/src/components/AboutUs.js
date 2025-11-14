@@ -43,7 +43,7 @@ const AboutUs = () => {
           if (!chars || chars.length === 0) return;
           tl.to(
             chars,
-            { color: "#2a1f16", stagger: 0.008, duration: 0.4 }, // Darker highlighted color
+            { color: "#8B4513", stagger: 0.008, duration: 0.4 }, // Darker highlighted color
             "+=0"
           );
         });
@@ -101,7 +101,9 @@ const AboutUs = () => {
             letterSpacing: "0.2px",
           }}
         >
-          <h1 className="hero-title">A Global First, Born from Chaos</h1>
+          <h1 className="hero-title" style={{ color: "#8B4513" }}>
+            A Global First, Born from Chaos
+          </h1>
           <p
             className="story-line"
             style={{ margin: "8px 0 1.3rem", fontSize: "20px" }}

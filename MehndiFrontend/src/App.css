@@ -6015,7 +6015,7 @@ input {
   font-weight: 700;
   font-size: 4rem;
   line-height: 1.1;
-  color: #4A4A4A;
+  color: #8B4513;
   margin-bottom: 3rem;
 }
 
@@ -6029,7 +6029,7 @@ input {
 
 .home__subtitle {
   font-size: 1.4rem;
-  color: #8B7355;
+  color: #8B4513;
   font-weight: var(--font-medium);
   margin-bottom: 1.5rem;
   font-family: var(--body-font);
@@ -6037,7 +6037,7 @@ input {
 
 .home__text {
   font-size: 1.1rem;
-  color: #8B7355;
+  color: #8B4513;
   line-height: 1.6;
   font-family: var(--body-font);
   margin: 0;
@@ -7482,7 +7482,7 @@ body.dark-theme .scroll-header .henna-line {
 .how-it-works__title {
   font-size: 3.5rem;
   font-weight: 700;
-  color: var(--title-color);
+  color: #8B4513;
   font-family: var(--title-font);
   margin-bottom: 1rem;
   line-height: 1.2;
@@ -7490,7 +7490,7 @@ body.dark-theme .scroll-header .henna-line {
 
 .how-it-works__subtitle {
   font-size: 1.3rem;
-  color: var(--text-color);
+  color: #8B4513;
   font-family: var(--body-font);
   max-width: 600px;
   margin: 0 auto;

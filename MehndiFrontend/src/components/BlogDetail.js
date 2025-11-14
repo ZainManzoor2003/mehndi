@@ -80,7 +80,7 @@ const BlogDetail = () => {
         <div style={{ marginBottom: 12 }}>
           <Link
             to="/blogs"
-            style={{ color: "#6b4f3b", textDecoration: "none" }}
+            style={{ color: "#8B4513", textDecoration: "none" }}
           >
             ← Back to Journal
           </Link>
@@ -88,7 +88,7 @@ const BlogDetail = () => {
         <div style={{ textAlign: "center" }}>
           <div
             style={{
-              color: "#7b5b3e",
+              color: "#8B4513",
               fontSize: 14,
               fontWeight: 600,
               letterSpacing: 1.5,
@@ -102,12 +102,12 @@ const BlogDetail = () => {
             style={{
               marginBottom: 8,
               fontSize: "clamp(2rem, 4vw, 3rem)",
-              color: "#3b240f",
+              color: "#8B4513",
             }}
           >
             {blog.title}
           </h1>
-          <div style={{ color: "#7c6a59", fontSize: 14, marginBottom: 10 }}>
+          <div style={{ color: "#8B4513", fontSize: 14, marginBottom: 10 }}>
             By Mehndi Me Team • {formatDate(blog.createdAt)}
             {blog.minutesToRead ? ` • ${blog.minutesToRead} min read` : ""}
           </div>
@@ -151,7 +151,7 @@ const BlogDetail = () => {
         }}
       >
         <p
-          style={{ whiteSpace: "pre-wrap", color: "#3f2f22", lineHeight: 1.9 }}
+          style={{ whiteSpace: "pre-wrap", color: "#8B4513", lineHeight: 1.9 }}
         >
           {blog.description}
         </p>
@@ -160,7 +160,7 @@ const BlogDetail = () => {
           blog.sections.map((s, i) => (
             <section key={i} style={{ marginTop: "1.8rem" }}>
               {s.subtitle ? (
-                <h2 style={{ color: "#4b2f1e", margin: "0 0 8px" }}>
+                <h2 style={{ color: "#8B4513", margin: "0 0 8px" }}>
                   {s.subtitle}
                 </h2>
               ) : null}
@@ -168,7 +168,7 @@ const BlogDetail = () => {
                 <p
                   style={{
                     whiteSpace: "pre-wrap",
-                    color: "#4a3a2a",
+                    color: "#8B4513",
                     lineHeight: 1.9,
                   }}
                 >
@@ -198,7 +198,7 @@ const BlogDetail = () => {
                     margin: "12px 0 0",
                     padding: "10px 14px",
                     borderLeft: "4px solid #7a4a2d",
-                    color: "#6a4f3b",
+                    color: "#8B4513",
                     background: "transparent",
                     borderRadius: 6,
                     fontStyle: "italic",
@@ -221,10 +221,10 @@ const BlogDetail = () => {
             alignItems: "center",
           }}
         >
-          <div style={{ color: "#6a4a34", fontWeight: 700 }}>
+          <div style={{ color: "#8B4513", fontWeight: 700 }}>
             Share this article
           </div>
-          <div style={{ display: "flex", gap: 14, color: "#5a3d29" }}>
+          <div style={{ display: "flex", gap: 14, color: "#8B4513" }}>
             <a
               href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
                 window.location.href
@@ -323,10 +323,10 @@ const BlogDetail = () => {
             padding: "14px",
           }}
         >
-          <div style={{ fontWeight: 700, color: "#3e2b1a", marginBottom: 6 }}>
+          <div style={{ fontWeight: 700, color: "#8B4513", marginBottom: 6 }}>
             About the Author
           </div>
-          <div style={{ color: "#6e5b4b" }}>
+          <div style={{ color: "#8B4513" }}>
             The Mehndi Me Team celebrates the creativity and talent of mehndi
             artists across the UK, sharing tips, stories, and inspiration from
             both artists and clients within our growing community.
@@ -341,7 +341,7 @@ const BlogDetail = () => {
       >
         <h3
           style={{
-            color: "#402a16",
+            color: "#8B4513",
             fontSize: "1.5rem",
             fontWeight: 800,
             textAlign: "center",
@@ -396,7 +396,7 @@ const BlogDetail = () => {
                       borderRadius: 20,
                       fontSize: 12,
                       fontWeight: 600,
-                      color: "#3f2c1e",
+                      color: "#8B4513",
                     }}
                   >
                     PLATFORM UPDATES
@@ -420,7 +420,7 @@ const BlogDetail = () => {
                       borderRadius: 20,
                       fontSize: 12,
                       fontWeight: 600,
-                      color: "#3f2c1e",
+                      color: "#8B4513",
                     }}
                   >
                     PLATFORM UPDATES
@@ -432,7 +432,7 @@ const BlogDetail = () => {
                   style={{
                     margin: 0,
                     marginBottom: "0.5rem",
-                    color: "#1a1a1a",
+                    color: "#8B4513",
                     fontSize: "1.05rem",
                     fontWeight: 700,
                     lineHeight: 1.3,
@@ -473,7 +473,7 @@ const BlogDetail = () => {
                       padding: "6px 12px",
                       borderRadius: 20,
                       border: "1px solid var(--first-color)",
-                      color: "#1a1a1a",
+                      color: "#8B4513",
                       textDecoration: "none",
                       fontSize: "0.85rem",
                       fontWeight: 500,
@@ -488,7 +488,7 @@ const BlogDetail = () => {
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.borderColor = "var(--first-color)";
-                      e.currentTarget.style.color = "#1a1a1a";
+                      e.currentTarget.style.color = "#8B4513";
                       e.currentTarget.style.background = "transparent";
                     }}
                   >

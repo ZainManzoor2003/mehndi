@@ -105,7 +105,7 @@ const Blogs = () => {
             <h1
               style={{
                 margin: 0,
-                color: "#3f2c1e",
+                color: "#8B4513",
                 fontSize: "clamp(28px, 3.6vw, 44px)",
                 lineHeight: 1.15,
                 fontWeight: 800,
@@ -117,7 +117,7 @@ const Blogs = () => {
             <p
               style={{
                 margin: 0,
-                color: "#7a5e46",
+                color: "#8B4513",
                 fontSize: "clamp(15px, 1.6vw, 18px)",
                 lineHeight: 1.55,
                 maxWidth: 560,
@@ -151,7 +151,7 @@ const Blogs = () => {
                     }}
                     style={{
                       background: isSelected ? "#cf7f3a" : "transparent",
-                      color: isSelected ? "#fff" : "#3f2c1e",
+                      color: isSelected ? "#fff" : "#8B4513",
                       border: "1px solid #cf7f3a",
                       borderRadius: 999,
                       padding: "8px 14px",
@@ -282,7 +282,7 @@ const Blogs = () => {
                         borderRadius: 20,
                         fontSize: 12,
                         fontWeight: 600,
-                        color: "#3f2c1e",
+                        color: "#8B4513",
                         textTransform: "uppercase",
                       }}
                     >
@@ -307,7 +307,7 @@ const Blogs = () => {
                         borderRadius: 20,
                         fontSize: 12,
                         fontWeight: 600,
-                        color: "#3f2c1e",
+                        color: "#8B4513",
                         textTransform: "uppercase",
                       }}
                     >
@@ -322,7 +322,7 @@ const Blogs = () => {
                     style={{
                       margin: 0,
                       marginBottom: "0.5rem",
-                      color: "#1a1a1a",
+                      color: "#8B4513",
                       fontSize: "1.15rem",
                       fontWeight: 700,
                       lineHeight: 1.3,
@@ -334,7 +334,7 @@ const Blogs = () => {
                     style={{
                       margin: 0,
                       marginBottom: "1rem",
-                      color: "#666666",
+                      color: "#8B4513",
                       fontSize: "0.9rem",
                       lineHeight: 1.35,
                       display: "-webkit-box",
@@ -373,7 +373,7 @@ const Blogs = () => {
                         padding: "8px 16px",
                         borderRadius: 20,
                         border: "1px solid var(--first-color)",
-                        color: "#1a1a1a",
+                        color: "#8B4513",
                         textDecoration: "none",
                         fontSize: "0.9rem",
                         fontWeight: 500,
@@ -389,7 +389,7 @@ const Blogs = () => {
                       onMouseLeave={(e) => {
                         e.currentTarget.style.borderColor =
                           "var(--first-color)";
-                        e.currentTarget.style.color = "#1a1a1a";
+                        e.currentTarget.style.color = "#8B4513";
                         e.currentTarget.style.background = "transparent";
                       }}
                     >

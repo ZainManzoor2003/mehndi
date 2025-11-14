@@ -210,14 +210,14 @@ const FullFAQ = () => {
         <h1
           style={{
             textAlign: "center",
-            color: "#4A2C1D",
+            color: "#8B4513",
             fontSize: "42px",
             margin: 0,
           }}
         >
           Frequently Asked Questions
         </h1>
-        <p style={{ textAlign: "center", color: "#6b5544", marginTop: 8 }}>
+        <p style={{ textAlign: "center", color: "#8B4513", marginTop: 8 }}>
           Find quick answers to common questions from our Mehndi Me community 🌿
         </p>
 
@@ -316,12 +316,12 @@ const FullFAQ = () => {
                   }}
                   onMouseLeave={(e) => {
                     const qEl = e.currentTarget.querySelector(".full-faq-q");
-                    if (qEl && qEl.style) qEl.style.color = "#4A2C1D";
+                    if (qEl && qEl.style) qEl.style.color = "#8B4513";
                   }}
                 >
                   <span
                     className="full-faq-q"
-                    style={{ color: "#4A2C1D", transition: "color 0.25s ease" }}
+                    style={{ color: "#8B4513", transition: "color 0.25s ease" }}
                   >
                     {item.q}
                   </span>
@@ -353,7 +353,7 @@ const FullFAQ = () => {
                   <div
                     style={{
                       padding: "0 24px 20px 24px",
-                      color: "#654C3F",
+                      color: "#8B4513",
                       lineHeight: "1.7",
                       fontSize: "1rem",
                       opacity: isOpen ? 1 : 0,
@@ -383,7 +383,7 @@ const FullFAQ = () => {
         >
           <div
             style={{
-              color: "#4A2C1D",
+              color: "#8B4513",
               fontWeight: 700,
               fontSize: 20,
               marginBottom: 6,
@@ -391,13 +391,13 @@ const FullFAQ = () => {
           >
             Still need help?
           </div>
-          <p style={{ marginTop: "20px", color: "#6b5544" }}>
+          <p style={{ marginTop: "20px", color: "#8B4513" }}>
             Still need help? We're a small team and love hearing from our
             community. Email us at{" "}
             <a
               href="mailto:team.mehndime@gmail.com"
               style={{
-                color: "#5C3D2E",
+                color: "#8B4513",
                 textDecoration: "underline",
                 fontWeight: 600,
               }}
