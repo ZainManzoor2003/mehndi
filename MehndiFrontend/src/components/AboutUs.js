@@ -10,47 +10,71 @@ const AboutUs = () => {
     gsap.registerPlugin(ScrollTrigger);
     if (!storyRef.current) return;
 
-    const ctx = gsap.context(() => {
-      const storyLines = gsap.utils.toArray(".story-line");
+    // Small delay to ensure DOM is ready and other ScrollTriggers are set up
+    let ctx = null;
+    const timeoutId = setTimeout(() => {
+      ctx = gsap.context(() => {
+        const storyLines = gsap.utils.toArray(".story-line");
 
-      // Split all lines first and set the initial color
-      const linesAsChars = storyLines.map((lineEl) => {
-        if (!lineEl) return [];
-        const originalText = lineEl.textContent || "";
-        lineEl.innerHTML = "";
-        for (let char of originalText) {
-          const span = document.createElement("span");
-          span.textContent = char === " " ? "\u00A0" : char;
-          span.style.display = "inline-block";
-          lineEl.appendChild(span);
+        if (storyLines.length === 0) {
+          ScrollTrigger.refresh();
+          return;
         }
-        const chars = Array.from(lineEl.querySelectorAll("span"));
-        gsap.set(chars, { color: "var(--ad-muted, #6b5544)" });
-        return chars;
-      });
 
-      // One master timeline so only one line highlights at a time
-      const tl = gsap.timeline({ defaults: { ease: "none" } });
-      linesAsChars.forEach((chars) => {
-        if (!chars || chars.length === 0) return;
-        tl.to(
-          chars,
-          { color: "var(--ad-text, #3f2c1e)", stagger: 0.008, duration: 0.4 },
-          "+=0"
-        );
-      });
+        // Split all lines first and set the initial color
+        const linesAsChars = storyLines.map((lineEl) => {
+          if (!lineEl) return [];
+          const originalText = lineEl.textContent || "";
+          lineEl.innerHTML = "";
+          for (let char of originalText) {
+            const span = document.createElement("span");
+            span.textContent = char === " " ? "\u00A0" : char;
+            span.style.display = "inline-block";
+            lineEl.appendChild(span);
+          }
+          const chars = Array.from(lineEl.querySelectorAll("span"));
+          gsap.set(chars, { color: "var(--ad-muted, #6b5544)" });
+          return chars;
+        });
 
-      ScrollTrigger.create({
-        trigger: storyRef.current,
-        start: "top 70%",
-        end: "bottom 50%",
-        scrub: 0.4,
-        animation: tl,
-        invalidateOnRefresh: true,
-      });
-    }, storyRef);
+        // One master timeline so only one line highlights at a time
+        const tl = gsap.timeline({ defaults: { ease: "none" } });
+        linesAsChars.forEach((chars) => {
+          if (!chars || chars.length === 0) return;
+          tl.to(
+            chars,
+            { color: "var(--ad-text, #3f2c1e)", stagger: 0.008, duration: 0.4 },
+            "+=0"
+          );
+        });
 
-    return () => ctx.revert();
+        ScrollTrigger.create({
+          trigger: storyRef.current,
+          start: "top 70%",
+          end: "bottom 50%",
+          scrub: 0.4,
+          animation: tl,
+          invalidateOnRefresh: true,
+        });
+
+        // Refresh ScrollTrigger after creation
+        ScrollTrigger.refresh();
+      }, storyRef);
+    }, 100);
+
+    // Refresh on window resize
+    const handleResize = () => {
+      ScrollTrigger.refresh();
+    };
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener("resize", handleResize);
+      if (ctx) {
+        ctx.revert();
+      }
+    };
   }, []);
 
   return (
