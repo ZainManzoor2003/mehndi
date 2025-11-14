@@ -33,7 +33,7 @@ const AboutUs = () => {
             lineEl.appendChild(span);
           }
           const chars = Array.from(lineEl.querySelectorAll("span"));
-          gsap.set(chars, { color: "var(--ad-muted, #6b5544)" });
+          gsap.set(chars, { color: "#9b8a7a" }); // Lighter initial color
           return chars;
         });
 
@@ -43,7 +43,7 @@ const AboutUs = () => {
           if (!chars || chars.length === 0) return;
           tl.to(
             chars,
-            { color: "var(--ad-text, #3f2c1e)", stagger: 0.008, duration: 0.4 },
+            { color: "#2a1f16", stagger: 0.008, duration: 0.4 }, // Darker highlighted color
             "+=0"
           );
         });
