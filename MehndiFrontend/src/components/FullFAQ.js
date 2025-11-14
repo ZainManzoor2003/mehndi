@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
+import { useSearchParams } from "react-router-dom";
 
 const CLIENT_FAQS = [
   {
@@ -141,11 +142,25 @@ const ArtistIcon = ({ size = 18 }) => (
 );
 
 const FullFAQ = () => {
-  const [tab, setTab] = useState("clients");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get("tab");
+  // Default to "clients" if no tab parameter or invalid tab
+  const initialTab = tabFromUrl === "artists" ? "artists" : "clients";
+  const [tab, setTab] = useState(initialTab);
   const [query, setQuery] = useState("");
   const [openIdx, setOpenIdx] = useState(null);
   const contentRefs = useRef([]);
   const [heights, setHeights] = useState({});
+
+  // Update tab when URL parameter changes
+  useEffect(() => {
+    const tabFromUrl = searchParams.get("tab");
+    if (tabFromUrl === "artists" || tabFromUrl === "clients") {
+      setTab(tabFromUrl);
+    } else {
+      setTab("clients"); // Default to clients
+    }
+  }, [searchParams]);
 
   // Scroll to top on mount
   useEffect(() => {
@@ -205,6 +220,7 @@ const FullFAQ = () => {
             className={`how-it-works__tab ${tab === "clients" ? "active" : ""}`}
             onClick={() => {
               setTab("clients");
+              setSearchParams({ tab: "clients" });
               setOpenIdx(null);
             }}
           >
@@ -217,6 +233,7 @@ const FullFAQ = () => {
             className={`how-it-works__tab ${tab === "artists" ? "active" : ""}`}
             onClick={() => {
               setTab("artists");
+              setSearchParams({ tab: "artists" });
               setOpenIdx(null);
             }}
           >

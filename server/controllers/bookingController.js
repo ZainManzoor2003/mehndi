@@ -1,14 +1,19 @@
-const Booking = require('../schemas/Booking');
-const User = require('../schemas/User');
-const Transaction = require('../schemas/Transaction');
-const Wallet = require('../schemas/Wallet');
-const Application = require('../schemas/Application');
-const Notification = require('../schemas/Notification');
-const BookingLog = require('../schemas/BookingLog');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || '');
+const Booking = require("../schemas/Booking");
+const User = require("../schemas/User");
+const Transaction = require("../schemas/Transaction");
+const Wallet = require("../schemas/Wallet");
+const Application = require("../schemas/Application");
+const Notification = require("../schemas/Notification");
+const BookingLog = require("../schemas/BookingLog");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY || "");
 
 // Helper function to create booking logs
-const createBookingLog = async (bookingId, action, performedBy, options = {}) => {
+const createBookingLog = async (
+  bookingId,
+  action,
+  performedBy,
+  options = {}
+) => {
   try {
     const logData = {
       bookingId,
@@ -16,25 +21,33 @@ const createBookingLog = async (bookingId, action, performedBy, options = {}) =>
       performedBy: {
         userId: performedBy.userId || null,
         userType: performedBy.userType || null,
-        name: performedBy.name || null
+        name: performedBy.name || null,
       },
       applicationId: options.applicationId || null,
       artistId: options.artistId || null,
       previousValues: options.previousValues || null,
       newValues: options.newValues || null,
       details: options.details || null,
-      statusAtTime: options.statusAtTime || null
+      statusAtTime: options.statusAtTime || null,
     };
 
     await BookingLog.create(logData);
   } catch (error) {
-    console.error('Error creating booking log:', error);
+    console.error("Error creating booking log:", error);
     // Don't fail the main operation if logging fails
   }
 };
 
 // Helper function to create notifications
-const createNotification = async (type, targetUserId, triggeredByUserId, targetUserType, bookingId, applicationId, data) => {
+const createNotification = async (
+  type,
+  targetUserId,
+  triggeredByUserId,
+  targetUserType,
+  bookingId,
+  applicationId,
+  data
+) => {
   try {
     const notificationData = {
       targetUserId,
@@ -43,52 +56,78 @@ const createNotification = async (type, targetUserId, triggeredByUserId, targetU
       type,
       bookingId,
       applicationId,
-      data
+      data,
     };
 
     // Set title and message based on type
     switch (type) {
-      case 'booking_created':
-        notificationData.title = 'New Booking Created';
-        notificationData.message = `${data.clientName} has created a new ${data.eventType?.join(', ') || 'mehndi'} booking for ${data.bookingDate ? new Date(data.bookingDate).toLocaleDateString() : 'your area'}`;
+      case "booking_created":
+        notificationData.title = "New Booking Created";
+        notificationData.message = `${data.clientName} has created a new ${
+          data.eventType?.join(", ") || "mehndi"
+        } booking for ${
+          data.bookingDate
+            ? new Date(data.bookingDate).toLocaleDateString()
+            : "your area"
+        }`;
         break;
-      case 'booking_cancelled':
-        notificationData.title = 'Booking Cancelled';
-        notificationData.message = `${data.clientName} has cancelled the ${data.eventType?.join(', ') || 'mehndi'} booking scheduled for ${data.bookingDate ? new Date(data.bookingDate).toLocaleDateString() : 'your area'}`;
+      case "booking_cancelled":
+        notificationData.title = "Booking Cancelled";
+        notificationData.message = `${data.clientName} has cancelled the ${
+          data.eventType?.join(", ") || "mehndi"
+        } booking scheduled for ${
+          data.bookingDate
+            ? new Date(data.bookingDate).toLocaleDateString()
+            : "your area"
+        }`;
         break;
-      case 'booking_completed':
-        notificationData.title = 'Booking Completed';
-        notificationData.message = `Your ${data.eventType?.join(', ') || 'mehndi'} booking with ${data.clientName} has been completed successfully`;
+      case "booking_completed":
+        notificationData.title = "Booking Completed";
+        notificationData.message = `Your ${
+          data.eventType?.join(", ") || "mehndi"
+        } booking with ${data.clientName} has been completed successfully`;
         break;
-      case 'application_submitted':
-        notificationData.title = 'New Application Received';
-        notificationData.message = `${data.artistName} has applied for your ${data.eventType?.join(', ') || 'mehndi'} booking`;
+      case "application_submitted":
+        notificationData.title = "New Application Received";
+        notificationData.message = `${data.artistName} has applied for your ${
+          data.eventType?.join(", ") || "mehndi"
+        } booking`;
         break;
-      case 'application_accepted':
-        notificationData.title = 'Application Accepted';
-        notificationData.message = `Your application for ${data.clientName}'s ${data.eventType?.join(', ') || 'mehndi'} booking has been accepted`;
+      case "application_accepted":
+        notificationData.title = "Application Accepted";
+        notificationData.message = `Your application for ${data.clientName}'s ${
+          data.eventType?.join(", ") || "mehndi"
+        } booking has been accepted`;
         break;
-      case 'application_declined':
-        notificationData.title = 'Application Declined';
-        notificationData.message = `Your application for ${data.clientName}'s ${data.eventType?.join(', ') || 'mehndi'} booking has been declined`;
+      case "application_declined":
+        notificationData.title = "Application Declined";
+        notificationData.message = `Your application for ${data.clientName}'s ${
+          data.eventType?.join(", ") || "mehndi"
+        } booking has been declined`;
         break;
-      case 'application_withdrawn':
-        notificationData.title = 'Application Withdrawn';
-        notificationData.message = `${data.artistName} has withdrawn their application for your ${data.eventType?.join(', ') || 'mehndi'} booking`;
+      case "application_withdrawn":
+        notificationData.title = "Application Withdrawn";
+        notificationData.message = `${
+          data.artistName
+        } has withdrawn their application for your ${
+          data.eventType?.join(", ") || "mehndi"
+        } booking`;
         break;
-      case 'booking_deleted_application_deleted':
-        notificationData.title = 'Booking Deleted';
-        notificationData.message = `The ${data.eventType?.join(', ') || 'mehndi'} booking you applied for has been deleted by the client. Your application has been automatically removed.`;
+      case "booking_deleted_application_deleted":
+        notificationData.title = "Booking Deleted";
+        notificationData.message = `The ${
+          data.eventType?.join(", ") || "mehndi"
+        } booking you applied for has been deleted by the client. Your application has been automatically removed.`;
         break;
       default:
-        notificationData.title = 'Notification';
-        notificationData.message = 'You have a new notification';
+        notificationData.title = "Notification";
+        notificationData.message = "You have a new notification";
     }
 
     const notification = await Notification.create(notificationData);
     return notification;
   } catch (error) {
-    console.error('Error creating notification:', error);
+    console.error("Error creating notification:", error);
     return null;
   }
 };
@@ -116,45 +155,45 @@ const createBooking = async (req, res) => {
       maximumBudget,
       duration,
       numberOfPeople,
-      designStyle,
+      // designStyle,
       designInspiration,
       coveragePreference,
-      additionalRequests
+      additionalRequests,
     } = req.body;
 
     // Validate required fields
     if (!firstName) {
       return res.status(400).json({
         success: false,
-        message: 'Name is required'
+        message: "Name is required",
       });
     }
 
     if (!eventType || eventType.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'Event type is required'
+        message: "Event type is required",
       });
     }
 
     if (!eventDate) {
       return res.status(400).json({
         success: false,
-        message: 'Event date is required'
+        message: "Event date is required",
       });
     }
 
     if (!preferredTimeSlot || preferredTimeSlot.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'Preferred time slot is required'
+        message: "Preferred time slot is required",
       });
     }
 
     if (!location) {
       return res.status(400).json({
         success: false,
-        message: 'Location is required'
+        message: "Location is required",
       });
     }
 
@@ -162,7 +201,7 @@ const createBooking = async (req, res) => {
     if (artistTravelsToClient === undefined || artistTravelsToClient === null) {
       return res.status(400).json({
         success: false,
-        message: 'Travel preference is required'
+        message: "Travel preference is required",
       });
     }
 
@@ -171,23 +210,23 @@ const createBooking = async (req, res) => {
     if (!minimumBudget || !maximumBudget || !numberOfPeople) {
       return res.status(400).json({
         success: false,
-        message: 'Budget and number of people information is required'
+        message: "Budget and number of people information is required",
       });
     }
 
-    if (!designStyle) {
-      return res.status(400).json({
-        success: false,
-        message: 'Design style is required'
-      });
-    }
+    // if (!designStyle) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: 'Design style is required'
+    //   });
+    // }
 
     // Validate event date is in the future
     const eventDateObj = new Date(eventDate);
     if (eventDateObj <= new Date()) {
       return res.status(400).json({
         success: false,
-        message: 'Event date must be in the future'
+        message: "Event date must be in the future",
       });
     }
 
@@ -195,24 +234,31 @@ const createBooking = async (req, res) => {
     if (maximumBudget < minimumBudget) {
       return res.status(400).json({
         success: false,
-        message: 'Maximum budget must be greater than or equal to minimum budget'
+        message:
+          "Maximum budget must be greater than or equal to minimum budget",
       });
     }
 
     // Convert travel preference to boolean or keep as 'both' for database
     let travelPreference;
-    if (artistTravelsToClient === 'both') {
-      travelPreference = 'both'; // Store as string for 'both' option
-    } else if (artistTravelsToClient === 'yes' || artistTravelsToClient === true) {
+    if (artistTravelsToClient === "both") {
+      travelPreference = "both"; // Store as string for 'both' option
+    } else if (
+      artistTravelsToClient === "yes" ||
+      artistTravelsToClient === true
+    ) {
       travelPreference = true;
-    } else if (artistTravelsToClient === 'no' || artistTravelsToClient === false) {
+    } else if (
+      artistTravelsToClient === "no" ||
+      artistTravelsToClient === false
+    ) {
       travelPreference = false;
     } else {
       travelPreference = artistTravelsToClient;
     }
 
     // Get email from request or user account
-    const bookingEmail = email || req.user.email || '';
+    const bookingEmail = email || req.user.email || "";
 
     // Create the booking
     const booking = await Booking.create({
@@ -234,39 +280,43 @@ const createBooking = async (req, res) => {
       maximumBudget,
       duration: duration || 3,
       numberOfPeople,
-      designStyle,
-      designInspiration: Array.isArray(designInspiration) ? designInspiration : (designInspiration ? [designInspiration] : []),
+      // designStyle,
+      designInspiration: Array.isArray(designInspiration)
+        ? designInspiration
+        : designInspiration
+        ? [designInspiration]
+        : [],
       coveragePreference: coveragePreference || undefined,
       additionalRequests: additionalRequests || undefined,
-      status: 'pending'
+      status: "pending",
     });
 
     // Populate client information
-    await booking.populate('clientId', 'firstName lastName email');
+    await booking.populate("clientId", "firstName lastName email");
 
     // Create notification for all artists about new booking
     try {
       const clientName = `${req.user.firstName} ${req.user.lastName}`;
       const notificationData = {
         clientName,
-        bookingName: `${eventType.join(', ')} - ${location}`,
+        bookingName: `${eventType.join(", ")} - ${location}`,
         eventType,
         bookingDate: eventDateObj,
         location: location,
         minimumBudget,
-        maximumBudget
+        maximumBudget,
       };
 
       // Find all artists to notify them about the new booking
-      const artists = await User.find({ userType: 'artist' }).select('_id');
+      const artists = await User.find({ userType: "artist" }).select("_id");
 
       // Create notifications for all artists
-      const notificationPromises = artists.map(artist =>
+      const notificationPromises = artists.map((artist) =>
         createNotification(
-          'booking_created',
+          "booking_created",
           artist._id,
           req.user.id,
-          'artist',
+          "artist",
           booking._id,
           null,
           notificationData
@@ -275,47 +325,51 @@ const createBooking = async (req, res) => {
 
       await Promise.all(notificationPromises);
     } catch (notificationError) {
-      console.error('Error creating booking notifications:', notificationError);
+      console.error("Error creating booking notifications:", notificationError);
       // Don't fail the booking creation if notifications fail
     }
 
     // Create booking log
     await createBookingLog(
       booking._id,
-      'booking_created',
+      "booking_created",
       {
         userId: req.user.id,
         userType: req.user.userType,
-        name: `${req.user.firstName} ${req.user.lastName}`
+        name: `${req.user.firstName} ${req.user.lastName}`,
       },
       {
-        statusAtTime: 'pending',
-        details: `Booking created for ${eventType.join(', ')} event on ${eventDateObj.toLocaleDateString()}`
+        statusAtTime: "pending",
+        details: `Booking created for ${eventType.join(
+          ", "
+        )} event on ${eventDateObj.toLocaleDateString()}`,
       }
     );
 
     res.status(201).json({
       success: true,
-      message: 'Booking created successfully',
-      data: booking
+      message: "Booking created successfully",
+      data: booking,
     });
-
   } catch (error) {
-    console.error('Booking creation error:', error);
+    console.error("Booking creation error:", error);
 
-    if (error.name === 'ValidationError') {
-      const errors = Object.values(error.errors).map(err => err.message);
+    if (error.name === "ValidationError") {
+      const errors = Object.values(error.errors).map((err) => err.message);
       return res.status(400).json({
         success: false,
-        message: 'Validation error',
-        errors
+        message: "Validation error",
+        errors,
       });
     }
 
     res.status(500).json({
       success: false,
-      message: 'Server error while creating booking',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      message: "Server error while creating booking",
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
     });
   }
 };
@@ -326,20 +380,23 @@ const createBooking = async (req, res) => {
 const getClientBookings = async (req, res) => {
   try {
     const bookings = await Booking.find({ clientId: req.user.id })
-      .populate('assignedArtist', 'firstName lastName userProfileImage email')
+      .populate("assignedArtist", "firstName lastName userProfileImage email")
       .sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
       count: bookings.length,
-      data: bookings
+      data: bookings,
     });
   } catch (error) {
-    console.error('Get bookings error:', error);
+    console.error("Get bookings error:", error);
     res.status(500).json({
       success: false,
-      message: 'Server error while fetching bookings',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      message: "Server error while fetching bookings",
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
     });
   }
 };
@@ -350,21 +407,24 @@ const getClientBookings = async (req, res) => {
 const getAllBookings = async (req, res) => {
   try {
     const bookings = await Booking.find()
-      .populate('clientId', 'firstName lastName email')
-      .populate('assignedArtist', 'firstName lastName email')
+      .populate("clientId", "firstName lastName email")
+      .populate("assignedArtist", "firstName lastName email")
       .sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
       count: bookings.length,
-      data: bookings
+      data: bookings,
     });
   } catch (error) {
-    console.error('Get all bookings error:', error);
+    console.error("Get all bookings error:", error);
     res.status(500).json({
       success: false,
-      message: 'Server error while fetching all bookings',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      message: "Server error while fetching all bookings",
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
     });
   }
 };
@@ -376,28 +436,31 @@ const getPendingBookings = async (req, res) => {
   try {
     const artistId = req.user && req.user.id ? req.user.id : null;
     // Return both pending and in_progress bookings
-    const query = { status: { $in: ['pending', 'in_progress'] } };
+    const query = { status: { $in: ["pending", "in_progress"] } };
     if (artistId) {
       // exclude bookings the current artist has already applied to
       query.appliedArtists = { $nin: [artistId] };
     }
 
     const bookings = await Booking.find(query)
-      .populate('clientId', 'firstName lastName email')
-      .populate('assignedArtist', 'firstName lastName email')
+      .populate("clientId", "firstName lastName email")
+      .populate("assignedArtist", "firstName lastName email")
       .sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
       count: bookings.length,
-      data: bookings
+      data: bookings,
     });
   } catch (error) {
-    console.error('Get pending bookings error:', error);
+    console.error("Get pending bookings error:", error);
     res.status(500).json({
       success: false,
-      message: 'Server error while fetching pending bookings',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      message: "Server error while fetching pending bookings",
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
     });
   }
 };
@@ -413,22 +476,25 @@ const getBookingLogs = async (req, res) => {
     const { id } = req.params;
 
     const logs = await BookingLog.find({ bookingId: id })
-      .populate('performedBy.userId', 'firstName lastName email userType')
-      .populate('artistId', 'firstName lastName email')
-      .populate('applicationId')
+      .populate("performedBy.userId", "firstName lastName email userType")
+      .populate("artistId", "firstName lastName email")
+      .populate("applicationId")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
       success: true,
       count: logs.length,
-      data: logs
+      data: logs,
     });
   } catch (error) {
-    console.error('Get booking logs error:', error);
+    console.error("Get booking logs error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Server error while fetching booking logs',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      message: "Server error while fetching booking logs",
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
     });
   }
 };
@@ -436,34 +502,40 @@ const getBookingLogs = async (req, res) => {
 const getBookingById = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id)
-      .populate('clientId', 'firstName lastName email')
-      .populate('assignedArtist', 'firstName lastName email');
+      .populate("clientId", "firstName lastName email")
+      .populate("assignedArtist", "firstName lastName email");
 
     if (!booking) {
       return res.status(404).json({
         success: false,
-        message: 'Booking not found'
+        message: "Booking not found",
       });
     }
 
     // Check if user has access to this booking
-    if (req.user.userType === 'client' && booking.clientId._id.toString() !== req.user.id) {
+    if (
+      req.user.userType === "client" &&
+      booking.clientId._id.toString() !== req.user.id
+    ) {
       return res.status(403).json({
         success: false,
-        message: 'Access denied to this booking'
+        message: "Access denied to this booking",
       });
     }
 
     res.status(200).json({
       success: true,
-      data: booking
+      data: booking,
     });
   } catch (error) {
-    console.error('Get booking by ID error:', error);
+    console.error("Get booking by ID error:", error);
     res.status(500).json({
       success: false,
-      message: 'Server error while fetching booking',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      message: "Server error while fetching booking",
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
     });
   }
 };
@@ -475,48 +547,83 @@ const updateBooking = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
     if (!booking) {
-      return res.status(404).json({ success: false, message: 'Booking not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
     }
 
     // Only the owner client can update
-    if (req.user.userType !== 'client' || booking.clientId.toString() !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'Not authorized to update this booking' });
+    if (
+      req.user.userType !== "client" ||
+      booking.clientId.toString() !== req.user.id
+    ) {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Not authorized to update this booking",
+        });
     }
 
     // Prevent updates when completed or cancelled
-    if (['completed', 'cancelled', 'in_progress'].includes(booking.status)) {
-      return res.status(400).json({ success: false, message: `Cannot edit a ${booking.status} booking` });
+    if (["completed", "cancelled", "in_progress"].includes(booking.status)) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: `Cannot edit a ${booking.status} booking`,
+        });
     }
 
     const updatableFields = [
-      'firstName', 'lastName', 'email',
-      'eventType', 'otherEventType', 'eventDate', 'preferredTimeSlot',
-      'location', 'artistTravelsToClient', 'venueName',
-      'minimumBudget', 'maximumBudget', 'duration', 'numberOfPeople',
-      'designStyle', 'designInspiration', 'coveragePreference',
-      'additionalRequests'
+      "firstName",
+      "lastName",
+      "email",
+      "eventType",
+      "otherEventType",
+      "eventDate",
+      "preferredTimeSlot",
+      "location",
+      "artistTravelsToClient",
+      "venueName",
+      "minimumBudget",
+      "maximumBudget",
+      "duration",
+      "numberOfPeople",
+      // 'designStyle',
+      "designInspiration",
+      "coveragePreference",
+      "additionalRequests",
     ];
 
     updatableFields.forEach((field) => {
-      if (typeof req.body[field] !== 'undefined') {
+      if (typeof req.body[field] !== "undefined") {
         // Special handling for different fields
-        if (field === 'designInspiration') {
+        if (field === "designInspiration") {
           // Convert string to array if needed
-          booking[field] = Array.isArray(req.body[field]) ? req.body[field] : (req.body[field] ? [req.body[field]] : []);
-        } else if (field === 'eventType') {
+          booking[field] = Array.isArray(req.body[field])
+            ? req.body[field]
+            : req.body[field]
+            ? [req.body[field]]
+            : [];
+        } else if (field === "eventType") {
           // Convert single value to array if needed
-          booking[field] = Array.isArray(req.body[field]) ? req.body[field] : [req.body[field]];
-        } else if (field === 'preferredTimeSlot') {
+          booking[field] = Array.isArray(req.body[field])
+            ? req.body[field]
+            : [req.body[field]];
+        } else if (field === "preferredTimeSlot") {
           // Convert single value to array if needed
-          booking[field] = Array.isArray(req.body[field]) ? req.body[field] : [req.body[field]];
-        } else if (field === 'artistTravelsToClient') {
+          booking[field] = Array.isArray(req.body[field])
+            ? req.body[field]
+            : [req.body[field]];
+        } else if (field === "artistTravelsToClient") {
           // Handle travel preference - can be 'yes', 'no', 'both', true, false
-          if (typeof req.body[field] === 'string') {
-            if (req.body[field] === 'both') {
-              booking[field] = 'both';
-            } else if (req.body[field] === 'yes') {
+          if (typeof req.body[field] === "string") {
+            if (req.body[field] === "both") {
+              booking[field] = "both";
+            } else if (req.body[field] === "yes") {
               booking[field] = true;
-            } else if (req.body[field] === 'no') {
+            } else if (req.body[field] === "no") {
               booking[field] = false;
             } else {
               booking[field] = req.body[field];
@@ -531,8 +638,17 @@ const updateBooking = async (req, res) => {
     });
 
     // Validate budget
-    if (typeof booking.minimumBudget === 'number' && typeof booking.maximumBudget === 'number' && booking.maximumBudget < booking.minimumBudget) {
-      return res.status(400).json({ success: false, message: 'Maximum budget must be >= minimum budget' });
+    if (
+      typeof booking.minimumBudget === "number" &&
+      typeof booking.maximumBudget === "number" &&
+      booking.maximumBudget < booking.minimumBudget
+    ) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Maximum budget must be >= minimum budget",
+        });
     }
 
     // Normalize eventDate
@@ -559,7 +675,7 @@ const updateBooking = async (req, res) => {
     const previousStatus = booking.status;
 
     // Set status to pending when booking is updated
-    booking.status = 'pending';
+    booking.status = "pending";
     booking.reinstate = false;
     booking.assignedArtist = [];
     booking.appliedArtists = [];
@@ -569,24 +685,39 @@ const updateBooking = async (req, res) => {
     // Create booking log
     await createBookingLog(
       booking._id,
-      'booking_updated',
+      "booking_updated",
       {
         userId: req.user.id,
         userType: req.user.userType,
-        name: `${req.user.firstName} ${req.user.lastName}`
+        name: `${req.user.firstName} ${req.user.lastName}`,
       },
       {
         previousValues: { status: previousStatus },
-        newValues: { status: 'pending' },
-        statusAtTime: 'pending',
-        details: 'Booking details were updated'
+        newValues: { status: "pending" },
+        statusAtTime: "pending",
+        details: "Booking details were updated",
       }
     );
 
-    res.status(200).json({ success: true, message: 'Booking updated successfully', data: booking });
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: "Booking updated successfully",
+        data: booking,
+      });
   } catch (error) {
-    console.error('Update booking error:', error);
-    res.status(500).json({ success: false, message: 'Server error while updating booking', error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' });
+    console.error("Update booking error:", error);
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Server error while updating booking",
+        error:
+          process.env.NODE_ENV === "development"
+            ? error.message
+            : "Internal server error",
+      });
   }
 };
 
@@ -597,28 +728,40 @@ const deleteBooking = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
     if (!booking) {
-      return res.status(404).json({ success: false, message: 'Booking not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
     }
 
-    if (req.user.userType !== 'client' || booking.clientId.toString() !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'Not authorized to delete this booking' });
+    if (
+      req.user.userType !== "client" ||
+      booking.clientId.toString() !== req.user.id
+    ) {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Not authorized to delete this booking",
+        });
     }
 
-    if (booking.status === 'completed') {
-      return res.status(400).json({ success: false, message: 'Cannot delete a completed booking' });
+    if (booking.status === "completed") {
+      return res
+        .status(400)
+        .json({ success: false, message: "Cannot delete a completed booking" });
     }
 
     // Find all applications that reference this booking
     const applications = await Application.find({
-      'Booking.booking_id': req.params.id
+      "Booking.booking_id": req.params.id,
     });
 
     // Collect artist IDs from applications that will be deleted
     const affectedArtistIds = new Set();
     if (applications.length > 0) {
-      applications.forEach(app => {
+      applications.forEach((app) => {
         const bookingEntry = app.Booking.find(
-          b => b.booking_id.toString() === req.params.id
+          (b) => b.booking_id.toString() === req.params.id
         );
         if (bookingEntry) {
           affectedArtistIds.add(bookingEntry.artist_id.toString());
@@ -627,38 +770,45 @@ const deleteBooking = async (req, res) => {
 
       // Delete all applications that have this booking
       await Application.deleteMany({
-        'Booking.booking_id': req.params.id
+        "Booking.booking_id": req.params.id,
       });
 
       // Get client information for notifications
       const client = await User.findById(req.user.id);
-      const clientName = client ? `${client.firstName} ${client.lastName}` : 'The client';
+      const clientName = client
+        ? `${client.firstName} ${client.lastName}`
+        : "The client";
 
       // Send notifications to all affected artists
-      const notificationPromises = Array.from(affectedArtistIds).map(async (artistId) => {
-        try {
-          const notificationData = {
-            clientName,
-            artistName: '',
-            eventType: booking.eventType,
-            bookingDate: booking.eventDate,
-            location: booking.city || booking.location
-          };
+      const notificationPromises = Array.from(affectedArtistIds).map(
+        async (artistId) => {
+          try {
+            const notificationData = {
+              clientName,
+              artistName: "",
+              eventType: booking.eventType,
+              bookingDate: booking.eventDate,
+              location: booking.city || booking.location,
+            };
 
-          await createNotification(
-            'booking_deleted_application_deleted',
-            artistId,
-            req.user.id,
-            'artist',
-            req.params.id,
-            null,
-            notificationData
-          );
-        } catch (notificationError) {
-          console.error(`Error creating notification for artist ${artistId}:`, notificationError);
-          // Don't fail the deletion if notifications fail
+            await createNotification(
+              "booking_deleted_application_deleted",
+              artistId,
+              req.user.id,
+              "artist",
+              req.params.id,
+              null,
+              notificationData
+            );
+          } catch (notificationError) {
+            console.error(
+              `Error creating notification for artist ${artistId}:`,
+              notificationError
+            );
+            // Don't fail the deletion if notifications fail
+          }
         }
-      });
+      );
 
       // Wait for all notifications to be sent (but don't fail if they fail)
       await Promise.allSettled(notificationPromises);
@@ -667,23 +817,34 @@ const deleteBooking = async (req, res) => {
     // Create booking log before deletion
     await createBookingLog(
       req.params.id,
-      'booking_deleted',
+      "booking_deleted",
       {
         userId: req.user.id,
         userType: req.user.userType,
-        name: `${req.user.firstName} ${req.user.lastName}`
+        name: `${req.user.firstName} ${req.user.lastName}`,
       },
       {
         statusAtTime: booking.status,
-        details: `Booking deleted by client`
+        details: `Booking deleted by client`,
       }
     );
 
     await booking.deleteOne();
-    res.status(200).json({ success: true, message: 'Booking deleted successfully' });
+    res
+      .status(200)
+      .json({ success: true, message: "Booking deleted successfully" });
   } catch (error) {
-    console.error('Delete booking error:', error);
-    res.status(500).json({ success: false, message: 'Server error while deleting booking', error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' });
+    console.error("Delete booking error:", error);
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Server error while deleting booking",
+        error:
+          process.env.NODE_ENV === "development"
+            ? error.message
+            : "Internal server error",
+      });
   }
 };
 
@@ -693,12 +854,18 @@ const deleteBooking = async (req, res) => {
 const updateBookingStatus = async (req, res) => {
   try {
     const { status } = req.body;
-    const validStatuses = ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'];
+    const validStatuses = [
+      "pending",
+      "confirmed",
+      "in_progress",
+      "completed",
+      "cancelled",
+    ];
 
     if (!validStatuses.includes(status)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid status. Must be one of: ' + validStatuses.join(', ')
+        message: "Invalid status. Must be one of: " + validStatuses.join(", "),
       });
     }
 
@@ -707,12 +874,12 @@ const updateBookingStatus = async (req, res) => {
     if (!booking) {
       return res.status(404).json({
         success: false,
-        message: 'Booking not found'
+        message: "Booking not found",
       });
     }
 
     booking.status = status;
-    if (status === 'confirmed' && !booking.assignedArtist) {
+    if (status === "confirmed" && !booking.assignedArtist) {
       booking.assignedArtist = req.user.id;
     }
 
@@ -720,15 +887,18 @@ const updateBookingStatus = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Booking status updated successfully',
-      data: booking
+      message: "Booking status updated successfully",
+      data: booking,
     });
   } catch (error) {
-    console.error('Update booking status error:', error);
+    console.error("Update booking status error:", error);
     res.status(500).json({
       success: false,
-      message: 'Server error while updating booking status',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      message: "Server error while updating booking status",
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
     });
   }
 };
@@ -738,22 +908,39 @@ const updateBookingStatus = async (req, res) => {
 // @access  Private (Client only for own booking)
 const completeBooking = async (req, res) => {
   try {
-    const { images = [], video = '' } = req.body;
+    const { images = [], video = "" } = req.body;
 
     const booking = await Booking.findById(req.params.id);
     if (!booking) {
-      return res.status(404).json({ success: false, message: 'Booking not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
     }
 
     // Only owner client can mark complete
-    if (req.user.userType !== 'client' || booking.clientId.toString() !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'Not authorized to complete this booking' });
+    if (
+      req.user.userType !== "client" ||
+      booking.clientId.toString() !== req.user.id
+    ) {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Not authorized to complete this booking",
+        });
     }
 
     // Ensure an artist has been assigned before completion
-    const hasAssignedArtist = Array.isArray(booking.assignedArtist) && booking.assignedArtist.length > 0;
+    const hasAssignedArtist =
+      Array.isArray(booking.assignedArtist) &&
+      booking.assignedArtist.length > 0;
     if (!hasAssignedArtist) {
-      return res.status(400).json({ success: false, message: 'Cannot complete booking: no artist assigned' });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Cannot complete booking: no artist assigned",
+        });
     }
 
     // Fetch assigned artist's Stripe account ID (first assigned artist)
@@ -761,37 +948,58 @@ const completeBooking = async (req, res) => {
     let assignedArtistStripeAccountId = null;
     try {
       const assignedArtist = await User.findById(assignedArtistId);
-      assignedArtistStripeAccountId = assignedArtist && assignedArtist.stripeAccountId ? assignedArtist.stripeAccountId : null;
-    } catch (_) { }
+      assignedArtistStripeAccountId =
+        assignedArtist && assignedArtist.stripeAccountId
+          ? assignedArtist.stripeAccountId
+          : null;
+    } catch (_) {}
 
     if (!assignedArtistStripeAccountId) {
-      return res.status(400).json({ success: false, message: 'Assigned artist is missing Stripe account' });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Assigned artist is missing Stripe account",
+        });
     }
 
     // Amount to transfer = total payment paid for the booking
     const amountPaid = Number(booking.paymentPaid) || 0;
     if (!(amountPaid > 0)) {
-      return res.status(400).json({ success: false, message: 'No payment recorded for this booking' });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "No payment recorded for this booking",
+        });
     }
 
     // Credit assigned artist wallet instead of Stripe transfer
     try {
       let artistWallet = await Wallet.findOne({ userId: assignedArtistId });
       if (!artistWallet) {
-        artistWallet = new Wallet({ userId: assignedArtistId, walletAmount: 0 });
+        artistWallet = new Wallet({
+          userId: assignedArtistId,
+          walletAmount: 0,
+        });
       }
       // Determine if artist account is older than one month to apply 15% commission
       let commissionAmount = 0;
       try {
-        const artistDoc = await User.findById(assignedArtistId).select('createdAt');
+        const artistDoc = await User.findById(assignedArtistId).select(
+          "createdAt"
+        );
         if (artistDoc && artistDoc.createdAt) {
-          const accountAgeMs = Date.now() - new Date(artistDoc.createdAt).getTime();
+          const accountAgeMs =
+            Date.now() - new Date(artistDoc.createdAt).getTime();
           const oneMonthMs = 30 * 24 * 60 * 60 * 1000;
           if (accountAgeMs >= oneMonthMs) {
             commissionAmount = Math.round(amountPaid * 0.15 * 100) / 100; // 15%
           }
         }
-      } catch (_) { /* ignore commission calc errors, default to 0 */ }
+      } catch (_) {
+        /* ignore commission calc errors, default to 0 */
+      }
 
       const payoutAmount = Math.max(0, amountPaid - commissionAmount);
       artistWallet.walletAmount += payoutAmount;
@@ -804,19 +1012,25 @@ const completeBooking = async (req, res) => {
         bookingId: booking._id,
         amount: amountPaid,
         commission: commissionAmount,
-        transactionType: 'full'
+        transactionType: "full",
       });
       await tx.save();
     } catch (walletErr) {
-      console.error('Wallet credit error:', walletErr);
-      return res.status(500).json({ success: false, message: 'Failed to credit artist wallet', error: walletErr.message });
+      console.error("Wallet credit error:", walletErr);
+      return res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to credit artist wallet",
+          error: walletErr.message,
+        });
     }
 
     // Accept up to 3 images
     const imgArray = Array.isArray(images) ? images.slice(0, 3) : [];
     booking.images = imgArray;
-    if (typeof video === 'string') booking.video = video;
-    booking.status = 'completed';
+    if (typeof video === "string") booking.video = video;
+    booking.status = "completed";
 
     await booking.save();
 
@@ -825,30 +1039,47 @@ const completeBooking = async (req, res) => {
       const clientName = `${req.user.firstName} ${req.user.lastName}`;
       const notificationData = {
         clientName,
-        bookingName: `${booking.eventType?.join(', ') || 'Mehndi'} - ${booking.location}`,
+        bookingName: `${booking.eventType?.join(", ") || "Mehndi"} - ${
+          booking.location
+        }`,
         eventType: booking.eventType,
         bookingDate: booking.eventDate,
-        location: booking.location
+        location: booking.location,
       };
 
       await createNotification(
-        'booking_completed',
+        "booking_completed",
         assignedArtistId,
         req.user.id,
-        'artist',
+        "artist",
         booking._id,
         null,
         notificationData
       );
     } catch (notificationError) {
-      console.error('Error creating completion notification:', notificationError);
+      console.error(
+        "Error creating completion notification:",
+        notificationError
+      );
       // Don't fail the completion if notifications fail
     }
 
-    return res.status(200).json({ success: true, message: 'Booking marked as completed', data: booking, assignedArtistStripeAccountId });
+    return res
+      .status(200)
+      .json({
+        success: true,
+        message: "Booking marked as completed",
+        data: booking,
+        assignedArtistStripeAccountId,
+      });
   } catch (error) {
-    console.error('Complete booking error:', error);
-    return res.status(500).json({ success: false, message: 'Server error while completing booking' });
+    console.error("Complete booking error:", error);
+    return res
+      .status(500)
+      .json({
+        success: false,
+        message: "Server error while completing booking",
+      });
   }
 };
 
@@ -857,20 +1088,21 @@ const completeBooking = async (req, res) => {
 // @access  Private (Client only)
 const cancelBooking = async (req, res) => {
   try {
-    const { bookingId, cancellationReason, cancellationDescription, artistId } = req.body;
+    const { bookingId, cancellationReason, cancellationDescription, artistId } =
+      req.body;
 
     // Validate required fields
     if (!bookingId) {
       return res.status(400).json({
         success: false,
-        message: 'Booking ID is required'
+        message: "Booking ID is required",
       });
     }
 
     if (!artistId) {
       return res.status(400).json({
         success: false,
-        message: 'Artist ID is required'
+        message: "Artist ID is required",
       });
     }
 
@@ -878,7 +1110,7 @@ const cancelBooking = async (req, res) => {
     if (!cancellationDescription || !cancellationDescription.trim()) {
       return res.status(400).json({
         success: false,
-        message: 'Cancellation description is required'
+        message: "Cancellation description is required",
       });
     }
 
@@ -887,7 +1119,7 @@ const cancelBooking = async (req, res) => {
     if (!booking) {
       return res.status(404).json({
         success: false,
-        message: 'Booking not found'
+        message: "Booking not found",
       });
     }
 
@@ -895,27 +1127,27 @@ const cancelBooking = async (req, res) => {
     if (booking.clientId.toString() !== req.user.id) {
       return res.status(403).json({
         success: false,
-        message: 'Not authorized to cancel this booking'
+        message: "Not authorized to cancel this booking",
       });
     }
 
     // Check if booking can be cancelled
-    if (booking.status === 'cancelled') {
+    if (booking.status === "cancelled") {
       return res.status(400).json({
         success: false,
-        message: 'Booking is already cancelled'
+        message: "Booking is already cancelled",
       });
     }
 
-    if (booking.status === 'completed') {
+    if (booking.status === "completed") {
       return res.status(400).json({
         success: false,
-        message: 'Cannot cancel a completed booking'
+        message: "Cannot cancel a completed booking",
       });
     }
 
     // Update booking with cancellation details
-    booking.status = 'cancelled';
+    booking.status = "cancelled";
     booking.cancellationReason = cancellationReason || null; // Optional for client
     booking.cancellationDescription = cancellationDescription;
     booking.updatedAt = new Date();
@@ -925,15 +1157,20 @@ const cancelBooking = async (req, res) => {
     // Update application status to cancelled for this booking and artist
     await Application.updateOne(
       {
-        'Booking.booking_id': bookingId,
-        'Booking.artist_id': artistId
+        "Booking.booking_id": bookingId,
+        "Booking.artist_id": artistId,
       },
       {
-        $set: { 'Booking.$.status': 'cancelled' }
+        $set: { "Booking.$.status": "cancelled" },
       }
     );
 
-    console.log('Application status updated to cancelled for booking:', bookingId, 'artist:', artistId);
+    console.log(
+      "Application status updated to cancelled for booking:",
+      bookingId,
+      "artist:",
+      artistId
+    );
 
     // Check if refund should be processed (14-day rule)
     const eventDate = new Date(booking.eventDate);
@@ -949,21 +1186,21 @@ const cancelBooking = async (req, res) => {
       const adminFee = paidAmount * 0.1; // 10% admin fee
 
       // Find admin user and their wallet
-      const adminUser = await User.findOne({ userType: 'admin' });
+      const adminUser = await User.findOne({ userType: "admin" });
       if (!adminUser) {
-        console.log('No admin user found');
+        console.log("No admin user found");
         return res.status(500).json({
           success: false,
-          message: 'Admin user not found'
+          message: "Admin user not found",
         });
       }
 
       let adminWallet = await Wallet.findOne({ userId: adminUser._id });
       if (!adminWallet) {
-        console.log('Admin wallet not found for user:', adminUser._id);
+        console.log("Admin wallet not found for user:", adminUser._id);
         return res.status(500).json({
           success: false,
-          message: 'Admin wallet not found'
+          message: "Admin wallet not found",
         });
       }
 
@@ -974,10 +1211,10 @@ const cancelBooking = async (req, res) => {
       // Add refund amount to client's wallet
       let clientWallet = await Wallet.findOne({ userId: req.user.id });
       if (!clientWallet) {
-        console.log('Client wallet not found for user:', req.user.id);
+        console.log("Client wallet not found for user:", req.user.id);
         return res.status(500).json({
           success: false,
-          message: 'Client wallet not found'
+          message: "Client wallet not found",
         });
       }
 
@@ -985,33 +1222,33 @@ const cancelBooking = async (req, res) => {
       clientWallet.walletAmount += refundAmount;
       await clientWallet.save();
 
-      console.log('Client wallet updated:', {
+      console.log("Client wallet updated:", {
         userId: req.user.id,
         refundAmount: refundAmount,
-        newBalance: clientWallet.walletAmount
+        newBalance: clientWallet.walletAmount,
       });
 
       // Find the original transaction to update
       const originalTransaction = await Transaction.findOne({
         sender: req.user.id,
         receiver: artistId,
-        bookingId: bookingId
+        bookingId: bookingId,
       });
 
       if (originalTransaction) {
         // Update original transaction to refund type with 90% amount
         originalTransaction.amount = refundAmount;
-        originalTransaction.transactionType = 'refund';
+        originalTransaction.transactionType = "refund";
         originalTransaction.updatedAt = new Date();
         await originalTransaction.save();
 
-        console.log('Transaction updated for refund:', {
+        console.log("Transaction updated for refund:", {
           originalAmount: paidAmount,
           refundAmount: refundAmount,
-          adminFee: adminFee
+          adminFee: adminFee,
         });
       } else {
-        console.log('No original transaction found for booking:', bookingId);
+        console.log("No original transaction found for booking:", bookingId);
       }
 
       // // Create admin transaction record
@@ -1024,11 +1261,11 @@ const cancelBooking = async (req, res) => {
       // });
       // await adminTransaction.save();
 
-      console.log('Refund processed:', {
+      console.log("Refund processed:", {
         totalPaid: paidAmount,
         clientRefund: refundAmount,
         adminFee: adminFee,
-        daysUntilEvent: diffDays
+        daysUntilEvent: diffDays,
       });
     } else if (diffDays >= 7 && diffDays <= 14 && paidAmount > 0) {
       // 7-14 days: 40% refund to client, 10% to admin, 50% to artist
@@ -1037,7 +1274,7 @@ const cancelBooking = async (req, res) => {
       if (!artist) {
         return res.status(404).json({
           success: false,
-          message: 'Artist not found'
+          message: "Artist not found",
         });
       }
 
@@ -1054,21 +1291,21 @@ const cancelBooking = async (req, res) => {
       const artistAmount = paidAmount - refundAmount - adminFee; // Remaining to artist
 
       // Find admin user and their wallet
-      const adminUser = await User.findOne({ userType: 'admin' });
+      const adminUser = await User.findOne({ userType: "admin" });
       if (!adminUser) {
-        console.log('No admin user found');
+        console.log("No admin user found");
         return res.status(500).json({
           success: false,
-          message: 'Admin user not found'
+          message: "Admin user not found",
         });
       }
 
       let adminWallet = await Wallet.findOne({ userId: adminUser._id });
       if (!adminWallet) {
-        console.log('Admin wallet not found for user:', adminUser._id);
+        console.log("Admin wallet not found for user:", adminUser._id);
         return res.status(500).json({
           success: false,
-          message: 'Admin wallet not found'
+          message: "Admin wallet not found",
         });
       }
 
@@ -1079,10 +1316,10 @@ const cancelBooking = async (req, res) => {
       // Add 40% refund to client's wallet
       let clientWallet = await Wallet.findOne({ userId: req.user.id });
       if (!clientWallet) {
-        console.log('Client wallet not found for user:', req.user.id);
+        console.log("Client wallet not found for user:", req.user.id);
         return res.status(500).json({
           success: false,
-          message: 'Client wallet not found'
+          message: "Client wallet not found",
         });
       }
 
@@ -1090,19 +1327,19 @@ const cancelBooking = async (req, res) => {
       clientWallet.walletAmount += refundAmount;
       await clientWallet.save();
 
-      console.log('Client wallet updated (40% refund):', {
+      console.log("Client wallet updated (40% refund):", {
         userId: req.user.id,
         refundAmount: refundAmount,
-        newBalance: clientWallet.walletAmount
+        newBalance: clientWallet.walletAmount,
       });
 
       // Find artist wallet and add 40% to it
       let artistWallet = await Wallet.findOne({ userId: artistId });
       if (!artistWallet) {
-        console.log('Artist wallet not found for user:', artistId);
+        console.log("Artist wallet not found for user:", artistId);
         return res.status(500).json({
           success: false,
-          message: 'Artist wallet not found'
+          message: "Artist wallet not found",
         });
       }
 
@@ -1110,34 +1347,34 @@ const cancelBooking = async (req, res) => {
       artistWallet.walletAmount += artistAmount;
       await artistWallet.save();
 
-      console.log('Artist wallet updated (50%):', {
+      console.log("Artist wallet updated (50%):", {
         userId: artistId,
         artistAmount: artistAmount,
-        newBalance: artistWallet.walletAmount
+        newBalance: artistWallet.walletAmount,
       });
 
       // Find the original transaction to update
       const originalTransaction = await Transaction.findOne({
         sender: req.user.id,
         receiver: artistId,
-        bookingId: bookingId
+        bookingId: bookingId,
       });
 
       if (originalTransaction) {
         // Update original transaction to refund type with 40% amount
         originalTransaction.amount = refundAmount;
-        originalTransaction.transactionType = 'refund';
+        originalTransaction.transactionType = "refund";
         originalTransaction.updatedAt = new Date();
         await originalTransaction.save();
 
-        console.log('Transaction updated for 40% refund:', {
+        console.log("Transaction updated for 40% refund:", {
           originalAmount: paidAmount,
           refundAmount: refundAmount,
           adminFee: adminFee,
-          artistAmount: artistAmount
+          artistAmount: artistAmount,
         });
       } else {
-        console.log('No original transaction found for booking:', bookingId);
+        console.log("No original transaction found for booking:", bookingId);
       }
 
       // // Create admin transaction record
@@ -1150,11 +1387,11 @@ const cancelBooking = async (req, res) => {
       // });
       // await adminTransaction.save();
 
-      console.log('50% refund processed:', {
+      console.log("50% refund processed:", {
         totalPaid: paidAmount,
         clientRefund: refundAmount,
         adminFee: adminFee,
-        daysUntilEvent: diffDays
+        daysUntilEvent: diffDays,
       });
     } else {
       // Less than 7 days: 90% to artist, 10% to admin
@@ -1164,7 +1401,7 @@ const cancelBooking = async (req, res) => {
         if (!artist) {
           return res.status(404).json({
             success: false,
-            message: 'Artist not found'
+            message: "Artist not found",
           });
         }
 
@@ -1174,18 +1411,19 @@ const cancelBooking = async (req, res) => {
 
         // If artist account was created more than one month ago, reduce admin fee to 5%
         // If less than one month, charge normal 10% admin fee
-        const adminFeePercentage = accountCreationDate < oneMonthAgo ? 0.0 : 0.1;
+        const adminFeePercentage =
+          accountCreationDate < oneMonthAgo ? 0.0 : 0.1;
 
         const adminFee = paidAmount * adminFeePercentage;
         const artistAmount = paidAmount - adminFee; // Remaining to artist
 
         // Find admin user
-        const adminUser = await User.findOne({ userType: 'admin' });
+        const adminUser = await User.findOne({ userType: "admin" });
         if (!adminUser) {
-          console.log('No admin user found');
+          console.log("No admin user found");
           return res.status(500).json({
             success: false,
-            message: 'Admin user not found'
+            message: "Admin user not found",
           });
         }
 
@@ -1201,10 +1439,10 @@ const cancelBooking = async (req, res) => {
         // Find artist wallet and add 90% to it
         let artistWallet = await Wallet.findOne({ userId: artistId });
         if (!artistWallet) {
-          console.log('Artist wallet not found for user:', artistId);
+          console.log("Artist wallet not found for user:", artistId);
           return res.status(500).json({
             success: false,
-            message: 'Artist wallet not found'
+            message: "Artist wallet not found",
           });
         }
 
@@ -1212,10 +1450,10 @@ const cancelBooking = async (req, res) => {
         artistWallet.walletAmount += artistAmount;
         await artistWallet.save();
 
-        console.log('Artist wallet updated (90%):', {
+        console.log("Artist wallet updated (90%):", {
           userId: artistId,
           artistAmount: artistAmount,
-          newBalance: artistWallet.walletAmount
+          newBalance: artistWallet.walletAmount,
         });
 
         // // Create admin fee transaction
@@ -1228,19 +1466,17 @@ const cancelBooking = async (req, res) => {
         // });
         // await adminTransaction.save();
 
-
-
-        console.log('Fee processed (less than 7 days):', {
+        console.log("Fee processed (less than 7 days):", {
           totalPaid: paidAmount,
           artistAmount: artistAmount,
           adminFee: adminFee,
-          daysUntilEvent: diffDays
+          daysUntilEvent: diffDays,
         });
       } else {
-        console.log('No refund processed:', {
+        console.log("No refund processed:", {
           daysUntilEvent: diffDays,
           paidAmount: paidAmount,
-          reason: diffDays < 7 ? 'Less than 7 days' : 'No payment made'
+          reason: diffDays < 7 ? "Less than 7 days" : "No payment made",
         });
       }
     }
@@ -1257,7 +1493,7 @@ const cancelBooking = async (req, res) => {
       cancelledAt: booking.updatedAt,
       refundProcessed: false,
       refundAmount: 0,
-      adminFee: 0
+      adminFee: 0,
     };
 
     // Add refund information if applicable
@@ -1266,19 +1502,19 @@ const cancelBooking = async (req, res) => {
       responseData.refundAmount = paidAmount * 0.9;
       responseData.adminFee = paidAmount * 0.1;
       responseData.daysUntilEvent = diffDays;
-      responseData.refundType = '90% refund';
+      responseData.refundType = "90% refund";
     } else if (diffDays >= 7 && diffDays <= 14 && paidAmount > 0) {
       responseData.refundProcessed = true;
       responseData.refundAmount = paidAmount * 0.5;
       responseData.adminFee = paidAmount * 0.5;
       responseData.daysUntilEvent = diffDays;
-      responseData.refundType = '50% refund';
+      responseData.refundType = "50% refund";
     } else if (diffDays < 7 && paidAmount > 0) {
       responseData.refundProcessed = false;
       responseData.refundAmount = 0;
       responseData.adminFee = paidAmount;
       responseData.daysUntilEvent = diffDays;
-      responseData.refundType = 'No refund - admin fee';
+      responseData.refundType = "No refund - admin fee";
     }
 
     // Create notification for the artist about booking cancellation
@@ -1286,58 +1522,65 @@ const cancelBooking = async (req, res) => {
       const clientName = `${req.user.firstName} ${req.user.lastName}`;
       const notificationData = {
         clientName,
-        bookingName: `${booking.eventType?.join(', ') || 'Mehndi'} - ${booking.location}`,
+        bookingName: `${booking.eventType?.join(", ") || "Mehndi"} - ${
+          booking.location
+        }`,
         eventType: booking.eventType,
         bookingDate: booking.eventDate,
         location: booking.location,
-        cancellationReason
+        cancellationReason,
       };
 
       await createNotification(
-        'booking_cancelled',
+        "booking_cancelled",
         artistId,
         req.user.id,
-        'artist',
+        "artist",
         bookingId,
         null,
         notificationData
       );
     } catch (notificationError) {
-      console.error('Error creating cancellation notification:', notificationError);
+      console.error(
+        "Error creating cancellation notification:",
+        notificationError
+      );
       // Don't fail the cancellation if notifications fail
     }
 
     // Create booking log
-    const previousStatus = 'confirmed'; // Before cancellation it was confirmed
+    const previousStatus = "confirmed"; // Before cancellation it was confirmed
     await createBookingLog(
       bookingId,
-      'booking_cancelled',
+      "booking_cancelled",
       {
         userId: req.user.id,
         userType: req.user.userType,
-        name: `${req.user.firstName} ${req.user.lastName}`
+        name: `${req.user.firstName} ${req.user.lastName}`,
       },
       {
         artistId: artistId,
         previousValues: { status: previousStatus },
-        newValues: { status: 'cancelled' },
-        statusAtTime: 'cancelled',
-        details: `Booking cancelled. Reason: ${cancellationDescription}`
+        newValues: { status: "cancelled" },
+        statusAtTime: "cancelled",
+        details: `Booking cancelled. Reason: ${cancellationDescription}`,
       }
     );
 
     return res.status(200).json({
       success: true,
-      message: 'Booking cancelled successfully',
-      data: responseData
+      message: "Booking cancelled successfully",
+      data: responseData,
     });
-
   } catch (error) {
-    console.error('Cancel booking error:', error);
+    console.error("Cancel booking error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Server error while cancelling booking',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      message: "Server error while cancelling booking",
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
     });
   }
 };
@@ -1353,25 +1596,25 @@ const updateBookingPaymentStatus = async (req, res) => {
     if (!isPaid) {
       return res.status(400).json({
         success: false,
-        message: 'isPaid status is required'
+        message: "isPaid status is required",
       });
     }
 
     if (!bookingId) {
       return res.status(400).json({
         success: false,
-        message: 'bookingId is required'
+        message: "bookingId is required",
       });
     }
 
     // Trim whitespace from bookingId
     const trimmedBookingId = bookingId.trim();
 
-    console.log('Update payment status - Request data:', {
+    console.log("Update payment status - Request data:", {
       bookingId: bookingId,
       trimmedBookingId: trimmedBookingId,
       isPaid: isPaid,
-      remainingPayment: remainingPayment
+      remainingPayment: remainingPayment,
     });
 
     // Find the booking
@@ -1379,7 +1622,7 @@ const updateBookingPaymentStatus = async (req, res) => {
     if (!booking) {
       return res.status(404).json({
         success: false,
-        message: 'Booking not found'
+        message: "Booking not found",
       });
     }
 
@@ -1387,7 +1630,7 @@ const updateBookingPaymentStatus = async (req, res) => {
     if (booking.clientId.toString() !== req.user.id) {
       return res.status(403).json({
         success: false,
-        message: 'Not authorized to update this booking'
+        message: "Not authorized to update this booking",
       });
     }
 
@@ -1406,38 +1649,40 @@ const updateBookingPaymentStatus = async (req, res) => {
     }
     booking.updatedAt = new Date();
 
-    console.log('Payment calculation:', {
+    console.log("Payment calculation:", {
       existingPaymentPaid: existingPaymentPaid,
       remainingAmount: remainingAmount,
       totalPaidAmount: totalPaidAmount,
-      newRemainingPayment: remainingPayment
+      newRemainingPayment: remainingPayment,
     });
 
     await booking.save();
 
-    console.log('Booking payment status updated:', {
+    console.log("Booking payment status updated:", {
       bookingId: trimmedBookingId,
       isPaid: isPaid,
-      remainingPayment: remainingPayment
+      remainingPayment: remainingPayment,
     });
 
     return res.status(200).json({
       success: true,
-      message: 'Booking payment status updated successfully',
+      message: "Booking payment status updated successfully",
       data: {
         bookingId: booking._id,
         isPaid: booking.isPaid,
         remainingPayment: booking.remainingPayment,
-        updatedAt: booking.updatedAt
-      }
+        updatedAt: booking.updatedAt,
+      },
     });
-
   } catch (error) {
-    console.error('Update booking payment status error:', error);
+    console.error("Update booking payment status error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Server error while updating booking payment status',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      message: "Server error while updating booking payment status",
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
     });
   }
 };
@@ -1452,7 +1697,7 @@ const processRefund = async (req, res) => {
     if (!bookingId || !userId || !artistId) {
       return res.status(400).json({
         success: false,
-        message: 'bookingId, userId, and artistId are required'
+        message: "bookingId, userId, and artistId are required",
       });
     }
 
@@ -1461,7 +1706,7 @@ const processRefund = async (req, res) => {
     if (!booking) {
       return res.status(404).json({
         success: false,
-        message: 'Booking not found'
+        message: "Booking not found",
       });
     }
 
@@ -1469,7 +1714,7 @@ const processRefund = async (req, res) => {
     if (booking.clientId.toString() !== req.user.id) {
       return res.status(403).json({
         success: false,
-        message: 'Not authorized to process refund for this booking'
+        message: "Not authorized to process refund for this booking",
       });
     }
 
@@ -1477,7 +1722,7 @@ const processRefund = async (req, res) => {
     if (booking.reinstate !== true) {
       return res.status(400).json({
         success: false,
-        message: 'Refund cannot be proceesed for this booking'
+        message: "Refund cannot be proceesed for this booking",
       });
     }
 
@@ -1491,24 +1736,22 @@ const processRefund = async (req, res) => {
     userWallet.walletAmount += refundAmount;
     await userWallet.save();
 
-
-
     // Reset booking status and payment fields
-    booking.status = 'pending';
+    booking.status = "pending";
     booking.reinstate = false;
-    booking.paymentPaid = '0';
-    booking.remainingPayment = '0';
-    booking.isPaid = 'none';
+    booking.paymentPaid = "0";
+    booking.remainingPayment = "0";
+    booking.isPaid = "none";
     booking.assignedArtist = []; // Clear assigned artists array
     booking.appliedArtists = []; // Clear applied artists array
     await booking.save();
 
-    console.log('Refund processed:', {
+    console.log("Refund processed:", {
       bookingId: bookingId,
       userId: userId,
       artistId: artistId,
       refundAmount: refundAmount,
-      newWalletBalance: userWallet.walletAmount
+      newWalletBalance: userWallet.walletAmount,
     });
 
     // Create refund transaction record
@@ -1517,30 +1760,29 @@ const processRefund = async (req, res) => {
       receiver: userId,
       bookingId: bookingId,
       amount: refundAmount,
-      transactionType: 'refund'
+      transactionType: "refund",
     });
     await refundTransaction.save();
-    console.log('Refund transaction created:', refundTransaction);
+    console.log("Refund transaction created:", refundTransaction);
 
     return res.status(200).json({
       success: true,
-      message: 'Refund processed successfully',
+      message: "Refund processed successfully",
       data: {
         bookingId: booking._id,
         refundAmount: refundAmount,
         newWalletBalance: userWallet.walletAmount,
-        bookingStatus: booking.status
-      }
+        bookingStatus: booking.status,
+      },
     });
-
   } catch (error) {
-    console.error('Process refund error:', error);
+    console.error("Process refund error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Server error while processing refund',
-    })
+      message: "Server error while processing refund",
+    });
   }
-}
+};
 
 // @desc    Process refund for booking by admin
 // @route   POST /api/admin/bookings/refund
@@ -1552,7 +1794,7 @@ const processRefundByAdmin = async (req, res) => {
     if (!bookingId || !userId || !artistId) {
       return res.status(400).json({
         success: false,
-        message: 'bookingId, userId, and artistId are required'
+        message: "bookingId, userId, and artistId are required",
       });
     }
 
@@ -1561,7 +1803,7 @@ const processRefundByAdmin = async (req, res) => {
     if (!booking) {
       return res.status(404).json({
         success: false,
-        message: 'Booking not found'
+        message: "Booking not found",
       });
     }
 
@@ -1578,22 +1820,22 @@ const processRefundByAdmin = async (req, res) => {
     await userWallet.save();
 
     // Reset booking status and payment fields
-    booking.status = 'pending';
+    booking.status = "pending";
     booking.reinstate = false;
-    booking.paymentPaid = '0';
-    booking.remainingPayment = '0';
-    booking.isPaid = 'none';
+    booking.paymentPaid = "0";
+    booking.remainingPayment = "0";
+    booking.isPaid = "none";
     booking.assignedArtist = []; // Clear assigned artists array
     booking.appliedArtists = []; // Clear applied artists array
     await booking.save();
 
-    console.log('Refund processed by admin:', {
+    console.log("Refund processed by admin:", {
       bookingId: bookingId,
       userId: userId,
       artistId: artistId,
       refundAmount: refundAmount,
       newWalletBalance: userWallet.walletAmount,
-      processedBy: req.user.id
+      processedBy: req.user.id,
     });
 
     // Create refund transaction record
@@ -1602,30 +1844,29 @@ const processRefundByAdmin = async (req, res) => {
       receiver: userId,
       bookingId: bookingId,
       amount: refundAmount,
-      transactionType: 'refund'
+      transactionType: "refund",
     });
     await refundTransaction.save();
-    console.log('Refund transaction created:', refundTransaction);
+    console.log("Refund transaction created:", refundTransaction);
 
     return res.status(200).json({
       success: true,
-      message: 'Refund processed successfully by admin',
+      message: "Refund processed successfully by admin",
       data: {
         bookingId: booking._id,
         refundAmount: refundAmount,
         newWalletBalance: userWallet.walletAmount,
-        bookingStatus: booking.status
-      }
+        bookingStatus: booking.status,
+      },
     });
-
   } catch (error) {
-    console.error('Process refund by admin error:', error);
+    console.error("Process refund by admin error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Server error while processing refund',
-    })
+      message: "Server error while processing refund",
+    });
   }
-}
+};
 
 // @desc    Get nearby bookings within 3km radius
 // @route   GET /api/bookings/nearby
@@ -1637,7 +1878,7 @@ const getNearbyBookings = async (req, res) => {
     if (!latitude || !longitude) {
       return res.status(400).json({
         success: false,
-        message: 'Latitude and longitude are required'
+        message: "Latitude and longitude are required",
       });
     }
 
@@ -1647,21 +1888,24 @@ const getNearbyBookings = async (req, res) => {
 
     // Get all pending bookings with latitude and longitude
     const bookings = await Booking.find({
-      status: 'pending',
+      status: "pending",
       latitude: { $exists: true, $ne: null },
-      longitude: { $exists: true, $ne: null }
-    }).populate('clientId', 'firstName lastName email');
+      longitude: { $exists: true, $ne: null },
+    }).populate("clientId", "firstName lastName email");
 
     // Filter bookings within radius using Haversine formula
-    const nearbyBookings = bookings.filter(booking => {
+    const nearbyBookings = bookings.filter((booking) => {
       if (!booking.latitude || !booking.longitude) return false;
 
       const R = 6371; // Earth's radius in kilometers
-      const dLat = (booking.latitude - userLat) * Math.PI / 180;
-      const dLng = (booking.longitude - userLng) * Math.PI / 180;
-      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(userLat * Math.PI / 180) * Math.cos(booking.latitude * Math.PI / 180) *
-        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+      const dLat = ((booking.latitude - userLat) * Math.PI) / 180;
+      const dLng = ((booking.longitude - userLng) * Math.PI) / 180;
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos((userLat * Math.PI) / 180) *
+          Math.cos((booking.latitude * Math.PI) / 180) *
+          Math.sin(dLng / 2) *
+          Math.sin(dLng / 2);
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
       const distance = R * c;
 
@@ -1670,23 +1914,35 @@ const getNearbyBookings = async (req, res) => {
 
     // Sort by distance (closest first)
     nearbyBookings.sort((a, b) => {
-      const distA = calculateDistance(userLat, userLng, a.latitude, a.longitude);
-      const distB = calculateDistance(userLat, userLng, b.latitude, b.longitude);
+      const distA = calculateDistance(
+        userLat,
+        userLng,
+        a.latitude,
+        a.longitude
+      );
+      const distB = calculateDistance(
+        userLat,
+        userLng,
+        b.latitude,
+        b.longitude
+      );
       return distA - distB;
     });
 
     res.status(200).json({
       success: true,
       data: nearbyBookings,
-      count: nearbyBookings.length
+      count: nearbyBookings.length,
     });
-
   } catch (error) {
-    console.error('Get nearby bookings error:', error);
+    console.error("Get nearby bookings error:", error);
     res.status(500).json({
       success: false,
-      message: 'Server error while fetching nearby bookings',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      message: "Server error while fetching nearby bookings",
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
     });
   }
 };
@@ -1694,11 +1950,14 @@ const getNearbyBookings = async (req, res) => {
 // Helper function to calculate distance between two coordinates
 const calculateDistance = (lat1, lng1, lat2, lng2) => {
   const R = 6371; // Earth's radius in kilometers
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 };
@@ -1709,7 +1968,10 @@ const calculateDistance = (lat1, lng1, lat2, lng2) => {
 const saveBooking = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
-    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+    if (!booking)
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
 
     const userId = req.user.id;
     if (!booking.savedBy) booking.savedBy = [];
@@ -1717,10 +1979,14 @@ const saveBooking = async (req, res) => {
       booking.savedBy.push(userId);
       await booking.save();
     }
-    return res.status(200).json({ success: true, message: 'Saved', data: { saved: true } });
+    return res
+      .status(200)
+      .json({ success: true, message: "Saved", data: { saved: true } });
   } catch (error) {
-    console.error('Save booking error:', error);
-    return res.status(500).json({ success: false, message: 'Server error while saving booking' });
+    console.error("Save booking error:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error while saving booking" });
   }
 };
 
@@ -1730,14 +1996,23 @@ const saveBooking = async (req, res) => {
 const unsaveBooking = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
-    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+    if (!booking)
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
     const userId = req.user.id;
-    booking.savedBy = (booking.savedBy || []).filter((u) => u.toString() !== userId);
+    booking.savedBy = (booking.savedBy || []).filter(
+      (u) => u.toString() !== userId
+    );
     await booking.save();
-    return res.status(200).json({ success: true, message: 'Unsaved', data: { saved: false } });
+    return res
+      .status(200)
+      .json({ success: true, message: "Unsaved", data: { saved: false } });
   } catch (error) {
-    console.error('Unsave booking error:', error);
-    return res.status(500).json({ success: false, message: 'Server error while unsaving booking' });
+    console.error("Unsave booking error:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error while unsaving booking" });
   }
 };
 
@@ -1748,12 +2023,19 @@ const getSavedBookings = async (req, res) => {
   try {
     const userId = req.user.id;
     const bookings = await Booking.find({ savedBy: { $in: [userId] } })
-      .populate('clientId', 'firstName lastName email')
+      .populate("clientId", "firstName lastName email")
       .sort({ createdAt: -1 });
-    return res.status(200).json({ success: true, count: bookings.length, data: bookings });
+    return res
+      .status(200)
+      .json({ success: true, count: bookings.length, data: bookings });
   } catch (error) {
-    console.error('Get saved bookings error:', error);
-    return res.status(500).json({ success: false, message: 'Server error while fetching saved bookings' });
+    console.error("Get saved bookings error:", error);
+    return res
+      .status(500)
+      .json({
+        success: false,
+        message: "Server error while fetching saved bookings",
+      });
   }
 };
 
@@ -1775,6 +2057,5 @@ module.exports = {
   getNearbyBookings,
   saveBooking,
   unsaveBooking,
-  getSavedBookings
+  getSavedBookings,
 };
-
