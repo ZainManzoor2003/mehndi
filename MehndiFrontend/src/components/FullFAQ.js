@@ -152,13 +152,19 @@ const FullFAQ = () => {
   const contentRefs = useRef([]);
   const [heights, setHeights] = useState({});
 
-  // Update tab when URL parameter changes
+  // Update tab when URL parameter changes and scroll to top
   useEffect(() => {
     const tabFromUrl = searchParams.get("tab");
     if (tabFromUrl === "artists" || tabFromUrl === "clients") {
       setTab(tabFromUrl);
     } else {
       setTab("clients"); // Default to clients
+    }
+    // Scroll to top when tab changes
+    try {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch {
+      window.scrollTo(0, 0);
     }
   }, [searchParams]);
 
@@ -222,6 +228,12 @@ const FullFAQ = () => {
               setTab("clients");
               setSearchParams({ tab: "clients" });
               setOpenIdx(null);
+              // Scroll to top when tab is clicked
+              try {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              } catch {
+                window.scrollTo(0, 0);
+              }
             }}
           >
             <span className="tab-icon">
@@ -235,6 +247,12 @@ const FullFAQ = () => {
               setTab("artists");
               setSearchParams({ tab: "artists" });
               setOpenIdx(null);
+              // Scroll to top when tab is clicked
+              try {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              } catch {
+                window.scrollTo(0, 0);
+              }
             }}
           >
             <span className="tab-icon">
