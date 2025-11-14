@@ -513,9 +513,9 @@ const HowItWorks = () => {
                   x2="100%"
                   y2="0%"
                 >
-                  <stop offset="0%" stopColor="#8B5E34" />
-                  <stop offset="50%" stopColor="#A4693D" />
-                  <stop offset="100%" stopColor="#7A4A24" />
+                  <stop offset="0%" stopColor="#916D2C" />
+                  <stop offset="50%" stopColor="#916D2C" />
+                  <stop offset="100%" stopColor="#916D2C" />
                 </linearGradient>
                 <filter
                   id="leafShadow"
@@ -528,7 +528,7 @@ const HowItWorks = () => {
                     dx="0"
                     dy="1"
                     stdDeviation="1"
-                    floodColor="#7A4A24"
+                    floodColor="#916D2C"
                     floodOpacity="0.25"
                   />
                 </filter>
@@ -538,14 +538,14 @@ const HowItWorks = () => {
                 className="vine-path"
                 d="M 140,130 C 360,60 620,120 780,170 S 920,300 820,360 610,430 520,480 380,560 300,620 140,600 130,540 200,440 300,420 440,430 560,500 720,620 840,690"
                 fill="none"
-                stroke="url(#vineGradient)"
+                stroke="#916D2C"
                 strokeWidth="2.5"
                 strokeLinecap="round"
               />
               <g
                 className="vine-decorations"
                 filter="url(#leafShadow)"
-                stroke="#99703D"
+                stroke="#916D2C"
                 strokeWidth="1.5"
                 fill="none"
                 strokeLinecap="round"
@@ -566,50 +566,61 @@ const HowItWorks = () => {
                         fill="#F0E6D8"
                       />
                     </g>
-                    {/* Flower on vine, 60px from leaf */}
-                    {deco.flowerX && deco.flowerY && (
-                      <g
-                        className={`flower-group-${index}`}
-                        style={{ opacity: 0 }}
-                      >
-                        <image
-                          href="/images/6.png"
-                          x={deco.flowerX - 30}
-                          y={deco.flowerY - 40}
-                          width="80"
-                          height="80"
-                          preserveAspectRatio="xMidYMid meet"
-                        />
-                      </g>
-                    )}
-                    {/* New leaf next to flower, 60px away, pointing upward to vine */}
-                    {deco.newLeafX && deco.newLeafY && (
-                      <g
-                        className={`new-leaf-group-${index}`}
-                        transform={`translate(${deco.newLeafX}, ${deco.newLeafY}) rotate(${deco.newLeafRotation})`}
-                        style={{ opacity: 0 }}
-                      >
-                        {/* Stem going upward toward vine */}
-                        <line x1="0" y1="0" x2="0" y2="-10" />
-                        {/* Leaf pointing upward */}
-                        <path
-                          d="M0 -10 q 12 -12 0 -24 q -12 12 0 24 Z"
-                          fill="#F0E6D8"
-                        />
-                      </g>
-                    )}
                   </g>
                 ))}
               </g>
+              {/* New leaves next to flowers - outside filtered group */}
+              {leafDecorations.map((deco, index) =>
+                deco.newLeafX && deco.newLeafY ? (
+                  <g
+                    key={`new-leaf-${index}`}
+                    className={`new-leaf-group-${index}`}
+                    transform={`translate(${deco.newLeafX}, ${deco.newLeafY}) rotate(${deco.newLeafRotation})`}
+                    style={{ opacity: 0 }}
+                    stroke="#916D2C"
+                    strokeWidth="1.5"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    {/* Stem going upward toward vine */}
+                    <line x1="0" y1="0" x2="0" y2="-10" />
+                    {/* Leaf pointing upward */}
+                    <path
+                      d="M0 -10 q 12 -12 0 -24 q -12 12 0 24 Z"
+                      fill="#F0E6D8"
+                    />
+                  </g>
+                ) : null
+              )}
+              {/* Flowers next to leaves - outside filtered group for clarity */}
+              {leafDecorations.map((deco, index) =>
+                deco.flowerX && deco.flowerY ? (
+                  <g
+                    key={`flower-${index}`}
+                    className={`flower-group-${index}`}
+                    style={{ opacity: 0 }}
+                  >
+                    <image
+                      href="/images/4.png"
+                      x={deco.flowerX - 35}
+                      y={deco.flowerY - 35}
+                      width="75"
+                      height="75"
+                      preserveAspectRatio="xMidYMid meet"
+                    />
+                  </g>
+                ) : null
+              )}
               {/* Standalone flower between 2nd and 3rd leaf */}
               {standaloneFlower && (
                 <g className="standalone-flower" style={{ opacity: 0 }}>
                   <image
-                    href="/images/6.png"
-                    x={standaloneFlower.x - 30}
-                    y={standaloneFlower.y - 40}
-                    width="80"
-                    height="80"
+                    href="/images/4.png"
+                    x={standaloneFlower.x - 35}
+                    y={standaloneFlower.y - 35}
+                    width="75"
+                    height="75"
                     preserveAspectRatio="xMidYMid meet"
                   />
                 </g>

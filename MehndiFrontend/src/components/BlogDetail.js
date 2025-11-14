@@ -115,14 +115,14 @@ const BlogDetail = () => {
       </div>
 
       {blog.imageUrl ? (
-        <div style={{ maxWidth: 980, margin: "0 auto", padding: "0 14px" }}>
+        <div style={{ maxWidth: 1024, margin: "0 auto", padding: "0" }}>
           <img
             src={blog.imageUrl}
             alt={blog.title}
             style={{
               display: "block",
-              width: "calc(100% - 60px)",
-              margin: "0 30px",
+              width: "100%",
+              margin: "0",
               height: "100%",
               objectFit: "cover",
               boxShadow: "inset 0 -60px 120px rgba(0,0,0,0.12)",
