@@ -1904,6 +1904,12 @@ const ArtistDashboard = () => {
   };
 
   const handleTabChange = (tab) => {
+    // Close conversation when switching to a different tab
+    if (tab !== "messages" && (currentChat || selectedConversation)) {
+      setSelectedConversation(null);
+      setCurrentChat(null);
+      setChatMessages([]);
+    }
     setActiveTab(tab);
 
     // Auto-fetch data based on tab
@@ -2101,6 +2107,18 @@ const ArtistDashboard = () => {
   };
 
   const handleSelectConversation = (conversation) => {
+    // If clicking the same conversation that's already open, close it
+    if (
+      currentChat &&
+      selectedConversation &&
+      String(currentChat._id) === String(conversation._id)
+    ) {
+      setSelectedConversation(null);
+      setCurrentChat(null);
+      setChatMessages([]);
+      return;
+    }
+
     setSelectedConversation(conversation);
     setCurrentChat(conversation);
     const clientId =
@@ -2116,7 +2134,17 @@ const ArtistDashboard = () => {
           setTimeout(scrollToBottom, 100);
         }
       })
-      .then(() => chatAPI.markRead(conversation._id))
+      .then(() => {
+        chatAPI.markRead(conversation._id).then(() => {
+          // Refresh conversations to update unread count
+          chatAPI
+            .listMyChats()
+            .then((res) => {
+              if (res.success) setArtistConversations(res.data || []);
+            })
+            .catch(console.error);
+        });
+      })
       .catch(console.error);
   };
 
@@ -2256,15 +2284,13 @@ const ArtistDashboard = () => {
         setNewMessage("");
         setAttachments([]);
 
-        // Auto-fetch conversations after sending message
-        if (activeTab === "messages") {
-          chatAPI
-            .listMyChats()
-            .then((res) => {
-              if (res.success) setArtistConversations(res.data || []);
-            })
-            .catch(console.error);
-        }
+        // Auto-fetch conversations after sending message (on all tabs)
+        chatAPI
+          .listMyChats()
+          .then((res) => {
+            if (res.success) setArtistConversations(res.data || []);
+          })
+          .catch(console.error);
       } catch (e) {
         console.error(e);
         alert("Failed to send message. Please try again.");
@@ -2274,8 +2300,9 @@ const ArtistDashboard = () => {
     }
   };
 
+  // Load conversations on all tabs to keep unread count updated
   useEffect(() => {
-    if (!user || activeTab !== "messages") return;
+    if (!user) return;
     chatAPI
       .listMyChats()
       .then((res) => {
@@ -2291,7 +2318,7 @@ const ArtistDashboard = () => {
         .catch(() => {});
     }, 10000);
     return () => clearInterval(interval);
-  }, [user, activeTab]);
+  }, [user]);
 
   // If chatId is provided in query, open messages tab and select that chat; add to list if missing
   useEffect(() => {
@@ -2370,28 +2397,62 @@ const ArtistDashboard = () => {
   useEffect(() => {
     if (!user) return;
     const onMessage = (incoming) => {
-      if (!currentChat || String(incoming.senderId) === String(user?._id)) {
+      // Don't process own messages
+      if (String(incoming.senderId) === String(user?._id)) {
         return;
       }
 
-      console.log("DEBUG: Received socket message:", incoming);
+      // Get the other user ID from current chat (client ID for artist)
+      const currentChatClientId =
+        currentChat?.client?._id || currentChat?.clientId;
 
-      setChatMessages((prev) => {
-        const already = prev.some(
-          (m) => String(m.id || m._id) === String(incoming.id || incoming._id)
+      // Only add message if it's from the current chat's other user
+      if (
+        currentChat &&
+        String(incoming.senderId) === String(currentChatClientId)
+      ) {
+        console.log(
+          "DEBUG: Received socket message for current chat:",
+          incoming
         );
-        if (already) return prev;
-        return [
-          ...prev,
-          {
-            id: incoming.id || incoming._id || Date.now(),
-            sender: incoming.senderId,
-            text: incoming.message || incoming.text || "",
-            attachments: incoming.attachments || [],
-            createdAt: new Date().toISOString(),
-          },
-        ];
-      });
+
+        setChatMessages((prev) => {
+          const already = prev.some(
+            (m) => String(m.id || m._id) === String(incoming.id || incoming._id)
+          );
+          if (already) return prev;
+          return [
+            ...prev,
+            {
+              id: incoming.id || incoming._id || Date.now(),
+              sender: incoming.senderId,
+              text: incoming.message || incoming.text || "",
+              attachments: incoming.attachments || [],
+              createdAt: new Date().toISOString(),
+            },
+          ];
+        });
+
+        // Mark as read and refresh conversations to update unread count
+        chatAPI
+          .markRead(currentChat._id)
+          .then(() => {
+            // Refresh conversations after marking as read to update unread count
+            return chatAPI.listMyChats();
+          })
+          .then((res) => {
+            if (res.success) setArtistConversations(res.data || []);
+          })
+          .catch(console.error);
+      } else {
+        // Message is for a different chat, just update conversations
+        chatAPI
+          .listMyChats()
+          .then((res) => {
+            if (res.success) setArtistConversations(res.data || []);
+          })
+          .catch(console.error);
+      }
     };
     const onTyping = ({ userId, isTyping }) => {
       // optional: typing state
@@ -2566,6 +2627,10 @@ const ArtistDashboard = () => {
           onTabChange={handleTabChange}
           isOpen={sidebarOpen}
           onClose={handleSidebarClose}
+          unreadMessageCount={artistConversations.reduce(
+            (total, conv) => total + (conv.unreadCount || 0),
+            0
+          )}
         />
 
         {/* Main Content */}

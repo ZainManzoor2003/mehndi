@@ -1,28 +1,49 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import React from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
-const DashboardSidebar = ({ activeTab, onTabChange, isOpen, onClose, bookingCount = 0 }) => {
+const DashboardSidebar = ({
+  activeTab,
+  onTabChange,
+  isOpen,
+  onClose,
+  bookingCount = 0,
+  unreadMessageCount = 0,
+}) => {
   const sidebarItems = [
     {
-      id: 'dashboard',
-      title: 'Dashboard',
+      id: "dashboard",
+      title: "Dashboard",
       icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path d="M12 2L2 7l10 5 10-5-10-5z" />
         </svg>
-      )
+      ),
     },
     {
-      id: 'bookings',
-      title: 'My Bookings',
+      id: "bookings",
+      title: "My Bookings",
       icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-          <line x1="8" y1="21" x2="16" y2="21"/>
-          <line x1="12" y1="17" x2="12" y2="21"/>
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+          <line x1="8" y1="21" x2="16" y2="21" />
+          <line x1="12" y1="17" x2="12" y2="21" />
         </svg>
-      )
+      ),
     },
     // {
     //   id: 'proposals',
@@ -37,48 +58,76 @@ const DashboardSidebar = ({ activeTab, onTabChange, isOpen, onClose, bookingCoun
     //   )
     // },
     {
-      id: 'wallet',
-      title: 'Payments',
+      id: "wallet",
+      title: "Payments",
       icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-          <line x1="8" y1="21" x2="16" y2="21"/>
-          <line x1="12" y1="17" x2="12" y2="21"/>
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+          <line x1="8" y1="21" x2="16" y2="21" />
+          <line x1="12" y1="17" x2="12" y2="21" />
         </svg>
       ),
-      path: '/wallet'
+      path: "/wallet",
     },
     {
-      id: 'reviews',
-      title: 'Reviews',
+      id: "reviews",
+      title: "Reviews",
       icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
         </svg>
       ),
-      path: '/reviews'
+      path: "/reviews",
     },
     {
-      id: 'messages',
-      title: 'Messages',
+      id: "messages",
+      title: "Messages",
       icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
         </svg>
       ),
-      path: '/messages'
+      path: "/messages",
     },
     {
-      id: 'profile',
-      title: 'Profile Settings',
+      id: "profile",
+      title: "Profile Settings",
       icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-          <circle cx="12" cy="7" r="4"/>
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
         </svg>
       ),
-      path: '/profile'
-    }
+      path: "/profile",
+    },
   ];
 
   const handleItemClick = (itemId) => {
@@ -97,57 +146,78 @@ const DashboardSidebar = ({ activeTab, onTabChange, isOpen, onClose, bookingCoun
     if (e && e.preventDefault) e.preventDefault();
     try {
       // context logout (in-memory)
-      try { await logout(); } catch {}
+      try {
+        await logout();
+      } catch {}
       // replicate LogoutButton logic
       localStorage.clear();
       // clear common auth cookies
       const deleteCookieEverywhere = (name) => {
         try {
           const hostname = window.location.hostname;
-          const parts = hostname.split('.');
+          const parts = hostname.split(".");
           const domains = [];
-          for (let i = 0; i < parts.length - 1; i++) { domains.push(parts.slice(i).join('.')); }
-          const paths = ['/', window.location.pathname];
-          paths.forEach((p) => { document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=${p}`; });
-          domains.forEach((d) => { paths.forEach((p) => { document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=${p};domain=.${d}`; }); });
+          for (let i = 0; i < parts.length - 1; i++) {
+            domains.push(parts.slice(i).join("."));
+          }
+          const paths = ["/", window.location.pathname];
+          paths.forEach((p) => {
+            document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=${p}`;
+          });
+          domains.forEach((d) => {
+            paths.forEach((p) => {
+              document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=${p};domain=.${d}`;
+            });
+          });
         } catch {}
       };
       const clearAllCookies = () => {
         try {
-          const cookies = document.cookie.split(';');
+          const cookies = document.cookie.split(";");
           for (const cookie of cookies) {
-            const eqPos = cookie.indexOf('=');
-            const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+            const eqPos = cookie.indexOf("=");
+            const name =
+              eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
             deleteCookieEverywhere(name);
           }
         } catch {}
       };
-      ['token','jwt','accessToken','authToken'].forEach(deleteCookieEverywhere);
+      ["token", "jwt", "accessToken", "authToken"].forEach(
+        deleteCookieEverywhere
+      );
       clearAllCookies();
-      navigate('/login', { replace: true });
+      navigate("/login", { replace: true });
     } catch {}
   };
 
   return (
     <>
       {/* Mobile Overlay */}
-      {isOpen && (
-        <div 
-          className="sidebar-overlay"
-          onClick={onClose}
-        />
-      )}
+      {isOpen && <div className="sidebar-overlay" onClick={onClose} />}
 
       {/* Sidebar */}
-      <div className={`dashboard-sidebar ${isOpen ? 'sidebar-open' : ''}`}>
+      <div className={`dashboard-sidebar ${isOpen ? "sidebar-open" : ""}`}>
         {/* Sidebar Header */}
         <div className="sidebar-header">
-          <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={() => navigate('/')}>
+          <div
+            className="sidebar-logo"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              cursor: "pointer",
+            }}
+            onClick={() => navigate("/")}
+          >
             {/* <div className="logo-icon" style={{ background: 'transparent', border: 'none', boxShadow: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <img src="/assets/logo icon.png" alt="Mehndi Me" style={{ width: 'auto', height: 'auto', display: 'block', borderRadius: '50%' }} />
             </div> */}
-            <span className="logo-text" style={{ display: 'inline-block' }}>
-              <img src="/assets/logo text.png" alt="Mehndi Me" style={{ height: 28, display: 'block' }} />
+            <span className="logo-text" style={{ display: "inline-block" }}>
+              <img
+                src="/assets/logo text.png"
+                alt="Mehndi Me"
+                style={{ height: 28, display: "block" }}
+              />
             </span>
           </div>
         </div>
@@ -158,10 +228,42 @@ const DashboardSidebar = ({ activeTab, onTabChange, isOpen, onClose, bookingCoun
             {sidebarItems.map((item) => (
               <li key={item.id} className="sidebar-item">
                 <button
-                  className={`sidebar-link ${activeTab === item.id ? 'active' : ''}`}
+                  className={`sidebar-link ${
+                    activeTab === item.id ? "active" : ""
+                  }`}
                   onClick={() => handleItemClick(item.id)}
+                  style={{ position: "relative" }}
                 >
-                  <span className="sidebar-icon">{item.icon}</span>
+                  <span
+                    className="sidebar-icon"
+                    style={{ position: "relative" }}
+                  >
+                    {item.icon}
+                    {item.id === "messages" && unreadMessageCount > 0 && (
+                      <span
+                        style={{
+                          position: "absolute",
+                          top: "-6px",
+                          right: "-6px",
+                          backgroundColor: "#EA7C25",
+                          color: "white",
+                          borderRadius: "50%",
+                          minWidth: "18px",
+                          height: "18px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "10px",
+                          fontWeight: "700",
+                          padding: "0 4px",
+                          boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                          zIndex: 10,
+                        }}
+                      >
+                        {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
+                      </span>
+                    )}
+                  </span>
                   <span className="sidebar-text">{item.title}</span>
                 </button>
               </li>
@@ -172,7 +274,13 @@ const DashboardSidebar = ({ activeTab, onTabChange, isOpen, onClose, bookingCoun
         {/* Sidebar Footer */}
         <div className="sidebar-footer">
           <div className="sidebar-logout">
-            <Link to="/login" className="sidebar-logout-btn" onClick={handleLogoutClick}>Logout</Link>
+            <Link
+              to="/login"
+              className="sidebar-logout-btn"
+              onClick={handleLogoutClick}
+            >
+              Logout
+            </Link>
           </div>
         </div>
       </div>

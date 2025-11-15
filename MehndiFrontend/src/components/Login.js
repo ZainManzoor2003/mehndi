@@ -1,32 +1,32 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import Header from './Header';
-import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import { GoogleLogin } from '@react-oauth/google';
-import { useAuth } from '../contexts/AuthContext';
-import { authAPI } from '../services/api';
+import { GoogleLogin } from "@react-oauth/google";
+import React, { useEffect, useState } from "react";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { authAPI } from "../services/api";
+import Header from "./Header";
 // No Header on auth pages
 
 const Login = () => {
   const navigate = useNavigate();
   const { login, updateUser } = useAuth();
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    rememberMe: false
+    email: "",
+    password: "",
+    rememberMe: false,
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [showResendModal, setShowResendModal] = useState(false);
   const [resendingEmail, setResendingEmail] = useState(false);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [resendingCode, setResendingCode] = useState(false);
   // Scroll to top on mount
-   useEffect(() => {
+  useEffect(() => {
     try {
-      window.scrollTo({ top: 0, behavior: 'instant' });
+      window.scrollTo({ top: 0, behavior: "instant" });
     } catch {
       window.scrollTo(0, 0);
     }
@@ -34,19 +34,19 @@ const Login = () => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
 
     if (!formData.email || !formData.password) {
-      setError('Please fill in all fields');
+      setError("Please fill in all fields");
       return;
     }
 
@@ -55,41 +55,44 @@ const Login = () => {
     try {
       const loginData = {
         email: formData.email,
-        password: formData.password
+        password: formData.password,
       };
 
-      console.log('Logging in user:', loginData);
+      console.log("Logging in user:", loginData);
 
       // Use AuthContext login function
       const response = await login(loginData);
 
-      console.log('Login successful:', response);
-      setSuccess('Login successful! Redirecting...');
+      console.log("Login successful:", response);
+      setSuccess("Login successful! Redirecting...");
 
       // Redirect after a short delay based on user type only
       setTimeout(() => {
-        if (response.data.user.userType === 'artist') {
-          navigate('/artist-dashboard');
-        } else if (response.data.user.userType === 'admin') {
-          navigate('/admin-dashboard/manage-clients');
-        }
-        else {
-          navigate('/dashboard');
+        if (response.data.user.userType === "artist") {
+          navigate("/artist-dashboard");
+        } else if (response.data.user.userType === "admin") {
+          navigate("/admin-dashboard/manage-clients");
+        } else {
+          navigate("/dashboard");
         }
       }, 1000);
-
     } catch (error) {
-      console.error('Login error:', error);
-      
+      console.error("Login error:", error);
+
       // Check if user is not verified
-      if (error.message && error.message.includes('verify your email')) {
+      if (error.message && error.message.includes("verify your email")) {
         setShowResendModal(true);
-        setError('');
-      } else if (error.message && error.message.toLowerCase().includes('verify your phone')) {
+        setError("");
+      } else if (
+        error.message &&
+        error.message.toLowerCase().includes("verify your phone")
+      ) {
         setShowPhoneModal(true);
-        setError('');
+        setError("");
       } else {
-        setError(error.message || 'Login failed. Please check your credentials.');
+        setError(
+          error.message || "Login failed. Please check your credentials."
+        );
       }
     } finally {
       setIsLoading(false);
@@ -98,25 +101,29 @@ const Login = () => {
 
   const handleResendVerification = async () => {
     setResendingEmail(true);
-    setError('');
-    
+    setError("");
+
     try {
       const response = await authAPI.resendVerificationEmail(formData.email);
-      
+
       if (response.success) {
-        setSuccess('Verification email has been sent! Please check your inbox.');
+        setSuccess(
+          "Verification email has been sent! Please check your inbox."
+        );
         setShowResendModal(false);
-        
+
         // Clear success message after 5 seconds
         setTimeout(() => {
-          setSuccess('');
+          setSuccess("");
         }, 5000);
       } else {
-        setError(response.message || 'Failed to send verification email.');
+        setError(response.message || "Failed to send verification email.");
       }
     } catch (err) {
-      console.error('Resend verification error:', err);
-      setError(err.message || 'Failed to send verification email. Please try again.');
+      console.error("Resend verification error:", err);
+      setError(
+        err.message || "Failed to send verification email. Please try again."
+      );
     } finally {
       setResendingEmail(false);
     }
@@ -124,19 +131,25 @@ const Login = () => {
 
   const handleResendPhoneCode = async () => {
     setResendingCode(true);
-    setError('');
+    setError("");
     try {
       const resp = await authAPI.sendPhoneCode(formData.email);
       if (resp.success) {
-        setSuccess('Verification code sent to your phone.');
+        setSuccess("Verification code sent to your phone.");
         setShowPhoneModal(false);
         // Navigate user to phone verify screen
-        try { window.location.assign(`/verify-phone?email=${encodeURIComponent(formData.email)}`); } catch {}
+        try {
+          window.location.assign(
+            `/verify-phone?email=${encodeURIComponent(formData.email)}`
+          );
+        } catch {}
       } else {
-        setError(resp.message || 'Failed to send verification code.');
+        setError(resp.message || "Failed to send verification code.");
       }
     } catch (err) {
-      setError(err.message || 'Failed to send verification code. Please try again.');
+      setError(
+        err.message || "Failed to send verification code. Please try again."
+      );
     } finally {
       setResendingCode(false);
     }
@@ -147,24 +160,24 @@ const Login = () => {
   };
 
   const handleGoogleSuccess = async (credentialResponse) => {
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
     setIsLoading(true);
 
     try {
-      console.log('Google login successful:', credentialResponse);
+      console.log("Google login successful:", credentialResponse);
 
       // Send the Google credential to backend for verification
       const response = await authAPI.googleAuth(credentialResponse.credential);
 
-      console.log('Google OAuth response:', response);
-      console.log('Token received:', response.token);
+      console.log("Google OAuth response:", response);
+      console.log("Token received:", response.token);
 
       if (response.success && response.token) {
-        setSuccess('Google login successful! Redirecting...');
+        setSuccess("Google login successful! Redirecting...");
 
         // Store the token
-        localStorage.setItem('token', response.token);
+        localStorage.setItem("token", response.token);
 
         // Update AuthContext state - this will trigger PublicRoute to redirect
         updateUser(response.data.user);
@@ -176,41 +189,69 @@ const Login = () => {
 
         // No need for manual navigation - PublicRoute will handle it
       } else {
-        setError(response.message || 'Google login failed - no token received');
+        setError(response.message || "Google login failed - no token received");
       }
     } catch (error) {
-      console.error('Google login error:', error);
-      setError(error.message || 'Google login failed. Please try again.');
+      console.error("Google login error:", error);
+      setError(error.message || "Google login failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleGoogleError = () => {
-    setError('Google login failed. Please try again.');
+    setError("Google login failed. Please try again.");
   };
 
   return (
     <>
       <Header />
-      <div className="auth-container" style={{marginTop: '6.5rem'}}>
+      <div className="auth-container" style={{ marginTop: "6.5rem" }}>
         <div className="auth-card">
           <div className="auth-header">
-            <div className="auth-logo" style={{ background: 'transparent', marginBottom: '0rem' }}>
-              <div className="auth-logo-icon" style={{ background: 'transparent', border: 'none', boxShadow: 'none', padding: 0, width: 110, height: 110 }}>
-                <img src="/assets/logo icon.png" alt="Mehndi Me" style={{ height: 'auto', width: 'auto',}} />
+            <div
+              className="auth-logo"
+              style={{ background: "transparent", marginBottom: "0rem" }}
+            >
+              <div
+                className="auth-logo-icon"
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  boxShadow: "none",
+                  padding: 0,
+                  width: 110,
+                  height: 110,
+                }}
+              >
+                <img
+                  src="/assets/logo icon.png"
+                  alt="Mehndi Me"
+                  style={{ height: "auto", width: "auto" }}
+                />
               </div>
             </div>
             <h1 className="auth-title">
-              <img src="/assets/logo text.png" alt="Mehndi Me" style={{ height: 26 }} />
+              <img
+                src="/assets/logo text.png"
+                alt="Mehndi Me"
+                style={{ height: 26 }}
+              />
             </h1>
-            <p className="auth-subtitle">Book faster. Earn more. Stress less.</p>
+            <p className="auth-subtitle">
+              Book faster. Earn more. Stress less.
+            </p>
           </div>
 
           <form className="auth-form" onSubmit={handleSubmit}>
             {error && (
               <div className="error-message">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <circle cx="12" cy="12" r="10" />
                   <line x1="15" y1="9" x2="9" y2="15" />
                   <line x1="9" y1="9" x2="15" y2="15" />
@@ -221,7 +262,12 @@ const Login = () => {
 
             {success && (
               <div className="success-message">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                   <polyline points="22,4 12,14.01 9,11.01" />
                 </svg>
@@ -230,13 +276,15 @@ const Login = () => {
             )}
 
             <div className="form-group">
-              <label htmlFor="email" className="form-label">Email or Username</label>
+              <label htmlFor="email" className="form-label">
+                Email or Username
+              </label>
               <input
                 type="text"
                 id="email"
                 name="email"
                 className="form-input"
-                placeholder="artist@mehndime.com"
+                placeholder="your@email.com"
                 value={formData.email}
                 onChange={handleInputChange}
                 required
@@ -245,7 +293,9 @@ const Login = () => {
 
             <div className="form-group">
               <div className="form-label-row">
-                <label htmlFor="password" className="form-label">Password</label>
+                <label htmlFor="password" className="form-label">
+                  Password
+                </label>
                 {/* <Link to="/forgot-password" className="forgot-link">Forgot?</Link> */}
               </div>
               <div className="password-input-wrapper">
@@ -257,6 +307,7 @@ const Login = () => {
                   placeholder="••••••••"
                   value={formData.password}
                   onChange={handleInputChange}
+                  autoComplete="current-password"
                   required
                 />
                 <button
@@ -266,7 +317,7 @@ const Login = () => {
                 >
                   {showPassword ? <FaEyeSlash /> : <FaEye />}
                   <span className="password-toggle-text">
-                    {showPassword ? 'Hide' : 'Show'}
+                    {showPassword ? "Hide" : "Show"}
                   </span>
                 </button>
               </div>
@@ -285,7 +336,11 @@ const Login = () => {
               </label>
             </div> */}
 
-            <button type="submit" className="auth-submit-btn" disabled={isLoading}>
+            <button
+              type="submit"
+              className="auth-submit-btn"
+              disabled={isLoading}
+            >
               {isLoading ? (
                 <>
                   {/* <svg className="loading-spinner" viewBox="0 0 24 24">
@@ -297,7 +352,7 @@ const Login = () => {
                   Signing In...
                 </>
               ) : (
-                'Sign In'
+                "Sign In"
               )}
             </button>
           </form>
@@ -323,10 +378,8 @@ const Login = () => {
 
           <div className="auth-footer">
             <p>
-              Don't have an account? <Link
-                to="/signup"
-                className="auth-link"
-              >
+              Don't have an account?{" "}
+              <Link to="/signup" className="auth-link">
                 Sign up
               </Link>
             </p>
@@ -336,30 +389,44 @@ const Login = () => {
 
       {/* Resend Verification Email Modal */}
       {showResendModal && (
-        <div className="modal-overlay" onClick={() => setShowResendModal(false)}>
+        <div
+          className="modal-overlay"
+          onClick={() => setShowResendModal(false)}
+        >
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2 className="modal-title">Email Not Verified</h2>
-              <button className="modal-close" onClick={() => setShowResendModal(false)}>×</button>
+              <button
+                className="modal-close"
+                onClick={() => setShowResendModal(false)}
+              >
+                ×
+              </button>
             </div>
             <div className="modal-body">
-              <p>Your email address has not been verified yet. Please check your inbox for the verification link.</p>
-              <p>Would you like us to resend the verification email to <strong>{formData.email}</strong>?</p>
+              <p>
+                Your email address has not been verified yet. Please check your
+                inbox for the verification link.
+              </p>
+              <p>
+                Would you like us to resend the verification email to{" "}
+                <strong>{formData.email}</strong>?
+              </p>
             </div>
             <div className="modal-footer">
-              <button 
-                className="modal-cancel-btn" 
+              <button
+                className="modal-cancel-btn"
                 onClick={() => setShowResendModal(false)}
                 disabled={resendingEmail}
               >
                 Cancel
               </button>
-              <button 
-                className="modal-confirm-btn" 
+              <button
+                className="modal-confirm-btn"
                 onClick={handleResendVerification}
                 disabled={resendingEmail}
               >
-                {resendingEmail ? 'Sending...' : 'Resend Email'}
+                {resendingEmail ? "Sending..." : "Resend Email"}
               </button>
             </div>
           </div>
@@ -372,26 +439,37 @@ const Login = () => {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2 className="modal-title">Phone Not Verified</h2>
-              <button className="modal-close" onClick={() => setShowPhoneModal(false)}>×</button>
+              <button
+                className="modal-close"
+                onClick={() => setShowPhoneModal(false)}
+              >
+                ×
+              </button>
             </div>
             <div className="modal-body">
-              <p>Your phone number has not been verified yet. You need to verify it before logging in.</p>
-              <p>Would you like us to send the 6-digit verification code to the phone linked with <strong>{formData.email}</strong>?</p>
+              <p>
+                Your phone number has not been verified yet. You need to verify
+                it before logging in.
+              </p>
+              <p>
+                Would you like us to send the 6-digit verification code to the
+                phone linked with <strong>{formData.email}</strong>?
+              </p>
             </div>
             <div className="modal-footer">
-              <button 
-                className="modal-cancel-btn" 
+              <button
+                className="modal-cancel-btn"
                 onClick={() => setShowPhoneModal(false)}
                 disabled={resendingCode}
               >
                 Cancel
               </button>
-              <button 
-                className="modal-confirm-btn" 
+              <button
+                className="modal-confirm-btn"
                 onClick={handleResendPhoneCode}
                 disabled={resendingCode}
               >
-                {resendingCode ? 'Sending...' : 'Send Code'}
+                {resendingCode ? "Sending..." : "Send Code"}
               </button>
             </div>
           </div>
@@ -401,4 +479,4 @@ const Login = () => {
   );
 };
 
-export default Login; 
+export default Login;

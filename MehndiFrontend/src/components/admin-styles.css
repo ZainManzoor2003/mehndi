@@ -854,9 +854,21 @@
   color: var(--admin-text-muted);
   cursor: pointer;
   padding: 0.25rem;
-  display: flex;
+  display: flex !important;
   align-items: center;
   justify-content: center;
+  z-index: 10;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto;
+}
+
+/* Keep button visible when input is focused */
+.admin_password-input-wrapper:focus-within .admin_password-toggle,
+.admin_password-input-wrapper input:focus ~ .admin_password-toggle {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .admin_password-toggle:hover {

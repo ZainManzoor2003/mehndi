@@ -1,40 +1,63 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import './messages.css';
-import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import DashboardSidebar from './DashboardSidebar';
-import apiService, { chatAPI, reviewsAPI } from '../services/api';
-import BrowseViewBookingModal from './modals/BrowseViewBookingModal';
-import socket, { buildDirectRoomId, joinRoom, sendRoomMessage, sendTyping, signalOnline, onPresenceUpdate } from '../services/socket';
-import ProposalsPage from './ProposalsPage';
-import ClientProfile from './ClientProfile';
-import { FaCalendarAlt, FaClock, FaWallet, FaHeart, FaLeaf, FaMoon, FaGlassCheers, FaPalette, FaFileAlt, FaHandPeace, FaHourglassHalf, FaCheckCircle, FaTrash, FaInbox, FaEnvelope, FaCreditCard, FaPen } from 'react-icons/fa';
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  FaCalendarAlt,
+  FaCheckCircle,
+  FaClock,
+  FaCreditCard,
+  FaEnvelope,
+  FaHandPeace,
+  FaHourglassHalf,
+  FaPen,
+  FaTrash,
+  FaWallet,
+} from "react-icons/fa";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import apiService, { chatAPI, reviewsAPI } from "../services/api";
+import socket, {
+  buildDirectRoomId,
+  joinRoom,
+  onPresenceUpdate,
+  sendRoomMessage,
+  signalOnline,
+} from "../services/socket";
+import ClientProfile from "./ClientProfile";
+import DashboardSidebar from "./DashboardSidebar";
+import "./messages.css";
+import BrowseViewBookingModal from "./modals/BrowseViewBookingModal";
 
-const {proposalsAPI, bookingsAPI, walletAPI, transactionAPI, notificationAPI } = apiService;
+const {
+  proposalsAPI,
+  bookingsAPI,
+  walletAPI,
+  transactionAPI,
+  notificationAPI,
+} = apiService;
 
 const ClientDashboard = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { tab } = useParams();
   const location = useLocation();
-  const userName = user ? user.firstName : 'Client';
+  const userName = user ? user.firstName : "Client";
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('visa-1234');
-  const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, proposals, wallet, reviews, messages, bookings
+  const [selectedPaymentMethod, setSelectedPaymentMethod] =
+    useState("visa-1234");
+  const [activeTab, setActiveTab] = useState("dashboard"); // dashboard, proposals, wallet, reviews, messages, bookings
   const [showProposalsView, setShowProposalsView] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState(null);
-  const [proposalsFilter, setProposalsFilter] = useState('active'); // all, active, completed
+  const [proposalsFilter, setProposalsFilter] = useState("active"); // all, active, completed
   const [showReviewModal, setShowReviewModal] = useState(false);
-  const [reviewsFilter, setReviewsFilter] = useState('pending'); // pending | completed
+  const [reviewsFilter, setReviewsFilter] = useState("pending"); // pending | completed
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [reviewData, setReviewData] = useState({
     rating: 0,
-    title: '',
-    comment: '',
-    images: []
+    title: "",
+    comment: "",
+    images: [],
   });
   const [selectedConversation, setSelectedConversation] = useState(null);
-  const [newMessage, setNewMessage] = useState('');
+  const [newMessage, setNewMessage] = useState("");
   const [attachments, setAttachments] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -49,24 +72,25 @@ const ClientDashboard = () => {
   const [clientJobs, setClientJobs] = useState([]);
   const [jobsLoading, setJobsLoading] = useState(false);
   const [proposalsLoading, setProposalsLoading] = useState(false);
-  const [proposalsError, setProposalsError] = useState('');
+  const [proposalsError, setProposalsError] = useState("");
 
   // Real bookings data from backend
   const [allBookings, setAllBookings] = useState([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
-  const [bookingsError, setBookingsError] = useState('');
-  
+  const [bookingsError, setBookingsError] = useState("");
+
   // State for managing expanded event type sections
   const [expandedEventTypes, setExpandedEventTypes] = useState({});
 
   // Transaction data
   const [transactions, setTransactions] = useState([]);
   const [transactionsLoading, setTransactionsLoading] = useState(false);
-  const [transactionsError, setTransactionsError] = useState('');
-  
+  const [transactionsError, setTransactionsError] = useState("");
+
   // Transaction filters
-  const [transactionCategoryFilter, setTransactionCategoryFilter] = useState('all');
-  const [transactionStatusFilter, setTransactionStatusFilter] = useState('all');
+  const [transactionCategoryFilter, setTransactionCategoryFilter] =
+    useState("all");
+  const [transactionStatusFilter, setTransactionStatusFilter] = useState("all");
 
   // Dynamic booking data from API
   const [nextEvent, setNextEvent] = useState(null);
@@ -75,15 +99,15 @@ const ClientDashboard = () => {
   const [upcomingBookings] = useState([
     {
       id: 1,
-      title: 'Eid Mehndi',
-      artist: 'Henna by Sana',
-      date: 'Sep 15, 2025',
-      time: '6:00 PM',
+      title: "Eid Mehndi",
+      artist: "Henna by Sana",
+      date: "Sep 15, 2025",
+      time: "6:00 PM",
       daysLeft: 25,
       depositSecured: true,
-      finalPaymentDue: 'Sep 1, 2025',
-      status: 'confirmed'
-    }
+      finalPaymentDue: "Sep 1, 2025",
+      status: "confirmed",
+    },
   ]);
 
   // Mock data for completed bookings
@@ -92,14 +116,17 @@ const ClientDashboard = () => {
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [reviewTarget, setReviewTarget] = useState(null);
   const [reviewRating, setReviewRating] = useState(0);
-  const [reviewComment, setReviewComment] = useState('');
+  const [reviewComment, setReviewComment] = useState("");
   const [viewReviewModal, setViewReviewModal] = useState(false);
   const [viewReviewData, setViewReviewData] = useState(null);
   const [reviewRatingMap, setReviewRatingMap] = useState({}); // bookingId -> rating
-  const [walletData, setWalletData] = useState({ totalPaid: 0, remainingBalance: 0 });
+  const [walletData, setWalletData] = useState({
+    totalPaid: 0,
+    remainingBalance: 0,
+  });
   const [walletLoading, setWalletLoading] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
-  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawLoading, setWithdrawLoading] = useState(false);
   // Load completed bookings for reviews
   useEffect(() => {
@@ -110,7 +137,7 @@ const ClientDashboard = () => {
         setCompletedBookings(all.data || []);
         setNotRatedBookings(pending.data || []);
       } catch (e) {
-        console.error('Load review data error', e);
+        console.error("Load review data error", e);
       }
     };
     if (isAuthenticated) loadReviewsData();
@@ -119,18 +146,18 @@ const ClientDashboard = () => {
   // Load wallet data
   useEffect(() => {
     const loadWalletData = async () => {
-      if (!isAuthenticated || activeTab !== 'wallet') return;
+      if (!isAuthenticated || activeTab !== "wallet") return;
       try {
         setWalletLoading(true);
         const response = await walletAPI.getWalletSummary();
         if (response.success && response.data) {
           setWalletData({
             totalPaid: response.data.totalPaid || 0,
-            remainingBalance: response.data.remainingBalance || 0
+            remainingBalance: response.data.remainingBalance || 0,
           });
         }
       } catch (e) {
-        console.error('Load wallet data error', e);
+        console.error("Load wallet data error", e);
       } finally {
         setWalletLoading(false);
       }
@@ -141,7 +168,7 @@ const ClientDashboard = () => {
   const openReviewModal = (booking) => {
     setReviewTarget(booking);
     setReviewRating(0);
-    setReviewComment('');
+    setReviewComment("");
     setReviewModalOpen(true);
   };
 
@@ -153,13 +180,13 @@ const ClientDashboard = () => {
         setViewReviewData({
           booking,
           rating: Number(data.rating) || 0,
-          comment: data.comment || '',
-          createdAt: data.createdAt || data.reviewedAt || null
+          comment: data.comment || "",
+          createdAt: data.createdAt || data.reviewedAt || null,
         });
         setViewReviewModal(true);
       }
     } catch (e) {
-      console.error('Failed to load review details', e);
+      console.error("Failed to load review details", e);
     }
   };
   const closeReviewModal = () => {
@@ -168,8 +195,12 @@ const ClientDashboard = () => {
   };
   const submitReview = async () => {
     try {
-      await reviewsAPI.createReview({ bookingId: reviewTarget._id, rating: reviewRating, comment: reviewComment,
-        artistId:reviewTarget.assignedArtist[0]?._id });
+      await reviewsAPI.createReview({
+        bookingId: reviewTarget._id,
+        rating: reviewRating,
+        comment: reviewComment,
+        artistId: reviewTarget.assignedArtist[0]?._id,
+      });
       // refresh
       const all = await reviewsAPI.getCompletedBookingsToReview(false);
       const pending = await reviewsAPI.getCompletedBookingsToReview(true);
@@ -177,13 +208,17 @@ const ClientDashboard = () => {
       // fetch and cache rating for this booking
       try {
         const myRev = await reviewsAPI.getMyReviewForBooking(reviewTarget._id);
-        const r = (myRev && (myRev.data?.rating || myRev.rating)) || reviewRating;
-        setReviewRatingMap(prev => ({ ...prev, [reviewTarget._id]: Number(r) }));
+        const r =
+          (myRev && (myRev.data?.rating || myRev.rating)) || reviewRating;
+        setReviewRatingMap((prev) => ({
+          ...prev,
+          [reviewTarget._id]: Number(r),
+        }));
       } catch {}
       setNotRatedBookings(pending.data || []);
       closeReviewModal();
     } catch (e) {
-      alert(e.message || 'Failed to submit review');
+      alert(e.message || "Failed to submit review");
     }
   };
 
@@ -192,32 +227,47 @@ const ClientDashboard = () => {
   const [currentChat, setCurrentChat] = useState(null);
   const [onlineUserIds, setOnlineUserIds] = useState(new Set());
 
-  const DEFAULT_AVATAR = 'https://www.gravatar.com/avatar/?d=mp&s=80';
+  const DEFAULT_AVATAR = "https://www.gravatar.com/avatar/?d=mp&s=80";
 
   const [notifications, setNotifications] = useState([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   // Load booking for header summary when opening a chat from a request
   useEffect(() => {
-    const params = new URLSearchParams(location.search || '');
-    const bookingId = params.get('bookingId');
-    if (!bookingId) { setHeaderBooking(null); return; }
+    const params = new URLSearchParams(location.search || "");
+    const bookingId = params.get("bookingId");
+    if (!bookingId) {
+      setHeaderBooking(null);
+      return;
+    }
     (async () => {
       try {
         const res = await bookingsAPI.getBooking(bookingId);
         setHeaderBooking(res.data || null);
-      } catch (_) { setHeaderBooking(null); }
+      } catch (_) {
+        setHeaderBooking(null);
+      }
     })();
   }, [location.search]);
 
   // If bookingId not in URL, try to detect from a special attachment in messages
   useEffect(() => {
-    if (headerBooking || !Array.isArray(chatMessages) || chatMessages.length === 0) return;
+    if (
+      headerBooking ||
+      !Array.isArray(chatMessages) ||
+      chatMessages.length === 0
+    )
+      return;
     try {
       for (let idx = chatMessages.length - 1; idx >= 0; idx--) {
         const m = chatMessages[idx];
-        const att = (m.attachments || []).find(a => a.type === 'booking' && a.filename);
+        const att = (m.attachments || []).find(
+          (a) => a.type === "booking" && a.filename
+        );
         if (att && att.filename) {
-          bookingsAPI.getBooking(att.filename).then(res => setHeaderBooking(res.data || null)).catch(() => {});
+          bookingsAPI
+            .getBooking(att.filename)
+            .then((res) => setHeaderBooking(res.data || null))
+            .catch(() => {});
           break;
         }
       }
@@ -227,7 +277,7 @@ const ClientDashboard = () => {
   // Fetch notifications for the current user
   const fetchNotifications = useCallback(async () => {
     if (!isAuthenticated) return;
-    
+
     try {
       setNotificationsLoading(true);
       const response = await notificationAPI.getNotifications();
@@ -235,7 +285,7 @@ const ClientDashboard = () => {
         setNotifications(response.data || []);
       }
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      console.error("Error fetching notifications:", error);
       setNotifications([]);
     } finally {
       setNotificationsLoading(false);
@@ -248,144 +298,164 @@ const ClientDashboard = () => {
       const response = await notificationAPI.deleteNotification(notificationId);
       if (response.success) {
         // Remove the notification from the local state
-        setNotifications(prev => prev.filter(n => n.id !== notificationId));
+        setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
       }
     } catch (error) {
-      console.error('Error deleting notification:', error);
+      console.error("Error deleting notification:", error);
     }
   };
 
   // Toggle expanded state for event type sections
   const toggleEventTypeExpanded = (eventType) => {
-    setExpandedEventTypes(prev => ({
+    setExpandedEventTypes((prev) => ({
       ...prev,
-      [eventType]: !prev[eventType]
+      [eventType]: !prev[eventType],
     }));
   };
 
   // Fetch proposals for a specific job
   const fetchJobProposals = useCallback(async (jobId) => {
     try {
-      console.log('Fetching proposals for job:', jobId);
+      console.log("Fetching proposals for job:", jobId);
       const response = await proposalsAPI.getJobProposals(jobId);
 
       if (response.success && response.data) {
-        console.log('Proposals fetched for job:', jobId, response.data);
+        console.log("Proposals fetched for job:", jobId, response.data);
         return response.data;
       }
       return [];
     } catch (error) {
-      console.error('Error fetching job proposals:', error);
+      console.error("Error fetching job proposals:", error);
       return [];
     }
   }, []);
 
   // Fetch client's bookings
   const fetchBookings = useCallback(async () => {
-    if (!isAuthenticated || !user || user.userType !== 'client') {
-      console.log('Skipping bookings fetch - user not authenticated or not a client:', { isAuthenticated, userType: user?.userType });
+    if (!isAuthenticated || !user || user.userType !== "client") {
+      console.log(
+        "Skipping bookings fetch - user not authenticated or not a client:",
+        { isAuthenticated, userType: user?.userType }
+      );
       return;
     }
 
     try {
       setBookingsLoading(true);
-      console.log('=== FETCHING CLIENT BOOKINGS ===');
-      console.log('User:', { id: user._id, userType: user.userType, name: `${user.firstName} ${user.lastName}` });
+      console.log("=== FETCHING CLIENT BOOKINGS ===");
+      console.log("User:", {
+        id: user._id,
+        userType: user.userType,
+        name: `${user.firstName} ${user.lastName}`,
+      });
 
       const response = await bookingsAPI.getMyBookings();
-      console.log('getMyBookings API response:', response);
+      console.log("getMyBookings API response:", response);
 
       if (response.success && response.data) {
-        console.log('Setting client bookings:', response.data.length, 'bookings found');
+        console.log(
+          "Setting client bookings:",
+          response.data.length,
+          "bookings found"
+        );
         setAllBookings(response.data);
-        setBookingsError('');
+        setBookingsError("");
 
         // Find the closest upcoming booking to today's date
         const today = new Date();
         const upcomingBookings = response.data
-          .filter(booking => {
+          .filter((booking) => {
             const eventDate = new Date(booking.eventDate);
-            return eventDate > today && (booking.status === 'confirmed');
+            return eventDate > today && booking.status === "confirmed";
           })
           .sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate)); // Sort by closest date first
-
 
         if (upcomingBookings.length > 0) {
           // Get the closest upcoming booking (first in sorted array)
           const latestBooking = upcomingBookings[0];
-          console.log('Latest booking:', latestBooking);
+          console.log("Latest booking:", latestBooking);
 
           const eventDate = new Date(latestBooking.eventDate);
           const today = new Date();
-          const daysLeft = Math.ceil((eventDate - today) / (1000 * 60 * 60 * 24));
+          const daysLeft = Math.ceil(
+            (eventDate - today) / (1000 * 60 * 60 * 24)
+          );
 
           const getEventTitle = (eventType, otherEventType) => {
             if (eventType && eventType.length > 0) {
-              const types = eventType.join(', ');
+              const types = eventType.join(", ");
               return otherEventType ? `${types} - ${otherEventType}` : types;
             }
-            return otherEventType || 'Mehndi Booking';
+            return otherEventType || "Mehndi Booking";
           };
 
           const getArtistName = (assignedArtist) => {
             if (assignedArtist && assignedArtist[0]?.firstName) {
               return `${assignedArtist[0]?.firstName} ${assignedArtist[0]?.lastName}`;
             }
-            return 'TBD - No artist assigned yet';
+            return "TBD - No artist assigned yet";
           };
 
           const formatDate = (dateString) => {
             const date = new Date(dateString);
-            return date.toLocaleDateString('en-GB', {
-              day: 'numeric',
-              month: 'short',
-              year: 'numeric'
+            return date.toLocaleDateString("en-GB", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
             });
           };
 
           const formatTime = (dateString) => {
             const date = new Date(dateString);
-            return date.toLocaleTimeString('en-GB', {
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: true
+            return date.toLocaleTimeString("en-GB", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
             });
           };
 
           setNextEvent({
             _id: latestBooking._id,
             artistId: latestBooking.assignedArtist[0]?._id,
-            title: getEventTitle(latestBooking.eventType, latestBooking.otherEventType),
+            title: getEventTitle(
+              latestBooking.eventType,
+              latestBooking.otherEventType
+            ),
             date: formatDate(latestBooking.eventDate),
             time: latestBooking.preferredTimeSlot,
             daysLeft: daysLeft,
             location: latestBooking.location,
             artist: getArtistName(latestBooking.assignedArtist),
-            isPaid: latestBooking.isPaid || 'none',
-            paymentPaid: latestBooking.paymentPaid || '0',
-            remainingPayment: latestBooking.remainingPayment || '0',
-            status: latestBooking.status
+            isPaid: latestBooking.isPaid || "none",
+            paymentPaid: latestBooking.paymentPaid || "0",
+            remainingPayment: latestBooking.remainingPayment || "0",
+            status: latestBooking.status,
           });
 
           // Get the second closest upcoming booking if it exists
           if (upcomingBookings.length > 1) {
             const secondBooking = upcomingBookings[1];
             const secondEventDate = new Date(secondBooking.eventDate);
-            const secondDaysLeft = Math.ceil((secondEventDate - today) / (1000 * 60 * 60 * 24));
+            const secondDaysLeft = Math.ceil(
+              (secondEventDate - today) / (1000 * 60 * 60 * 24)
+            );
 
             setSecondEvent({
               _id: secondBooking._id,
               artistId: latestBooking.assignedArtist[0]?._id,
-              title: getEventTitle(secondBooking.eventType, secondBooking.otherEventType),
+              title: getEventTitle(
+                secondBooking.eventType,
+                secondBooking.otherEventType
+              ),
               date: formatDate(secondBooking.eventDate),
               time: secondBooking.preferredTimeSlot,
               daysLeft: secondDaysLeft,
               location: secondBooking.location,
               artist: getArtistName(secondBooking.assignedArtist),
-              isPaid: secondBooking.isPaid || 'none',
-              paymentPaid: secondBooking.paymentPaid || '0',
-              remainingPayment: secondBooking.remainingPayment || '0',
-              status: secondBooking.status
+              isPaid: secondBooking.isPaid || "none",
+              paymentPaid: secondBooking.paymentPaid || "0",
+              remainingPayment: secondBooking.remainingPayment || "0",
+              status: secondBooking.status,
             });
           } else {
             setSecondEvent(null);
@@ -395,15 +465,15 @@ const ClientDashboard = () => {
           setSecondEvent(null);
         }
       } else {
-        console.log('No bookings data in response or unsuccessful response');
+        console.log("No bookings data in response or unsuccessful response");
         setAllBookings([]);
-        setBookingsError('No bookings found');
+        setBookingsError("No bookings found");
         setNextEvent(null);
         setSecondEvent(null);
       }
     } catch (error) {
-      console.error('Error fetching client bookings:', error);
-      setBookingsError(error.message || 'Failed to fetch bookings');
+      console.error("Error fetching client bookings:", error);
+      setBookingsError(error.message || "Failed to fetch bookings");
       setAllBookings([]);
       setNextEvent(null);
       setSecondEvent(null);
@@ -415,29 +485,33 @@ const ClientDashboard = () => {
   // Fetch user transactions
   const fetchTransactions = useCallback(async () => {
     if (!isAuthenticated || !user) {
-      console.log('Skipping transactions fetch - user not authenticated');
+      console.log("Skipping transactions fetch - user not authenticated");
       return;
     }
 
     try {
       setTransactionsLoading(true);
-      console.log('=== FETCHING USER TRANSACTIONS ===');
+      console.log("=== FETCHING USER TRANSACTIONS ===");
 
       const response = await transactionAPI.getMyTransactions();
-      console.log('getMyTransactions API response:', response);
+      console.log("getMyTransactions API response:", response);
 
       if (response.success && response.data) {
-        console.log('Setting user transactions:', response.data.length, 'transactions found');
+        console.log(
+          "Setting user transactions:",
+          response.data.length,
+          "transactions found"
+        );
         setTransactions(response.data);
-        setTransactionsError('');
+        setTransactionsError("");
       } else {
-        console.log('No transactions found');
+        console.log("No transactions found");
         setTransactions([]);
-        setTransactionsError('No transactions found');
+        setTransactionsError("No transactions found");
       }
     } catch (error) {
-      console.error('Error fetching user transactions:', error);
-      setTransactionsError(error.message || 'Failed to fetch transactions');
+      console.error("Error fetching user transactions:", error);
+      setTransactionsError(error.message || "Failed to fetch transactions");
       setTransactions([]);
     } finally {
       setTransactionsLoading(false);
@@ -452,7 +526,7 @@ const ClientDashboard = () => {
 
     try {
       setProposalsLoading(true);
-      setProposalsError('');
+      setProposalsError("");
 
       const allProposals = [];
 
@@ -460,30 +534,33 @@ const ClientDashboard = () => {
         const jobProposals = await fetchJobProposals(job._id);
 
         // Transform proposals for display
-        const transformedProposals = jobProposals.map(proposal => ({
+        const transformedProposals = jobProposals.map((proposal) => ({
           id: proposal._id,
           jobId: job._id,
           jobTitle: job.title,
-          artistName: proposal.artist ? `${proposal.artist.firstName} ${proposal.artist.lastName}` : 'Artist',
+          artistName: proposal.artist
+            ? `${proposal.artist.firstName} ${proposal.artist.lastName}`
+            : "Artist",
           artistId: proposal.artist?._id,
           price: `£${proposal.pricing?.totalPrice || 0}`,
-          duration: `${proposal.timeline?.estimatedDuration?.value || 0} ${proposal.timeline?.estimatedDuration?.unit || 'hours'}`,
-          proposal: proposal.message || '',
-          experience: proposal.experience?.relevantExperience || '',
-          status: proposal.status || 'pending',
+          duration: `${proposal.timeline?.estimatedDuration?.value || 0} ${
+            proposal.timeline?.estimatedDuration?.unit || "hours"
+          }`,
+          proposal: proposal.message || "",
+          experience: proposal.experience?.relevantExperience || "",
+          status: proposal.status || "pending",
           submittedAt: proposal.submittedAt,
-          rawData: proposal
+          rawData: proposal,
         }));
 
         allProposals.push(...transformedProposals);
       }
 
       setRealProposals(allProposals);
-      console.log('All proposals fetched:', allProposals);
-
+      console.log("All proposals fetched:", allProposals);
     } catch (error) {
-      console.error('Error fetching all proposals:', error);
-      setProposalsError('Failed to load proposals');
+      console.error("Error fetching all proposals:", error);
+      setProposalsError("Failed to load proposals");
     } finally {
       setProposalsLoading(false);
     }
@@ -492,113 +569,141 @@ const ClientDashboard = () => {
   // Accept a proposal
   const acceptProposal = async (proposalId) => {
     try {
-      console.log('Accepting proposal:', proposalId);
+      console.log("Accepting proposal:", proposalId);
       const response = await proposalsAPI.acceptProposal(proposalId);
 
       if (response.success) {
-        alert('Proposal accepted successfully!');
+        alert("Proposal accepted successfully!");
         // Refresh proposals
         fetchAllProposals();
       }
     } catch (error) {
-      console.error('Error accepting proposal:', error);
-      alert('Failed to accept proposal: ' + error.message);
+      console.error("Error accepting proposal:", error);
+      alert("Failed to accept proposal: " + error.message);
     }
   };
 
   // Reject a proposal
-  const rejectProposal = async (proposalId, message = '') => {
+  const rejectProposal = async (proposalId, message = "") => {
     try {
-      console.log('Rejecting proposal:', proposalId);
+      console.log("Rejecting proposal:", proposalId);
       const response = await proposalsAPI.rejectProposal(proposalId, message);
 
       if (response.success) {
-        alert('Proposal rejected');
+        alert("Proposal rejected");
         // Refresh proposals
         fetchAllProposals();
       }
     } catch (error) {
-      console.error('Error rejecting proposal:', error);
-      alert('Failed to reject proposal: ' + error.message);
+      console.error("Error rejecting proposal:", error);
+      alert("Failed to reject proposal: " + error.message);
     }
   };
 
   // Fetch data when component mounts and when page becomes visible
   useEffect(() => {
     if (tab) setActiveTab(tab);
-    if (isAuthenticated && user && user.userType === 'client') {
+    if (isAuthenticated && user && user.userType === "client") {
       fetchBookings();
       fetchTransactions();
       fetchNotifications();
     }
-  }, [isAuthenticated, user, fetchBookings, fetchTransactions, fetchNotifications, tab]);
+  }, [
+    isAuthenticated,
+    user,
+    fetchBookings,
+    fetchTransactions,
+    fetchNotifications,
+    tab,
+  ]);
 
   // Presence: signal that this user is online while on dashboard; listen for updates
   useEffect(() => {
     if (!user || !isAuthenticated) return;
     signalOnline(user._id);
     const off = onPresenceUpdate(({ userId, isOnline }) => {
-      setOnlineUserIds(prev => {
+      setOnlineUserIds((prev) => {
         const next = new Set(prev);
-        if (isOnline) next.add(String(userId)); else next.delete(String(userId));
+        if (isOnline) next.add(String(userId));
+        else next.delete(String(userId));
         return next;
       });
     });
-    const onVisibility = () => { if (!document.hidden) signalOnline(user._id); };
-    document.addEventListener('visibilitychange', onVisibility);
-    return () => { if (off) off(); document.removeEventListener('visibilitychange', onVisibility); };
+    const onVisibility = () => {
+      if (!document.hidden) signalOnline(user._id);
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      if (off) off();
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [user, isAuthenticated]);
 
   // If chatId is provided in query, open messages tab and select that chat
   useEffect(() => {
     if (!user) return;
     const params = new URLSearchParams(location.search);
-    const chatId = params.get('chatId');
+    const chatId = params.get("chatId");
     if (chatId) {
-      setActiveTab('messages');
+      setActiveTab("messages");
       // Load that chat and set selection
-      chatAPI.getChat(chatId).then(res => {
-        if (res.success && res.data) {
-          const chat = res.data;
-          setSelectedConversation(chat);
-          setCurrentChat(chat);
-          setChatMessages(chat.messages || []);
-          const otherId = chat.artist?._id || chat.artistId;
-          if (otherId) {
-            const roomId = buildDirectRoomId(user?._id, otherId);
-            joinRoom(roomId, { userId: user?._id, userType: user?.userType || 'client' });
+      chatAPI
+        .getChat(chatId)
+        .then((res) => {
+          if (res.success && res.data) {
+            const chat = res.data;
+            setSelectedConversation(chat);
+            setCurrentChat(chat);
+            setChatMessages(chat.messages || []);
+            const otherId = chat.artist?._id || chat.artistId;
+            if (otherId) {
+              const roomId = buildDirectRoomId(user?._id, otherId);
+              joinRoom(roomId, {
+                userId: user?._id,
+                userType: user?.userType || "client",
+              });
+            }
+            chatAPI.markRead(chat._id).catch(() => {});
+            // Ensure new chat appears in the list immediately if not present
+            setConversations((prev) => {
+              const exists = prev.some((c) => (c._id || c.id) === chat._id);
+              if (exists) return prev;
+              const display = {
+                ...chat,
+                artistName: chat.artist
+                  ? `${chat.artist.firstName} ${chat.artist.lastName}`
+                  : "Artist",
+                artistImage: chat.artist?.userProfileImage || chat.artistImage,
+                lastMessage: chat.messages?.length
+                  ? chat.messages[chat.messages.length - 1].text
+                  : "",
+                unreadCount: 0,
+              };
+              return [display, ...prev];
+            });
           }
-          chatAPI.markRead(chat._id).catch(() => { });
-          // Ensure new chat appears in the list immediately if not present
-          setConversations(prev => {
-            const exists = prev.some(c => (c._id || c.id) === chat._id);
-            if (exists) return prev;
-            const display = {
-              ...chat,
-              artistName: chat.artist ? `${chat.artist.firstName} ${chat.artist.lastName}` : 'Artist',
-              artistImage: chat.artist?.userProfileImage || chat.artistImage,
-              lastMessage: chat.messages?.length ? chat.messages[chat.messages.length - 1].text : '',
-              unreadCount: 0
-            };
-            return [display, ...prev];
-          });
-        }
-      }).catch(() => { });
+        })
+        .catch(() => {});
     }
   }, [location.search, user]);
 
   // Refresh data when the page becomes visible (user returns from job creation)
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (!document.hidden && isAuthenticated && user && user.userType === 'client') {
-        console.log('Page became visible, refreshing client jobs...');
+      if (
+        !document.hidden &&
+        isAuthenticated &&
+        user &&
+        user.userType === "client"
+      ) {
+        console.log("Page became visible, refreshing client jobs...");
       }
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [isAuthenticated, user]);
 
@@ -609,11 +714,12 @@ const ClientDashboard = () => {
     }
   }, [clientJobs, fetchAllProposals]);
 
-  const [selectedBookingForPayment, setSelectedBookingForPayment] = useState(null);
+  const [selectedBookingForPayment, setSelectedBookingForPayment] =
+    useState(null);
 
   const handlePayRemaining = (booking) => {
     setSelectedBookingForPayment(booking);
-    console.log('selected', booking)
+    console.log("selected", booking);
     setShowPaymentModal(true);
   };
 
@@ -628,7 +734,7 @@ const ClientDashboard = () => {
         navigate(`/dashboard/messages?chatId=${res.data._id}`);
       }
     } catch (e) {
-      console.error('Failed to ensure chat:', e);
+      console.error("Failed to ensure chat:", e);
     }
   };
 
@@ -645,25 +751,31 @@ const ClientDashboard = () => {
       const bookingId = selectedBookingForPayment._id;
       const artistId = selectedBookingForPayment.artistId;
 
-      console.log('Creating remaining payment for booking:', bookingId, 'amount:', remainingAmount, artistId);
+      console.log(
+        "Creating remaining payment for booking:",
+        bookingId,
+        "amount:",
+        remainingAmount,
+        artistId
+      );
 
       // Create Stripe checkout session for remaining payment
       const response = await bookingsAPI.createRemainingPayment({
         bookingId: bookingId,
         remainingAmount: remainingAmount,
-        artistId: artistId
+        artistId: artistId,
       });
 
       if (response.success && response.data.url) {
         // Redirect to Stripe checkout
         window.location.href = response.data.url;
       } else {
-        console.error('Failed to create payment session:', response.message);
-        alert('Failed to create payment session. Please try again.');
+        console.error("Failed to create payment session:", response.message);
+        alert("Failed to create payment session. Please try again.");
       }
     } catch (error) {
-      console.error('Error creating remaining payment:', error);
-      alert('Failed to process payment. Please try again.');
+      console.error("Error creating remaining payment:", error);
+      alert("Failed to process payment. Please try again.");
     }
   };
 
@@ -677,7 +789,7 @@ const ClientDashboard = () => {
 
       const amount = parseFloat(withdrawAmount);
       if (amount <= 0 || amount > walletData.remainingBalance) {
-        alert('Invalid withdrawal amount');
+        alert("Invalid withdrawal amount");
         return;
       }
 
@@ -687,41 +799,51 @@ const ClientDashboard = () => {
         // Check if onboarding is required
         if (response.data && response.data.onboardingUrl) {
           // Show message and redirect after 3 seconds
-          alert('Redirecting to Stripe onboarding first to withdraw. Please complete the setup process.');
+          alert(
+            "Redirecting to Stripe onboarding first to withdraw. Please complete the setup process."
+          );
 
           window.location.href = response.data.onboardingUrl;
           return;
         }
 
         // Normal withdrawal success
-        alert('Withdrawal processed successfully! Funds will be available in your bank account within 2-7 business days.');
+        alert(
+          "Withdrawal processed successfully! Funds will be available in your bank account within 2-7 business days."
+        );
 
         // Refresh wallet data
         const walletResponse = await walletAPI.getWalletSummary();
         if (walletResponse.success && walletResponse.data) {
           setWalletData({
             totalPaid: walletResponse.data.totalPaid || 0,
-            remainingBalance: walletResponse.data.remainingBalance || 0
+            remainingBalance: walletResponse.data.remainingBalance || 0,
           });
         }
 
         // Close modal and reset form
         setShowWithdrawModal(false);
-        setWithdrawAmount('');
+        setWithdrawAmount("");
       } else {
-        alert(response.message || 'Failed to process withdrawal request');
+        alert(response.message || "Failed to process withdrawal request");
       }
     } catch (error) {
-      console.error('Error processing withdrawal:', error);
-      alert('Failed to process withdrawal request. Please try again.');
+      console.error("Error processing withdrawal:", error);
+      alert("Failed to process withdrawal request. Please try again.");
     } finally {
       setWithdrawLoading(false);
     }
   };
 
   const handleTabChange = (tab) => {
+    // Close conversation when switching to a different tab
+    if (tab !== "messages" && (currentChat || selectedConversation)) {
+      setSelectedConversation(null);
+      setCurrentChat(null);
+      setChatMessages([]);
+    }
     setActiveTab(tab);
-    if (tab === 'dashboard') {
+    if (tab === "dashboard") {
       navigate(`/dashboard`);
       return;
     }
@@ -731,10 +853,10 @@ const ClientDashboard = () => {
   // Helper: get display title for event types
   const getEventTitleGlobal = (eventType, otherEventType) => {
     if (Array.isArray(eventType) && eventType.length > 0) {
-      const types = eventType.join(', ');
+      const types = eventType.join(", ");
       return otherEventType ? `${types} - ${otherEventType}` : types;
     }
-    return otherEventType || 'Mehndi Booking';
+    return otherEventType || "Mehndi Booking";
   };
 
   const handleSidebarToggle = () => {
@@ -752,7 +874,7 @@ const ClientDashboard = () => {
 
   // Navigate to job details page
   const handleJobClick = (jobId) => {
-    window.open(`/job/${jobId}`, '_blank');
+    window.open(`/job/${jobId}`, "_blank");
   };
 
   const handleBackToRequests = () => {
@@ -775,15 +897,19 @@ const ClientDashboard = () => {
 
   // Filter transactions based on selected filters
   const getFilteredTransactions = () => {
-    return transactions.filter(transaction => {
+    return transactions.filter((transaction) => {
       // Category filter - use the category field from the controller
-      const categoryMatch = transactionCategoryFilter === 'all' || 
-        (transaction.category && transaction.category.toLowerCase() === transactionCategoryFilter.toLowerCase());
-      
+      const categoryMatch =
+        transactionCategoryFilter === "all" ||
+        (transaction.category &&
+          transaction.category.toLowerCase() ===
+            transactionCategoryFilter.toLowerCase());
+
       // Status filter
-      const statusMatch = transactionStatusFilter === 'all' || 
-        (transaction.transactionType === transactionStatusFilter);
-      
+      const statusMatch =
+        transactionStatusFilter === "all" ||
+        transaction.transactionType === transactionStatusFilter;
+
       return categoryMatch && statusMatch;
     });
   };
@@ -798,55 +924,89 @@ const ClientDashboard = () => {
     setSelectedBooking(null);
     setReviewData({
       rating: 0,
-      title: '',
-      comment: '',
-      images: []
+      title: "",
+      comment: "",
+      images: [],
     });
   };
 
   const handleRatingChange = (rating) => {
-    setReviewData(prev => ({ ...prev, rating }));
+    setReviewData((prev) => ({ ...prev, rating }));
   };
 
   const handleInputChange = (field, value) => {
-    setReviewData(prev => ({ ...prev, [field]: value }));
+    setReviewData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
-    const imageUrls = files.map(file => URL.createObjectURL(file));
-    setReviewData(prev => ({
+    const imageUrls = files.map((file) => URL.createObjectURL(file));
+    setReviewData((prev) => ({
       ...prev,
-      images: [...prev.images, ...imageUrls].slice(0, 5) // Max 5 images
+      images: [...prev.images, ...imageUrls].slice(0, 5), // Max 5 images
     }));
   };
 
   const handleRemoveImage = (index) => {
-    setReviewData(prev => ({
+    setReviewData((prev) => ({
       ...prev,
-      images: prev.images.filter((_, i) => i !== index)
+      images: prev.images.filter((_, i) => i !== index),
     }));
   };
 
   const handleSubmitReview = () => {
-    console.log('Submitting review:', reviewData, 'for booking:', selectedBooking);
+    console.log(
+      "Submitting review:",
+      reviewData,
+      "for booking:",
+      selectedBooking
+    );
     // Here you would send the review to your backend
     handleCloseReviewModal();
   };
 
   const handleSelectConversation = (conversation) => {
+    // If clicking the same conversation that's already open, close it
+    if (
+      currentChat &&
+      selectedConversation &&
+      String(currentChat._id) === String(conversation._id)
+    ) {
+      setSelectedConversation(null);
+      setCurrentChat(null);
+      setChatMessages([]);
+      return;
+    }
+
     setSelectedConversation(conversation);
     setCurrentChat(conversation);
-    const otherId = conversation.artist?._id || conversation.artistId || conversation.id;
+    const otherId =
+      conversation.artist?._id || conversation.artistId || conversation.id;
     const roomId = buildDirectRoomId(user?._id, otherId);
-    joinRoom(roomId, { userId: user?._id, userType: user?.userType || 'client' });
-    chatAPI.getChat(conversation._id).then(res => {
-      if (res.success) {
-        setChatMessages(res.data.messages || []);
-        // Scroll to bottom when conversation is selected
-        setTimeout(scrollToBottom, 100);
-      }
-    }).then(() => chatAPI.markRead(conversation._id))
+    joinRoom(roomId, {
+      userId: user?._id,
+      userType: user?.userType || "client",
+    });
+    chatAPI
+      .getChat(conversation._id)
+      .then((res) => {
+        if (res.success) {
+          setChatMessages(res.data.messages || []);
+          // Scroll to bottom when conversation is selected
+          setTimeout(scrollToBottom, 100);
+        }
+      })
+      .then(() => {
+        chatAPI.markRead(conversation._id).then(() => {
+          // Refresh conversations to update unread count
+          chatAPI
+            .listMyChats()
+            .then((res) => {
+              if (res.success) setConversations(res.data || []);
+            })
+            .catch(console.error);
+        });
+      })
       .catch(console.error);
   };
 
@@ -855,59 +1015,66 @@ const ClientDashboard = () => {
     const cloudinary = {
       cloudName: "dstelsc7m",
       uploadPreset: "mehndi",
-      folder: 'mehndi/messages'
+      folder: "mehndi/messages",
     };
 
     const { cloudName, uploadPreset, folder } = cloudinary;
-    if (!cloudName || !uploadPreset) throw new Error('Cloudinary config missing');
+    if (!cloudName || !uploadPreset)
+      throw new Error("Cloudinary config missing");
     const base = `https://api.cloudinary.com/v1_1/${cloudName}`;
 
     const results = [];
 
     for (const file of files) {
       const fd = new FormData();
-      fd.append('file', file);
-      fd.append('upload_preset', uploadPreset);
-      if (folder) fd.append('folder', folder);
+      fd.append("file", file);
+      fd.append("upload_preset", uploadPreset);
+      if (folder) fd.append("folder", folder);
 
       // FIX 1: Hamesha 'auto' use karein.
       // Cloudinary file ko inspect karke khud decide kar lega.
-      const resourceType = 'auto';
+      const resourceType = "auto";
 
       // URL ab hamesha .../auto/upload hoga
-      const r = await fetch(`${base}/${resourceType}/upload`, { method: 'POST', body: fd });
+      const r = await fetch(`${base}/${resourceType}/upload`, {
+        method: "POST",
+        body: fd,
+      });
       const data = await r.json();
-      if (!r.ok) throw new Error(data.error?.message || 'File upload failed');
+      if (!r.ok) throw new Error(data.error?.message || "File upload failed");
 
       // FIX 2: 'attachmentType' file ke MIME type aur Cloudinary response se set karein.
-      let attachmentType = 'document'; // Default
-      
+      let attachmentType = "document"; // Default
+
       // First check file extension for PDFs (most reliable)
-      if (file.name.toLowerCase().endsWith('.pdf')) {
-        attachmentType = 'document';
-      } else if (file.type.startsWith('image/')) {
-        attachmentType = 'image';
-      } else if (file.type.startsWith('video/')) {
-        attachmentType = 'video';
-      } else if (file.type === 'application/pdf' || 
-                 file.type === 'application/msword' || 
-                 file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-                 file.type === 'text/plain' ||
-                 file.type.startsWith('application/')) {
-        attachmentType = 'document';
-      } else if (data.resource_type === 'image') {
-        attachmentType = 'image';
-      } else if (data.resource_type === 'video') {
-        attachmentType = 'video';
-      } else if (data.resource_type === 'raw') {
-        attachmentType = 'document';
+      if (file.name.toLowerCase().endsWith(".pdf")) {
+        attachmentType = "document";
+      } else if (file.type.startsWith("image/")) {
+        attachmentType = "image";
+      } else if (file.type.startsWith("video/")) {
+        attachmentType = "video";
+      } else if (
+        file.type === "application/pdf" ||
+        file.type === "application/msword" ||
+        file.type ===
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+        file.type === "text/plain" ||
+        file.type.startsWith("application/")
+      ) {
+        attachmentType = "document";
+      } else if (data.resource_type === "image") {
+        attachmentType = "image";
+      } else if (data.resource_type === "video") {
+        attachmentType = "video";
+      } else if (data.resource_type === "raw") {
+        attachmentType = "document";
       }
-      
-      console.log('DEBUG: File type detection:', {
+
+      console.log("DEBUG: File type detection:", {
         fileName: file.name,
         mimeType: file.type,
         cloudinaryResourceType: data.resource_type,
-        finalAttachmentType: attachmentType
+        finalAttachmentType: attachmentType,
       });
 
       results.push({
@@ -915,7 +1082,7 @@ const ClientDashboard = () => {
         url: data.secure_url, // Yeh URL ab file type ke hisab se hoga
         filename: file.name,
         size: file.size,
-        mimeType: file.type // Ise save karna aadat hai, aage kaam aa sakta hai
+        mimeType: file.type, // Ise save karna aadat hai, aage kaam aa sakta hai
       });
     }
 
@@ -924,10 +1091,11 @@ const ClientDashboard = () => {
 
   const handleSendMessage = async () => {
     if ((newMessage.trim() || attachments.length > 0) && currentChat) {
-      const otherId = currentChat.artist?._id || currentChat.artistId || currentChat.id;
+      const otherId =
+        currentChat.artist?._id || currentChat.artistId || currentChat.id;
       const roomId = buildDirectRoomId(user?._id, otherId);
       const text = newMessage.trim();
-      
+
       setIsUploading(true);
       try {
         let uploadedAttachments = [];
@@ -938,11 +1106,17 @@ const ClientDashboard = () => {
         // Build payloads: one for text (if any), and one per attachment
         const payloads = [];
         if (text) payloads.push({ text, attachments: [] });
-        uploadedAttachments.forEach(att => payloads.push({ text: '', attachments: [att] }));
+        uploadedAttachments.forEach((att) =>
+          payloads.push({ text: "", attachments: [att] })
+        );
 
         let latestMessages = null;
         for (const payload of payloads) {
-          const res = await chatAPI.sendMessage(currentChat._id, payload.text, payload.attachments);
+          const res = await chatAPI.sendMessage(
+            currentChat._id,
+            payload.text,
+            payload.attachments
+          );
           if (res.success) {
             latestMessages = res.data.messages;
             const saved = res.data.messages[res.data.messages.length - 1];
@@ -951,9 +1125,14 @@ const ClientDashboard = () => {
               senderId: saved.sender,
               senderName: userName,
               message: saved.text,
-              timestamp: new Date(saved.createdAt || Date.now()).toLocaleString(),
-              type: saved.attachments && saved.attachments.length ? 'attachment' : 'text',
-              attachments: saved.attachments || []
+              timestamp: new Date(
+                saved.createdAt || Date.now()
+              ).toLocaleString(),
+              type:
+                saved.attachments && saved.attachments.length
+                  ? "attachment"
+                  : "text",
+              attachments: saved.attachments || [],
             });
           }
         }
@@ -963,11 +1142,19 @@ const ClientDashboard = () => {
           // Scroll to bottom after messages are updated
           setTimeout(scrollToBottom, 100);
         }
-        setNewMessage('');
+        setNewMessage("");
         setAttachments([]);
-      } catch (e) { 
+
+        // Auto-fetch conversations after sending message (on all tabs)
+        chatAPI
+          .listMyChats()
+          .then((res) => {
+            if (res.success) setConversations(res.data || []);
+          })
+          .catch(console.error);
+      } catch (e) {
         console.error(e);
-        alert('Failed to send message. Please try again.');
+        alert("Failed to send message. Please try again.");
       } finally {
         setIsUploading(false);
       }
@@ -975,7 +1162,7 @@ const ClientDashboard = () => {
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
@@ -985,35 +1172,46 @@ const ClientDashboard = () => {
     const files = Array.from(e.target.files);
     if (files.length > 0) {
       // Validate file types and sizes
-      const validFiles = files.filter(file => {
+      const validFiles = files.filter((file) => {
         const maxSize = 10 * 1024 * 1024; // 10MB
         const allowedTypes = [
-          'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
-          'video/mp4', 'video/avi', 'video/mov', 'video/wmv',
-          'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          'text/plain', 'application/zip', 'application/x-rar-compressed'
+          "image/jpeg",
+          "image/jpg",
+          "image/png",
+          "image/gif",
+          "image/webp",
+          "video/mp4",
+          "video/avi",
+          "video/mov",
+          "video/wmv",
+          "application/pdf",
+          "application/msword",
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "text/plain",
+          "application/zip",
+          "application/x-rar-compressed",
         ];
-        
+
         if (file.size > maxSize) {
           alert(`File ${file.name} is too large. Maximum size is 10MB.`);
           return false;
         }
-        
+
         if (!allowedTypes.includes(file.type)) {
           alert(`File type ${file.type} is not supported.`);
           return false;
         }
-        
+
         return true;
       });
-      
-      setAttachments(prev => [...prev, ...validFiles]);
+
+      setAttachments((prev) => [...prev, ...validFiles]);
     }
-    e.target.value = ''; // Reset input
+    e.target.value = ""; // Reset input
   };
 
   const removeAttachment = (index) => {
-    setAttachments(prev => prev.filter((_, i) => i !== index));
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
   };
 
   const scrollToBottom = () => {
@@ -1032,7 +1230,7 @@ const ClientDashboard = () => {
       const response = await fetch(url);
       const blob = await response.blob();
       const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = downloadUrl;
       link.download = filename;
       document.body.appendChild(link);
@@ -1040,23 +1238,30 @@ const ClientDashboard = () => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(downloadUrl);
     } catch (error) {
-      console.error('Download failed:', error);
-      alert('Failed to download file. Please try again.');
+      console.error("Download failed:", error);
+      alert("Failed to download file. Please try again.");
     }
   };
 
+  // Load conversations on all tabs to keep unread count updated
   useEffect(() => {
-    if (!user || activeTab !== 'messages') return;
-    chatAPI.listMyChats().then(res => {
-      if (res.success) setConversations(res.data || []);
-    }).catch(console.error);
-    const interval = setInterval(() => {
-      chatAPI.listMyChats().then(res => {
+    if (!user) return;
+    chatAPI
+      .listMyChats()
+      .then((res) => {
         if (res.success) setConversations(res.data || []);
-      }).catch(() => { });
+      })
+      .catch(console.error);
+    const interval = setInterval(() => {
+      chatAPI
+        .listMyChats()
+        .then((res) => {
+          if (res.success) setConversations(res.data || []);
+        })
+        .catch(() => {});
     }, 10000);
     return () => clearInterval(interval);
-  }, [user, activeTab]);
+  }, [user]);
 
   // useEffect(() => {
   //   if (!user) return;
@@ -1081,35 +1286,76 @@ const ClientDashboard = () => {
   // }, [user, currentChat]);
 
   // This is the FIXED code
-useEffect(() => {
-  if (!user) return;
-  const onMessage = (incoming) => {
-    // If there's no chat selected OR if the incoming message is from the current user, do nothing.
-    // This prevents the echo of your own message from being added again.
-    if (!currentChat || String(incoming.senderId) === String(user?._id)) {
-      return;
-    }
+  useEffect(() => {
+    if (!user) return;
+    const onMessage = (incoming) => {
+      // Don't process own messages
+      if (String(incoming.senderId) === String(user?._id)) {
+        return;
+      }
 
-    console.log('DEBUG: Received socket message:', incoming);
+      // Get the other user ID from current chat (artist ID for client)
+      const currentChatArtistId =
+        currentChat?.artist?._id || currentChat?.artistId;
 
-    setChatMessages(prev => [...prev, {
-      id: incoming.id,
-      sender: incoming.senderId,
-      text: incoming.message || incoming.text || '',
-      attachments: incoming.attachments || [],
-      createdAt: new Date().toISOString(),
-    }]);
-  };
-  const onTyping = ({ userId, isTyping }) => {
-    setTypingUserId(isTyping ? userId : null);
-  };
-  socket.on('message', onMessage);
-  socket.on('typing', onTyping);
-  return () => {
-    socket.off('message', onMessage);
-    socket.off('typing', onTyping);
-  };
-}, [user, currentChat]);
+      // Only add message if it's from the current chat's other user
+      if (
+        currentChat &&
+        String(incoming.senderId) === String(currentChatArtistId)
+      ) {
+        console.log(
+          "DEBUG: Received socket message for current chat:",
+          incoming
+        );
+
+        setChatMessages((prev) => {
+          const already = prev.some(
+            (m) => String(m.id || m._id) === String(incoming.id || incoming._id)
+          );
+          if (already) return prev;
+          return [
+            ...prev,
+            {
+              id: incoming.id || incoming._id || Date.now(),
+              sender: incoming.senderId,
+              text: incoming.message || incoming.text || "",
+              attachments: incoming.attachments || [],
+              createdAt: new Date().toISOString(),
+            },
+          ];
+        });
+
+        // Mark as read and refresh conversations to update unread count
+        chatAPI
+          .markRead(currentChat._id)
+          .then(() => {
+            // Refresh conversations after marking as read to update unread count
+            return chatAPI.listMyChats();
+          })
+          .then((res) => {
+            if (res.success) setConversations(res.data || []);
+          })
+          .catch(console.error);
+      } else {
+        // Message is for a different chat, just update conversations
+        chatAPI
+          .listMyChats()
+          .then((res) => {
+            if (res.success) setConversations(res.data || []);
+          })
+          .catch(console.error);
+      }
+    };
+    const onTyping = ({ userId, isTyping }) => {
+      setTypingUserId(isTyping ? userId : null);
+    };
+    socket.on("message", onMessage);
+    socket.on("typing", onTyping);
+    return () => {
+      socket.off("message", onMessage);
+      socket.off("typing", onTyping);
+    };
+  }, [user, currentChat]);
 
   return (
     <>
@@ -1121,16 +1367,24 @@ useEffect(() => {
           isOpen={sidebarOpen}
           onClose={handleSidebarClose}
           bookingCount={allBookings.length}
+          unreadMessageCount={conversations.reduce(
+            (total, conv) => total + (conv.unreadCount || 0),
+            0
+          )}
         />
 
         {/* Main Content */}
         <div className="dashboard-main-content">
           {/* Mobile Sidebar Toggle */}
-          <button
-            className="sidebar-toggle-btn"
-            onClick={handleSidebarToggle}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <button className="sidebar-toggle-btn" onClick={handleSidebarToggle}>
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <line x1="3" y1="6" x2="21" y2="6" />
               <line x1="3" y1="12" x2="21" y2="12" />
               <line x1="3" y1="18" x2="21" y2="18" />
@@ -1138,15 +1392,25 @@ useEffect(() => {
           </button>
 
           <div className="dashboard-container">
-
             <div className="dashboard-content">
               {/* Dashboard View */}
-              {activeTab === 'dashboard' && (
+              {activeTab === "dashboard" && (
                 <>
                   {/* Welcome Section */}
                   <div className="welcome-section">
                     <h2 className="welcome-message">
-                      Hi {userName} <FaHandPeace style={{ color: '#F59E0B', marginLeft: '8px', marginRight: '8px' }} />, {nextEvent ? `your ${nextEvent.title.toLowerCase()} is coming up soon!` : 'welcome to your dashboard!'}
+                      Hi {userName}{" "}
+                      <FaHandPeace
+                        style={{
+                          color: "#F59E0B",
+                          marginLeft: "8px",
+                          marginRight: "8px",
+                        }}
+                      />
+                      ,{" "}
+                      {nextEvent
+                        ? `your ${nextEvent.title.toLowerCase()} is coming up soon!`
+                        : "welcome to your dashboard!"}
                     </h2>
 
                     {/* Next Event Card */}
@@ -1154,18 +1418,27 @@ useEffect(() => {
                       <div className="next-event-card">
                         <div className="event-header">
                           <FaCalendarAlt className="event-icon" />
-                          <h3>Next Event: {nextEvent.title} – {nextEvent.date}</h3>
+                          <h3>
+                            Next Event: {nextEvent.title} – {nextEvent.date}
+                          </h3>
                         </div>
 
                         <div className="event-details">
                           <div className="event-left">
-                            <p><strong>Date & Time:</strong> {nextEvent.date} · {nextEvent.time}</p>
+                            <p>
+                              <strong>Date & Time:</strong> {nextEvent.date} ·{" "}
+                              {nextEvent.time}
+                            </p>
                             <p className="event-countdown">
                               <FaClock className="countdown-icon" />
                               Event in {nextEvent.daysLeft} days
                             </p>
-                            <p><strong>Location:</strong> {nextEvent.location}</p>
-                            <p><strong>Artist:</strong> {nextEvent.artist}</p>
+                            <p>
+                              <strong>Location:</strong> {nextEvent.location}
+                            </p>
+                            <p>
+                              <strong>Artist:</strong> {nextEvent.artist}
+                            </p>
                           </div>
 
                           <div className="event-right">
@@ -1178,31 +1451,45 @@ useEffect(() => {
                                 <div
                                   className="progress-fill"
                                   style={{
-                                    width: nextEvent.isPaid === 'full' ? '100%' :
-                                      nextEvent.isPaid === 'half' ? '50%' : '0%'
+                                    width:
+                                      nextEvent.isPaid === "full"
+                                        ? "100%"
+                                        : nextEvent.isPaid === "half"
+                                        ? "50%"
+                                        : "0%",
                                   }}
                                 ></div>
                               </div>
                               <p className="payment-text">
-                                {nextEvent.isPaid === 'full' ? 'Payment Complete' :
-                                  nextEvent.isPaid === 'half' ? `Final 50% Payment Due in ${nextEvent.daysLeft || 14} days` :
-                                    `Payment Required (£${nextEvent.remainingPayment || '0'})`}
+                                {nextEvent.isPaid === "full"
+                                  ? "Payment Complete"
+                                  : nextEvent.isPaid === "half"
+                                  ? `Final 50% Payment Due in ${
+                                      nextEvent.daysLeft || 14
+                                    } days`
+                                  : `Payment Required (£${
+                                      nextEvent.remainingPayment || "0"
+                                    })`}
                               </p>
                             </div>
-                            {nextEvent.isPaid === 'full' ? (
-                              <p className="all-set">
-                                You're all set 🎉
-                              </p>
+                            {nextEvent.isPaid === "full" ? (
+                              <p className="all-set">You're all set 🎉</p>
                             ) : null}
                           </div>
                         </div>
-                        
+
                         <div className="event-buttons">
-                          <button className="view-full-booking-btn" onClick={() => navigate('/dashboard/bookings')}>
+                          <button
+                            className="view-full-booking-btn"
+                            onClick={() => navigate("/dashboard/bookings")}
+                          >
                             View Full Booking
                           </button>
-                          {nextEvent.isPaid !== 'full' && (
-                            <button className="pay-remaining-btn" onClick={() => handlePayRemaining(nextEvent)}>
+                          {nextEvent.isPaid !== "full" && (
+                            <button
+                              className="pay-remaining-btn"
+                              onClick={() => handlePayRemaining(nextEvent)}
+                            >
                               Pay Remaining Dues
                             </button>
                           )}
@@ -1212,8 +1499,13 @@ useEffect(() => {
                       <div className="no-upcoming-events">
                         <div className="no-events-icon">📅</div>
                         <h3>No Upcoming Events</h3>
-                        <p>No confirmed bookings yet — your next mehndi experience awaits.</p>
-                        <Link to="/booking" className="btn-primary">Post a New Request</Link>
+                        <p>
+                          No confirmed bookings yet — your next mehndi
+                          experience awaits.
+                        </p>
+                        <Link to="/booking" className="btn-primary">
+                          Post a New Request
+                        </Link>
                       </div>
                     )}
                   </div>
@@ -1222,7 +1514,10 @@ useEffect(() => {
                     {/* Left Column - Bookings */}
                     <div className="bookings-section">
                       <div className="section-header">
-                        <h3 className="section-title"><FaCalendarAlt></FaCalendarAlt> Upcoming & Confirmed Bookings</h3>
+                        <h3 className="section-title">
+                          <FaCalendarAlt></FaCalendarAlt> Upcoming & Confirmed
+                          Bookings
+                        </h3>
                         {/* <Link to="/dashboard/bookings" className="view-all-btn">
                           View All Bookings
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1233,22 +1528,34 @@ useEffect(() => {
 
                       {/* First upcoming booking */}
 
-
                       {/* Second upcoming booking */}
                       {secondEvent && (
                         <div className="second-event-card">
                           {/* Top Section */}
                           <div className="event-top-section">
                             <div className="event-main-info">
-                              <h3 className="event-title">{secondEvent.title}</h3>
-                              <p className="artist-info">With Henna by {secondEvent.artist}</p>
-                              <p className="event-datetime">{secondEvent.date} · {secondEvent.time}</p>
+                              <h3 className="event-title">
+                                {secondEvent.title}
+                              </h3>
+                              <p className="artist-info">
+                                With Henna by {secondEvent.artist}
+                              </p>
+                              <p className="event-datetime">
+                                {secondEvent.date} · {secondEvent.time}
+                              </p>
                               <div className="countdown-badge">
                                 {secondEvent.daysLeft} days left
                               </div>
                             </div>
                             <div className="event-action-buttons">
-                              <button className="message-artist-btn" onClick={() => handleMessageArtist({ artist: { _id: secondEvent.artistId } })}>
+                              <button
+                                className="message-artist-btn"
+                                onClick={() =>
+                                  handleMessageArtist({
+                                    artist: { _id: secondEvent.artistId },
+                                  })
+                                }
+                              >
                                 Message
                               </button>
                             </div>
@@ -1259,28 +1566,59 @@ useEffect(() => {
                             <div className="payment-status-row">
                               <div className="payment-status-left">
                                 <FaWallet className="wallet-icon" />
-                                <span>{secondEvent.isPaid === 'full' ? 'Payment Complete' : 'Deposit Secured'}</span>
+                                <span>
+                                  {secondEvent.isPaid === "full"
+                                    ? "Payment Complete"
+                                    : "Deposit Secured"}
+                                </span>
                               </div>
                               <div className="payment-separator"></div>
                               <div className="payment-due-info">
-                                {secondEvent.isPaid === 'full' ? (
-                                  <span className="payment-complete">All payments completed ✅</span>
+                                {secondEvent.isPaid === "full" ? (
+                                  <span className="payment-complete">
+                                    All payments completed ✅
+                                  </span>
                                 ) : (
-                                  <span>Final 50% due {secondEvent.paymentDueDate || secondEvent.date}</span>
+                                  <span>
+                                    Final 50% due{" "}
+                                    {secondEvent.paymentDueDate ||
+                                      secondEvent.date}
+                                  </span>
                                 )}
                               </div>
-                              {secondEvent.isPaid !== 'full' && (
-                                <button className="pay-remaining-btn" onClick={() => handlePayRemaining(secondEvent)}>
+                              {secondEvent.isPaid !== "full" && (
+                                <button
+                                  className="pay-remaining-btn"
+                                  onClick={() =>
+                                    handlePayRemaining(secondEvent)
+                                  }
+                                >
                                   Pay Remaining
                                 </button>
                               )}
                             </div>
                           </div>
                           <div className="payment-footer">
-                            {secondEvent.isPaid === 'full' ? (
-                              <span className="payment-complete-footer">You're all set! <FaCheckCircle style={{ color: '#10B981', marginLeft: '4px' }} /></span>
+                            {secondEvent.isPaid === "full" ? (
+                              <span className="payment-complete-footer">
+                                You're all set!{" "}
+                                <FaCheckCircle
+                                  style={{
+                                    color: "#10B981",
+                                    marginLeft: "4px",
+                                  }}
+                                />
+                              </span>
                             ) : (
-                              <span>Final payment scheduled — due soon <FaHourglassHalf style={{ color: '#F59E0B', marginLeft: '4px' }} /></span>
+                              <span>
+                                Final payment scheduled — due soon{" "}
+                                <FaHourglassHalf
+                                  style={{
+                                    color: "#F59E0B",
+                                    marginLeft: "4px",
+                                  }}
+                                />
+                              </span>
                             )}
                           </div>
                         </div>
@@ -1294,39 +1632,58 @@ useEffect(() => {
                           <Link to="/booking" className="post-new-request-btn">
                             Post a New Request
                           </Link>
-
                         </div>
                       </div>
                     </div>
 
                     {/* Right Column - Notifications */}
                     <div className="notifications-section">
-                      <h3 className="section-title"><FaClock style={{ marginRight: '8px' }} /> Notifications</h3>
-                      
+                      <h3 className="section-title">
+                        <FaClock style={{ marginRight: "8px" }} /> Notifications
+                      </h3>
+
                       <div className="notifications-list">
                         {notificationsLoading ? (
                           <div className="notification-item default">
-                            <span className="notification-icon"><FaHourglassHalf /></span>
-                            <p className="notification-text">Loading notifications...</p>
+                            <span className="notification-icon">
+                              <FaHourglassHalf />
+                            </span>
+                            <p className="notification-text">
+                              Loading notifications...
+                            </p>
                           </div>
                         ) : (
                           <>
                             {/* Next Event Reminder */}
                             {nextEvent && (
-                              <div 
+                              <div
                                 className="notification-item reminder"
                                 style={{
-                                  backgroundColor: nextEvent.daysLeft <= 7 ? '#ffebee' : '#e3f2fd'
+                                  backgroundColor:
+                                    nextEvent.daysLeft <= 7
+                                      ? "#ffebee"
+                                      : "#e3f2fd",
                                 }}
                               >
-                                <span className="notification-icon"><FaCalendarAlt /></span>
+                                <span className="notification-icon">
+                                  <FaCalendarAlt />
+                                </span>
                                 <div className="notification-content">
-                                  <p className="notification-title">Upcoming Event</p>
+                                  <p className="notification-title">
+                                    Upcoming Event
+                                  </p>
                                   <p className="notification-text">
-                                    Your {nextEvent.title} is in {nextEvent.daysLeft} days
-                                    {nextEvent.isPaid !== 'full' && nextEvent.remainingPayment && nextEvent.remainingPayment !== '0' && (
-                                      <span className="payment-reminder"> • Remaining payment: £{nextEvent.remainingPayment}</span>
-                                    )}
+                                    Your {nextEvent.title} is in{" "}
+                                    {nextEvent.daysLeft} days
+                                    {nextEvent.isPaid !== "full" &&
+                                      nextEvent.remainingPayment &&
+                                      nextEvent.remainingPayment !== "0" && (
+                                        <span className="payment-reminder">
+                                          {" "}
+                                          • Remaining payment: £
+                                          {nextEvent.remainingPayment}
+                                        </span>
+                                      )}
                                   </p>
                                   <span className="notification-time">
                                     {nextEvent.date} at {nextEvent.time}
@@ -1337,20 +1694,34 @@ useEffect(() => {
 
                             {/* Second Event Reminder */}
                             {secondEvent && (
-                              <div 
+                              <div
                                 className="notification-item reminder"
                                 style={{
-                                  backgroundColor: secondEvent.daysLeft <= 7 ? '#ffebee' : '#e3f2fd'
+                                  backgroundColor:
+                                    secondEvent.daysLeft <= 7
+                                      ? "#ffebee"
+                                      : "#e3f2fd",
                                 }}
                               >
-                                <span className="notification-icon"><FaCalendarAlt /></span>
+                                <span className="notification-icon">
+                                  <FaCalendarAlt />
+                                </span>
                                 <div className="notification-content">
-                                  <p className="notification-title">Upcoming Event</p>
+                                  <p className="notification-title">
+                                    Upcoming Event
+                                  </p>
                                   <p className="notification-text">
-                                    Your {secondEvent.title} is in {secondEvent.daysLeft} days
-                                    {secondEvent.isPaid !== 'full' && secondEvent.remainingPayment && secondEvent.remainingPayment !== '0' && (
-                                      <span className="payment-reminder"> • Remaining payment: £{secondEvent.remainingPayment}</span>
-                                    )}
+                                    Your {secondEvent.title} is in{" "}
+                                    {secondEvent.daysLeft} days
+                                    {secondEvent.isPaid !== "full" &&
+                                      secondEvent.remainingPayment &&
+                                      secondEvent.remainingPayment !== "0" && (
+                                        <span className="payment-reminder">
+                                          {" "}
+                                          • Remaining payment: £
+                                          {secondEvent.remainingPayment}
+                                        </span>
+                                      )}
                                   </p>
                                   <span className="notification-time">
                                     {secondEvent.date} at {secondEvent.time}
@@ -1360,31 +1731,47 @@ useEffect(() => {
                             )}
 
                             {/* Regular Notifications */}
-                            {notifications.length === 0 && !nextEvent && !secondEvent ? (
+                            {notifications.length === 0 &&
+                            !nextEvent &&
+                            !secondEvent ? (
                               <div className="notification-item default">
                                 <span className="notification-icon">ℹ️</span>
-                                <p className="notification-text">No notifications</p>
+                                <p className="notification-text">
+                                  No notifications
+                                </p>
                               </div>
                             ) : (
-                              notifications.map(notification => (
-                                <div 
-                                  key={notification.id} 
-                                  className={`notification-item ${notification.type} ${!notification.isRead ? 'unread' : ''}`}
+                              notifications.map((notification) => (
+                                <div
+                                  key={notification.id}
+                                  className={`notification-item ${
+                                    notification.type
+                                  } ${!notification.isRead ? "unread" : ""}`}
                                   style={{
-                                    backgroundColor: '#e8f5e8',
-                                    cursor: 'pointer'
+                                    backgroundColor: "#e8f5e8",
+                                    cursor: "pointer",
                                   }}
-                                  onClick={() => navigate('/dashboard/bookings')}
+                                  onClick={() =>
+                                    navigate("/dashboard/bookings")
+                                  }
                                 >
-                                  <span className="notification-icon"><FaEnvelope  ></FaEnvelope ></span>
+                                  <span className="notification-icon">
+                                    <FaEnvelope></FaEnvelope>
+                                  </span>
                                   <div className="notification-content">
-                                    <p className="notification-title">{notification.title}</p>
-                                    <p className="notification-text">{notification.message}</p>
+                                    <p className="notification-title">
+                                      {notification.title}
+                                    </p>
+                                    <p className="notification-text">
+                                      {notification.message}
+                                    </p>
                                     <span className="notification-time">
-                                      {new Date(notification.createdAt).toLocaleDateString()}
+                                      {new Date(
+                                        notification.createdAt
+                                      ).toLocaleDateString()}
                                     </span>
                                   </div>
-                                  <button 
+                                  <button
                                     className="notification-delete-btn"
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -1411,37 +1798,60 @@ useEffect(() => {
                     <div className="proposals-view">
                       {/* Header with Back Button */}
                       <div className="proposals-header">
-                        <button className="back-btn" onClick={handleBackToRequests}>
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M19 12H5M12 19L5 12L12 5" stroke="currentColor" strokeWidth="2" fill="none" />
+                        <button
+                          className="back-btn"
+                          onClick={handleBackToRequests}
+                        >
+                          <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M19 12H5M12 19L5 12L12 5"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              fill="none"
+                            />
                           </svg>
                           Back to Requests
                         </button>
                         <h3 className="proposals-title">
-                          {selectedRequestId ?
-                            `Proposals for: ${clientJobs.find(job => job._id === selectedRequestId)?.title || 'Job'}` :
-                            'All Proposals'
-                          }
+                          {selectedRequestId
+                            ? `Proposals for: ${
+                                clientJobs.find(
+                                  (job) => job._id === selectedRequestId
+                                )?.title || "Job"
+                              }`
+                            : "All Proposals"}
                         </h3>
                       </div>
 
                       {/* Filter Tabs */}
                       <div className="proposals-filters">
                         <button
-                          className={`filter-tab ${proposalsFilter === 'all' ? 'active' : ''}`}
-                          onClick={() => handleFilterChange('all')}
+                          className={`filter-tab ${
+                            proposalsFilter === "all" ? "active" : ""
+                          }`}
+                          onClick={() => handleFilterChange("all")}
                         >
                           All Requests (2)
                         </button>
                         <button
-                          className={`filter-tab ${proposalsFilter === 'active' ? 'active' : ''}`}
-                          onClick={() => handleFilterChange('active')}
+                          className={`filter-tab ${
+                            proposalsFilter === "active" ? "active" : ""
+                          }`}
+                          onClick={() => handleFilterChange("active")}
                         >
                           Active (2)
                         </button>
                         <button
-                          className={`filter-tab ${proposalsFilter === 'completed' ? 'active' : ''}`}
-                          onClick={() => handleFilterChange('completed')}
+                          className={`filter-tab ${
+                            proposalsFilter === "completed" ? "active" : ""
+                          }`}
+                          onClick={() => handleFilterChange("completed")}
                         >
                           Completed (0)
                         </button>
@@ -1449,15 +1859,42 @@ useEffect(() => {
                         {/* Search and Filter */}
                         <div className="proposals-controls">
                           <div className="search-box">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2" />
-                              <path d="M21 21L16.65 16.65" stroke="currentColor" strokeWidth="2" />
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <circle
+                                cx="11"
+                                cy="11"
+                                r="8"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                              />
+                              <path
+                                d="M21 21L16.65 16.65"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                              />
                             </svg>
                             <input type="text" placeholder="Search requests" />
                           </div>
                           <button className="filters-btn">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46" stroke="currentColor" strokeWidth="2" fill="none" />
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <polygon
+                                points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                fill="none"
+                              />
                             </svg>
                             Filters
                           </button>
@@ -1474,12 +1911,28 @@ useEffect(() => {
                         ) : proposalsError ? (
                           <div className="error-state">
                             <p className="error-message">{proposalsError}</p>
-                            <button onClick={fetchAllProposals} className="retry-btn">Try Again</button>
+                            <button
+                              onClick={fetchAllProposals}
+                              className="retry-btn"
+                            >
+                              Try Again
+                            </button>
                           </div>
-                        ) : realProposals.filter(p => selectedRequestId ? p.jobId === selectedRequestId : true).length === 0 ? (
+                        ) : realProposals.filter((p) =>
+                            selectedRequestId
+                              ? p.jobId === selectedRequestId
+                              : true
+                          ).length === 0 ? (
                           <div className="empty-state">
                             <div className="empty-icon">
-                              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
+                              <svg
+                                width="64"
+                                height="64"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1"
+                              >
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                                 <polyline points="14,2 14,8 20,8" />
                                 <line x1="16" y1="13" x2="8" y2="13" />
@@ -1488,88 +1941,144 @@ useEffect(() => {
                               </svg>
                             </div>
                             <h3>No proposals received yet</h3>
-                            <p>Artists will send proposals for your posted jobs.</p>
+                            <p>
+                              Artists will send proposals for your posted jobs.
+                            </p>
                           </div>
-                        ) : realProposals
-                          .filter(p => selectedRequestId ? p.jobId === selectedRequestId : true)
-                          .filter(p => proposalsFilter === 'all' ? true :
-                            proposalsFilter === 'active' ? p.status === 'pending' :
-                              proposalsFilter === 'completed' ? ['accepted', 'rejected'].includes(p.status) : true)
-                          .map(proposal => (
-                            <div key={proposal.id} className="proposal-card">
-                              <div className="proposal-header">
-                                <div className="artist-info">
-                                  <div className="artist-avatar">
-                                    <img src="https://via.placeholder.com/60x60" alt={proposal.artistName} />
+                        ) : (
+                          realProposals
+                            .filter((p) =>
+                              selectedRequestId
+                                ? p.jobId === selectedRequestId
+                                : true
+                            )
+                            .filter((p) =>
+                              proposalsFilter === "all"
+                                ? true
+                                : proposalsFilter === "active"
+                                ? p.status === "pending"
+                                : proposalsFilter === "completed"
+                                ? ["accepted", "rejected"].includes(p.status)
+                                : true
+                            )
+                            .map((proposal) => (
+                              <div key={proposal.id} className="proposal-card">
+                                <div className="proposal-header">
+                                  <div className="artist-info">
+                                    <div className="artist-avatar">
+                                      <img
+                                        src="https://via.placeholder.com/60x60"
+                                        alt={proposal.artistName}
+                                      />
+                                    </div>
+                                    <div className="artist-details">
+                                      <h4 className="artist-name">
+                                        {proposal.artistName}
+                                      </h4>
+                                      <div className="artist-stats">
+                                        <span className="job-title">
+                                          For: {proposal.jobTitle}
+                                        </span>
+                                        <span className="duration">
+                                          Duration: {proposal.duration}
+                                        </span>
+                                        <span className="status">
+                                          Status: {proposal.status}
+                                        </span>
+                                      </div>
+                                    </div>
                                   </div>
-                                  <div className="artist-details">
-                                    <h4 className="artist-name">{proposal.artistName}</h4>
-                                    <div className="artist-stats">
-                                      <span className="job-title">For: {proposal.jobTitle}</span>
-                                      <span className="duration">Duration: {proposal.duration}</span>
-                                      <span className="status">Status: {proposal.status}</span>
+                                  <div className="proposal-price">
+                                    <span className="price">
+                                      {proposal.price}
+                                    </span>
+                                    <span className="experience">
+                                      {proposal.experience}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="proposal-content">
+                                  <p className="proposal-text">
+                                    {proposal.proposal}
+                                  </p>
+
+                                  <div className="proposal-meta">
+                                    <span className="submitted-date">
+                                      Submitted:{" "}
+                                      {proposal.submittedAt
+                                        ? new Date(
+                                            proposal.submittedAt
+                                          ).toLocaleDateString()
+                                        : "N/A"}
+                                    </span>
+                                    <div className="proposal-actions">
+                                      <button className="message-artist-btn">
+                                        Message Artist
+                                      </button>
+                                      {proposal.status === "pending" && (
+                                        <>
+                                          <button
+                                            className="reject-btn"
+                                            onClick={() =>
+                                              rejectProposal(proposal.id)
+                                            }
+                                            style={{
+                                              background: "#e74c3c",
+                                              color: "white",
+                                              border: "none",
+                                              padding: "8px 16px",
+                                              borderRadius: "4px",
+                                              cursor: "pointer",
+                                              marginRight: "8px",
+                                            }}
+                                          >
+                                            Reject
+                                          </button>
+                                          <button
+                                            className="accept-btn"
+                                            onClick={() =>
+                                              acceptProposal(proposal.id)
+                                            }
+                                            style={{
+                                              background: "#27ae60",
+                                              color: "white",
+                                              border: "none",
+                                              padding: "8px 16px",
+                                              borderRadius: "4px",
+                                              cursor: "pointer",
+                                            }}
+                                          >
+                                            Accept Proposal
+                                          </button>
+                                        </>
+                                      )}
+                                      {proposal.status === "accepted" && (
+                                        <span
+                                          style={{
+                                            color: "#27ae60",
+                                            fontWeight: "bold",
+                                          }}
+                                        >
+                                          ✅ Accepted
+                                        </span>
+                                      )}
+                                      {proposal.status === "rejected" && (
+                                        <span
+                                          style={{
+                                            color: "#e74c3c",
+                                            fontWeight: "bold",
+                                          }}
+                                        >
+                                          ❌ Rejected
+                                        </span>
+                                      )}
                                     </div>
                                   </div>
                                 </div>
-                                <div className="proposal-price">
-                                  <span className="price">{proposal.price}</span>
-                                  <span className="experience">{proposal.experience}</span>
-                                </div>
                               </div>
-
-                              <div className="proposal-content">
-                                <p className="proposal-text">{proposal.proposal}</p>
-
-                                <div className="proposal-meta">
-                                  <span className="submitted-date">
-                                    Submitted: {proposal.submittedAt ? new Date(proposal.submittedAt).toLocaleDateString() : 'N/A'}
-                                  </span>
-                                  <div className="proposal-actions">
-                                    <button className="message-artist-btn">Message Artist</button>
-                                    {proposal.status === 'pending' && (
-                                      <>
-                                        <button
-                                          className="reject-btn"
-                                          onClick={() => rejectProposal(proposal.id)}
-                                          style={{
-                                            background: '#e74c3c',
-                                            color: 'white',
-                                            border: 'none',
-                                            padding: '8px 16px',
-                                            borderRadius: '4px',
-                                            cursor: 'pointer',
-                                            marginRight: '8px'
-                                          }}
-                                        >
-                                          Reject
-                                        </button>
-                                        <button
-                                          className="accept-btn"
-                                          onClick={() => acceptProposal(proposal.id)}
-                                          style={{
-                                            background: '#27ae60',
-                                            color: 'white',
-                                            border: 'none',
-                                            padding: '8px 16px',
-                                            borderRadius: '4px',
-                                            cursor: 'pointer'
-                                          }}
-                                        >
-                                          Accept Proposal
-                                        </button>
-                                      </>
-                                    )}
-                                    {proposal.status === 'accepted' && (
-                                      <span style={{ color: '#27ae60', fontWeight: 'bold' }}>✅ Accepted</span>
-                                    )}
-                                    {proposal.status === 'rejected' && (
-                                      <span style={{ color: '#e74c3c', fontWeight: 'bold' }}>❌ Rejected</span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
+                            ))
+                        )}
                       </div>
                     </div>
                   )}
@@ -1584,35 +2093,75 @@ useEffect(() => {
               )} */}
 
               {/* Wallet View */}
-              {activeTab === 'wallet' && (
+              {activeTab === "wallet" && (
                 <div className="wallet-section">
-                  <div style={{textAlign: 'center'}}>
-                    <h2 className="wallet-title" style={{margin: '1rem 0'}}>Payments & Receipts</h2>
-                    <p className="wallet-subtitle" style={{width: '75%', margin: '0 auto 2rem', fontSize: '1.1rem'}}>Track your deposits and upcoming balances. Remaining payments are due 14 days before each event.</p>
+                  <div style={{ textAlign: "center" }}>
+                    <h2 className="wallet-title" style={{ margin: "1rem 0" }}>
+                      Payments & Receipts
+                    </h2>
+                    <p
+                      className="wallet-subtitle"
+                      style={{
+                        width: "75%",
+                        margin: "0 auto 2rem",
+                        fontSize: "1.1rem",
+                      }}
+                    >
+                      Track your deposits and upcoming balances. Remaining
+                      payments are due 14 days before each event.
+                    </p>
                   </div>
                   {walletLoading ? (
-                    <div className="loading-state" style={{ padding: '2rem', textAlign: 'center' }}>
+                    <div
+                      className="loading-state"
+                      style={{ padding: "2rem", textAlign: "center" }}
+                    >
                       <p>Loading wallet data...</p>
                     </div>
                   ) : (
                     <div className="wallet-overview">
                       <div className="wallet-card total-paid">
                         <h3 className="wallet-card-title">Total Paid</h3>
-                        <p className="wallet-card-amount green">£{walletData.totalPaid.toFixed(2)}</p>
+                        <p className="wallet-card-amount green">
+                          £{walletData.totalPaid.toFixed(2)}
+                        </p>
                       </div>
 
                       <div className="wallet-card remaining-balance">
                         <h3 className="wallet-card-title">Remaining Balance</h3>
-                        <p className="wallet-card-amount orange">£{walletData.remainingBalance.toFixed(2)}</p>
+                        <p className="wallet-card-amount orange">
+                          £{walletData.remainingBalance.toFixed(2)}
+                        </p>
                         {walletData.remainingBalance > 0 && (
                           <button
                             className="withdraw-btn modern-withdraw-btn"
                             onClick={() => setShowWithdrawModal(true)}
                           >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M12 2L22 7L12 12L2 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
-                              <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
-                              <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                d="M12 2L22 7L12 12L2 7L12 2Z"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinejoin="round"
+                              />
+                              <path
+                                d="M2 17L12 22L22 17"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinejoin="round"
+                              />
+                              <path
+                                d="M2 12L12 17L22 12"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinejoin="round"
+                              />
                             </svg>
                             Withdraw Funds
                           </button>
@@ -1875,139 +2424,221 @@ useEffect(() => {
                     {/* Transaction Filters */}
                     <div className="transaction-filters">
                       <div className="category-filters">
-                        <button 
-                          className={`category-filter-btn ${transactionCategoryFilter === 'all' ? 'active' : ''}`}
-                          onClick={() => handleTransactionCategoryFilter('all')}
+                        <button
+                          className={`category-filter-btn ${
+                            transactionCategoryFilter === "all" ? "active" : ""
+                          }`}
+                          onClick={() => handleTransactionCategoryFilter("all")}
                         >
                           <div className="filter-indicator"></div>
                           All
                         </button>
-                        <button 
-                          className={`category-filter-btn ${transactionCategoryFilter === 'bridal' ? 'active' : ''}`}
-                          onClick={() => handleTransactionCategoryFilter('bridal')}
+                        <button
+                          className={`category-filter-btn ${
+                            transactionCategoryFilter === "bridal"
+                              ? "active"
+                              : ""
+                          }`}
+                          onClick={() =>
+                            handleTransactionCategoryFilter("bridal")
+                          }
                         >
                           <div className="filter-indicator"></div>
                           Bridal
                         </button>
-                        <button 
-                          className={`category-filter-btn ${transactionCategoryFilter === 'festive' ? 'active' : ''}`}
-                          onClick={() => handleTransactionCategoryFilter('festive')}
+                        <button
+                          className={`category-filter-btn ${
+                            transactionCategoryFilter === "festive"
+                              ? "active"
+                              : ""
+                          }`}
+                          onClick={() =>
+                            handleTransactionCategoryFilter("festive")
+                          }
                         >
                           {/* <div className="filter-indicator"></div> */}
-                          <span style={{fontSize:'20px'}}>+</span>
+                          <span style={{ fontSize: "20px" }}>+</span>
                           Festive
                         </button>
-                        <button 
-                          className={`category-filter-btn ${transactionCategoryFilter === 'party' ? 'active' : ''}`}
-                          onClick={() => handleTransactionCategoryFilter('party')}
+                        <button
+                          className={`category-filter-btn ${
+                            transactionCategoryFilter === "party"
+                              ? "active"
+                              : ""
+                          }`}
+                          onClick={() =>
+                            handleTransactionCategoryFilter("party")
+                          }
                         >
                           {/* <div className="filter-indicator"></div> */}
-                          <span style={{fontSize:'20px'}}>△</span>
+                          <span style={{ fontSize: "20px" }}>△</span>
                           Party
                         </button>
-                        <button 
-                          className={`category-filter-btn ${transactionCategoryFilter === 'casual' ? 'active' : ''}`}
-                          onClick={() => handleTransactionCategoryFilter('casual')}
+                        <button
+                          className={`category-filter-btn ${
+                            transactionCategoryFilter === "casual"
+                              ? "active"
+                              : ""
+                          }`}
+                          onClick={() =>
+                            handleTransactionCategoryFilter("casual")
+                          }
                         >
                           {/* <div className="filter-indicator"></div> */}
-                          <span style={{fontSize:'20px'}}>+</span>
+                          <span style={{ fontSize: "20px" }}>+</span>
                           Casual
                         </button>
                       </div>
-                      
                     </div>
-                      <div className="status-filter">
-                        <select 
-                          value={transactionStatusFilter} 
-                          onChange={(e) => handleTransactionStatusFilter(e.target.value)}
-                          className="status-dropdown"
-                        >
-                          <option value="all">All</option>
-                          <option value="half">Deposit Paid</option>
-                          <option value="full">Payment Complete</option>
-                          <option value="refund">Refunded</option>
-                          <option value="admin-fee">Admin Fee</option>
-                        </select>
-                      </div>
+                    <div className="status-filter">
+                      <select
+                        value={transactionStatusFilter}
+                        onChange={(e) =>
+                          handleTransactionStatusFilter(e.target.value)
+                        }
+                        className="status-dropdown"
+                      >
+                        <option value="all">All</option>
+                        <option value="half">Deposit Paid</option>
+                        <option value="full">Payment Complete</option>
+                        <option value="refund">Refunded</option>
+                        <option value="admin-fee">Admin Fee</option>
+                      </select>
+                    </div>
 
                     {transactionsLoading ? (
-                      <div className="loading-state" style={{ padding: '2rem', textAlign: 'center' }}>
+                      <div
+                        className="loading-state"
+                        style={{ padding: "2rem", textAlign: "center" }}
+                      >
                         <p>Loading transaction history...</p>
                       </div>
                     ) : transactionsError ? (
                       <div className="error-state">
                         <div className="error-icon">⚠️</div>
                         <p>{transactionsError}</p>
-                        <button onClick={fetchTransactions} className="retry-btn">Try Again</button>
+                        <button
+                          onClick={fetchTransactions}
+                          className="retry-btn"
+                        >
+                          Try Again
+                        </button>
                       </div>
                     ) : transactions.length === 0 ? (
                       <div className="empty-state">
-                        <FaCreditCard size={'30px'}/>
+                        <FaCreditCard size={"30px"} />
                         <h3>No Transactions Yet</h3>
-                        <p>Your transaction history will appear here once you make payments.</p>
+                        <p>
+                          Your transaction history will appear here once you
+                          make payments.
+                        </p>
                       </div>
                     ) : (
                       <div className="transaction-table-wrapper">
                         <div className="transaction-table">
                           <div className="table-header">
-                            <span className="col-date" style={{color:'white'}}>Date</span>
-                            <span className="col-category" style={{color:'white'}}>Category</span>
-                            <span className="col-artist" style={{color:'white'}}>Artist</span>
-                            <span className="col-amount" style={{color:'white'}}>Amount</span>
-                            <span className="col-status" style={{color:'white'}}>Status</span>
-                            <span className="col-invoice" style={{color:'white'}}>Invoice</span>
+                            <span
+                              className="col-date"
+                              style={{ color: "white" }}
+                            >
+                              Date
+                            </span>
+                            <span
+                              className="col-category"
+                              style={{ color: "white" }}
+                            >
+                              Category
+                            </span>
+                            <span
+                              className="col-artist"
+                              style={{ color: "white" }}
+                            >
+                              Artist
+                            </span>
+                            <span
+                              className="col-amount"
+                              style={{ color: "white" }}
+                            >
+                              Amount
+                            </span>
+                            <span
+                              className="col-status"
+                              style={{ color: "white" }}
+                            >
+                              Status
+                            </span>
+                            <span
+                              className="col-invoice"
+                              style={{ color: "white" }}
+                            >
+                              Invoice
+                            </span>
                           </div>
 
                           {getFilteredTransactions().map((transaction) => {
-                          const formatDate = (dateString) => {
-                            const date = new Date(dateString);
-                            return date.toLocaleDateString('en-GB', {
-                              day: 'numeric',
-                              month: 'short',
-                              year: 'numeric'
-                            });
-                          };
-
-                          const getTransactionType = (type) => {
-                            switch (type) {
-                              case 'half': return 'Half Deposit';
-                              case 'full': return 'Full Deposit';
-                              case 'refund': return 'Refund';
-                              case 'admin-fee': return 'Admin Fee';
-                              default: return type;
-                            }
-                          };
-
-                          const getStatus = (transaction) => {
-                            // Use the pre-formatted status from the controller
-                            return {
-                              text: transaction.statusText || 'Paid',
-                              class: transaction.statusClass || 'paid'
+                            const formatDate = (dateString) => {
+                              const date = new Date(dateString);
+                              return date.toLocaleDateString("en-GB", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              });
                             };
-                          };
 
-                          // Use the pre-formatted data from the controller
-                          const getCategoryFromEventName = (transaction) => {
-                            return transaction.category || 'Event';
-                          };
+                            const getTransactionType = (type) => {
+                              switch (type) {
+                                case "half":
+                                  return "Half Deposit";
+                                case "full":
+                                  return "Full Deposit";
+                                case "refund":
+                                  return "Refund";
+                                case "admin-fee":
+                                  return "Admin Fee";
+                                default:
+                                  return type;
+                              }
+                            };
 
-                          const getArtistName = (transaction) => {
-                            return transaction.artistName==='Unknown Artist' ? '--':transaction.artistName;
-                          };
+                            const getStatus = (transaction) => {
+                              // Use the pre-formatted status from the controller
+                              return {
+                                text: transaction.statusText || "Paid",
+                                class: transaction.statusClass || "paid",
+                              };
+                            };
 
-                          const getAmountDisplay = (transaction) => {
-                            console.log('trsnaction',transaction)
-                            return transaction.amountDisplay || `£${transaction.amount.toFixed(0)}`;
-                          };
+                            // Use the pre-formatted data from the controller
+                            const getCategoryFromEventName = (transaction) => {
+                              return transaction.category || "Event";
+                            };
 
-                          const status = getStatus(transaction);
+                            const getArtistName = (transaction) => {
+                              return transaction.artistName === "Unknown Artist"
+                                ? "--"
+                                : transaction.artistName;
+                            };
 
-                          const handleDownloadReceipt = () => {
-                            // Create PDF content
-                            const pdfContent = `
+                            const getAmountDisplay = (transaction) => {
+                              console.log("trsnaction", transaction);
+                              return (
+                                transaction.amountDisplay ||
+                                `£${transaction.amount.toFixed(0)}`
+                              );
+                            };
+
+                            const status = getStatus(transaction);
+
+                            const handleDownloadReceipt = () => {
+                              // Create PDF content
+                              const pdfContent = `
                               <html>
                                 <head>
-                                  <title>Receipt - ${transaction.eventName === 'Unknown Event' ? 'Event' : transaction.eventName}</title>
+                                  <title>Receipt - ${
+                                    transaction.eventName === "Unknown Event"
+                                      ? "Event"
+                                      : transaction.eventName
+                                  }</title>
                                   <style>
                                     body { font-family: Arial, sans-serif; padding: 20px; }
                                     .header { text-align: center; margin-bottom: 30px; }
@@ -2024,19 +2655,30 @@ useEffect(() => {
                                   <div class="receipt-details">
                                     <div class="detail-row">
                                       <span>Event:</span>
-                                      <span>${transaction.eventName === 'Unknown Event' ? 'Event' : transaction.eventName}</span>
+                                      <span>${
+                                        transaction.eventName ===
+                                        "Unknown Event"
+                                          ? "Event"
+                                          : transaction.eventName
+                                      }</span>
                                     </div>
                                     <div class="detail-row">
                                       <span>Transaction Type:</span>
-                                      <span>${getTransactionType(transaction.transactionType)}</span>
+                                      <span>${getTransactionType(
+                                        transaction.transactionType
+                                      )}</span>
                                     </div>
                                     <div class="detail-row">
                                       <span>Date:</span>
-                                      <span>${formatDate(transaction.createdAt)}</span>
+                                      <span>${formatDate(
+                                        transaction.createdAt
+                                      )}</span>
                                     </div>
                                     <div class="detail-row">
                                       <span>Amount:</span>
-                                      <span>£${transaction.amount.toFixed(2)}</span>
+                                      <span>£${transaction.amount.toFixed(
+                                        2
+                                      )}</span>
                                     </div>
                                     <div class="detail-row">
                                       <span>Payment Method:</span>
@@ -2048,51 +2690,85 @@ useEffect(() => {
                                     </div>
                                     <div class="detail-row total">
                                       <span>Total Paid:</span>
-                                      <span>£${transaction.amount.toFixed(2)}</span>
+                                      <span>£${transaction.amount.toFixed(
+                                        2
+                                      )}</span>
                                     </div>
                                   </div>
                                 </body>
                               </html>
                             `;
 
-                            // Create blob and download
-                            const blob = new Blob([pdfContent], { type: 'text/html' });
-                            const url = window.URL.createObjectURL(blob);
-                            const link = document.createElement('a');
-                            link.href = url;
-                            link.download = `receipt-${transaction.eventName ? transaction.eventName.replace(/\s+/g, '-') : 'Event'.replace(/\s+/g, '-')}-${formatDate(transaction.createdAt).replace(/\s+/g, '-')}.html`;
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                            window.URL.revokeObjectURL(url);
-                          };
+                              // Create blob and download
+                              const blob = new Blob([pdfContent], {
+                                type: "text/html",
+                              });
+                              const url = window.URL.createObjectURL(blob);
+                              const link = document.createElement("a");
+                              link.href = url;
+                              link.download = `receipt-${
+                                transaction.eventName
+                                  ? transaction.eventName.replace(/\s+/g, "-")
+                                  : "Event".replace(/\s+/g, "-")
+                              }-${formatDate(transaction.createdAt).replace(
+                                /\s+/g,
+                                "-"
+                              )}.html`;
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                              window.URL.revokeObjectURL(url);
+                            };
 
-                          return (
-                            <div key={transaction._id} className="table-row">
-                              <span className="col-date">{formatDate(transaction.createdAt)}</span>
-                              <span className="col-category">{getCategoryFromEventName(transaction)}</span>
-                              <span className="col-artist">{getArtistName(transaction)}</span>
-                              <span className="col-amount">{getAmountDisplay(transaction)}</span>
-                              <span className={`col-status ${status.class}`}>
-                                {status.text}
-                              </span>
-                              <span className="col-invoice">
-                                <button className="invoice-btn" onClick={handleDownloadReceipt} title="View Invoice">
-                                  <span>View Invoice</span>
-                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M12 15L7 10H10V3H14V10H17L12 15Z" fill="currentColor" />
-                                    <path d="M20 18H4V20H20V18Z" fill="currentColor" />
-                                  </svg>
-                                </button>
-                              </span>
-                            </div>
-                          );
+                            return (
+                              <div key={transaction._id} className="table-row">
+                                <span className="col-date">
+                                  {formatDate(transaction.createdAt)}
+                                </span>
+                                <span className="col-category">
+                                  {getCategoryFromEventName(transaction)}
+                                </span>
+                                <span className="col-artist">
+                                  {getArtistName(transaction)}
+                                </span>
+                                <span className="col-amount">
+                                  {getAmountDisplay(transaction)}
+                                </span>
+                                <span className={`col-status ${status.class}`}>
+                                  {status.text}
+                                </span>
+                                <span className="col-invoice">
+                                  <button
+                                    className="invoice-btn"
+                                    onClick={handleDownloadReceipt}
+                                    title="View Invoice"
+                                  >
+                                    <span>View Invoice</span>
+                                    <svg
+                                      width="16"
+                                      height="16"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      xmlns="http://www.w3.org/2000/svg"
+                                    >
+                                      <path
+                                        d="M12 15L7 10H10V3H14V10H17L12 15Z"
+                                        fill="currentColor"
+                                      />
+                                      <path
+                                        d="M20 18H4V20H20V18Z"
+                                        fill="currentColor"
+                                      />
+                                    </svg>
+                                  </button>
+                                </span>
+                              </div>
+                            );
                           })}
                         </div>
                       </div>
                     )}
                   </div>
-                  
 
                   {/* Invoices & Receipts */}
                   {/* <div className="invoices-receipts">
@@ -2234,21 +2910,28 @@ useEffect(() => {
               )}
 
               {/* Reviews View */}
-              {activeTab === 'reviews' && (
+              {activeTab === "reviews" && (
                 <div className="reviews-section">
                   <div className="reviews-header">
                     <h2 className="reviews-title">Your Mehndi Reviews</h2>
-                    <p className="reviews-subtitle">Share your experience and help others book their perfect artist with confidence.</p>
+                    <p className="reviews-subtitle">
+                      Share your experience and help others book their perfect
+                      artist with confidence.
+                    </p>
                     <div className="review-filters">
                       <button
-                        className={`review-filter ${reviewsFilter === 'pending' ? 'active' : ''}`}
-                        onClick={() => setReviewsFilter('pending')}
+                        className={`review-filter ${
+                          reviewsFilter === "pending" ? "active" : ""
+                        }`}
+                        onClick={() => setReviewsFilter("pending")}
                       >
                         Pending
                       </button>
                       <button
-                        className={`review-filter ${reviewsFilter === 'completed' ? 'active' : ''}`}
-                        onClick={() => setReviewsFilter('completed')}
+                        className={`review-filter ${
+                          reviewsFilter === "completed" ? "active" : ""
+                        }`}
+                        onClick={() => setReviewsFilter("completed")}
                       >
                         Completed
                       </button>
@@ -2268,40 +2951,84 @@ useEffect(() => {
 
                   <div className="completed-bookings">
                     {(() => {
-                      const filteredBookings = completedBookings.filter(b => reviewsFilter === 'pending' ? !b.rated : b.rated);
-                      
+                      const filteredBookings = completedBookings.filter((b) =>
+                        reviewsFilter === "pending" ? !b.rated : b.rated
+                      );
+
                       if (filteredBookings.length === 0) {
                         return (
                           <div className="no-reviews-message">
-                             <div className="no-reviews-icon"><FaPen/></div>
+                            <div className="no-reviews-icon">
+                              <FaPen />
+                            </div>
                             <h3 className="no-reviews-title">
-                              {reviewsFilter === 'pending' ? 'No Pending Reviews' : 'No Completed Reviews'}
+                              {reviewsFilter === "pending"
+                                ? "No Pending Reviews"
+                                : "No Completed Reviews"}
                             </h3>
                             <p className="no-reviews-text">
-                              {reviewsFilter === 'pending' 
-                                ? 'You don\'t have any completed bookings waiting for your review yet.' 
-                                : 'You haven\'t completed any reviews yet. Reviews will appear here once you submit them.'}
+                              {reviewsFilter === "pending"
+                                ? "You don't have any completed bookings waiting for your review yet."
+                                : "You haven't completed any reviews yet. Reviews will appear here once you submit them."}
                             </p>
                           </div>
                         );
                       }
-                      
-                      return filteredBookings.map(booking => (
+
+                      return filteredBookings.map((booking) => (
                         <div key={booking._id} className="review-card">
                           <div className="review-card__content">
-                            <h4 className="review-card__title">Henna By {booking.assignedArtist[0] && booking.assignedArtist[0].firstName + ' ' + booking.assignedArtist[0].lastName}</h4>
-                            <p className="review-card__date">{new Date(booking.eventDate).toLocaleDateString('en-GB')}</p>
+                            <h4 className="review-card__title">
+                              Henna By{" "}
+                              {booking.assignedArtist[0] &&
+                                booking.assignedArtist[0].firstName +
+                                  " " +
+                                  booking.assignedArtist[0].lastName}
+                            </h4>
+                            <p className="review-card__date">
+                              {new Date(booking.eventDate).toLocaleDateString(
+                                "en-GB"
+                              )}
+                            </p>
                             {booking.rated ? (
                               <>
-                                <div className="review-stars" style={{ margin: '6px 0' }}>
-                                  {[1,2,3,4,5].map(n => (
-                                    <span key={n} style={{ color: (reviewRatingMap[booking._id] ? n <= reviewRatingMap[booking._id] : false) ? '#ffc107' : 'rgb(255, 193, 7)', marginRight: '4px' }}>★</span>
+                                <div
+                                  className="review-stars"
+                                  style={{ margin: "6px 0" }}
+                                >
+                                  {[1, 2, 3, 4, 5].map((n) => (
+                                    <span
+                                      key={n}
+                                      style={{
+                                        color: (
+                                          reviewRatingMap[booking._id]
+                                            ? n <= reviewRatingMap[booking._id]
+                                            : false
+                                        )
+                                          ? "#ffc107"
+                                          : "rgb(255, 193, 7)",
+                                        marginRight: "4px",
+                                      }}
+                                    >
+                                      ★
+                                    </span>
                                   ))}
                                 </div>
-                                <p className="review-card__text">{new Date(booking.updatedAt || booking.eventDate).toLocaleDateString('en-GB')}.</p>
+                                <p className="review-card__text">
+                                  {new Date(
+                                    booking.updatedAt || booking.eventDate
+                                  ).toLocaleDateString("en-GB")}
+                                  .
+                                </p>
                               </>
                             ) : (
-                              <p className="review-card__text">{getEventTitleGlobal(booking.eventType, booking.otherEventType)} package completed — awaiting your review.</p>
+                              <p className="review-card__text">
+                                {getEventTitleGlobal(
+                                  booking.eventType,
+                                  booking.otherEventType
+                                )}{" "}
+                                package completed — awaiting your review.
+                              </p>
                             )}
 
                             {booking.rated ? (
@@ -2327,28 +3054,62 @@ useEffect(() => {
 
                   {reviewModalOpen && (
                     <div className="modal-overlay" onClick={closeReviewModal}>
-                      <div className="modal" onClick={(e) => e.stopPropagation()}>
+                      <div
+                        className="modal"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <div className="modal-header">
                           <h3 className="modal-title">Write a Review</h3>
-                          <button className="modal-close" onClick={closeReviewModal}>×</button>
+                          <button
+                            className="modal-close"
+                            onClick={closeReviewModal}
+                          >
+                            ×
+                          </button>
                         </div>
                         <div className="modal-body">
                           <div className="form-group">
                             <label>Rating</label>
                             <div className="review-rating">
-                              {[1, 2, 3, 4, 5].map(n => (
-                                <span key={n} className={`star ${n <= reviewRating ? 'filled' : ''}`} onClick={() => setReviewRating(n)}>⭐</span>
+                              {[1, 2, 3, 4, 5].map((n) => (
+                                <span
+                                  key={n}
+                                  className={`star ${
+                                    n <= reviewRating ? "filled" : ""
+                                  }`}
+                                  onClick={() => setReviewRating(n)}
+                                >
+                                  ⭐
+                                </span>
                               ))}
                             </div>
                           </div>
                           <div className="form-group">
                             <label>Comment</label>
-                            <textarea rows="4" value={reviewComment} onChange={(e) => setReviewComment(e.target.value)} />
+                            <textarea
+                              rows="4"
+                              value={reviewComment}
+                              onChange={(e) => setReviewComment(e.target.value)}
+                            />
                           </div>
                         </div>
                         <div className="modal-footer">
-                          <button className="btn-secondary" onClick={closeReviewModal}>Cancel</button>
-                          <button className="btn-primary" onClick={submitReview} disabled={reviewRating < 1 || reviewComment.trim().length === 0}>Submit Review</button>
+                          <button
+                            className="btn-secondary"
+                            onClick={closeReviewModal}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            className="btn-primary"
+                            onClick={submitReview}
+                            disabled={
+                              reviewRating < 1 ||
+                              reviewComment.trim().length === 0
+                            }
+                          >
+                            Submit Review
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -2356,82 +3117,136 @@ useEffect(() => {
 
                   {/* View Review Details Modal */}
                   {viewReviewModal && viewReviewData && (
-                    <div className="modal-overlay" onClick={() => setViewReviewModal(false)} style={{
-                      position: 'fixed',
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      zIndex: 1000
-                    }}>
-                      <div onClick={(e) => e.stopPropagation()} style={{
-                        backgroundColor: '#F8F5ED',
-                        borderRadius: '16px',
-                        padding: '32px',
-                        width: '90%',
-                        maxWidth: '600px',
-                        boxShadow: '0 8px 32px rgba(0,0,0,0.2)'
-                      }}>
-                        <h3 style={{
-                          fontSize: '24px',
-                          fontWeight: '700',
-                          color: '#4A2C1D',
-                          margin: '0 0 20px 0'
-                        }}>
-                          Henna by {viewReviewData.booking?.assignedArtist ? `${viewReviewData.booking.assignedArtist[0].firstName || ''} ${viewReviewData.booking.assignedArtist[0].lastName || ''}` : 'Artist'}
+                    <div
+                      className="modal-overlay"
+                      onClick={() => setViewReviewModal(false)}
+                      style={{
+                        position: "fixed",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: "rgba(0, 0, 0, 0.5)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 1000,
+                      }}
+                    >
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                          backgroundColor: "#F8F5ED",
+                          borderRadius: "16px",
+                          padding: "32px",
+                          width: "90%",
+                          maxWidth: "600px",
+                          boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+                        }}
+                      >
+                        <h3
+                          style={{
+                            fontSize: "24px",
+                            fontWeight: "700",
+                            color: "#4A2C1D",
+                            margin: "0 0 20px 0",
+                          }}
+                        >
+                          Henna by{" "}
+                          {viewReviewData.booking?.assignedArtist
+                            ? `${
+                                viewReviewData.booking.assignedArtist[0]
+                                  .firstName || ""
+                              } ${
+                                viewReviewData.booking.assignedArtist[0]
+                                  .lastName || ""
+                              }`
+                            : "Artist"}
                         </h3>
 
                         {/* Rating */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                          <div style={{ display: 'flex', gap: '4px' }}>
-                            {[1, 2, 3, 4, 5].map(n => (
-                              <span key={n} style={{ fontSize: '28px', color: n <= viewReviewData.rating ? '#FFC107' : '#ddd' }}>★</span>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "12px",
+                            marginBottom: "16px",
+                          }}
+                        >
+                          <div style={{ display: "flex", gap: "4px" }}>
+                            {[1, 2, 3, 4, 5].map((n) => (
+                              <span
+                                key={n}
+                                style={{
+                                  fontSize: "28px",
+                                  color:
+                                    n <= viewReviewData.rating
+                                      ? "#FFC107"
+                                      : "#ddd",
+                                }}
+                              >
+                                ★
+                              </span>
                             ))}
                           </div>
-                          <span style={{ fontSize: '16px', color: '#888' }}>{viewReviewData.rating.toFixed(1)}</span>
+                          <span style={{ fontSize: "16px", color: "#888" }}>
+                            {viewReviewData.rating.toFixed(1)}
+                          </span>
                         </div>
 
                         {/* Review Comment */}
-                        <p style={{
-                          fontSize: '15px',
-                          color: '#4A2C1D',
-                          lineHeight: '1.6',
-                          margin: '0 0 20px 0'
-                        }}>
+                        <p
+                          style={{
+                            fontSize: "15px",
+                            color: "#4A2C1D",
+                            lineHeight: "1.6",
+                            margin: "0 0 20px 0",
+                          }}
+                        >
                           {viewReviewData.comment}
                         </p>
 
                         {/* Booking Details */}
-                        <div style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          marginTop: '24px',
-                          paddingTop: '20px',
-                          borderTop: '1px solid #e0e0e0'
-                        }}>
-                          <p style={{
-                            fontSize: '13px',
-                            color: '#888',
-                            margin: 0
-                          }}>
-                            Booking type: {getEventTitleGlobal(viewReviewData.booking?.eventType, viewReviewData.booking?.otherEventType)} • Reviewed on {viewReviewData.createdAt ? new Date(viewReviewData.createdAt).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB')}
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            marginTop: "24px",
+                            paddingTop: "20px",
+                            borderTop: "1px solid #e0e0e0",
+                          }}
+                        >
+                          <p
+                            style={{
+                              fontSize: "13px",
+                              color: "#888",
+                              margin: 0,
+                            }}
+                          >
+                            Booking type:{" "}
+                            {getEventTitleGlobal(
+                              viewReviewData.booking?.eventType,
+                              viewReviewData.booking?.otherEventType
+                            )}{" "}
+                            • Reviewed on{" "}
+                            {viewReviewData.createdAt
+                              ? new Date(
+                                  viewReviewData.createdAt
+                                ).toLocaleDateString("en-GB")
+                              : new Date().toLocaleDateString("en-GB")}
                           </p>
                           <button
                             onClick={() => setViewReviewModal(false)}
                             style={{
-                              backgroundColor: '#4A2C1D',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '8px',
-                              padding: '10px 20px',
-                              fontSize: '14px',
-                              fontWeight: '600',
-                              cursor: 'pointer'
+                              backgroundColor: "#4A2C1D",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "8px",
+                              padding: "10px 20px",
+                              fontSize: "14px",
+                              fontWeight: "600",
+                              cursor: "pointer",
                             }}
                           >
                             Close
@@ -2444,7 +3259,7 @@ useEffect(() => {
               )}
 
               {/* CLient Messages View */}
-              {activeTab === 'messages' && (
+              {activeTab === "messages" && (
                 <div className="messages-section">
                   <div className="messages-container">
                     {/* Conversations List */}
@@ -2452,35 +3267,76 @@ useEffect(() => {
                       <div className="conversations-header">
                         <h3 className="conversations-title">Messages</h3>
                         <div className="conversations-count">
-                          {conversations.reduce((total, conv) => total + conv.unreadCount, 0)} unread
+                          {conversations.reduce(
+                            (total, conv) => total + conv.unreadCount,
+                            0
+                          )}{" "}
+                          unread
                         </div>
                       </div>
 
                       <div className="conversations-list">
-                        {conversations.map(conversation => (
+                        {conversations.map((conversation) => (
                           <div
                             key={conversation._id || conversation.id}
-                            className={`conversation-item ${((selectedConversation?._id || selectedConversation?.id) === (conversation._id || conversation.id)) ? 'active' : ''}`}
-                            onClick={() => handleSelectConversation(conversation)}
+                            className={`conversation-item ${
+                              (selectedConversation?._id ||
+                                selectedConversation?.id) ===
+                              (conversation._id || conversation.id)
+                                ? "active"
+                                : ""
+                            }`}
+                            onClick={() =>
+                              handleSelectConversation(conversation)
+                            }
                           >
                             <div className="conversation-avatar">
-                              <img src={(conversation.artist?.userProfileImage) || conversation.artistImage || DEFAULT_AVATAR} alt={conversation.artistName || 'User'} />
+                              <img
+                                src={
+                                  conversation.artist?.userProfileImage ||
+                                  conversation.artistImage ||
+                                  DEFAULT_AVATAR
+                                }
+                                alt={conversation.artistName || "User"}
+                              />
                               {(() => {
-                                const otherId = conversation.artist?._id || conversation.artistId || conversation.id;
-                                const online = otherId ? onlineUserIds.has(String(otherId)) : false;
-                                return <div className={`status-indicator ${online ? 'online' : 'offline'}`}></div>;
+                                const otherId =
+                                  conversation.artist?._id ||
+                                  conversation.artistId ||
+                                  conversation.id;
+                                const online = otherId
+                                  ? onlineUserIds.has(String(otherId))
+                                  : false;
+                                return (
+                                  <div
+                                    className={`status-indicator ${
+                                      online ? "online" : "offline"
+                                    }`}
+                                  ></div>
+                                );
                               })()}
                             </div>
 
                             <div className="conversation-info">
                               <div className="conversation-header">
-                                <h4 className="artist-name">{conversation.artistName || (conversation.artist ? `${conversation.artist.firstName} ${conversation.artist.lastName}` : 'User')}</h4>
-                                <span className="message-time">{conversation.lastMessageTime}</span>
+                                <h4 className="artist-name">
+                                  {conversation.artistName ||
+                                    (conversation.artist
+                                      ? `${conversation.artist.firstName} ${conversation.artist.lastName}`
+                                      : "User")}
+                                </h4>
+                                <span className="message-time">
+                                  {conversation.lastMessageTime}
+                                </span>
                               </div>
                               <div className="conversation-preview">
-                                <p className="last-message">{conversation.lastMessage}</p>
+                                <p className="last-message">
+                                  {conversation.lastMessage}
+                                </p>
                                 {conversation.unreadCount > 0 && (
-                                  <span className="unread-badge">{conversation.unreadCount}</span>
+                                  <span className="unread-badge">
+                                    {conversation.unreadCount}
+                                  </span>
                                 )}
                               </div>
                             </div>
@@ -2496,162 +3352,473 @@ useEffect(() => {
                           {/* Chat Header */}
                           <div className="chat-header">
                             <div className="chat-artist-info">
-                              <img src={(selectedConversation.artist?.userProfileImage) || selectedConversation.artistImage || DEFAULT_AVATAR} alt={selectedConversation.artistName || (selectedConversation.artist ? `${selectedConversation.artist.firstName} ${selectedConversation.artist.lastName}` : 'User')} />
+                              <img
+                                src={
+                                  selectedConversation.artist
+                                    ?.userProfileImage ||
+                                  selectedConversation.artistImage ||
+                                  DEFAULT_AVATAR
+                                }
+                                alt={
+                                  selectedConversation.artistName ||
+                                  (selectedConversation.artist
+                                    ? `${selectedConversation.artist.firstName} ${selectedConversation.artist.lastName}`
+                                    : "User")
+                                }
+                              />
                               <div>
-                                <h3>{selectedConversation.artistName || (selectedConversation.artist ? `${selectedConversation.artist.firstName} ${selectedConversation.artist.lastName}` : 'User')}</h3>
+                                <h3>
+                                  {selectedConversation.artistName ||
+                                    (selectedConversation.artist
+                                      ? `${selectedConversation.artist.firstName} ${selectedConversation.artist.lastName}`
+                                      : "User")}
+                                </h3>
                                 {(() => {
-                                  const otherId = selectedConversation.artist?._id || selectedConversation.artistId || selectedConversation.id;
-                                  const online = otherId ? onlineUserIds.has(String(otherId)) : false;
-                                  return <span className={`status-text ${online ? 'online' : 'offline'}`}>{online ? 'Online' : 'Offline'}</span>;
+                                  const otherId =
+                                    selectedConversation.artist?._id ||
+                                    selectedConversation.artistId ||
+                                    selectedConversation.id;
+                                  const online = otherId
+                                    ? onlineUserIds.has(String(otherId))
+                                    : false;
+                                  return (
+                                    <span
+                                      className={`status-text ${
+                                        online ? "online" : "offline"
+                                      }`}
+                                    >
+                                      {online ? "Online" : "Offline"}
+                                    </span>
+                                  );
                                 })()}
                               </div>
                             </div>
-
-
                           </div>
 
                           {/* Messages List */}
                           {/* Request Summary Banner (collapsible) */}
                           {headerBooking && (
-                            <div style={{ background: '#FFF7E6', border: '1px solid #f5e0b8', borderRadius: 12, padding: 12, margin: '10px 12px 0 12px' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div
+                              style={{
+                                background: "#FFF7E6",
+                                border: "1px solid #f5e0b8",
+                                borderRadius: 12,
+                                padding: 12,
+                                margin: "10px 12px 0 12px",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                  gap: 10,
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 10,
+                                  }}
+                                >
                                   {(() => {
-                                    const label = (Array.isArray(headerBooking.eventType) ? headerBooking.eventType[0] : headerBooking.eventType) || 'M';
-                                    const initial = String(label || 'M').trim().charAt(0).toUpperCase();
+                                    const label =
+                                      (Array.isArray(headerBooking.eventType)
+                                        ? headerBooking.eventType[0]
+                                        : headerBooking.eventType) || "M";
+                                    const initial = String(label || "M")
+                                      .trim()
+                                      .charAt(0)
+                                      .toUpperCase();
                                     return (
-                                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#F5D9A6', color: '#8B5E34', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>{initial}</div>
+                                      <div
+                                        style={{
+                                          width: 28,
+                                          height: 28,
+                                          borderRadius: "50%",
+                                          background: "#F5D9A6",
+                                          color: "#8B5E34",
+                                          display: "flex",
+                                          alignItems: "center",
+                                          justifyContent: "center",
+                                          fontWeight: 700,
+                                        }}
+                                      >
+                                        {initial}
+                                      </div>
                                     );
                                   })()}
                                   <div>
-                                    <div style={{ fontWeight: 700, color: '#1f2937' }}>{(Array.isArray(headerBooking.eventType) ? headerBooking.eventType[0] : headerBooking.eventType) || 'Mehndi'}</div>
-                                    <div style={{ fontSize: 12, color: '#6b7280' }}>
-                                      {headerBooking.eventDate ? new Date(headerBooking.eventDate).toLocaleString('en-GB', { day: '2-digit', month: 'short' }) : 'TBD'} · {headerBooking.preferredTimeSlot || '-'} · {(headerBooking.city || headerBooking.location) || '-'}
+                                    <div
+                                      style={{
+                                        fontWeight: 700,
+                                        color: "#1f2937",
+                                      }}
+                                    >
+                                      {(Array.isArray(headerBooking.eventType)
+                                        ? headerBooking.eventType[0]
+                                        : headerBooking.eventType) || "Mehndi"}
+                                    </div>
+                                    <div
+                                      style={{ fontSize: 12, color: "#6b7280" }}
+                                    >
+                                      {headerBooking.eventDate
+                                        ? new Date(
+                                            headerBooking.eventDate
+                                          ).toLocaleString("en-GB", {
+                                            day: "2-digit",
+                                            month: "short",
+                                          })
+                                        : "TBD"}{" "}
+                                      · {headerBooking.preferredTimeSlot || "-"}{" "}
+                                      ·{" "}
+                                      {headerBooking.city ||
+                                        headerBooking.location ||
+                                        "-"}
                                     </div>
                                   </div>
                                 </div>
                                 <div>
-                                  <button onClick={() => setHeaderExpanded(v => !v)} style={{ border: 'none', background: 'transparent', color: '#b45309', cursor: 'pointer', fontWeight: 700 }}>{headerExpanded ? 'Hide' : 'View'}</button>
+                                  <button
+                                    onClick={() => setHeaderExpanded((v) => !v)}
+                                    style={{
+                                      border: "none",
+                                      background: "transparent",
+                                      color: "#b45309",
+                                      cursor: "pointer",
+                                      fontWeight: 700,
+                                    }}
+                                  >
+                                    {headerExpanded ? "Hide" : "View"}
+                                  </button>
                                 </div>
                               </div>
                               {headerExpanded ? (
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 10, color: '#4A2C1D' }}>
-                                  <div><strong>Event:</strong> {(Array.isArray(headerBooking.eventType) ? headerBooking.eventType[0] : headerBooking.eventType) || 'Mehndi'}{(headerBooking.city || headerBooking.location) ? ` at ${headerBooking.city || headerBooking.location}` : ''}</div>
-                                  <div><strong>Date:</strong> {headerBooking.eventDate ? new Date(headerBooking.eventDate).toLocaleString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'TBD'}</div>
-                                  <div><strong>Location:</strong> {headerBooking.location || headerBooking.city || '-'}</div>
-                                  <div><strong>Group Size:</strong> {headerBooking.numberOfPeople ?? '-'}</div>
-                                  <div><strong>Budget:</strong> £{headerBooking.minimumBudget ?? '-'}–£{headerBooking.maximumBudget ?? '-'}</div>
+                                <div
+                                  style={{
+                                    display: "grid",
+                                    gridTemplateColumns: "1fr 1fr",
+                                    gap: 6,
+                                    marginTop: 10,
+                                    color: "#4A2C1D",
+                                  }}
+                                >
+                                  <div>
+                                    <strong>Event:</strong>{" "}
+                                    {(Array.isArray(headerBooking.eventType)
+                                      ? headerBooking.eventType[0]
+                                      : headerBooking.eventType) || "Mehndi"}
+                                    {headerBooking.city ||
+                                    headerBooking.location
+                                      ? ` at ${
+                                          headerBooking.city ||
+                                          headerBooking.location
+                                        }`
+                                      : ""}
+                                  </div>
+                                  <div>
+                                    <strong>Date:</strong>{" "}
+                                    {headerBooking.eventDate
+                                      ? new Date(
+                                          headerBooking.eventDate
+                                        ).toLocaleString("en-GB", {
+                                          day: "numeric",
+                                          month: "long",
+                                          year: "numeric",
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        })
+                                      : "TBD"}
+                                  </div>
+                                  <div>
+                                    <strong>Location:</strong>{" "}
+                                    {headerBooking.location ||
+                                      headerBooking.city ||
+                                      "-"}
+                                  </div>
+                                  <div>
+                                    <strong>Group Size:</strong>{" "}
+                                    {headerBooking.numberOfPeople ?? "-"}
+                                  </div>
+                                  <div>
+                                    <strong>Budget:</strong> £
+                                    {headerBooking.minimumBudget ?? "-"}–£
+                                    {headerBooking.maximumBudget ?? "-"}
+                                  </div>
                                 </div>
                               ) : null}
                               {headerExpanded && (
-                                <div style={{ textAlign: 'right', marginTop: 10 }}>
-                                  <button onClick={() => setViewHeaderOpen(true)} style={{ background: '#5C3D2E', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 10, fontWeight: 700, cursor: 'pointer' }}>View Request Details</button>
+                                <div
+                                  style={{ textAlign: "right", marginTop: 10 }}
+                                >
+                                  <button
+                                    onClick={() => setViewHeaderOpen(true)}
+                                    style={{
+                                      background: "#5C3D2E",
+                                      color: "#fff",
+                                      border: "none",
+                                      padding: "8px 12px",
+                                      borderRadius: 10,
+                                      fontWeight: 700,
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    View Request Details
+                                  </button>
                                 </div>
                               )}
                             </div>
                           )}
 
                           <div className="messages-list">
-                            {chatMessages.filter(message => !(
-                              (!message.text || !String(message.text).trim()) &&
-                              Array.isArray(message.attachments) &&
-                              message.attachments.length === 1 &&
-                              message.attachments[0]?.type === 'booking'
-                            )).map((message, idx) => (
-                              <div
-                                key={message.id || idx}
-                                className={`message ${String(message.sender) === String(user?._id) || message.senderId === 'user' ? 'sent' : 'received'}`}
-                              >
-                                <div className="message-content">
-                                  {message.text && <p>{message.text}</p>}
-                                  {message.attachments && message.attachments.length > 0 && (
-                                    <div className="message-attachments">
-                                      {console.log('DEBUG: All attachments:', message.attachments)}
-                                      {/* Images */}
-                                      {message.attachments.filter(att => att.type === 'image').map((attachment, attIdx) => {
-                                        console.log('DEBUG: Image attachment:', attachment);
-                                        return (
-                                        <div key={`img-${attIdx}`} className="attachment-display image-attachment">
-                                          <img 
-                                            src={attachment.url} 
-                                            alt={attachment.filename}
-                                            className="attachment-image"
-                                            onClick={() => window.open(attachment.url, '_blank')}
-                                          />
-                                          <button 
-                                            className="download-btn"
-                                            onClick={() => downloadFile(attachment.url, attachment.filename)}
-                                            title="Download image"
-                                          >
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" strokeWidth="2" fill="none"/>
-                                              <polyline points="7,10 12,15 17,10" stroke="currentColor" strokeWidth="2" fill="none"/>
-                                              <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" strokeWidth="2"/>
-                                            </svg>
-                                          </button>
+                            {chatMessages
+                              .filter(
+                                (message) =>
+                                  !(
+                                    (!message.text ||
+                                      !String(message.text).trim()) &&
+                                    Array.isArray(message.attachments) &&
+                                    message.attachments.length === 1 &&
+                                    message.attachments[0]?.type === "booking"
+                                  )
+                              )
+                              .map((message, idx) => (
+                                <div
+                                  key={message.id || idx}
+                                  className={`message ${
+                                    String(message.sender) ===
+                                      String(user?._id) ||
+                                    message.senderId === "user"
+                                      ? "sent"
+                                      : "received"
+                                  }`}
+                                >
+                                  <div className="message-content">
+                                    {message.text && <p>{message.text}</p>}
+                                    {message.attachments &&
+                                      message.attachments.length > 0 && (
+                                        <div className="message-attachments">
+                                          {console.log(
+                                            "DEBUG: All attachments:",
+                                            message.attachments
+                                          )}
+                                          {/* Images */}
+                                          {message.attachments
+                                            .filter(
+                                              (att) => att.type === "image"
+                                            )
+                                            .map((attachment, attIdx) => {
+                                              console.log(
+                                                "DEBUG: Image attachment:",
+                                                attachment
+                                              );
+                                              return (
+                                                <div
+                                                  key={`img-${attIdx}`}
+                                                  className="attachment-display image-attachment"
+                                                >
+                                                  <img
+                                                    src={attachment.url}
+                                                    alt={attachment.filename}
+                                                    className="attachment-image"
+                                                    onClick={() =>
+                                                      window.open(
+                                                        attachment.url,
+                                                        "_blank"
+                                                      )
+                                                    }
+                                                  />
+                                                  <button
+                                                    className="download-btn"
+                                                    onClick={() =>
+                                                      downloadFile(
+                                                        attachment.url,
+                                                        attachment.filename
+                                                      )
+                                                    }
+                                                    title="Download image"
+                                                  >
+                                                    <svg
+                                                      width="16"
+                                                      height="16"
+                                                      viewBox="0 0 24 24"
+                                                      fill="none"
+                                                      xmlns="http://www.w3.org/2000/svg"
+                                                    >
+                                                      <path
+                                                        d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+                                                        stroke="currentColor"
+                                                        strokeWidth="2"
+                                                        fill="none"
+                                                      />
+                                                      <polyline
+                                                        points="7,10 12,15 17,10"
+                                                        stroke="currentColor"
+                                                        strokeWidth="2"
+                                                        fill="none"
+                                                      />
+                                                      <line
+                                                        x1="12"
+                                                        y1="15"
+                                                        x2="12"
+                                                        y2="3"
+                                                        stroke="currentColor"
+                                                        strokeWidth="2"
+                                                      />
+                                                    </svg>
+                                                  </button>
+                                                </div>
+                                              );
+                                            })}
+
+                                          {/* Videos */}
+                                          {message.attachments
+                                            .filter(
+                                              (att) => att.type === "video"
+                                            )
+                                            .map((attachment, attIdx) => (
+                                              <div
+                                                key={`vid-${attIdx}`}
+                                                className="attachment-display video-attachment"
+                                              >
+                                                <a
+                                                  href={attachment.url}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  className="attachment-link"
+                                                >
+                                                  <video
+                                                    src={attachment.url}
+                                                    controls
+                                                    className="attachment-video"
+                                                  />
+                                                </a>
+                                              </div>
+                                            ))}
+
+                                          {/* Documents */}
+                                          {message.attachments
+                                            .filter(
+                                              (att) => att.type === "document"
+                                            )
+                                            .map((attachment, attIdx) => {
+                                              console.log(
+                                                "DEBUG: Document attachment:",
+                                                attachment
+                                              );
+                                              return (
+                                                <div
+                                                  key={`doc-${attIdx}`}
+                                                  className="attachment-display document-attachment"
+                                                >
+                                                  <div className="document-content">
+                                                    <div className="document-icon">
+                                                      <svg
+                                                        width="24"
+                                                        height="24"
+                                                        viewBox="0 0 24 24"
+                                                        fill="none"
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                      >
+                                                        <path
+                                                          d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                                                          stroke="currentColor"
+                                                          strokeWidth="2"
+                                                          fill="none"
+                                                        />
+                                                        <polyline
+                                                          points="14,2 14,8 20,8"
+                                                          stroke="currentColor"
+                                                          strokeWidth="2"
+                                                          fill="none"
+                                                        />
+                                                        <line
+                                                          x1="16"
+                                                          y1="13"
+                                                          x2="8"
+                                                          y2="13"
+                                                          stroke="currentColor"
+                                                          strokeWidth="2"
+                                                        />
+                                                        <line
+                                                          x1="16"
+                                                          y1="17"
+                                                          x2="8"
+                                                          y2="17"
+                                                          stroke="currentColor"
+                                                          strokeWidth="2"
+                                                        />
+                                                        <polyline
+                                                          points="10,9 9,9 8,9"
+                                                          stroke="currentColor"
+                                                          strokeWidth="2"
+                                                        />
+                                                      </svg>
+                                                    </div>
+                                                    <div className="document-details">
+                                                      <span className="document-name">
+                                                        {attachment.filename}
+                                                      </span>
+                                                      <span className="document-type">
+                                                        PDF Document
+                                                      </span>
+                                                    </div>
+                                                  </div>
+                                                  <button
+                                                    className="download-btn"
+                                                    onClick={() =>
+                                                      downloadFile(
+                                                        attachment.url,
+                                                        attachment.filename
+                                                      )
+                                                    }
+                                                    title="Download document"
+                                                  >
+                                                    <svg
+                                                      width="16"
+                                                      height="16"
+                                                      viewBox="0 0 24 24"
+                                                      fill="none"
+                                                      xmlns="http://www.w3.org/2000/svg"
+                                                    >
+                                                      <path
+                                                        d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+                                                        stroke="currentColor"
+                                                        strokeWidth="2"
+                                                        fill="none"
+                                                      />
+                                                      <polyline
+                                                        points="7,10 12,15 17,10"
+                                                        stroke="currentColor"
+                                                        strokeWidth="2"
+                                                        fill="none"
+                                                      />
+                                                      <line
+                                                        x1="12"
+                                                        y1="15"
+                                                        x2="12"
+                                                        y2="3"
+                                                        stroke="currentColor"
+                                                        strokeWidth="2"
+                                                      />
+                                                    </svg>
+                                                  </button>
+                                                </div>
+                                              );
+                                            })}
                                         </div>
-                                        );
-                                      })}
-                                      
-                                      {/* Videos */}
-                                      {message.attachments.filter(att => att.type === 'video').map((attachment, attIdx) => (
-                                        <div key={`vid-${attIdx}`} className="attachment-display video-attachment">
-                                          <a 
-                                            href={attachment.url} 
-                                            target="_blank" 
-                                            rel="noopener noreferrer"
-                                            className="attachment-link"
-                                          >
-                                            <video 
-                                              src={attachment.url} 
-                                              controls
-                                              className="attachment-video"
-                                            />
-                                          </a>
-                                        </div>
-                                      ))}
-                                      
-                                      {/* Documents */}
-                                      {message.attachments.filter(att => att.type === 'document').map((attachment, attIdx) => {
-                                        console.log('DEBUG: Document attachment:', attachment);
-                                        return (
-                                        <div key={`doc-${attIdx}`} className="attachment-display document-attachment">
-                                          <div className="document-content">
-                                            <div className="document-icon">
-                                              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="2" fill="none"/>
-                                                <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2" fill="none"/>
-                                                <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" strokeWidth="2"/>
-                                                <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" strokeWidth="2"/>
-                                                <polyline points="10,9 9,9 8,9" stroke="currentColor" strokeWidth="2"/>
-                                              </svg>
-                                            </div>
-                                            <div className="document-details">
-                                              <span className="document-name">{attachment.filename}</span>
-                                              <span className="document-type">PDF Document</span>
-                                            </div>
-                                          </div>
-                                          <button 
-                                            className="download-btn"
-                                            onClick={() => downloadFile(attachment.url, attachment.filename)}
-                                            title="Download document"
-                                          >
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" strokeWidth="2" fill="none"/>
-                                              <polyline points="7,10 12,15 17,10" stroke="currentColor" strokeWidth="2" fill="none"/>
-                                              <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" strokeWidth="2"/>
-                                            </svg>
-                                          </button>
-                                        </div>);
-                                      })}
-                                    </div>
-                                  )}
+                                      )}
+                                  </div>
+                                  <div className="message-meta">
+                                    <span className="message-time">
+                                      {new Date(
+                                        message.createdAt || Date.now()
+                                      ).toLocaleString()}
+                                    </span>
+                                  </div>
                                 </div>
-                                <div className="message-meta">
-                                  <span className="message-time">{new Date(message.createdAt || Date.now()).toLocaleString()}</span>
-                                </div>
-                              </div>
-                            ))}
+                              ))}
                             <div ref={messagesEndRef} />
                           </div>
 
@@ -2663,10 +3830,14 @@ useEffect(() => {
                                 {attachments.map((file, index) => (
                                   <div key={index} className="attachment-item">
                                     <div className="attachment-info">
-                                      <span className="attachment-name">{file.name}</span>
-                                      <span className="attachment-size">{(file.size / 1024 / 1024).toFixed(1)}MB</span>
+                                      <span className="attachment-name">
+                                        {file.name}
+                                      </span>
+                                      <span className="attachment-size">
+                                        {(file.size / 1024 / 1024).toFixed(1)}MB
+                                      </span>
                                     </div>
-                                    <button 
+                                    <button
                                       className="remove-attachment"
                                       onClick={() => removeAttachment(index)}
                                     >
@@ -2676,7 +3847,7 @@ useEffect(() => {
                                 ))}
                               </div>
                             )}
-                            
+
                             <div className="message-input-container">
                               <input
                                 type="file"
@@ -2684,11 +3855,25 @@ useEffect(() => {
                                 multiple
                                 accept="image/*,video/*,.pdf,.doc,.docx,.txt,.zip,.rar"
                                 onChange={handleFileSelect}
-                                style={{ display: 'none' }}
+                                style={{ display: "none" }}
                               />
-                              <label htmlFor="file-input-client" className="attachment-btn">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M21.44 11.05L12.25 20.24a6 6 0 1 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.42 17.41a2 2 0 1 1-2.83-2.83l8.49-8.49" stroke="currentColor" strokeWidth="2" fill="none" />
+                              <label
+                                htmlFor="file-input-client"
+                                className="attachment-btn"
+                              >
+                                <svg
+                                  width="20"
+                                  height="20"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                >
+                                  <path
+                                    d="M21.44 11.05L12.25 20.24a6 6 0 1 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.42 17.41a2 2 0 1 1-2.83-2.83l8.49-8.49"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    fill="none"
+                                  />
                                 </svg>
                               </label>
 
@@ -2704,14 +3889,36 @@ useEffect(() => {
                               <button
                                 className="send-btn"
                                 onClick={handleSendMessage}
-                                disabled={(!newMessage.trim() && attachments.length === 0) || isUploading}
+                                disabled={
+                                  (!newMessage.trim() &&
+                                    attachments.length === 0) ||
+                                  isUploading
+                                }
                               >
                                 {isUploading ? (
                                   <div className="loading-spinner"></div>
                                 ) : (
-                                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <line x1="22" y1="2" x2="11" y2="13" stroke="currentColor" strokeWidth="2" />
-                                    <polygon points="22,2 15,22 11,13 2,9 22,2" stroke="currentColor" strokeWidth="2" fill="currentColor" />
+                                  <svg
+                                    width="20"
+                                    height="20"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                  >
+                                    <line
+                                      x1="22"
+                                      y1="2"
+                                      x2="11"
+                                      y2="13"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                    />
+                                    <polygon
+                                      points="22,2 15,22 11,13 2,9 22,2"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      fill="currentColor"
+                                    />
                                   </svg>
                                 )}
                               </button>
@@ -2721,12 +3928,26 @@ useEffect(() => {
                       ) : (
                         <div className="no-conversation-selected">
                           <div className="no-chat-icon">
-                            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="2" fill="none" />
+                            <svg
+                              width="80"
+                              height="80"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                fill="none"
+                              />
                             </svg>
                           </div>
                           <h3>Select a conversation</h3>
-                          <p>Choose a conversation from the sidebar to start messaging with artists.</p>
+                          <p>
+                            Choose a conversation from the sidebar to start
+                            messaging with artists.
+                          </p>
                         </div>
                       )}
                     </div>
@@ -2737,44 +3958,89 @@ useEffect(() => {
               {/* Modal to show full request details (client) */}
               <BrowseViewBookingModal
                 open={viewHeaderOpen}
-                viewForm={headerBooking ? {
-                  firstName: '',
-                  lastName: '',
-                  email: headerBooking.email || '',
-                  eventType: Array.isArray(headerBooking.eventType) ? headerBooking.eventType[0] : headerBooking.eventType || '',
-                  otherEventType: headerBooking.otherEventType || '',
-                  eventDate: headerBooking.eventDate ? new Date(headerBooking.eventDate).toISOString().substring(0, 10) : '',
-                  preferredTimeSlot: Array.isArray(headerBooking.preferredTimeSlot) ? headerBooking.preferredTimeSlot[0] : headerBooking.preferredTimeSlot || '',
-                  location: headerBooking.location || '',
-                  artistTravelsToClient: (headerBooking.artistTravelsToClient === 'both' || headerBooking.artistTravelsToClient === 'Both') ? 'both' : (headerBooking.artistTravelsToClient === true || headerBooking.artistTravelsToClient === 'yes') ? 'yes' : 'no',
-                  venueName: headerBooking.venueName || '',
-                  minimumBudget: headerBooking.minimumBudget ?? '',
-                  maximumBudget: headerBooking.maximumBudget ?? '',
-                  duration: headerBooking.duration ?? 3,
-                  numberOfPeople: headerBooking.numberOfPeople ?? '',
-                  designInspiration: Array.isArray(headerBooking.designInspiration) ? headerBooking.designInspiration : (headerBooking.designInspiration ? [headerBooking.designInspiration] : []),
-                  coveragePreference: headerBooking.coveragePreference || '',
-                  additionalRequests: headerBooking.additionalRequests || ''
-                } : null}
+                viewForm={
+                  headerBooking
+                    ? {
+                        firstName: "",
+                        lastName: "",
+                        email: headerBooking.email || "",
+                        eventType: Array.isArray(headerBooking.eventType)
+                          ? headerBooking.eventType[0]
+                          : headerBooking.eventType || "",
+                        otherEventType: headerBooking.otherEventType || "",
+                        eventDate: headerBooking.eventDate
+                          ? new Date(headerBooking.eventDate)
+                              .toISOString()
+                              .substring(0, 10)
+                          : "",
+                        preferredTimeSlot: Array.isArray(
+                          headerBooking.preferredTimeSlot
+                        )
+                          ? headerBooking.preferredTimeSlot[0]
+                          : headerBooking.preferredTimeSlot || "",
+                        location: headerBooking.location || "",
+                        artistTravelsToClient:
+                          headerBooking.artistTravelsToClient === "both" ||
+                          headerBooking.artistTravelsToClient === "Both"
+                            ? "both"
+                            : headerBooking.artistTravelsToClient === true ||
+                              headerBooking.artistTravelsToClient === "yes"
+                            ? "yes"
+                            : "no",
+                        venueName: headerBooking.venueName || "",
+                        minimumBudget: headerBooking.minimumBudget ?? "",
+                        maximumBudget: headerBooking.maximumBudget ?? "",
+                        duration: headerBooking.duration ?? 3,
+                        numberOfPeople: headerBooking.numberOfPeople ?? "",
+                        designInspiration: Array.isArray(
+                          headerBooking.designInspiration
+                        )
+                          ? headerBooking.designInspiration
+                          : headerBooking.designInspiration
+                          ? [headerBooking.designInspiration]
+                          : [],
+                        coveragePreference:
+                          headerBooking.coveragePreference || "",
+                        additionalRequests:
+                          headerBooking.additionalRequests || "",
+                      }
+                    : null
+                }
                 onClose={() => setViewHeaderOpen(false)}
                 showApply={false}
               />
 
-              {activeTab === 'bookings' && (
+              {activeTab === "bookings" && (
                 <div className="bookings-tab-section">
                   <div className="bookings-tab-header">
                     <h2 className="bookings-tab-title">All Bookings</h2>
                     <div className="bookings-summary">
                       <div className="summary-stat">
-                        <span className="stat-number">{allBookings.length}</span>
+                        <span className="stat-number">
+                          {allBookings.length}
+                        </span>
                         <span className="stat-label">Total</span>
                       </div>
                       <div className="summary-stat">
-                        <span className="stat-number">{allBookings.filter(b => b.status === 'confirmed' || b.status === 'pending' || b.status === 'in_progress').length}</span>
+                        <span className="stat-number">
+                          {
+                            allBookings.filter(
+                              (b) =>
+                                b.status === "confirmed" ||
+                                b.status === "pending" ||
+                                b.status === "in_progress"
+                            ).length
+                          }
+                        </span>
                         <span className="stat-label">Upcoming</span>
                       </div>
                       <div className="summary-stat">
-                        <span className="stat-number">{allBookings.filter(b => b.status === 'completed').length}</span>
+                        <span className="stat-number">
+                          {
+                            allBookings.filter((b) => b.status === "completed")
+                              .length
+                          }
+                        </span>
                         <span className="stat-label">Completed</span>
                       </div>
                     </div>
@@ -2783,10 +4049,35 @@ useEffect(() => {
                   {bookingsLoading ? (
                     <div className="loading-state">
                       <div className="loading-spinner">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeDasharray="31.416" strokeDashoffset="31.416">
-                            <animate attributeName="stroke-dasharray" dur="2s" values="0 31.416;15.708 15.708;0 31.416" repeatCount="indefinite" />
-                            <animate attributeName="stroke-dashoffset" dur="2s" values="0;-15.708;-31.416" repeatCount="indefinite" />
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <circle
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeDasharray="31.416"
+                            strokeDashoffset="31.416"
+                          >
+                            <animate
+                              attributeName="stroke-dasharray"
+                              dur="2s"
+                              values="0 31.416;15.708 15.708;0 31.416"
+                              repeatCount="indefinite"
+                            />
+                            <animate
+                              attributeName="stroke-dashoffset"
+                              dur="2s"
+                              values="0;-15.708;-31.416"
+                              repeatCount="indefinite"
+                            />
                           </circle>
                         </svg>
                       </div>
@@ -2796,68 +4087,116 @@ useEffect(() => {
                     <div className="error-state">
                       <div className="error-icon">⚠️</div>
                       <p>{bookingsError}</p>
-                      <button onClick={fetchBookings} className="retry-btn">Try Again</button>
+                      <button onClick={fetchBookings} className="retry-btn">
+                        Try Again
+                      </button>
                     </div>
                   ) : allBookings.length === 0 ? (
                     <div className="empty-state">
                       <div className="empty-icon">📅</div>
                       <h3>No Bookings Yet</h3>
-                      <p>You haven't made any bookings yet. Start by creating your first mehndi appointment!</p>
-                      <Link to="/booking" className="btn-primary">Book Your First Appointment</Link>
+                      <p>
+                        You haven't made any bookings yet. Start by creating
+                        your first mehndi appointment!
+                      </p>
+                      <Link to="/booking" className="btn-primary">
+                        Book Your First Appointment
+                      </Link>
                     </div>
                   ) : (
                     <div className="bookings-list">
-                      {allBookings.map(booking => {
+                      {allBookings.map((booking) => {
                         const getEventTitle = (eventType, otherEventType) => {
                           if (eventType && eventType.length > 0) {
-                            const types = eventType.join(', ');
-                            return otherEventType ? `${types} - ${otherEventType}` : types;
+                            const types = eventType.join(", ");
+                            return otherEventType
+                              ? `${types} - ${otherEventType}`
+                              : types;
                           }
-                          return otherEventType || 'Mehndi Booking';
+                          return otherEventType || "Mehndi Booking";
                         };
 
                         const getArtistName = (assignedArtist) => {
                           if (assignedArtist && assignedArtist.firstName) {
                             return `${assignedArtist.firstName} ${assignedArtist.lastName}`;
                           }
-                          return 'TBD - No artist assigned yet';
+                          return "TBD - No artist assigned yet";
                         };
 
                         const formatDate = (dateString) => {
                           const date = new Date(dateString);
-                          return date.toLocaleDateString('en-GB', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric'
+                          return date.toLocaleDateString("en-GB", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
                           });
                         };
 
                         const getStatusBadge = (status) => {
                           const statusConfig = {
-                            pending: { class: 'pending', text: 'Pending' },
-                            confirmed: { class: 'confirmed', text: 'Confirmed' },
-                            in_progress: { class: 'in-progress', text: 'In Progress' },
-                            completed: { class: 'completed', text: 'Completed' },
-                            cancelled: { class: 'cancelled', text: 'Cancelled' }
+                            pending: { class: "pending", text: "Pending" },
+                            confirmed: {
+                              class: "confirmed",
+                              text: "Confirmed",
+                            },
+                            in_progress: {
+                              class: "in-progress",
+                              text: "In Progress",
+                            },
+                            completed: {
+                              class: "completed",
+                              text: "Completed",
+                            },
+                            cancelled: {
+                              class: "cancelled",
+                              text: "Cancelled",
+                            },
                           };
-                          const config = statusConfig[status] || statusConfig.pending;
-                          return <span className={`status-badge ${config.class}`}>{config.text}</span>;
+                          const config =
+                            statusConfig[status] || statusConfig.pending;
+                          return (
+                            <span className={`status-badge ${config.class}`}>
+                              {config.text}
+                            </span>
+                          );
                         };
 
                         return (
                           <div key={booking._id} className="booking-item">
                             <div className="booking-item-header">
-                              <h4 className="booking-item-title">{getEventTitle(booking.eventType, booking.otherEventType)}</h4>
+                              <h4 className="booking-item-title">
+                                {getEventTitle(
+                                  booking.eventType,
+                                  booking.otherEventType
+                                )}
+                              </h4>
                               {getStatusBadge(booking.status)}
                             </div>
                             <div className="booking-item-details">
-                              <p><strong>Artist:</strong> {getArtistName(booking.assignedArtist)}</p>
-                              <p><strong>Date:</strong> {formatDate(booking.eventDate)}</p>
-                              <p><strong>Location:</strong> {booking.location}</p>
-                              <p><strong>Budget:</strong> £{booking.minimumBudget} - £{booking.maximumBudget}</p>
+                              <p>
+                                <strong>Artist:</strong>{" "}
+                                {getArtistName(booking.assignedArtist)}
+                              </p>
+                              <p>
+                                <strong>Date:</strong>{" "}
+                                {formatDate(booking.eventDate)}
+                              </p>
+                              <p>
+                                <strong>Location:</strong> {booking.location}
+                              </p>
+                              <p>
+                                <strong>Budget:</strong> £
+                                {booking.minimumBudget} - £
+                                {booking.maximumBudget}
+                              </p>
                             </div>
                             <div className="booking-item-actions">
-                              <Link to="/dashboard/bookings" className="view-details-btn">View Details</Link>
+                              <Link
+                                to="/dashboard/bookings"
+                                className="view-details-btn"
+                              >
+                                View Details
+                              </Link>
                             </div>
                           </div>
                         );
@@ -2868,7 +4207,7 @@ useEffect(() => {
               )}
 
               {/* Profile View */}
-              {activeTab === 'profile' && (
+              {activeTab === "profile" && (
                 <div className="profile-tab-section">
                   <ClientProfile />
                 </div>
@@ -2913,10 +4252,16 @@ useEffect(() => {
             {/* Payment Modal */}
             {showPaymentModal && selectedBookingForPayment && (
               <div className="modal-overlay" onClick={handleClosePaymentModal}>
-                <div className="payment-modal" onClick={(e) => e.stopPropagation()}>
+                <div
+                  className="payment-modal"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <div className="modal-header">
                     <h2 className="modal-title">Complete Your Payment</h2>
-                    <button className="modal-close" onClick={handleClosePaymentModal}>
+                    <button
+                      className="modal-close"
+                      onClick={handleClosePaymentModal}
+                    >
                       ×
                     </button>
                   </div>
@@ -2925,19 +4270,30 @@ useEffect(() => {
                     <div className="payment-details">
                       <div className="payment-amount">
                         <span className="amount-label">Amount Dues:</span>
-                        <span className="amount-value">£{selectedBookingForPayment.remainingPayment}</span>
+                        <span className="amount-value">
+                          £{selectedBookingForPayment.remainingPayment}
+                        </span>
                       </div>
 
                       <div className="payment-info">
-                        <p>You will be redirected to Stripe to complete your payment securely.</p>
+                        <p>
+                          You will be redirected to Stripe to complete your
+                          payment securely.
+                        </p>
                       </div>
                     </div>
 
                     <div className="modal-actions">
-                      <button className="cancel-btn" onClick={handleClosePaymentModal}>
+                      <button
+                        className="cancel-btn"
+                        onClick={handleClosePaymentModal}
+                      >
                         Cancel
                       </button>
-                      <button className="confirm-pay-btn" onClick={handleConfirmPayment}>
+                      <button
+                        className="confirm-pay-btn"
+                        onClick={handleConfirmPayment}
+                      >
                         Proceed to Payment
                       </button>
                     </div>
@@ -2952,9 +4308,22 @@ useEffect(() => {
                 <div className="review-modal">
                   <div className="modal-header">
                     <h3 className="modal-title">Write a Review</h3>
-                    <button className="modal-close" onClick={handleCloseReviewModal}>
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" />
+                    <button
+                      className="modal-close"
+                      onClick={handleCloseReviewModal}
+                    >
+                      <svg
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M18 6L6 18M6 6L18 18"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        />
                       </svg>
                     </button>
                   </div>
@@ -2963,7 +4332,11 @@ useEffect(() => {
                     <div className="modal-content">
                       <div className="booking-info">
                         <div className="artist-info">
-                          <img src={selectedBooking.artistImage} alt={selectedBooking.artist} className="artist-photo" />
+                          <img
+                            src={selectedBooking.artistImage}
+                            alt={selectedBooking.artist}
+                            className="artist-photo"
+                          />
                           <div>
                             <h4>{selectedBooking.artist}</h4>
                             <p>{selectedBooking.title}</p>
@@ -2977,11 +4350,13 @@ useEffect(() => {
                         <div className="form-group">
                           <label className="form-label">Overall Rating</label>
                           <div className="rating-stars">
-                            {[1, 2, 3, 4, 5].map(star => (
+                            {[1, 2, 3, 4, 5].map((star) => (
                               <button
                                 key={star}
                                 type="button"
-                                className={`star-btn ${star <= reviewData.rating ? 'active' : ''}`}
+                                className={`star-btn ${
+                                  star <= reviewData.rating ? "active" : ""
+                                }`}
                                 onClick={() => handleRatingChange(star)}
                               >
                                 ⭐
@@ -2998,7 +4373,9 @@ useEffect(() => {
                             className="form-input"
                             placeholder="Summary of your experience"
                             value={reviewData.title}
-                            onChange={(e) => handleInputChange('title', e.target.value)}
+                            onChange={(e) =>
+                              handleInputChange("title", e.target.value)
+                            }
                           />
                         </div>
 
@@ -3010,13 +4387,17 @@ useEffect(() => {
                             placeholder="Tell others about your experience with this artist..."
                             rows="4"
                             value={reviewData.comment}
-                            onChange={(e) => handleInputChange('comment', e.target.value)}
+                            onChange={(e) =>
+                              handleInputChange("comment", e.target.value)
+                            }
                           />
                         </div>
 
                         {/* Image Upload */}
                         <div className="form-group">
-                          <label className="form-label">Add Photos (Optional)</label>
+                          <label className="form-label">
+                            Add Photos (Optional)
+                          </label>
                           <div className="image-upload-section">
                             <div className="image-upload-area">
                               <input
@@ -3027,11 +4408,29 @@ useEffect(() => {
                                 onChange={handleImageUpload}
                                 className="file-input"
                               />
-                              <label htmlFor="image-upload" className="upload-label">
-                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M14.2857 5.71429H9.71429C9.32 5.71429 9 6.03429 9 6.42857V9H15V6.42857C15 6.03429 14.68 5.71429 14.2857 5.71429Z" fill="currentColor" />
-                                  <path d="M18 7.71429V17.1429C18 18.1543 17.1543 19 16.1429 19H7.85714C6.84571 19 6 18.1543 6 17.1429V7.71429H18ZM16.5 9.42857H7.5V17.1429C7.5 17.325 7.675 17.5 7.85714 17.5H16.1429C16.325 17.5 16.5 17.325 16.5 17.1429V9.42857Z" fill="currentColor" />
-                                  <path d="M12 11.5714L8.78571 14.7857H15.2143L12 11.5714Z" fill="currentColor" />
+                              <label
+                                htmlFor="image-upload"
+                                className="upload-label"
+                              >
+                                <svg
+                                  width="48"
+                                  height="48"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                >
+                                  <path
+                                    d="M14.2857 5.71429H9.71429C9.32 5.71429 9 6.03429 9 6.42857V9H15V6.42857C15 6.03429 14.68 5.71429 14.2857 5.71429Z"
+                                    fill="currentColor"
+                                  />
+                                  <path
+                                    d="M18 7.71429V17.1429C18 18.1543 17.1543 19 16.1429 19H7.85714C6.84571 19 6 18.1543 6 17.1429V7.71429H18ZM16.5 9.42857H7.5V17.1429C7.5 17.325 7.675 17.5 7.85714 17.5H16.1429C16.325 17.5 16.5 17.325 16.5 17.1429V9.42857Z"
+                                    fill="currentColor"
+                                  />
+                                  <path
+                                    d="M12 11.5714L8.78571 14.7857H15.2143L12 11.5714Z"
+                                    fill="currentColor"
+                                  />
                                 </svg>
                                 <span>Click to add photos</span>
                                 <small>Upload up to 5 images</small>
@@ -3042,7 +4441,10 @@ useEffect(() => {
                               <div className="uploaded-images">
                                 {reviewData.images.map((image, index) => (
                                   <div key={index} className="image-preview">
-                                    <img src={image} alt={`Upload ${index + 1}`} />
+                                    <img
+                                      src={image}
+                                      alt={`Upload ${index + 1}`}
+                                    />
                                     <button
                                       type="button"
                                       className="remove-image"
@@ -3059,13 +4461,19 @@ useEffect(() => {
                       </div>
 
                       <div className="modal-actions">
-                        <button className="cancel-btn" onClick={handleCloseReviewModal}>
+                        <button
+                          className="cancel-btn"
+                          onClick={handleCloseReviewModal}
+                        >
                           Cancel
                         </button>
                         <button
                           className="submit-review-btn"
                           onClick={handleSubmitReview}
-                          disabled={reviewData.rating === 0 || !reviewData.comment.trim()}
+                          disabled={
+                            reviewData.rating === 0 ||
+                            !reviewData.comment.trim()
+                          }
                         >
                           Submit Review
                         </button>
@@ -3083,20 +4491,58 @@ useEffect(() => {
                   <div className="modal-header modern-modal-header">
                     <div className="modal-title-section">
                       <div className="withdraw-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M12 2L22 7L12 12L2 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
-                          <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
-                          <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+                        <svg
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M12 2L22 7L12 12L2 7L12 2Z"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinejoin="round"
+                          />
+                          <path
+                            d="M2 17L12 22L22 17"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinejoin="round"
+                          />
+                          <path
+                            d="M2 12L12 17L22 12"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinejoin="round"
+                          />
                         </svg>
                       </div>
                       <div>
                         <h2 className="modal-title">Withdraw Funds</h2>
-                        <p className="modal-subtitle">Transfer money to your bank account</p>
+                        <p className="modal-subtitle">
+                          Transfer money to your bank account
+                        </p>
                       </div>
                     </div>
-                    <button className="close-btn modern-close-btn" onClick={() => setShowWithdrawModal(false)}>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <button
+                      className="close-btn modern-close-btn"
+                      onClick={() => setShowWithdrawModal(false)}
+                    >
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M18 6L6 18M6 6L18 18"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
                       </svg>
                     </button>
                   </div>
@@ -3105,13 +4551,20 @@ useEffect(() => {
                     <div className="balance-display">
                       <div className="balance-info">
                         <span className="balance-label">Available Balance</span>
-                        <span className="balance-amount">£{walletData.remainingBalance.toFixed(2)}</span>
+                        <span className="balance-amount">
+                          £{walletData.remainingBalance.toFixed(2)}
+                        </span>
                       </div>
                     </div>
 
                     <div className="withdraw-form">
                       <div className="form-group modern-form-group">
-                        <label htmlFor="withdrawAmount" className="modern-label">Withdrawal Amount</label>
+                        <label
+                          htmlFor="withdrawAmount"
+                          className="modern-label"
+                        >
+                          Withdrawal Amount
+                        </label>
                         <div className="amount-input-container">
                           <span className="currency-symbol">£</span>
                           <input
@@ -3130,28 +4583,44 @@ useEffect(() => {
                           <button
                             type="button"
                             className="quick-amount-btn"
-                            onClick={() => setWithdrawAmount((walletData.remainingBalance * 0.25).toFixed(2))}
+                            onClick={() =>
+                              setWithdrawAmount(
+                                (walletData.remainingBalance * 0.25).toFixed(2)
+                              )
+                            }
                           >
                             25%
                           </button>
                           <button
                             type="button"
                             className="quick-amount-btn"
-                            onClick={() => setWithdrawAmount((walletData.remainingBalance * 0.5).toFixed(2))}
+                            onClick={() =>
+                              setWithdrawAmount(
+                                (walletData.remainingBalance * 0.5).toFixed(2)
+                              )
+                            }
                           >
                             50%
                           </button>
                           <button
                             type="button"
                             className="quick-amount-btn"
-                            onClick={() => setWithdrawAmount((walletData.remainingBalance * 0.75).toFixed(2))}
+                            onClick={() =>
+                              setWithdrawAmount(
+                                (walletData.remainingBalance * 0.75).toFixed(2)
+                              )
+                            }
                           >
                             75%
                           </button>
                           <button
                             type="button"
                             className="quick-amount-btn"
-                            onClick={() => setWithdrawAmount(walletData.remainingBalance.toFixed(2))}
+                            onClick={() =>
+                              setWithdrawAmount(
+                                walletData.remainingBalance.toFixed(2)
+                              )
+                            }
                           >
                             Max
                           </button>
@@ -3161,16 +4630,55 @@ useEffect(() => {
 
                     <div className="withdraw-info-card">
                       <div className="info-item">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-                          <path d="M12 16V12M12 8H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <circle
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          />
+                          <path
+                            d="M12 16V12M12 8H12.01"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
                         </svg>
-                        <span>Funds will be transferred to your bank account via Stripe</span>
+                        <span>
+                          Funds will be transferred to your bank account via
+                          Stripe
+                        </span>
                       </div>
                       <div className="info-item">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-                          <polyline points="12,6 12,12 16,14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <circle
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          />
+                          <polyline
+                            points="12,6 12,12 16,14"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
                         </svg>
                         <span>Processing time: 2-3 business days</span>
                       </div>
@@ -3182,7 +4690,7 @@ useEffect(() => {
                       className="cancel-btn modern-cancel-btn"
                       onClick={() => {
                         setShowWithdrawModal(false);
-                        setWithdrawAmount('');
+                        setWithdrawAmount("");
                       }}
                     >
                       Cancel
@@ -3190,24 +4698,70 @@ useEffect(() => {
                     <button
                       className="confirm-withdraw-btn modern-confirm-btn"
                       onClick={handleWithdraw}
-                      disabled={!withdrawAmount || parseFloat(withdrawAmount) <= 0 || parseFloat(withdrawAmount) > walletData.remainingBalance || withdrawLoading}
+                      disabled={
+                        !withdrawAmount ||
+                        parseFloat(withdrawAmount) <= 0 ||
+                        parseFloat(withdrawAmount) >
+                          walletData.remainingBalance ||
+                        withdrawLoading
+                      }
                     >
                       {withdrawLoading ? (
                         <>
-                          <svg className="spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" opacity="0.3" />
-                            <path d="M12 2C13.3132 2 14.6136 2.25866 15.8268 2.7612C17.0401 3.26375 18.1425 4.00035 19.0711 4.92893C19.9997 5.85752 20.7362 6.95991 21.2388 8.17317C21.7413 9.38642 22 10.6868 22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                          <svg
+                            className="spinner"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <circle
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              opacity="0.3"
+                            />
+                            <path
+                              d="M12 2C13.3132 2 14.6136 2.25866 15.8268 2.7612C17.0401 3.26375 18.1425 4.00035 19.0711 4.92893C19.9997 5.85752 20.7362 6.95991 21.2388 8.17317C21.7413 9.38642 22 10.6868 22 12"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                            />
                           </svg>
                           Processing...
                         </>
                       ) : (
                         <>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 2L22 7L12 12L2 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
-                            <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
-                            <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M12 2L22 7L12 12L2 7L12 2Z"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinejoin="round"
+                            />
+                            <path
+                              d="M2 17L12 22L22 17"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinejoin="round"
+                            />
+                            <path
+                              d="M2 12L12 17L22 12"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinejoin="round"
+                            />
                           </svg>
-                          Withdraw £{withdrawAmount || '0.00'}
+                          Withdraw £{withdrawAmount || "0.00"}
                         </>
                       )}
                     </button>
@@ -3222,4 +4776,4 @@ useEffect(() => {
   );
 };
 
-export default ClientDashboard; 
+export default ClientDashboard;

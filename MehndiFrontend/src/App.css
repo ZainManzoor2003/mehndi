@@ -1615,8 +1615,30 @@
 
 .password-input-wrapper {
   position: relative;
+  z-index: 1;
 }
 
+.password-input-wrapper input[type="password"],
+.password-input-wrapper input[type="text"] {
+  position: relative;
+  z-index: 1;
+}
+
+/* Prevent Edge autofill UI from interfering */
+.password-input-wrapper input::-ms-reveal,
+.password-input-wrapper input::-ms-clear {
+  display: none;
+}
+
+/* Hide Edge's autofill button if it appears */
+.password-input-wrapper input::-webkit-credentials-auto-fill-button {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Ensure password toggle is always visible, especially in Edge */
 .password-toggle {
   position: absolute;
   right: 1rem;
@@ -1626,11 +1648,24 @@
   border: none;
   color: var(--text-color);
   cursor: pointer;
-  display: flex;
+  display: flex !important;
   align-items: center;
   gap: 0.5rem;
   font-size: var(--small-font-size);
   transition: color 0.3s ease;
+  z-index: 10;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto;
+}
+
+/* Keep button visible when input is focused */
+.password-input-wrapper:focus-within .password-toggle,
+.password-input-wrapper input:focus ~ .password-toggle,
+.password-input-wrapper input:focus + .password-toggle {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .password-toggle:hover {

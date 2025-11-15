@@ -250,6 +250,8 @@ const BookingForm = () => {
       setFormData((prev) => ({
         ...prev,
         [name]: value,
+        // Clear coverage preference when event type changes
+        ...(name === "eventType" ? { coveragePreference: "" } : {}),
       }));
     } else {
       setFormData((prev) => ({
@@ -366,10 +368,18 @@ const BookingForm = () => {
   };
 
   const validateStep3 = () => {
-    // Step 3 only has optional fields (design inspiration and coverage preference)
-    // Coverage preference is only required for Wedding events
+    // Design inspiration is required
+    if (!formData.designInspiration || !formData.designInspiration.trim()) {
+      setError(
+        "Please upload at least one design inspiration image or add a link"
+      );
+      return false;
+    }
+    // Coverage preference is required for Wedding events
     if (formData.eventType === "Wedding" && !formData.coveragePreference) {
-      setError("Coverage preference is required for wedding events");
+      setError(
+        "Coverage preference (Bridal Only) is required for wedding events"
+      );
       return false;
     }
     return true;
@@ -474,10 +484,21 @@ const BookingForm = () => {
       return;
     }
 
-    // Check if event type is Wedding and requires coverage preference
+    // Check if design inspiration is provided
+    if (!formData.designInspiration || !formData.designInspiration.trim()) {
+      setCurrentStep(3);
+      setError(
+        "Please upload at least one design inspiration image or add a link"
+      );
+      return;
+    }
+
+    // Check if coverage preference is required for Wedding
     if (formData.eventType === "Wedding" && !formData.coveragePreference) {
       setCurrentStep(3);
-      setError("Coverage preference is required for wedding events");
+      setError(
+        "Coverage preference (Bridal Only) is required for wedding events"
+      );
       return;
     }
 
@@ -1051,17 +1072,32 @@ const BookingForm = () => {
                               formatISO(date) === formData.eventDate;
                             const isToday =
                               formatISO(date) === formatISO(today);
+                            // Compare dates without time
+                            const dateOnly = new Date(
+                              date.getFullYear(),
+                              date.getMonth(),
+                              date.getDate()
+                            );
+                            const todayOnly = new Date(
+                              today.getFullYear(),
+                              today.getMonth(),
+                              today.getDate()
+                            );
+                            const isPastOrToday = dateOnly <= todayOnly;
                             return (
                               <button
                                 key={idx}
                                 type="button"
                                 onClick={() => {
-                                  setFormData((prev) => ({
-                                    ...prev,
-                                    eventDate: formatISO(date),
-                                  }));
-                                  closeCalendar();
+                                  if (!isPastOrToday) {
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      eventDate: formatISO(date),
+                                    }));
+                                    closeCalendar();
+                                  }
                                 }}
+                                disabled={isPastOrToday}
                                 style={{
                                   padding: "10px 0",
                                   borderRadius: 8,
@@ -1069,21 +1105,26 @@ const BookingForm = () => {
                                     "2px solid " +
                                     (isSelected
                                       ? "#2563eb"
-                                      : isToday
-                                      ? "#3b82f6"
+                                      : isPastOrToday
+                                      ? "#e5e7eb"
                                       : "#e5e7eb"),
                                   background: isSelected
                                     ? "#2563eb"
-                                    : isToday
-                                    ? "#eff6ff"
+                                    : isPastOrToday
+                                    ? "#f5f5f5"
                                     : "#ffffff",
                                   color: isSelected
                                     ? "#ffffff"
+                                    : isPastOrToday
+                                    ? "#c0c0c0"
                                     : inMonth
                                     ? "#0f172a"
                                     : "#94a3b8",
-                                  fontWeight: isToday ? 700 : 500,
-                                  cursor: "pointer",
+                                  fontWeight: 500,
+                                  cursor: isPastOrToday
+                                    ? "not-allowed"
+                                    : "pointer",
+                                  opacity: isPastOrToday ? 0.5 : 1,
                                 }}
                               >
                                 {date.getDate()}
@@ -1366,13 +1407,13 @@ const BookingForm = () => {
                       placeholder={
                         fetchingZipCode
                           ? "Fetching postcode..."
-                          : "Will be auto-filled from location"
+                          : "Will be auto-filled from location (editable)"
                       }
                       value={formData.zipCode}
-                      readOnly
+                      onChange={handleInputChange}
                       style={{
                         background: formData.zipCode ? "#f0f8f0" : "#faf8f5",
-                        cursor: "default",
+                        cursor: "text",
                         color: formData.zipCode ? "#2e7d32" : "#888",
                       }}
                     />
@@ -1503,7 +1544,7 @@ const BookingForm = () => {
 
                 {/* Design Inspiration */}
                 <div className="form-group">
-                  <label className="form-label">Design Inspiration</label>
+                  <label className="form-label">Design Inspiration *</label>
                   <p
                     style={{
                       fontSize: "0.9rem",
@@ -1687,8 +1728,21 @@ const BookingForm = () => {
                 <div className="form-group">
                   <label className="form-label">
                     Coverage Preference
-                    {formData.eventType === "Wedding" ? " *" : ""}
-                    {formData.eventType === "Wedding" && (
+                    {formData.eventType === "Wedding" ? (
+                      <>
+                        <span style={{ color: "#ef4444" }}> *</span>
+                        <span
+                          style={{
+                            fontSize: "0.85rem",
+                            color: "#888",
+                            fontWeight: "normal",
+                          }}
+                        >
+                          {" "}
+                          (Bridal Only)
+                        </span>
+                      </>
+                    ) : (
                       <span
                         style={{
                           fontSize: "0.85rem",
@@ -1697,7 +1751,7 @@ const BookingForm = () => {
                         }}
                       >
                         {" "}
-                        (required for wedding events)
+                        (optional)
                       </span>
                     )}
                   </label>
@@ -1706,6 +1760,7 @@ const BookingForm = () => {
                     className="form-input"
                     value={formData.coveragePreference}
                     onChange={handleInputChange}
+                    required={formData.eventType === "Wedding"}
                   >
                     <option value="">Select coverage</option>
                     <option value="Full arms & feet">Full arms & feet</option>

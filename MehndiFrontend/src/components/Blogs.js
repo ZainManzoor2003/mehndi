@@ -69,9 +69,9 @@ const Blogs = () => {
 
   const formatDate = (iso) => {
     try {
-      return new Date(iso).toLocaleDateString("en-US", {
-        day: "numeric",
+      return new Date(iso).toLocaleDateString("en-GB", {
         month: "short",
+        day: "numeric",
         year: "numeric",
       });
     } catch {
