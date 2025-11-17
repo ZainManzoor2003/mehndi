@@ -8345,11 +8345,27 @@ const ArtistDashboard = () => {
                         fontSize: "14px",
                         fontWeight: "500",
                         color: "white",
-                        backgroundColor: applyLoading ? "#6c757d" : "#d4a574",
+                        backgroundColor: applyLoading ? "#6c757d" : "#8b5a2b",
                         border: "none",
                         borderRadius: "8px",
                         cursor: applyLoading ? "not-allowed" : "pointer",
                         transition: "all 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (
+                          !applyLoading &&
+                          applicationForm.terms.agreedToTerms
+                        ) {
+                          e.target.style.backgroundColor = "#6b4420";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (
+                          !applyLoading &&
+                          applicationForm.terms.agreedToTerms
+                        ) {
+                          e.target.style.backgroundColor = "#8b5a2b";
+                        }
                       }}
                     >
                       {applyLoading

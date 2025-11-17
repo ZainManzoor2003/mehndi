@@ -7416,8 +7416,37 @@ body.dark-theme .scroll-header .henna-line {
   }
 
   .nav__cta-button {
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
+    padding: 0.5rem;
+    font-size: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    position: relative;
+  }
+  
+  .nav__cta-button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--white-color);
+    border-radius: 50%;
+  }
+  
+  .nav__cta-button::after {
+    content: '';
+    position: absolute;
+    bottom: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--white-color);
+    border-top: none;
+    border-radius: 0 0 12px 12px;
   }
 
   .nav {
@@ -7427,6 +7456,8 @@ body.dark-theme .scroll-header .henna-line {
   .home__title {
     font-size: 2.5rem;
     margin-bottom: 2rem;
+    margin-top: 0;
+    padding-top: 0;
   }
 
   .home__subtitle {
@@ -7776,11 +7807,17 @@ body.dark-theme .scroll-header .henna-line {
   .how-it-works__tabs {
     max-width: 350px;
     margin-bottom: 2rem;
+    padding: 0.4rem;
   }
 
   .how-it-works__tab {
-    padding: 0.8rem 1.5rem;
-    font-size: 0.9rem;
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+    gap: 0.4rem;
+  }
+  
+  .how-it-works__tab .tab-icon {
+    font-size: 1rem;
   }
 
   /* Hide rope on small devices */
@@ -7842,7 +7879,7 @@ body.dark-theme .scroll-header .henna-line {
 
 @media screen and (max-width: 480px) {
   .how-it-works {
-    padding: 4rem 0 3rem 0;
+    padding: 0rem 0 3rem 0;
     margin-top: 2rem;
   }
 
@@ -7860,15 +7897,21 @@ body.dark-theme .scroll-header .henna-line {
   }
 
   .how-it-works__tabs {
-    flex-direction: column;
+    flex-direction: row;
     border-radius: 20px;
     max-width: 280px;
     margin-bottom: 1.5rem;
+    padding: 0.3rem;
   }
 
   .how-it-works__tab {
-    padding: 0.7rem 1.2rem;
-    font-size: 0.85rem;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.75rem;
+    gap: 0.3rem;
+  }
+  
+  .how-it-works__tab .tab-icon {
+    font-size: 0.9rem;
   }
 
   .how-it-works__flow {
@@ -7901,6 +7944,14 @@ body.dark-theme .scroll-header .henna-line {
   .step__description-inside {
     font-size: 0.8rem;
     line-height: 1.3;
+  }
+
+  .home {
+    height: 70vh;
+  }
+
+  .home__content {
+    /* margin-top: -180px; */
   }
 }
 
@@ -12526,6 +12577,40 @@ body.dark-theme .scroll-header .henna-line {
   color: var(--text-color-light);
   margin: 0;
   font-style: italic;
+}
+
+/* Blogs hero section - hide image on mobile */
+@media screen and (max-width: 768px) {
+  .blogs__hero-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .blogs__hero-image {
+    display: none;
+  }
+}
+
+/* EarnAsArtist features grid - 2 columns on large screens, 1 on mobile */
+.earn-artist-features-grid {
+  grid-template-columns: repeat(2, 1fr) !important;
+}
+
+.feature-card-last {
+  grid-column: 1 / -1;
+  justify-self: center;
+  max-width: 400px;
+}
+
+@media screen and (max-width: 768px) {
+  .earn-artist-features-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .feature-card-last {
+    grid-column: 1;
+    justify-self: stretch;
+    max-width: 100%;
+  }
 }
 
 @media (max-width: 768px) {

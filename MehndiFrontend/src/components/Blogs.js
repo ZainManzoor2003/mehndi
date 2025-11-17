@@ -92,6 +92,7 @@ const Blogs = () => {
         }}
       >
         <div
+          className="blogs__hero-grid"
           style={{
             maxWidth: 1200,
             margin: "0 auto",
@@ -203,7 +204,7 @@ const Blogs = () => {
               />
             </div>
           </div>
-          <div>
+          <div className="blogs__hero-image">
             <div
               style={{
                 height: 360,

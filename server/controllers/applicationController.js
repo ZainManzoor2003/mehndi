@@ -1,13 +1,22 @@
-const Application = require('../schemas/Application');
-const Booking = require('../schemas/Booking');
-const User = require('../schemas/User');
-const Transaction = require('../schemas/Transaction');
-const Notification = require('../schemas/Notification');
-const BookingLog = require('../schemas/BookingLog');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || '');
+const Application = require("../schemas/Application");
+const Booking = require("../schemas/Booking");
+const User = require("../schemas/User");
+const Transaction = require("../schemas/Transaction");
+const Notification = require("../schemas/Notification");
+const BookingLog = require("../schemas/BookingLog");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY || "");
+const sendEmail = require("../utils/sendEmail");
 
 // Helper function to create notifications
-const createNotification = async (type, targetUserId, triggeredByUserId, targetUserType, bookingId, applicationId, data) => {
+const createNotification = async (
+  type,
+  targetUserId,
+  triggeredByUserId,
+  targetUserType,
+  bookingId,
+  applicationId,
+  data
+) => {
   try {
     const notificationData = {
       targetUserId,
@@ -16,48 +25,72 @@ const createNotification = async (type, targetUserId, triggeredByUserId, targetU
       type,
       bookingId,
       applicationId,
-      data
+      data,
     };
 
     // Set title and message based on type
     switch (type) {
-      case 'booking_created':
-        notificationData.title = 'New Booking Created';
-        notificationData.message = `${data.clientName} has created a new ${data.eventType?.join(', ') || 'mehndi'} booking for ${data.bookingDate ? new Date(data.bookingDate).toLocaleDateString() : 'your area'}`;
+      case "booking_created":
+        notificationData.title = "New Booking Created";
+        notificationData.message = `${data.clientName} has created a new ${
+          data.eventType?.join(", ") || "mehndi"
+        } booking for ${
+          data.bookingDate
+            ? new Date(data.bookingDate).toLocaleDateString()
+            : "your area"
+        }`;
         break;
-      case 'booking_cancelled':
-        notificationData.title = 'Booking Cancelled';
-        notificationData.message = `${data.clientName} has cancelled the ${data.eventType?.join(', ') || 'mehndi'} booking scheduled for ${data.bookingDate ? new Date(data.bookingDate).toLocaleDateString() : 'your area'}`;
+      case "booking_cancelled":
+        notificationData.title = "Booking Cancelled";
+        notificationData.message = `${data.clientName} has cancelled the ${
+          data.eventType?.join(", ") || "mehndi"
+        } booking scheduled for ${
+          data.bookingDate
+            ? new Date(data.bookingDate).toLocaleDateString()
+            : "your area"
+        }`;
         break;
-      case 'booking_completed':
-        notificationData.title = 'Booking Completed';
-        notificationData.message = `Your ${data.eventType?.join(', ') || 'mehndi'} booking with ${data.clientName} has been completed successfully`;
+      case "booking_completed":
+        notificationData.title = "Booking Completed";
+        notificationData.message = `Your ${
+          data.eventType?.join(", ") || "mehndi"
+        } booking with ${data.clientName} has been completed successfully`;
         break;
-      case 'application_submitted':
-        notificationData.title = 'New Application Received';
-        notificationData.message = `${data.artistName} has applied for your ${data.eventType?.join(', ') || 'mehndi'} booking`;
+      case "application_submitted":
+        notificationData.title = "New Application Received";
+        notificationData.message = `${data.artistName} has applied for your ${
+          data.eventType?.join(", ") || "mehndi"
+        } booking`;
         break;
-      case 'application_accepted':
-        notificationData.title = 'Application Accepted';
-        notificationData.message = `Your application for ${data.clientName}'s ${data.eventType?.join(', ') || 'mehndi'} booking has been accepted`;
+      case "application_accepted":
+        notificationData.title = "Application Accepted";
+        notificationData.message = `Your application for ${data.clientName}'s ${
+          data.eventType?.join(", ") || "mehndi"
+        } booking has been accepted`;
         break;
-      case 'application_declined':
-        notificationData.title = 'Application Declined';
-        notificationData.message = `Your application for ${data.clientName}'s ${data.eventType?.join(', ') || 'mehndi'} booking has been declined`;
+      case "application_declined":
+        notificationData.title = "Application Declined";
+        notificationData.message = `Your application for ${data.clientName}'s ${
+          data.eventType?.join(", ") || "mehndi"
+        } booking has been declined`;
         break;
-      case 'application_withdrawn':
-        notificationData.title = 'Application Withdrawn';
-        notificationData.message = `${data.artistName} has withdrawn their application for your ${data.eventType?.join(', ') || 'mehndi'} booking`;
+      case "application_withdrawn":
+        notificationData.title = "Application Withdrawn";
+        notificationData.message = `${
+          data.artistName
+        } has withdrawn their application for your ${
+          data.eventType?.join(", ") || "mehndi"
+        } booking`;
         break;
       default:
-        notificationData.title = 'Notification';
-        notificationData.message = 'You have a new notification';
+        notificationData.title = "Notification";
+        notificationData.message = "You have a new notification";
     }
 
     const notification = await Notification.create(notificationData);
     return notification;
   } catch (error) {
-    console.error('Error creating notification:', error);
+    console.error("Error creating notification:", error);
     return null;
   }
 };
@@ -67,18 +100,19 @@ const createNotification = async (type, targetUserId, triggeredByUserId, targetU
 // @access  Private (Artist only)
 exports.applyToBooking = async (req, res) => {
   try {
-    const {
-      bookingId,
-      artistDetails
-    } = req.body;
+    const { bookingId, artistDetails } = req.body;
 
     if (!bookingId) {
-      return res.status(400).json({ success: false, message: 'bookingId is required' });
+      return res
+        .status(400)
+        .json({ success: false, message: "bookingId is required" });
     }
 
     // Validate required artist details
     if (!artistDetails) {
-      return res.status(400).json({ success: false, message: 'Artist details are required' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Artist details are required" });
     }
 
     // Check if user has Stripe account, if not create one
@@ -100,8 +134,12 @@ exports.applyToBooking = async (req, res) => {
       // Create account onboarding link
       const accountLink = await stripe.accountLinks.create({
         account: account.id,
-        refresh_url: `${process.env.FRONTEND_URL || "http://localhost:3000"}/reauth`,
-        return_url: `${process.env.FRONTEND_URL || "http://localhost:3000"}/dashboard/wallet`,
+        refresh_url: `${
+          process.env.FRONTEND_URL || "http://localhost:3000"
+        }/reauth`,
+        return_url: `${
+          process.env.FRONTEND_URL || "http://localhost:3000"
+        }/dashboard/wallet`,
         type: "account_onboarding",
       });
 
@@ -113,9 +151,9 @@ exports.applyToBooking = async (req, res) => {
 
       return res.status(200).json({
         success: false,
-        message: 'Stripe account setup required',
+        message: "Stripe account setup required",
         requiresOnboarding: true,
-        onboardingUrl: accountLink.url
+        onboardingUrl: accountLink.url,
       });
     }
 
@@ -125,45 +163,68 @@ exports.applyToBooking = async (req, res) => {
       availability,
       experience,
       proposal,
-      terms
+      terms,
     } = artistDetails;
 
     // Validate required fields (only budget, duration, message, and terms)
     if (!proposedBudget || proposedBudget <= 0) {
-      return res.status(400).json({ success: false, message: 'Valid proposed budget is required' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Valid proposed budget is required" });
     }
 
-    if (!estimatedDuration || !estimatedDuration.value || estimatedDuration.value <= 0) {
-      return res.status(400).json({ success: false, message: 'Valid estimated duration is required' });
+    if (
+      !estimatedDuration ||
+      !estimatedDuration.value ||
+      estimatedDuration.value <= 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid estimated duration is required",
+      });
     }
 
     if (!proposal || !proposal.message || !proposal.message.trim()) {
-      return res.status(400).json({ success: false, message: 'Proposal message is required' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Proposal message is required" });
     }
 
     if (!terms || !terms.agreedToTerms) {
-      return res.status(400).json({ success: false, message: 'You must agree to the terms and conditions' });
+      return res.status(400).json({
+        success: false,
+        message: "You must agree to the terms and conditions",
+      });
     }
 
     // Ensure booking exists and get status
-    const booking = await Booking.findById(bookingId).select('clientId status eventType city eventDate');
+    const booking = await Booking.findById(bookingId).select(
+      "clientId status eventType city eventDate"
+    );
     if (!booking) {
-      return res.status(404).json({ success: false, message: 'Booking not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
     }
 
     // Only allow applying to pending bookings
-    if (booking.status !== 'pending' && booking.status !== 'in_progress') {
-      return res.status(400).json({ success: false, message: 'You can only apply to bookings with pending or in_progress status' });
+    if (booking.status !== "pending" && booking.status !== "in_progress") {
+      return res.status(400).json({
+        success: false,
+        message:
+          "You can only apply to bookings with pending or in_progress status",
+      });
     }
 
     // Check if artist has already applied to this booking
     const existingApplication = await Application.findOne({
-      'Booking.booking_id': bookingId,
-      'Booking.artist_id': req.user.id
+      "Booking.booking_id": bookingId,
+      "Booking.artist_id": req.user.id,
     });
     if (existingApplication) {
       return res.status(400).json({
-        success: false, message: `You cannot apply to this booking beacuse your request is ${existingApplication.Booking[0].status}`
+        success: false,
+        message: `You cannot apply to this booking beacuse your request is ${existingApplication.Booking[0].status}`,
       });
     }
 
@@ -173,34 +234,34 @@ exports.applyToBooking = async (req, res) => {
         {
           booking_id: bookingId,
           artist_id: req.user.id,
-          status: 'applied',
+          status: "applied",
           artistDetails: {
             proposedBudget,
             estimatedDuration: {
               value: estimatedDuration.value,
-              unit: estimatedDuration.unit || 'hours'
+              unit: estimatedDuration.unit || "hours",
             },
             availability: {
               isAvailableOnDate: availability?.isAvailableOnDate !== false,
               canTravelToLocation: availability?.canTravelToLocation !== false,
-              travelDistance: availability?.travelDistance || 0
+              travelDistance: availability?.travelDistance || 0,
             },
             experience: {
-              relevantExperience: experience?.relevantExperience || 'N/A',
+              relevantExperience: experience?.relevantExperience || "N/A",
               yearsOfExperience: experience?.yearsOfExperience || 0,
-              portfolioHighlights: experience?.portfolioHighlights || ''
+              portfolioHighlights: experience?.portfolioHighlights || "",
             },
             proposal: {
               message: proposal.message,
-              whyInterested: proposal.whyInterested || '',
-              additionalNotes: proposal.additionalNotes || ''
+              whyInterested: proposal.whyInterested || "",
+              additionalNotes: proposal.additionalNotes || "",
             },
             terms: {
-              agreedToTerms: terms.agreedToTerms
-            }
-          }
-        }
-      ]
+              agreedToTerms: terms.agreedToTerms,
+            },
+          },
+        },
+      ],
     });
 
     // Get previous status from existing booking variable
@@ -211,31 +272,31 @@ exports.applyToBooking = async (req, res) => {
       { _id: bookingId },
       {
         $addToSet: { appliedArtists: req.user.id },
-        $set: { status: 'in_progress' }
+        $set: { status: "in_progress" },
       }
     );
 
     // Add application id to artist.appliedApplications
-    await require('../schemas/User').updateOne(
+    await require("../schemas/User").updateOne(
       { _id: req.user.id },
-      { $addToSet: { 'artist.appliedApplications': application._id } }
+      { $addToSet: { "artist.appliedApplications": application._id } }
     );
 
     // Create booking log for artist application
     await BookingLog.create({
       bookingId: bookingId,
-      action: 'artist_applied',
+      action: "artist_applied",
       performedBy: {
         userId: req.user.id,
         userType: req.user.userType,
-        name: `${req.user.firstName} ${req.user.lastName}`
+        name: `${req.user.firstName} ${req.user.lastName}`,
       },
       applicationId: application._id,
       artistId: req.user.id,
       previousValues: { status: previousStatus },
-      newValues: { status: 'in_progress' },
-      statusAtTime: 'in_progress',
-      details: `Artist applied with budget £${proposedBudget} and estimated duration ${estimatedDuration.value} ${estimatedDuration.unit}`
+      newValues: { status: "in_progress" },
+      statusAtTime: "in_progress",
+      details: `Artist applied with budget £${proposedBudget} and estimated duration ${estimatedDuration.value} ${estimatedDuration.unit}`,
     });
 
     // Create notification for the client about new application
@@ -246,39 +307,55 @@ exports.applyToBooking = async (req, res) => {
       const notificationData = {
         artistName,
         clientName: `${client.firstName} ${client.lastName}`,
-        bookingName: `${booking.eventType?.join(', ') || 'Mehndi'} - ${booking.city}`,
+        bookingName: `${booking.eventType?.join(", ") || "Mehndi"} - ${
+          booking.city
+        }`,
         eventType: booking.eventType,
         bookingDate: booking.eventDate,
         location: booking.city,
-        proposedBudget
+        proposedBudget,
       };
 
       await createNotification(
-        'application_submitted',
+        "application_submitted",
         booking.clientId,
         req.user.id,
-        'client',
+        "client",
         bookingId,
         application._id,
         notificationData
       );
     } catch (notificationError) {
-      console.error('Error creating application notification:', notificationError);
+      console.error(
+        "Error creating application notification:",
+        notificationError
+      );
       // Don't fail the application if notifications fail
     }
 
-    return res.status(201).json({ success: true, message: 'Application submitted successfully', data: application });
+    return res.status(201).json({
+      success: true,
+      message: "Application submitted successfully",
+      data: application,
+    });
   } catch (error) {
-    console.error('Apply to booking error:', error);
-    return res.status(500).json({ success: false, message: 'Server error while applying', error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' });
+    console.error("Apply to booking error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while applying",
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
+    });
   }
 };
 
 // exports.applyToBooking = async (req, res) => {
 //   try {
-//     const { 
+//     const {
 //       bookingId,
-//       artistDetails 
+//       artistDetails
 //     } = req.body;
 
 //     // Validate required fields
@@ -307,9 +384,9 @@ exports.applyToBooking = async (req, res) => {
 //       !proposal?.message ||
 //       !terms?.agreedToTerms
 //     ) {
-//       return res.status(400).json({ 
-//         success: false, 
-//         message: 'Missing required application fields' 
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Missing required application fields'
 //       });
 //     }
 
@@ -406,7 +483,7 @@ exports.applyToBooking = async (req, res) => {
 //     // Add artist to booking.appliedArtists (no duplicates) and update status to in_progress
 //     await Booking.updateOne(
 //       { _id: bookingId },
-//       { 
+//       {
 //         $addToSet: { appliedArtists: req.user.id },
 //         $set: { status: 'in_progress' }
 //       }
@@ -432,29 +509,48 @@ exports.withdrawApplication = async (req, res) => {
   try {
     const { bookingId } = req.body;
     if (!bookingId) {
-      return res.status(400).json({ success: false, message: 'bookingId is required' });
+      return res
+        .status(400)
+        .json({ success: false, message: "bookingId is required" });
     }
 
-    if (!req.user || req.user.userType !== 'artist') {
-      return res.status(403).json({ success: false, message: 'Only artists can withdraw applications' });
+    if (!req.user || req.user.userType !== "artist") {
+      return res.status(403).json({
+        success: false,
+        message: "Only artists can withdraw applications",
+      });
     }
 
-    const application = await Application.findOne({ 'Booking.artist_id': req.user.id, 'Booking.booking_id': bookingId });
+    const application = await Application.findOne({
+      "Booking.artist_id": req.user.id,
+      "Booking.booking_id": bookingId,
+    });
     if (!application) {
-      return res.status(404).json({ success: false, message: 'Application not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Application not found" });
     }
-    const bookingEntry = application.Booking.find(b => b.booking_id.toString() === bookingId);
+    const bookingEntry = application.Booking.find(
+      (b) => b.booking_id.toString() === bookingId
+    );
     if (!bookingEntry) {
-      return res.status(404).json({ success: false, message: 'You have not applied to this booking' });
+      return res.status(404).json({
+        success: false,
+        message: "You have not applied to this booking",
+      });
     }
 
     // Only allow withdrawal if not already accepted
-    if (bookingEntry.status === 'accepted') {
-      return res.status(400).json({ success: false, message: 'Cannot withdraw an accepted application. Please contact the client to cancel.' });
+    if (bookingEntry.status === "accepted") {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Cannot withdraw an accepted application. Please contact the client to cancel.",
+      });
     }
 
     // Update the booking entry status to 'withdrawn' instead of removing it
-    bookingEntry.status = 'withdrawn';
+    bookingEntry.status = "withdrawn";
     await application.save();
 
     // Remove artist from booking.appliedArtists
@@ -472,30 +568,40 @@ exports.withdrawApplication = async (req, res) => {
       const notificationData = {
         artistName,
         clientName: `${client.firstName} ${client.lastName}`,
-        bookingName: `${booking.eventType?.join(', ') || 'Mehndi'} - ${booking.city}`,
+        bookingName: `${booking.eventType?.join(", ") || "Mehndi"} - ${
+          booking.city
+        }`,
         eventType: booking.eventType,
         bookingDate: booking.eventDate,
-        location: booking.city
+        location: booking.city,
       };
 
       await createNotification(
-        'application_withdrawn',
+        "application_withdrawn",
         booking.clientId,
         req.user.id,
-        'client',
+        "client",
         bookingId,
         application._id,
         notificationData
       );
     } catch (notificationError) {
-      console.error('Error creating withdrawal notification:', notificationError);
+      console.error(
+        "Error creating withdrawal notification:",
+        notificationError
+      );
       // Don't fail the withdrawal if notifications fail
     }
 
-    return res.status(200).json({ success: true, message: 'Application withdrawn successfully' });
+    return res
+      .status(200)
+      .json({ success: true, message: "Application withdrawn successfully" });
   } catch (error) {
-    console.error('Withdraw application error:', error);
-    return res.status(500).json({ success: false, message: 'Server error while withdrawing application' });
+    console.error("Withdraw application error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while withdrawing application",
+    });
   }
 };
 
@@ -505,50 +611,87 @@ exports.withdrawApplication = async (req, res) => {
 exports.getMyAppliedBookings = async (req, res) => {
   try {
     const artistId = req.user.id;
-    const status = (req.query.status || 'applied').toString();
-    const allowedStatuses = ['applied', 'pending', 'accepted', 'declined', 'withdrawn', 'expired'];
+    const status = (req.query.status || "applied").toString();
+    const allowedStatuses = [
+      "applied",
+      "pending",
+      "accepted",
+      "declined",
+      "withdrawn",
+      "expired",
+    ];
     if (!allowedStatuses.includes(status)) {
-      return res.status(400).json({ success: false, message: `Invalid status. Allowed: ${allowedStatuses.join(', ')}` });
+      return res.status(400).json({
+        success: false,
+        message: `Invalid status. Allowed: ${allowedStatuses.join(", ")}`,
+      });
     }
 
     // Find all application docs where Booking array contains an entry for this artist with status 'applied'
     const applications = await Application.aggregate([
-      { $unwind: '$Booking' },
-      { $match: { 'Booking.artist_id': new (require('mongoose').Types.ObjectId)(artistId), 'Booking.status': status } },
-      { $group: { _id: null, bookingIds: { $addToSet: '$Booking.booking_id' } } }
+      { $unwind: "$Booking" },
+      {
+        $match: {
+          "Booking.artist_id": new (require("mongoose").Types.ObjectId)(
+            artistId
+          ),
+          "Booking.status": status,
+        },
+      },
+      {
+        $group: { _id: null, bookingIds: { $addToSet: "$Booking.booking_id" } },
+      },
     ]);
 
-    const bookingIds = applications.length > 0 ? applications[0].bookingIds : [];
+    const bookingIds =
+      applications.length > 0 ? applications[0].bookingIds : [];
 
     if (!bookingIds.length) {
       return res.status(200).json({ success: true, count: 0, data: [] });
     }
 
     const bookings = await Booking.find({ _id: { $in: bookingIds } })
-      .populate('clientId', 'firstName lastName email')
-      .populate('assignedArtist', 'firstName lastName email')
+      .populate("clientId", "firstName lastName email")
+      .populate("assignedArtist", "firstName lastName email")
       .sort({ createdAt: -1 });
 
-    return res.status(200).json({ success: true, count: bookings.length, data: bookings });
+    return res
+      .status(200)
+      .json({ success: true, count: bookings.length, data: bookings });
   } catch (error) {
-    console.error('Get my applied bookings error:', error);
-    return res.status(500).json({ success: false, message: 'Server error while fetching applied bookings', error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' });
+    console.error("Get my applied bookings error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching applied bookings",
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
+    });
   }
 };
-
 
 exports.getMyApplicationStats = async (req, res) => {
   try {
     const artistId = req.user.id;
 
     const pipeline = [
-      { $unwind: '$Booking' },
-      { $match: { 'Booking.artist_id': new (require('mongoose').Types.ObjectId)(artistId) } },
-      { $group: { _id: '$Booking.status', count: { $sum: 1 } } }
+      { $unwind: "$Booking" },
+      {
+        $match: {
+          "Booking.artist_id": new (require("mongoose").Types.ObjectId)(
+            artistId
+          ),
+        },
+      },
+      { $group: { _id: "$Booking.status", count: { $sum: 1 } } },
     ];
 
     const result = await Application.aggregate(pipeline);
-    const statsMap = result.reduce((acc, { _id, count }) => { acc[_id] = count; return acc; }, {});
+    const statsMap = result.reduce((acc, { _id, count }) => {
+      acc[_id] = count;
+      return acc;
+    }, {});
 
     const applied = statsMap.applied || 0;
     const accepted = statsMap.accepted || 0;
@@ -557,15 +700,28 @@ exports.getMyApplicationStats = async (req, res) => {
     const expired = statsMap.expired || 0;
     const pending = statsMap.pending || 0;
     const total = applied + accepted + declined + withdrawn + expired + pending;
-    const acceptanceRate = total > 0 ? +(accepted / total * 100).toFixed(1) : 0;
+    const acceptanceRate =
+      total > 0 ? +((accepted / total) * 100).toFixed(1) : 0;
 
     return res.status(200).json({
       success: true,
-      data: { applied, accepted, declined, withdrawn, expired, pending, total, acceptanceRate }
+      data: {
+        applied,
+        accepted,
+        declined,
+        withdrawn,
+        expired,
+        pending,
+        total,
+        acceptanceRate,
+      },
     });
   } catch (error) {
-    console.error('Get my application stats error:', error);
-    return res.status(500).json({ success: false, message: 'Server error while fetching application stats' });
+    console.error("Get my application stats error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching application stats",
+    });
   }
 };
 
@@ -576,30 +732,48 @@ exports.getApplicationsForBooking = async (req, res) => {
   try {
     const { bookingId } = req.params;
     if (!bookingId) {
-      return res.status(400).json({ success: false, message: 'bookingId is required' });
+      return res
+        .status(400)
+        .json({ success: false, message: "bookingId is required" });
     }
 
     // Verify booking ownership
-    const booking = await Booking.findById(bookingId).select('clientId');
+    const booking = await Booking.findById(bookingId).select("clientId");
     if (!booking) {
-      return res.status(404).json({ success: false, message: 'Booking not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
     }
-    if (!req.user || req.user.userType !== 'client' || booking.clientId.toString() !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'Not authorized to view applications for this booking' });
+    if (
+      !req.user ||
+      req.user.userType !== "client" ||
+      booking.clientId.toString() !== req.user.id
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to view applications for this booking",
+      });
     }
 
     // Get full booking details
     const fullBooking = await Booking.findById(bookingId).lean();
 
     // Find all applications that have this booking
-    const applications = await Application.find({ 'Booking.booking_id': bookingId })
-      .populate('Booking.artist_id', 'firstName lastName email phoneNumber artist')
+    const applications = await Application.find({
+      "Booking.booking_id": bookingId,
+    })
+      .populate(
+        "Booking.artist_id",
+        "firstName lastName email phoneNumber artist"
+      )
       .lean();
 
     // Extract relevant booking entries and artist info
     const result = [];
     for (const app of applications) {
-      const bookingEntry = app.Booking.find(b => b.booking_id.toString() === bookingId);
+      const bookingEntry = app.Booking.find(
+        (b) => b.booking_id.toString() === bookingId
+      );
       if (bookingEntry && bookingEntry.artist_id) {
         result.push({
           applicationId: app._id,
@@ -613,19 +787,22 @@ exports.getApplicationsForBooking = async (req, res) => {
             phoneNumber: bookingEntry.artist_id.phoneNumber,
             profilePicture: bookingEntry.artist_id.artist?.profilePicture,
             bio: bookingEntry.artist_id.artist?.bio,
-            portfolioLinks: bookingEntry.artist_id.artist?.portfolioLinks
+            portfolioLinks: bookingEntry.artist_id.artist?.portfolioLinks,
           },
           status: bookingEntry.status,
           artistDetails: bookingEntry.artistDetails,
-          appliedDate: app.createdAt
+          appliedDate: app.createdAt,
         });
       }
     }
 
     return res.status(200).json({ success: true, data: result });
   } catch (error) {
-    console.error('Get applications for booking error:', error);
-    return res.status(500).json({ success: false, message: 'Server error while fetching applications' });
+    console.error("Get applications for booking error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching applications",
+    });
   }
 };
 
@@ -635,98 +812,138 @@ exports.getApplicationsForBooking = async (req, res) => {
 exports.updateApplicationStatus = async (req, res) => {
   try {
     const { applicationId } = req.params;
-    const { bookingId, status, paymentPaid, remainingPayment, isPaid } = req.body;
+    const { bookingId, status, paymentPaid, remainingPayment, isPaid } =
+      req.body;
 
     if (!applicationId || !bookingId || !status) {
-      return res.status(400).json({ success: false, message: 'applicationId, bookingId and status are required' });
+      return res.status(400).json({
+        success: false,
+        message: "applicationId, bookingId and status are required",
+      });
     }
 
-    const allowed = ['accepted', 'declined'];
+    const allowed = ["accepted", "declined"];
     if (!allowed.includes(status)) {
-      return res.status(400).json({ success: false, message: `Invalid status. Allowed: ${allowed.join(', ')}` });
+      return res.status(400).json({
+        success: false,
+        message: `Invalid status. Allowed: ${allowed.join(", ")}`,
+      });
     }
 
     // Verify booking ownership
-    const booking = await Booking.findById(bookingId).select('clientId assignedArtist status appliedArtists');
+    const booking = await Booking.findById(bookingId).select(
+      "clientId assignedArtist status appliedArtists"
+    );
     if (!booking) {
-      return res.status(404).json({ success: false, message: 'Booking not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
     }
-    if (!req.user || req.user.userType !== 'client' || booking.clientId.toString() !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'Not authorized to update applications for this booking' });
+    if (
+      !req.user ||
+      req.user.userType !== "client" ||
+      booking.clientId.toString() !== req.user.id
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to update applications for this booking",
+      });
     }
 
     // Update the target application's embedded Booking entry status
     const updateResult = await Application.updateOne(
-      { _id: applicationId, 'Booking.booking_id': bookingId },
-      { $set: { 'Booking.$.status': status } }
+      { _id: applicationId, "Booking.booking_id": bookingId },
+      { $set: { "Booking.$.status": status } }
     );
 
     if (updateResult.matchedCount === 0) {
-      return res.status(404).json({ success: false, message: 'Application not found for this booking' });
+      return res.status(404).json({
+        success: false,
+        message: "Application not found for this booking",
+      });
     }
 
     // If declined: remove artist from booking.appliedArtists; if none left, set status to pending
-    if (status === 'declined') {
+    if (status === "declined") {
       const application = await Application.findById(applicationId);
-      const bookingEntry = application && application.Booking.find(b => b.booking_id.toString() === bookingId.toString());
+      const bookingEntry =
+        application &&
+        application.Booking.find(
+          (b) => b.booking_id.toString() === bookingId.toString()
+        );
       const artistId = bookingEntry && bookingEntry.artist_id;
       if (artistId && booking) {
         // Remove artist from appliedArtists
         if (Array.isArray(booking.appliedArtists)) {
-          booking.appliedArtists = booking.appliedArtists.filter(id => id.toString() !== artistId.toString());
+          booking.appliedArtists = booking.appliedArtists.filter(
+            (id) => id.toString() !== artistId.toString()
+          );
         }
         // If no applied artists remain and booking is not confirmed, revert to pending
-        if ((!booking.appliedArtists || booking.appliedArtists.length === 0) && booking.status !== 'confirmed') {
-          booking.status = 'pending';
+        if (
+          (!booking.appliedArtists || booking.appliedArtists.length === 0) &&
+          booking.status !== "confirmed"
+        ) {
+          booking.status = "pending";
         }
         await booking.save();
       }
     }
 
     // If accepted, set booking assignedArtist and update payment fields if provided.
-    if (status === 'accepted') {
+    if (status === "accepted") {
       // Get the application to know the artist id
       const application = await Application.findById(applicationId);
-      const bookingEntry = application.Booking.find(b => b.booking_id.toString() === bookingId.toString());
+      const bookingEntry = application.Booking.find(
+        (b) => b.booking_id.toString() === bookingId.toString()
+      );
       const artistId = bookingEntry && bookingEntry.artist_id;
 
       if (artistId) {
-        if (!Array.isArray(booking.assignedArtist) || !booking.assignedArtist.map(a => a.toString()).includes(artistId.toString())) {
-          booking.assignedArtist = [...(booking.assignedArtist || []), artistId];
+        if (
+          !Array.isArray(booking.assignedArtist) ||
+          !booking.assignedArtist
+            .map((a) => a.toString())
+            .includes(artistId.toString())
+        ) {
+          booking.assignedArtist = [
+            ...(booking.assignedArtist || []),
+            artistId,
+          ];
         }
-        booking.status = 'confirmed';
+        booking.status = "confirmed";
 
         // Handle payment fields - check if booking is half paid and use artist's proposed budget
-        if (typeof isPaid !== 'undefined') {
-          if (booking.isPaid === 'half' && isPaid === 'full') {
+        if (typeof isPaid !== "undefined") {
+          if (booking.isPaid === "half" && isPaid === "full") {
             // Booking is half paid, add artist's proposed budget to existing payment
-            const proposedBudget = bookingEntry.artistDetails?.proposedBudget || 0;
+            const proposedBudget =
+              bookingEntry.artistDetails?.proposedBudget || 0;
             const currentPaymentPaid = Number(booking.paymentPaid) || 0;
             booking.paymentPaid = String(currentPaymentPaid + proposedBudget);
-            booking.remainingPayment = '0';
-            booking.isPaid = 'full';
+            booking.remainingPayment = "0";
+            booking.isPaid = "full";
           } else {
             // Regular payment logic
-            if (typeof paymentPaid !== 'undefined') {
+            if (typeof paymentPaid !== "undefined") {
               booking.paymentPaid = String(paymentPaid);
             }
-            if (typeof remainingPayment !== 'undefined') {
+            if (typeof remainingPayment !== "undefined") {
               booking.remainingPayment = String(remainingPayment);
             }
             booking.isPaid = isPaid;
 
             // Create transaction for the payment
-            if (isPaid && (isPaid === 'half')) {
+            if (isPaid && isPaid === "half") {
               const transaction = new Transaction({
                 sender: req.user.id,
                 receiver: artistId,
                 bookingId: booking._id,
                 amount: Number(booking.paymentPaid) || 0,
-                transactionType: isPaid
+                transactionType: isPaid,
               });
               await transaction.save();
             }
-
           }
         }
 
@@ -734,10 +951,134 @@ exports.updateApplicationStatus = async (req, res) => {
       }
     }
 
+    // Send confirmation email to client when application is accepted and payment is made
+    if (status === "accepted" && typeof isPaid !== "undefined") {
+      try {
+        const client = await User.findById(booking.clientId).select(
+          "email firstName lastName"
+        );
+        if (client && client.email) {
+          const application = await Application.findById(applicationId);
+          const bookingEntry = application.Booking.find(
+            (b) => b.booking_id.toString() === bookingId.toString()
+          );
+          const artistId = bookingEntry && bookingEntry.artist_id;
+          const artist = artistId
+            ? await User.findById(artistId).select("firstName lastName")
+            : null;
+
+          const eventType = Array.isArray(booking.eventType)
+            ? booking.eventType.join(", ")
+            : booking.eventType || "Mehndi";
+          const eventDate = booking.eventDate
+            ? new Date(booking.eventDate).toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })
+            : "N/A";
+          const paidAmount = Number(booking.paymentPaid) || 0;
+          const remainingAmount = Number(booking.remainingPayment) || 0;
+          const frontendUrl =
+            process.env.FRONTEND_URL || "http://localhost:3000";
+          const dashboardUrl = `${frontendUrl}/dashboard/bookings`;
+
+          const htmlMessage = `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; font-size: 15px; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
+              <div style="background-color: white; padding: 40px 35px; border-radius: 12px; box-shadow: 0 2px 15px rgba(0,0,0,0.08);">
+                <div style="text-align: center; margin-bottom: 30px;">
+                  <div style="width: 80px; height: 80px; background: #8b5a2b; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3">
+                      <path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <h2 style="color: #5a3a1f; margin: 0; font-size: 28px; font-weight: 700;">Payment Complete!</h2>
+                </div>
+                
+                <p style="color: #5a3a1f; line-height: 1.6; margin-bottom: 25px;">
+                  Hi ${client.firstName},
+                </p>
+                
+                <p style="color: #5a3a1f; line-height: 1.6; margin-bottom: 25px;">
+                  Your payment has been received successfully! A confirmation email has been sent, and your booking is now secured. We'll remind you closer to your event date.
+                </p>
+                
+                <div style="background-color: #fef9f3; padding: 20px; border-radius: 8px; margin: 25px 0;">
+                  <h3 style="color: #5a3a1f; margin-top: 0; margin-bottom: 15px; font-size: 18px;">Booking Details:</h3>
+                  <p style="color: #5a3a1f; margin: 8px 0;"><strong>Event Type:</strong> ${eventType}</p>
+                  <p style="color: #5a3a1f; margin: 8px 0;"><strong>Event Date:</strong> ${eventDate}</p>
+                  ${
+                    artist
+                      ? `<p style="color: #5a3a1f; margin: 8px 0;"><strong>Artist:</strong> ${artist.firstName} ${artist.lastName}</p>`
+                      : ""
+                  }
+                  <p style="color: #5a3a1f; margin: 8px 0;"><strong>Amount Paid:</strong> £${paidAmount.toFixed(
+                    2
+                  )}</p>
+                  ${
+                    remainingAmount > 0
+                      ? `<p style="color: #5a3a1f; margin: 8px 0;"><strong>Remaining Payment:</strong> £${remainingAmount.toFixed(
+                          2
+                        )}</p>`
+                      : ""
+                  }
+                  <p style="color: #5a3a1f; margin: 8px 0;"><strong>Payment Status:</strong> ${
+                    booking.isPaid === "full"
+                      ? "Fully Paid"
+                      : booking.isPaid === "half"
+                      ? "Partially Paid"
+                      : "Pending"
+                  }</p>
+                </div>
+                
+                <div style="background-color: #fef9f3; padding: 15px; border-radius: 8px; margin: 25px 0;">
+                  <p style="color: #5a3a1f; margin: 0; font-size: 14px; line-height: 1.6;">
+                    ✓ Payment processed securely<br>
+                    ✓ Confirmation email sent<br>
+                    ✓ Booking confirmed
+                  </p>
+                </div>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="${dashboardUrl}" style="display: inline-block; background-color: #8b5a2b; color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; margin: 0 8px;">
+                    View My Bookings
+                  </a>
+                </div>
+                
+                <p style="margin-top: 30px; color: #888; font-size: 13px; border-top: 1px solid #eee; padding-top: 20px; text-align: center;">
+                  Thank you for booking with Mehndi Me 💝
+                </p>
+              </div>
+            </div>
+          `;
+
+          await sendEmail({
+            email: client.email,
+            subject: "Payment Complete - Your Booking is Confirmed",
+            message: `Hi ${
+              client.firstName
+            },\n\nYour payment has been received successfully! A confirmation email has been sent, and your booking is now secured.\n\nEvent Type: ${eventType}\nEvent Date: ${eventDate}\nAmount Paid: £${paidAmount.toFixed(
+              2
+            )}\n\nWe'll remind you closer to your event date.\n\nThank you for booking with Mehndi Me!`,
+            html: htmlMessage,
+          });
+          console.log(
+            "Payment confirmation email sent to client:",
+            client.email
+          );
+        }
+      } catch (emailError) {
+        console.error("Error sending payment confirmation email:", emailError);
+        // Don't fail the request if email fails
+      }
+    }
+
     // Create notification for the artist about application status change
     try {
       const application = await Application.findById(applicationId);
-      const bookingEntry = application.Booking.find(b => b.booking_id.toString() === bookingId.toString());
+      const bookingEntry = application.Booking.find(
+        (b) => b.booking_id.toString() === bookingId.toString()
+      );
       const artistId = bookingEntry && bookingEntry.artist_id;
 
       if (artistId) {
@@ -745,36 +1086,49 @@ exports.updateApplicationStatus = async (req, res) => {
         const notificationData = {
           clientName,
           artistName: `${req.user.firstName} ${req.user.lastName}`,
-          bookingName: `${booking.eventType?.join(', ') || 'Mehndi'} - ${booking.city}`,
+          bookingName: `${booking.eventType?.join(", ") || "Mehndi"} - ${
+            booking.city
+          }`,
           eventType: booking.eventType,
           bookingDate: booking.eventDate,
           location: booking.city,
-          proposedBudget: bookingEntry.artistDetails?.proposedBudget
+          proposedBudget: bookingEntry.artistDetails?.proposedBudget,
         };
 
         await createNotification(
-          status === 'accepted' ? 'application_accepted' : 'application_declined',
+          status === "accepted"
+            ? "application_accepted"
+            : "application_declined",
           artistId,
           req.user.id,
-          'artist',
+          "artist",
           bookingId,
           applicationId,
           notificationData
         );
       }
     } catch (notificationError) {
-      console.error('Error creating application status notification:', notificationError);
+      console.error(
+        "Error creating application status notification:",
+        notificationError
+      );
       // Don't fail the status update if notifications fail
     }
 
     // Return refreshed list for this booking
     return exports.getApplicationsForBooking(req, res);
   } catch (error) {
-    console.error('Update application status error:', error);
-    return res.status(500).json({ success: false, message: 'Server error while updating application status', error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' });
+    console.error("Update application status error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while updating application status",
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
+    });
   }
-}
-
+};
 
 // @desc    Artist cancels an accepted application -> notify client by email
 // @route   POST /api/applications/cancel
@@ -782,66 +1136,103 @@ exports.updateApplicationStatus = async (req, res) => {
 exports.notifyCancellationByArtist = async (req, res) => {
   try {
     const { bookingId, reason, description } = req.body || {};
-    console.log('notifyCancellationByArtist payload:', { bookingId, reason, description, artistId: req.user?.id });
+    console.log("notifyCancellationByArtist payload:", {
+      bookingId,
+      reason,
+      description,
+      artistId: req.user?.id,
+    });
     if (!bookingId) {
-      return res.status(400).json({ success: false, message: 'bookingId is required' });
+      return res
+        .status(400)
+        .json({ success: false, message: "bookingId is required" });
     }
 
     if (!reason || !reason.trim()) {
-      return res.status(400).json({ success: false, message: 'Cancellation reason is required' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Cancellation reason is required" });
     }
 
-    if (!req.user || req.user.userType !== 'artist') {
-      return res.status(403).json({ success: false, message: 'Only artists can cancel accepted applications.' });
+    if (!req.user || req.user.userType !== "artist") {
+      return res.status(403).json({
+        success: false,
+        message: "Only artists can cancel accepted applications.",
+      });
     }
 
     // Update application with cancellation details
     const updateResult = await Application.updateOne(
-      { 'Booking.booking_id': bookingId, 'Booking.artist_id': req.user.id },
+      { "Booking.booking_id": bookingId, "Booking.artist_id": req.user.id },
       {
         $set: {
-          'Booking.$[elem].status': 'cancelled by artist',
-          'Booking.$[elem].cancellationReason': reason,
-          'Booking.$[elem].cancellationDescription': description || null
-        }
+          "Booking.$[elem].status": "cancelled by artist",
+          "Booking.$[elem].cancellationReason": reason,
+          "Booking.$[elem].cancellationDescription": description || null,
+        },
       },
-      { arrayFilters: [{ 'elem.booking_id': bookingId }] }
+      { arrayFilters: [{ "elem.booking_id": bookingId }] }
     );
 
     if (updateResult.modifiedCount === 0) {
-      return res.status(404).json({ success: false, message: 'No application found for this booking and artist to cancel.' });
+      return res.status(404).json({
+        success: false,
+        message: "No application found for this booking and artist to cancel.",
+      });
     }
 
     // Get booking and client
-    const booking = await Booking.findById(bookingId).select('clientId eventType firstName lastName eventDate preferredTimeSlot');
-    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+    const booking = await Booking.findById(bookingId).select(
+      "clientId eventType firstName lastName eventDate preferredTimeSlot"
+    );
+    if (!booking)
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
 
     // Set reinstate status to true
     booking.reinstate = true;
     await booking.save();
 
-    const client = await User.findById(booking.clientId).select('email firstName lastName');
-    if (!client || !client.email) return res.status(404).json({ success: false, message: 'Client email not found' });
+    const client = await User.findById(booking.clientId).select(
+      "email firstName lastName"
+    );
+    if (!client || !client.email)
+      return res
+        .status(404)
+        .json({ success: false, message: "Client email not found" });
 
     // Get artist details
-    const artist = await User.findById(req.user.id).select('firstName lastName email phoneNumber');
+    const artist = await User.findById(req.user.id).select(
+      "firstName lastName email phoneNumber"
+    );
 
     // Send email
-    const nodemailer = require('nodemailer');
+    const nodemailer = require("nodemailer");
     const transport = nodemailer.createTransport({
-      service: 'gmail',
+      service: "gmail",
       auth: {
         user: process.env.EMAIL_USER || "ahmadmurtaza2233@gmail.com",
         pass: process.env.EMAIL_PASS || "czhupnxmdckqhydy",
       },
     });
 
-    const eventType = Array.isArray(booking.eventType) ? booking.eventType.join(', ') : (booking.eventType || 'Mehndi');
-    const eventDate = booking.eventDate ? new Date(booking.eventDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
-    const eventTime = Array.isArray(booking.preferredTimeSlot) ? booking.preferredTimeSlot.join(', ') : 'Not specified';
+    const eventType = Array.isArray(booking.eventType)
+      ? booking.eventType.join(", ")
+      : booking.eventType || "Mehndi";
+    const eventDate = booking.eventDate
+      ? new Date(booking.eventDate).toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
+      : "N/A";
+    const eventTime = Array.isArray(booking.preferredTimeSlot)
+      ? booking.preferredTimeSlot.join(", ")
+      : "Not specified";
 
     // Base URL for frontend (adjust as needed)
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
     const relistUrl = `${frontendUrl}/payment-reschedule-booking/relist/${bookingId}/${req.user.id}/${booking.clientId}`;
     const refundUrl = `${frontendUrl}/payment-reschedule-booking/refund/${bookingId}/${req.user.id}/${booking.clientId}`;
 
@@ -917,10 +1308,15 @@ exports.notifyCancellationByArtist = async (req, res) => {
       html,
     });
 
-    return res.status(200).json({ success: true, message: 'Cancellation email sent to client.' });
+    return res
+      .status(200)
+      .json({ success: true, message: "Cancellation email sent to client." });
   } catch (error) {
-    console.error('notifyCancellationByArtist error:', error);
-    return res.status(500).json({ success: false, message: 'Server error while sending cancellation email' });
+    console.error("notifyCancellationByArtist error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while sending cancellation email",
+    });
   }
 };
 
@@ -929,57 +1325,70 @@ exports.notifyCancellationByArtist = async (req, res) => {
 // @access  Private (Artist only)
 exports.completeApplication = async (req, res) => {
   try {
-    const { bookingId, images = [], video = '' } = req.body;
+    const { bookingId, images = [], video = "" } = req.body;
 
     if (!bookingId) {
-      return res.status(400).json({ success: false, message: 'bookingId is required' });
+      return res
+        .status(400)
+        .json({ success: false, message: "bookingId is required" });
     }
 
-    if (!req.user || req.user.userType !== 'artist') {
-      return res.status(403).json({ success: false, message: 'Only artists can mark applications as completed.' });
+    if (!req.user || req.user.userType !== "artist") {
+      return res.status(403).json({
+        success: false,
+        message: "Only artists can mark applications as completed.",
+      });
     }
 
     // Find the application and update the specific booking entry
     const application = await Application.findOne({
-      'Booking.booking_id': bookingId,
-      'Booking.artist_id': req.user.id
+      "Booking.booking_id": bookingId,
+      "Booking.artist_id": req.user.id,
     });
 
     if (!application) {
-      return res.status(404).json({ success: false, message: 'Application not found for this booking and artist' });
+      return res.status(404).json({
+        success: false,
+        message: "Application not found for this booking and artist",
+      });
     }
 
     // Update the specific booking entry within the application
     const updateResult = await Application.updateOne(
       {
         _id: application._id,
-        'Booking.booking_id': bookingId,
-        'Booking.artist_id': req.user.id
+        "Booking.booking_id": bookingId,
+        "Booking.artist_id": req.user.id,
       },
       {
         $set: {
-          'Booking.$.status': 'completed',
-          'Booking.$.images': Array.isArray(images) ? images.slice(0, 3) : [],
-          'Booking.$.video': typeof video === 'string' ? video : ''
-        }
+          "Booking.$.status": "completed",
+          "Booking.$.images": Array.isArray(images) ? images.slice(0, 3) : [],
+          "Booking.$.video": typeof video === "string" ? video : "",
+        },
       }
     );
 
     if (updateResult.modifiedCount === 0) {
-      return res.status(404).json({ success: false, message: 'Failed to update application' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Failed to update application" });
     }
 
     return res.status(200).json({
       success: true,
-      message: 'Application marked as completed successfully',
-      data: { bookingId, images, video }
+      message: "Application marked as completed successfully",
+      data: { bookingId, images, video },
     });
   } catch (error) {
-    console.error('Complete application error:', error);
+    console.error("Complete application error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Server error while completing application',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      message: "Server error while completing application",
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
     });
   }
 };
@@ -992,35 +1401,48 @@ exports.addApplicationNote = async (req, res) => {
     const { bookingId, content, followUp = false } = req.body;
 
     if (!bookingId) {
-      return res.status(400).json({ success: false, message: 'bookingId is required' });
+      return res
+        .status(400)
+        .json({ success: false, message: "bookingId is required" });
     }
 
     if (!content || !content.trim()) {
-      return res.status(400).json({ success: false, message: 'Note content is required' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Note content is required" });
     }
 
-    if (req.user.userType !== 'artist') {
-      return res.status(403).json({ success: false, message: 'Only artists can add notes' });
+    if (req.user.userType !== "artist") {
+      return res
+        .status(403)
+        .json({ success: false, message: "Only artists can add notes" });
     }
 
     // Find the application for this artist and booking
     const application = await Application.findOne({
-      'Booking.booking_id': bookingId,
-      'Booking.artist_id': req.user.id,
-      'Booking.status': 'accepted'
+      "Booking.booking_id": bookingId,
+      "Booking.artist_id": req.user.id,
+      "Booking.status": "accepted",
     });
 
     if (!application) {
-      return res.status(404).json({ success: false, message: 'No accepted application found for this booking' });
+      return res.status(404).json({
+        success: false,
+        message: "No accepted application found for this booking",
+      });
     }
 
     // Find the specific booking entry
     const bookingEntry = application.Booking.find(
-      b => b.booking_id.toString() === bookingId.toString() && b.artist_id.toString() === req.user.id
+      (b) =>
+        b.booking_id.toString() === bookingId.toString() &&
+        b.artist_id.toString() === req.user.id
     );
 
     if (!bookingEntry) {
-      return res.status(404).json({ success: false, message: 'Booking entry not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking entry not found" });
     }
 
     // Add note to the booking entry
@@ -1031,22 +1453,25 @@ exports.addApplicationNote = async (req, res) => {
     bookingEntry.notes.push({
       content: content.trim(),
       followUp: followUp === true,
-      createdAt: new Date()
+      createdAt: new Date(),
     });
 
     await application.save();
 
     return res.status(200).json({
       success: true,
-      message: 'Note added successfully',
-      data: bookingEntry.notes
+      message: "Note added successfully",
+      data: bookingEntry.notes,
     });
   } catch (error) {
-    console.error('Add application note error:', error);
+    console.error("Add application note error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Server error while adding note',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      message: "Server error while adding note",
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
     });
   }
 };
@@ -1059,42 +1484,56 @@ exports.getApplicationNotes = async (req, res) => {
     const { bookingId } = req.params;
 
     if (!bookingId) {
-      return res.status(400).json({ success: false, message: 'bookingId is required' });
+      return res
+        .status(400)
+        .json({ success: false, message: "bookingId is required" });
     }
 
-    if (req.user.userType !== 'artist') {
-      return res.status(403).json({ success: false, message: 'Only artists can view notes' });
+    if (req.user.userType !== "artist") {
+      return res
+        .status(403)
+        .json({ success: false, message: "Only artists can view notes" });
     }
 
     // Find the application for this artist and booking
     const application = await Application.findOne({
-      'Booking.booking_id': bookingId,
-      'Booking.artist_id': req.user.id
+      "Booking.booking_id": bookingId,
+      "Booking.artist_id": req.user.id,
     });
 
     if (!application) {
-      return res.status(404).json({ success: false, message: 'No application found for this booking' });
+      return res.status(404).json({
+        success: false,
+        message: "No application found for this booking",
+      });
     }
 
     // Find the specific booking entry
     const bookingEntry = application.Booking.find(
-      b => b.booking_id.toString() === bookingId.toString() && b.artist_id.toString() === req.user.id
+      (b) =>
+        b.booking_id.toString() === bookingId.toString() &&
+        b.artist_id.toString() === req.user.id
     );
 
     if (!bookingEntry) {
-      return res.status(404).json({ success: false, message: 'Booking entry not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking entry not found" });
     }
 
     return res.status(200).json({
       success: true,
-      data: bookingEntry.notes || []
+      data: bookingEntry.notes || [],
     });
   } catch (error) {
-    console.error('Get application notes error:', error);
+    console.error("Get application notes error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Server error while fetching notes',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      message: "Server error while fetching notes",
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
     });
   }
 };

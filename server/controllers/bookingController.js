@@ -6,6 +6,7 @@ const Application = require("../schemas/Application");
 const Notification = require("../schemas/Notification");
 const BookingLog = require("../schemas/BookingLog");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY || "");
+const sendEmail = require("../utils/sendEmail");
 
 // Helper function to create booking logs
 const createBookingLog = async (
@@ -557,22 +558,18 @@ const updateBooking = async (req, res) => {
       req.user.userType !== "client" ||
       booking.clientId.toString() !== req.user.id
     ) {
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message: "Not authorized to update this booking",
-        });
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to update this booking",
+      });
     }
 
     // Prevent updates when completed or cancelled
     if (["completed", "cancelled", "in_progress"].includes(booking.status)) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: `Cannot edit a ${booking.status} booking`,
-        });
+      return res.status(400).json({
+        success: false,
+        message: `Cannot edit a ${booking.status} booking`,
+      });
     }
 
     const updatableFields = [
@@ -643,12 +640,10 @@ const updateBooking = async (req, res) => {
       typeof booking.maximumBudget === "number" &&
       booking.maximumBudget < booking.minimumBudget
     ) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Maximum budget must be >= minimum budget",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Maximum budget must be >= minimum budget",
+      });
     }
 
     // Normalize eventDate
@@ -699,25 +694,21 @@ const updateBooking = async (req, res) => {
       }
     );
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Booking updated successfully",
-        data: booking,
-      });
+    res.status(200).json({
+      success: true,
+      message: "Booking updated successfully",
+      data: booking,
+    });
   } catch (error) {
     console.error("Update booking error:", error);
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Server error while updating booking",
-        error:
-          process.env.NODE_ENV === "development"
-            ? error.message
-            : "Internal server error",
-      });
+    res.status(500).json({
+      success: false,
+      message: "Server error while updating booking",
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
+    });
   }
 };
 
@@ -737,12 +728,10 @@ const deleteBooking = async (req, res) => {
       req.user.userType !== "client" ||
       booking.clientId.toString() !== req.user.id
     ) {
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message: "Not authorized to delete this booking",
-        });
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to delete this booking",
+      });
     }
 
     if (booking.status === "completed") {
@@ -835,16 +824,14 @@ const deleteBooking = async (req, res) => {
       .json({ success: true, message: "Booking deleted successfully" });
   } catch (error) {
     console.error("Delete booking error:", error);
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Server error while deleting booking",
-        error:
-          process.env.NODE_ENV === "development"
-            ? error.message
-            : "Internal server error",
-      });
+    res.status(500).json({
+      success: false,
+      message: "Server error while deleting booking",
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
+    });
   }
 };
 
@@ -922,12 +909,10 @@ const completeBooking = async (req, res) => {
       req.user.userType !== "client" ||
       booking.clientId.toString() !== req.user.id
     ) {
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message: "Not authorized to complete this booking",
-        });
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to complete this booking",
+      });
     }
 
     // Ensure an artist has been assigned before completion
@@ -935,12 +920,10 @@ const completeBooking = async (req, res) => {
       Array.isArray(booking.assignedArtist) &&
       booking.assignedArtist.length > 0;
     if (!hasAssignedArtist) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Cannot complete booking: no artist assigned",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Cannot complete booking: no artist assigned",
+      });
     }
 
     // Fetch assigned artist's Stripe account ID (first assigned artist)
@@ -955,23 +938,19 @@ const completeBooking = async (req, res) => {
     } catch (_) {}
 
     if (!assignedArtistStripeAccountId) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Assigned artist is missing Stripe account",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Assigned artist is missing Stripe account",
+      });
     }
 
     // Amount to transfer = total payment paid for the booking
     const amountPaid = Number(booking.paymentPaid) || 0;
     if (!(amountPaid > 0)) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "No payment recorded for this booking",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "No payment recorded for this booking",
+      });
     }
 
     // Credit assigned artist wallet instead of Stripe transfer
@@ -1017,13 +996,11 @@ const completeBooking = async (req, res) => {
       await tx.save();
     } catch (walletErr) {
       console.error("Wallet credit error:", walletErr);
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Failed to credit artist wallet",
-          error: walletErr.message,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Failed to credit artist wallet",
+        error: walletErr.message,
+      });
     }
 
     // Accept up to 3 images
@@ -1064,22 +1041,18 @@ const completeBooking = async (req, res) => {
       // Don't fail the completion if notifications fail
     }
 
-    return res
-      .status(200)
-      .json({
-        success: true,
-        message: "Booking marked as completed",
-        data: booking,
-        assignedArtistStripeAccountId,
-      });
+    return res.status(200).json({
+      success: true,
+      message: "Booking marked as completed",
+      data: booking,
+      assignedArtistStripeAccountId,
+    });
   } catch (error) {
     console.error("Complete booking error:", error);
-    return res
-      .status(500)
-      .json({
-        success: false,
-        message: "Server error while completing booking",
-      });
+    return res.status(500).json({
+      success: false,
+      message: "Server error while completing booking",
+    });
   }
 };
 
@@ -1664,6 +1637,90 @@ const updateBookingPaymentStatus = async (req, res) => {
       remainingPayment: remainingPayment,
     });
 
+    // Send confirmation email to client
+    try {
+      const client = await User.findById(booking.clientId).select(
+        "email firstName lastName"
+      );
+      if (client && client.email) {
+        const eventType = Array.isArray(booking.eventType)
+          ? booking.eventType.join(", ")
+          : booking.eventType || "Mehndi";
+        const eventDate = booking.eventDate
+          ? new Date(booking.eventDate).toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            })
+          : "N/A";
+        const totalPaid = Number(booking.paymentPaid) || 0;
+        const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+        const dashboardUrl = `${frontendUrl}/dashboard/bookings`;
+
+        const htmlMessage = `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; font-size: 15px; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
+            <div style="background-color: white; padding: 40px 35px; border-radius: 12px; box-shadow: 0 2px 15px rgba(0,0,0,0.08);">
+              <div style="text-align: center; margin-bottom: 30px;">
+                <div style="width: 80px; height: 80px; background: #8b5a2b; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3">
+                    <path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+                <h2 style="color: #5a3a1f; margin: 0; font-size: 28px; font-weight: 700;">Payment Complete!</h2>
+              </div>
+              
+              <p style="color: #5a3a1f; line-height: 1.6; margin-bottom: 25px;">
+                Hi ${client.firstName},
+              </p>
+              
+              <p style="color: #5a3a1f; line-height: 1.6; margin-bottom: 25px;">
+                Your remaining payment has been received successfully! Your booking is now fully paid and confirmed.
+              </p>
+              
+              <div style="background-color: #fef9f3; padding: 20px; border-radius: 8px; margin: 25px 0;">
+                <h3 style="color: #5a3a1f; margin-top: 0; margin-bottom: 15px; font-size: 18px;">Booking Details:</h3>
+                <p style="color: #5a3a1f; margin: 8px 0;"><strong>Event Type:</strong> ${eventType}</p>
+                <p style="color: #5a3a1f; margin: 8px 0;"><strong>Event Date:</strong> ${eventDate}</p>
+                <p style="color: #5a3a1f; margin: 8px 0;"><strong>Total Amount Paid:</strong> £${totalPaid.toFixed(
+                  2
+                )}</p>
+                <p style="color: #5a3a1f; margin: 8px 0;"><strong>Payment Status:</strong> Fully Paid</p>
+              </div>
+              
+              <p style="color: #5a3a1f; line-height: 1.6; margin-bottom: 25px;">
+                We'll remind you closer to your event date. If you have any questions or need to make changes, please don't hesitate to contact us.
+              </p>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${dashboardUrl}" style="display: inline-block; background-color: #8b5a2b; color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; text-decoration: none;">
+                  View My Bookings
+                </a>
+              </div>
+              
+              <p style="margin-top: 30px; color: #888; font-size: 13px; border-top: 1px solid #eee; padding-top: 20px; text-align: center;">
+                Thank you for booking with Mehndi Me 💝
+              </p>
+            </div>
+          </div>
+        `;
+
+        await sendEmail({
+          email: client.email,
+          subject: "Payment Complete - Your Booking is Confirmed",
+          message: `Hi ${
+            client.firstName
+          },\n\nYour remaining payment has been received successfully! Your booking is now fully paid and confirmed.\n\nEvent Type: ${eventType}\nEvent Date: ${eventDate}\nTotal Amount Paid: £${totalPaid.toFixed(
+            2
+          )}\n\nWe'll remind you closer to your event date.\n\nThank you for booking with Mehndi Me!`,
+          html: htmlMessage,
+        });
+        console.log("Payment confirmation email sent to client:", client.email);
+      }
+    } catch (emailError) {
+      console.error("Error sending payment confirmation email:", emailError);
+      // Don't fail the request if email fails
+    }
+
     return res.status(200).json({
       success: true,
       message: "Booking payment status updated successfully",
@@ -2030,12 +2087,10 @@ const getSavedBookings = async (req, res) => {
       .json({ success: true, count: bookings.length, data: bookings });
   } catch (error) {
     console.error("Get saved bookings error:", error);
-    return res
-      .status(500)
-      .json({
-        success: false,
-        message: "Server error while fetching saved bookings",
-      });
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching saved bookings",
+    });
   }
 };
 

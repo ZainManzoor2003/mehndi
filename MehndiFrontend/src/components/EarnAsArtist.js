@@ -269,6 +269,7 @@ const EarnAsArtist = () => {
           }}
         >
           <div
+            className="earn-artist-features-grid"
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
@@ -353,12 +354,135 @@ const EarnAsArtist = () => {
                 you can focus on your designs.
               </p>
             </div>
+
+            <div
+              className="feature-card"
+              style={{
+                backgroundColor: "#ffffff",
+                padding: "32px",
+                borderRadius: "12px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                textAlign: "left",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "2rem",
+                  marginBottom: "16px",
+                  color: "#ff69b4",
+                }}
+              >
+                <FaMapPin />
+              </div>
+              <h3
+                style={{
+                  fontSize: "1.3rem",
+                  fontWeight: "bold",
+                  color: "#8B4513",
+                  marginBottom: "12px",
+                }}
+              >
+                Apply to Client Requests
+              </h3>
+              <p
+                style={{
+                  color: "#8B4513",
+                  lineHeight: "1.6",
+                }}
+              >
+                Browse client requests and apply to the ones that fit your
+                style.
+              </p>
+            </div>
+
+            {/* Flexible Work */}
+            <div
+              className="feature-card"
+              style={{
+                backgroundColor: "#ffffff",
+                padding: "32px",
+                borderRadius: "12px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                textAlign: "left",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "2rem",
+                  marginBottom: "16px",
+                  color: "#ff0000",
+                }}
+              >
+                <FaClock />
+              </div>
+              <h3
+                style={{
+                  fontSize: "1.3rem",
+                  fontWeight: "bold",
+                  color: "#8B4513",
+                  marginBottom: "12px",
+                }}
+              >
+                Flexible Work
+              </h3>
+              <p
+                style={{
+                  color: "#8B4513",
+                  lineHeight: "1.6",
+                }}
+              >
+                Apply only to jobs that match your availability and preferred
+                style.
+              </p>
+            </div>
+
+            <div
+              className="feature-card feature-card-last"
+              style={{
+                backgroundColor: "#ffffff",
+                padding: "32px",
+                borderRadius: "12px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                textAlign: "left",
+                maxWidth: "400px",
+                width: "100%",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "2rem",
+                  marginBottom: "16px",
+                  color: "#ffd700",
+                }}
+              >
+                <FaStar />
+              </div>
+              <h3
+                style={{
+                  fontSize: "1.3rem",
+                  fontWeight: "bold",
+                  color: "#8B4513",
+                  marginBottom: "12px",
+                }}
+              >
+                Grow Your Brand
+              </h3>
+              <p
+                style={{
+                  color: "#8B4513",
+                  lineHeight: "1.6",
+                }}
+              >
+                Earn reviews, build your reputation, and showcase your mehndi
+                style.
+              </p>
+            </div>
           </div>
         </section>
 
         {/* How It Works Section */}
 
-        <section
+        {/* <section
           className="responsive-section"
           style={{
             padding: "0px 20px",
@@ -366,7 +490,6 @@ const EarnAsArtist = () => {
           }}
         >
           <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
-            {/* First Row - Two Cards */}
             <div
               className="how-it-works-grid"
               style={{
@@ -376,7 +499,6 @@ const EarnAsArtist = () => {
                 marginBottom: "36px",
               }}
             >
-              {/* Apply to Client Requests */}
               <div
                 className="feature-card"
                 style={{
@@ -417,7 +539,6 @@ const EarnAsArtist = () => {
                 </p>
               </div>
 
-              {/* Flexible Work */}
               <div
                 className="feature-card"
                 style={{
@@ -459,7 +580,6 @@ const EarnAsArtist = () => {
               </div>
             </div>
 
-            {/* Second Row - Centered Card */}
             <div
               className="centered-card-container"
               style={{
@@ -467,7 +587,6 @@ const EarnAsArtist = () => {
                 justifyContent: "center",
               }}
             >
-              {/* Grow Your Brand */}
               <div
                 className="feature-card"
                 style={{
@@ -511,7 +630,7 @@ const EarnAsArtist = () => {
               </div>
             </div>
           </div>
-        </section>
+        </section> */}
 
         {/* Fair Transparent Pricing Section */}
         <section
