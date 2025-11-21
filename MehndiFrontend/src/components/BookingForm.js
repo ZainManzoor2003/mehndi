@@ -1949,9 +1949,7 @@ const BookingForm = () => {
                   <textarea
                     name="additionalRequests"
                     className="form-textarea"
-                    placeholder="Please bring your own cones, We'll be outdoors, Prefer traditional 
-                    Indian patterns, I have a henna allergy – need natural only, Parking is 
-                    limited on my road, or I'm flexible with timing"
+                    placeholder="Share any detailes that help your artist prepare - e.g. prefer traditional designs, natural henna only, outdoors setup, limited parking, or flexible timing."
                     value={formData.additionalRequests}
                     onChange={handleInputChange}
                     rows="4"
