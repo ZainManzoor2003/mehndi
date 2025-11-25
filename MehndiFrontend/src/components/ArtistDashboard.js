@@ -4174,7 +4174,40 @@ const ArtistDashboard = () => {
                     </div>
                   </div>
 
-                  {/* Filters */}
+                  {/* Filters - Dropdown for Mobile */}
+                  <div className="apps-filters-mobile">
+                    <select
+                      className="apps-filter-select"
+                      value={applicationsFilter}
+                      onChange={(e) => {
+                        const f = e.target.value;
+                        setApplicationsFilter(f);
+                        if (f === "applied") {
+                          fetchAppliedBookings();
+                        } else if (f === "all") {
+                          fetchSavedBookings();
+                        } else if (
+                          [
+                            "accepted",
+                            "declined",
+                            "withdrawn",
+                            "expired",
+                          ].includes(f)
+                        ) {
+                          fetchApplicationsByStatus(f);
+                        }
+                      }}
+                    >
+                      <option value="applied">Applied</option>
+                      <option value="accepted">Accepted</option>
+                      <option value="declined">Declined</option>
+                      <option value="withdrawn">Withdrawn</option>
+                      <option value="expired">Expired</option>
+                      <option value="all">Saved</option>
+                    </select>
+                  </div>
+
+                  {/* Filters - Tabs for Desktop */}
                   <div className="apps-filters">
                     {[
                       "applied",
