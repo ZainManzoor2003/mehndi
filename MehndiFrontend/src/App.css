@@ -7031,7 +7031,7 @@ input {
   }
 
   .home {
-    height: 100vh;
+    height: 85vh;
   }
 
   .home__container,
@@ -7755,7 +7755,7 @@ body.dark-theme .scroll-header .henna-line {
 @media screen and (max-width: 1024px) {
   .how-it-works {
     padding: 8rem 0 5rem 0;
-    margin-top: 6rem;
+    margin-top: 0rem;
   }
 
   .how-it-works__title {
@@ -7791,8 +7791,8 @@ body.dark-theme .scroll-header .henna-line {
 
 @media screen and (max-width: 768px) {
   .how-it-works {
-    padding: 6rem 0 4rem 0;
-    margin-top: 4rem;
+    padding: 0rem 0 4rem 0;
+    margin-top: 0rem;
   }
 
   .how-it-works__title {
@@ -7880,7 +7880,7 @@ body.dark-theme .scroll-header .henna-line {
 @media screen and (max-width: 480px) {
   .how-it-works {
     padding: 0rem 0 3rem 0;
-    margin-top: 2rem;
+    margin-top: 0rem;
   }
 
   .how-it-works__container {
@@ -7947,11 +7947,22 @@ body.dark-theme .scroll-header .henna-line {
   }
 
   .home {
-    height: 85vh;
+    height: 75vh;
   }
 
   .home__content {
     /* margin-top: -180px; */
+  }
+}
+
+.customDiv {
+  text-align: center;
+  margin-top: 150px;
+}
+
+@media screen and (max-width: 768px) {
+  .customDiv {
+    margin-top: 50px;
   }
 }
 
@@ -11492,9 +11503,31 @@ body.dark-theme .scroll-header .henna-line {
 
 .apps-stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1rem;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+/* Responsive stats grid */
+@media screen and (max-width: 1200px) {
+  .apps-stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .apps-stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .apps-stats-grid {
+            grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
 }
 
 .apps-stat {
@@ -11552,8 +11585,31 @@ body.dark-theme .scroll-header .henna-line {
 .apps-filters {
   display: flex;
   gap: 0.5rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   margin-bottom: 1rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+  padding-bottom: 4px;
+}
+
+.apps-filters::-webkit-scrollbar {
+  height: 6px;
+}
+
+.apps-filters::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.apps-filters::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 3px;
+}
+
+.apps-filters::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
 }
 
 .apps-pill {
@@ -11562,6 +11618,8 @@ body.dark-theme .scroll-header .henna-line {
   border-radius: 999px;
   padding: 8px 14px;
   cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .apps-pill.active {

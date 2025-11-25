@@ -651,7 +651,7 @@ const HowItWorks = () => {
           </div>
         </div>
         {/* CTA Buttons based on active tab */}
-        <div style={{ textAlign: "center", marginTop: "150px" }}>
+        <div className="customDiv">
           {activeTab === "clients" ? (
             <div>
               <button

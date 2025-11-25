@@ -3851,14 +3851,7 @@ const ArtistDashboard = () => {
                   </p>
 
                   {/* Stats */}
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(5, 1fr)",
-                      gap: "15px",
-                      marginBottom: "30px",
-                    }}
-                  >
+                  <div className="apps-stats-grid">
                     {/* Applied */}
                     <div
                       style={{
