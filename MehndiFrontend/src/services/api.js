@@ -1,5 +1,5 @@
-// const API_BASE_URL = "http://localhost:5001/api";
-const API_BASE_URL = "https://mehndi-server.vercel.app/api";
+const API_BASE_URL = "http://localhost:5001/api";
+// const API_BASE_URL = "https://mehndi-server.vercel.app/api";
 
 // API utility functions
 const handleResponse = async (response) => {
@@ -143,10 +143,18 @@ export const authAPI = {
 
   // Send phone verification code
   sendPhoneCode: async (email) => {
-    return apiRequest("/auth/send-phone-code", {
-      method: "POST",
-      body: JSON.stringify({ email }),
-    });
+    console.log("📱 [API] sendPhoneCode called with email:", email);
+    try {
+      const response = await apiRequest("/auth/send-phone-code", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      });
+      console.log("✅ [API] sendPhoneCode success:", response);
+      return response;
+    } catch (error) {
+      console.error("❌ [API] sendPhoneCode error:", error);
+      throw error;
+    }
   },
 
   // Verify phone code

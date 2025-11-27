@@ -81,8 +81,19 @@ const Signup = () => {
     setIsLoading(true);
 
     try {
+      console.log("📝 [Signup] Submitting registration form...");
+      console.log("   Email:", formData.email);
+      console.log(
+        "   Phone:",
+        formData.phoneNumber
+          ? "***" + formData.phoneNumber.slice(-4)
+          : "NOT PROVIDED"
+      );
+      console.log("   UserType:", formData.userType);
+
       // The register function now doesn't log the user in automatically
       const response = await register(formData);
+      console.log("✅ [Signup] Registration successful:", response);
 
       // Show the success message from the backend (email verification sent)
       setSuccess(
@@ -94,11 +105,18 @@ const Signup = () => {
       try {
         const encodedEmail = encodeURIComponent(formData.email);
         const encodedPhone = encodeURIComponent(formData.phoneNumber);
+        console.log("🔄 [Signup] Redirecting to email check page...");
+        console.log("   Email:", formData.email);
+        console.log("   Phone:", formData.phoneNumber);
         window.location.assign(
           `/check-email?email=${encodedEmail}&phone=${encodedPhone}`
         );
-      } catch {}
+      } catch (redirectError) {
+        console.error("❌ [Signup] Redirect error:", redirectError);
+      }
     } catch (error) {
+      console.error("❌ [Signup] Registration failed:", error);
+      console.error("   Error message:", error.message);
       setErrors({
         submit: error.message || "Registration failed. Please try again.",
       });

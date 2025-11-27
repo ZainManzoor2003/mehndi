@@ -375,13 +375,7 @@ const BookingForm = () => {
       );
       return false;
     }
-    // Coverage preference is required for Wedding events
-    if (formData.eventType === "Wedding" && !formData.coveragePreference) {
-      setError(
-        "Coverage preference (Bridal Only) is required for wedding events"
-      );
-      return false;
-    }
+    // Coverage preference is optional for all event types
     return true;
   };
 
@@ -493,14 +487,7 @@ const BookingForm = () => {
       return;
     }
 
-    // Check if coverage preference is required for Wedding
-    if (formData.eventType === "Wedding" && !formData.coveragePreference) {
-      setCurrentStep(3);
-      setError(
-        "Coverage preference (Bridal Only) is required for wedding events"
-      );
-      return;
-    }
+    // Coverage preference is optional for all event types
 
     if (
       !formData.budgetFrom ||
@@ -1728,39 +1715,22 @@ const BookingForm = () => {
                 <div className="form-group">
                   <label className="form-label">
                     Coverage Preference
-                    {formData.eventType === "Wedding" ? (
-                      <>
-                        <span style={{ color: "#ef4444" }}> *</span>
-                        <span
-                          style={{
-                            fontSize: "0.85rem",
-                            color: "#888",
-                            fontWeight: "normal",
-                          }}
-                        >
-                          {" "}
-                          (Bridal Only)
-                        </span>
-                      </>
-                    ) : (
-                      <span
-                        style={{
-                          fontSize: "0.85rem",
-                          color: "#888",
-                          fontWeight: "normal",
-                        }}
-                      >
-                        {" "}
-                        (optional)
-                      </span>
-                    )}
+                    <span
+                      style={{
+                        fontSize: "0.85rem",
+                        color: "#888",
+                        fontWeight: "normal",
+                      }}
+                    >
+                      {" "}
+                      (optional)
+                    </span>
                   </label>
                   <select
                     name="coveragePreference"
                     className="form-input"
                     value={formData.coveragePreference}
                     onChange={handleInputChange}
-                    required={formData.eventType === "Wedding"}
                   >
                     <option value="">Select coverage</option>
                     <option value="Full arms & feet">Full arms & feet</option>

@@ -4996,6 +4996,16 @@ input {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0.5rem;
+  position: relative;
+}
+
+.nav__cta-icon {
+  display: none;
+}
+
+.nav__cta-text {
+  display: inline-block;
 }
 
 .nav__cta-button:hover {
@@ -7031,7 +7041,7 @@ input {
   }
 
   .home {
-    height: 85vh;
+    height: 95vh;
   }
 
   .home__container,
@@ -7417,36 +7427,22 @@ body.dark-theme .scroll-header .henna-line {
 
   .nav__cta-button {
     padding: 0.5rem;
-    font-size: 0;
     width: 40px;
     height: 40px;
     border-radius: 50%;
     position: relative;
+    justify-content: center;
   }
   
-  .nav__cta-button::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+  .nav__cta-text {
+    display: none;
+  }
+  
+  .nav__cta-icon {
+    display: block;
     width: 20px;
     height: 20px;
-    border: 2px solid var(--white-color);
-    border-radius: 50%;
-  }
-  
-  .nav__cta-button::after {
-    content: '';
-    position: absolute;
-    bottom: 6px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 12px;
-    height: 12px;
-    border: 2px solid var(--white-color);
-    border-top: none;
-    border-radius: 0 0 12px 12px;
+    color: var(--white-color);
   }
 
   .nav {
@@ -7947,7 +7943,7 @@ body.dark-theme .scroll-header .henna-line {
   }
 
   .home {
-    height: 75vh;
+    height: 85vh;
   }
 
   .home__content {

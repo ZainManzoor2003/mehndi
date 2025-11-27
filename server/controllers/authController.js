@@ -392,63 +392,133 @@ const login = async (req, res) => {
 // POST /api/auth/send-phone-code
 const sendPhoneCode = async (req, res) => {
   try {
+    console.log("📱 [sendPhoneCode] Request received:", {
+      email: req.body.email,
+      timestamp: new Date().toISOString(),
+    });
+
     const { email } = req.body;
-    if (!email)
+    if (!email) {
+      console.log("❌ [sendPhoneCode] Email missing in request");
       return res
         .status(400)
         .json({ success: false, message: "Email is required" });
+    }
 
+    console.log("🔍 [sendPhoneCode] Looking for user with email:", email);
     const user = await User.findOne({ email });
-    if (!user)
+    if (!user) {
+      console.log("❌ [sendPhoneCode] User not found for email:", email);
       return res
         .status(404)
         .json({ success: false, message: "User not found" });
-    if (!user.isEmailVerified)
+    }
+
+    console.log("✅ [sendPhoneCode] User found:", {
+      userId: user._id,
+      email: user.email,
+      isEmailVerified: user.isEmailVerified,
+      phoneNumber: user.phoneNumber
+        ? "***" + user.phoneNumber.slice(-4)
+        : "NOT SET",
+    });
+
+    if (!user.isEmailVerified) {
+      console.log("❌ [sendPhoneCode] Email not verified for user:", email);
       return res
         .status(400)
         .json({ success: false, message: "Verify email first" });
+    }
 
     // Resolve phone number from discriminators
     let phone = user.phoneNumber;
     if (!phone) {
+      console.log(
+        "⚠️ [sendPhoneCode] Phone not found in user object, checking full user..."
+      );
       const fullUser = await User.findById(user._id).lean();
       phone = fullUser.phoneNumber; // artist stores at root via discriminator; client too
+      console.log(
+        "📞 [sendPhoneCode] Phone from fullUser:",
+        phone ? "***" + phone.slice(-4) : "NOT FOUND"
+      );
     }
-    if (!phone)
+
+    if (!phone) {
+      console.log("❌ [sendPhoneCode] No phone number found on account");
       return res
         .status(400)
         .json({ success: false, message: "No phone number on account" });
+    }
 
     // Generate 6-digit code
     const code = Math.floor(100000 + Math.random() * 900000).toString();
+    console.log("🔐 [sendPhoneCode] Generated verification code:", code);
+
     user.phoneVerificationCode = code;
     user.phoneVerificationExpires = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
     await user.save({ validateBeforeSave: false });
+    console.log(
+      "💾 [sendPhoneCode] Code saved to database, expires at:",
+      user.phoneVerificationExpires
+    );
 
     // Send via Twilio
     try {
       const accountSid = process.env.TWILIO_ACCOUNT_SID;
       const authToken = process.env.TWILIO_AUTH_TOKEN;
       const fromNumber = process.env.TWILIO_PHONE_NUMBER;
+
+      console.log("📡 [sendPhoneCode] Twilio configuration check:", {
+        hasAccountSid: !!accountSid,
+        hasAuthToken: !!authToken,
+        hasFromNumber: !!fromNumber,
+        fromNumber: fromNumber || "NOT SET",
+      });
+
       if (!accountSid || !authToken || !fromNumber) {
-        console.warn("Twilio env not set; skipping SMS send");
+        console.warn(
+          "⚠️ [sendPhoneCode] Twilio env variables not set; skipping SMS send"
+        );
+        console.warn("   Missing:", {
+          accountSid: !accountSid,
+          authToken: !authToken,
+          fromNumber: !fromNumber,
+        });
       } else {
+        console.log("📤 [sendPhoneCode] Attempting to send SMS via Twilio...");
+        console.log("   To:", phone);
+        console.log("   From:", fromNumber);
+        console.log("   Code:", code);
+
         const twilio = require("twilio")(accountSid, authToken);
-        await twilio.messages.create({
+        const message = await twilio.messages.create({
           to: phone,
           from: fromNumber,
           body: `Your MehndiMe verification code is: ${code}`,
         });
+
+        console.log("✅ [sendPhoneCode] SMS sent successfully via Twilio!");
+        console.log("   Message SID:", message.sid);
+        console.log("   Status:", message.status);
       }
     } catch (e) {
-      console.error("Twilio send error:", e.message);
+      console.error("❌ [sendPhoneCode] Twilio send error:", e.message);
+      console.error("   Error details:", {
+        code: e.code,
+        status: e.status,
+        message: e.message,
+        stack: e.stack,
+      });
     }
 
+    console.log("✅ [sendPhoneCode] Request completed successfully");
     return res
       .status(200)
       .json({ success: true, message: "Verification code sent" });
   } catch (err) {
-    console.error("sendPhoneCode error:", err);
+    console.error("❌ [sendPhoneCode] Server error:", err);
+    console.error("   Error stack:", err.stack);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
@@ -469,20 +539,16 @@ const verifyPhoneCode = async (req, res) => {
         .json({ success: false, message: "User not found" });
 
     if (!user.phoneVerificationCode || !user.phoneVerificationExpires) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "No code to verify. Please request a new code.",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "No code to verify. Please request a new code.",
+      });
     }
     if (user.phoneVerificationExpires.getTime() < Date.now()) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Code expired. Please request a new code.",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Code expired. Please request a new code.",
+      });
     }
     if (String(user.phoneVerificationCode) !== String(code)) {
       return res

@@ -12,19 +12,34 @@ const EmailVerification = () => {
 
   useEffect(() => {
     const verifyUserEmail = async () => {
+      console.log("📧 [EmailVerification] Starting email verification...");
       if (!token) {
+        console.log("❌ [EmailVerification] No token provided");
         setStatus("error");
         setMessage("No verification token provided.");
         return;
       }
 
+      console.log(
+        "🔍 [EmailVerification] Verifying token:",
+        token.substring(0, 10) + "..."
+      );
       try {
         const response = await authAPI.verifyEmail(token);
+        console.log(
+          "✅ [EmailVerification] Email verified successfully:",
+          response
+        );
         setStatus("success");
         setMessage(
           response.message || "Email verified successfully! You can now log in."
         );
       } catch (error) {
+        console.error(
+          "❌ [EmailVerification] Email verification failed:",
+          error
+        );
+        console.error("   Error message:", error.message);
         setStatus("error");
         setMessage(
           error.message ||

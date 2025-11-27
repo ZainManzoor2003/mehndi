@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
 const Header = () => {
   const navigate = useNavigate();
@@ -17,57 +17,62 @@ const Header = () => {
       setIsScrolled(scrolled);
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const toggleMenu = () => {
-    console.log('Hamburger clicked! Current state:', isMenuOpen, 'New state:', !isMenuOpen);
-    
+    console.log(
+      "Hamburger clicked! Current state:",
+      isMenuOpen,
+      "New state:",
+      !isMenuOpen
+    );
+
     if (!isMenuOpen) {
       // Open menu and trigger burger to flower animation
       setIsMenuOpen(true);
-      
+
       // Show overlay after burger animation completes
       setTimeout(() => {
-        const overlay = document.querySelector('.nav__overlay');
+        const overlay = document.querySelector(".nav__overlay");
         if (overlay) {
-          overlay.classList.add('nav__overlay--active');
+          overlay.classList.add("nav__overlay--active");
         }
-        document.body.style.overflow = 'hidden';
+        document.body.style.overflow = "hidden";
       }, 500); // Reduced time to match animation
     } else {
       // Close overlay first
-      const overlay = document.querySelector('.nav__overlay');
+      const overlay = document.querySelector(".nav__overlay");
       if (overlay) {
-        overlay.classList.remove('nav__overlay--active');
+        overlay.classList.remove("nav__overlay--active");
       }
-      
+
       // Reset burger state after overlay closes
       setTimeout(() => {
         setIsMenuOpen(false);
-        document.body.style.overflow = 'auto';
+        document.body.style.overflow = "auto";
       }, 300); // Reduced time for smoother transition
     }
   };
 
   const toggleTheme = () => {
     setIsDarkTheme(!isDarkTheme);
-    document.body.classList.toggle('dark-theme');
+    document.body.classList.toggle("dark-theme");
   };
 
   const closeMenu = () => {
-    console.log('Closing menu...');
+    console.log("Closing menu...");
     // Close the overlay first
-    const overlay = document.querySelector('.nav__overlay');
+    const overlay = document.querySelector(".nav__overlay");
     if (overlay) {
-      overlay.classList.remove('nav__overlay--active');
+      overlay.classList.remove("nav__overlay--active");
     }
-    
+
     // Reset burger state after overlay closes
     setTimeout(() => {
       setIsMenuOpen(false);
-      document.body.style.overflow = 'auto';
+      document.body.style.overflow = "auto";
     }, 300); // Reduced time for smoother transition
   };
 
@@ -81,8 +86,11 @@ const Header = () => {
     const tryScroll = (retries = 20) => {
       const target = document.querySelector(targetId);
       if (target) {
-        const targetPosition = target.getBoundingClientRect().top + window.pageYOffset - headerHeight;
-        window.scrollTo({ top: targetPosition, behavior: 'smooth' });
+        const targetPosition =
+          target.getBoundingClientRect().top +
+          window.pageYOffset -
+          headerHeight;
+        window.scrollTo({ top: targetPosition, behavior: "smooth" });
         return;
       }
       if (retries > 0) setTimeout(() => tryScroll(retries - 1), 75);
@@ -93,9 +101,9 @@ const Header = () => {
       setTimeout(() => tryScroll(), 350);
     };
 
-    if (location.pathname !== '/') {
+    if (location.pathname !== "/") {
       // Navigate to home first, then scroll to the section
-      navigate('/');
+      navigate("/");
       proceed();
     } else {
       proceed();
@@ -104,13 +112,25 @@ const Header = () => {
 
   return (
     <>
-      <header className={`header ${isScrolled ? 'scroll-header' : ''}`} id="header" 
-      style={{backgroundColor: '#E4C293', boxShadow: isScrolled &&'0 6px 16px rgba(0, 0, 0, 0.1)'}}>
+      <header
+        className={`header ${isScrolled ? "scroll-header" : ""}`}
+        id="header"
+        style={{
+          backgroundColor: "#E4C293",
+          boxShadow: isScrolled && "0 6px 16px rgba(0, 0, 0, 0.1)",
+        }}
+      >
         <nav className="nav container">
           {/* Left: Hamburger Menu */}
           <div className="nav__toggle" id="nav-toggle" onClick={toggleMenu}>
-            <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" width="60" height="60" className={`burger-svg ${isMenuOpen ? 'active' : ''}`}> 
-              <style> 
+            <svg
+              viewBox="0 0 32 32"
+              xmlns="http://www.w3.org/2000/svg"
+              width="60"
+              height="60"
+              className={`burger-svg ${isMenuOpen ? "active" : ""}`}
+            >
+              <style>
                 {`
                   .burger line { 
                     stroke: #EA7C25; 
@@ -174,38 +194,82 @@ const Header = () => {
                     } 
                   }
                 `}
-              </style> 
-              
-              <g className="burger"> 
-                <line x1="7" y1="10" x2="25" y2="10"/> 
-                <line x1="7" y1="16" x2="25" y2="16"/> 
-                <line x1="7" y1="22" x2="25" y2="22"/> 
-              </g> 
-              <g className="flower"> 
-                <circle cx="16" cy="16" r="3"/> 
-                <path d="M16 6 Q18 10 16 12 Q14 10 16 6"/> 
-                <path d="M16 26 Q18 22 16 20 Q14 22 16 26"/> 
-                <path d="M6 16 Q10 18 12 16 Q10 14 6 16"/> 
-                <path d="M26 16 Q22 18 20 16 Q22 14 26 16"/> 
-              </g> 
+              </style>
+
+              <g className="burger">
+                <line x1="7" y1="10" x2="25" y2="10" />
+                <line x1="7" y1="16" x2="25" y2="16" />
+                <line x1="7" y1="22" x2="25" y2="22" />
+              </g>
+              <g className="flower">
+                <circle cx="16" cy="16" r="3" />
+                <path d="M16 6 Q18 10 16 12 Q14 10 16 6" />
+                <path d="M16 26 Q18 22 16 20 Q14 22 16 26" />
+                <path d="M6 16 Q10 18 12 16 Q10 14 6 16" />
+                <path d="M26 16 Q22 18 20 16 Q22 14 26 16" />
+              </g>
             </svg>
           </div>
 
           {/* Center: Logo */}
-          <a href="#home" className="nav__logo" onClick={(e) => handleNavClick(e, '#home')}>
-            <img src="/assets/logo text.png" alt="Mehndi Me" style={{ height: 36, margin: "10px 0", display: 'block' }} />
+          <a
+            href="#home"
+            className="nav__logo"
+            onClick={(e) => handleNavClick(e, "#home")}
+          >
+            <img
+              src="/assets/logo text.png"
+              alt="Mehndi Me"
+              style={{ height: 36, margin: "10px 0", display: "block" }}
+            />
           </a>
 
           {/* Right: Dashboard Button or Get Started */}
           {isAuthenticated && user ? (
-            <Link 
-              to={user.userType === 'artist' ? '/artist-dashboard' : user.userType === 'admin' ? '/admin-dashboard/users' : '/dashboard'} 
+            <Link
+              to={
+                user.userType === "artist"
+                  ? "/artist-dashboard"
+                  : user.userType === "admin"
+                  ? "/admin-dashboard/users"
+                  : "/dashboard"
+              }
               className="nav__cta-button"
             >
-              Go To Dashboard
+              <span className="nav__cta-text">Go To Dashboard</span>
+              <svg
+                className="nav__cta-icon"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
             </Link>
           ) : (
-            <Link to="/choose-path" className="nav__cta-button">Get Started</Link>
+            <Link to="/choose-path" className="nav__cta-button">
+              <span className="nav__cta-text">Get Started</span>
+              <svg
+                className="nav__cta-icon"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            </Link>
           )}
         </nav>
       </header>
@@ -215,11 +279,21 @@ const Header = () => {
         <div className="nav__overlay-content">
           <div className="nav__overlay-header">
             <div className="nav__overlay-logo">
-              <img src="/assets/logo text.png" alt="Mehndi Me" style={{ height: 28, display: 'block' }} />
+              <img
+                src="/assets/logo text.png"
+                alt="Mehndi Me"
+                style={{ height: 28, display: "block" }}
+              />
             </div>
             <div className="nav__overlay-close" onClick={closeMenu}>
-              <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" width="40" height="40" className={`close-svg ${isMenuOpen ? 'active' : ''}`}> 
-                <style> 
+              <svg
+                viewBox="0 0 32 32"
+                xmlns="http://www.w3.org/2000/svg"
+                width="40"
+                height="40"
+                className={`close-svg ${isMenuOpen ? "active" : ""}`}
+              >
+                <style>
                   {`
                     .close-x line { 
                       stroke: #EA7C25; 
@@ -259,42 +333,58 @@ const Header = () => {
                       animation-delay: 0.4s;
                     }
                   `}
-                </style> 
-                
-                <g className="close-x"> 
-                  <line x1="8" y1="8" x2="24" y2="24"/> 
-                  <line x1="24" y1="8" x2="8" y2="24"/> 
-                </g> 
-                <g className="close-flower"> 
-                  <circle cx="16" cy="16" r="3"/> 
-                  <path d="M16 6 Q18 10 16 12 Q14 10 16 6"/> 
-                  <path d="M16 26 Q18 22 16 20 Q14 22 16 26"/> 
-                  <path d="M6 16 Q10 18 12 16 Q10 14 6 16"/> 
-                  <path d="M26 16 Q22 18 20 16 Q22 14 26 16"/> 
-                </g> 
+                </style>
+
+                <g className="close-x">
+                  <line x1="8" y1="8" x2="24" y2="24" />
+                  <line x1="24" y1="8" x2="8" y2="24" />
+                </g>
+                <g className="close-flower">
+                  <circle cx="16" cy="16" r="3" />
+                  <path d="M16 6 Q18 10 16 12 Q14 10 16 6" />
+                  <path d="M16 26 Q18 22 16 20 Q14 22 16 26" />
+                  <path d="M6 16 Q10 18 12 16 Q10 14 6 16" />
+                  <path d="M26 16 Q22 18 20 16 Q22 14 26 16" />
+                </g>
               </svg>
             </div>
           </div>
-          
-          <nav className="nav__overlay-menu" style={{ textAlign: 'left' }}>
+
+          <nav className="nav__overlay-menu" style={{ textAlign: "left" }}>
             <ul
               className="nav__overlay-list"
               style={{
-                alignItems: 'flex-start',
-                justifyContent: 'flex-start',
-                width: 'auto',
+                alignItems: "flex-start",
+                justifyContent: "flex-start",
+                width: "auto",
                 // maxWidth: 420,
                 marginLeft: 0,
-                textAlign: 'left'
+                textAlign: "left",
               }}
             >
               {/* Section heading: Clients */}
-              <li className="nav__overlay-item" style={{opacity: 1, letterSpacing: '.08em', textTransform: 'uppercase', fontWeight: 800, color: '#2b2118', width: '100%'}}>
-                <span className="nav__overlay-number"><strong>Clients</strong></span>
+              <li
+                className="nav__overlay-item"
+                style={{
+                  opacity: 1,
+                  letterSpacing: ".08em",
+                  textTransform: "uppercase",
+                  fontWeight: 800,
+                  color: "#2b2118",
+                  width: "100%",
+                }}
+              >
+                <span className="nav__overlay-number">
+                  <strong>Clients</strong>
+                </span>
               </li>
               {/* Home - real link */}
               <li className="nav__overlay-item">
-                <a href="#home" className="nav__overlay-link" onClick={(e) => handleNavClick(e, '#home')}>
+                <a
+                  href="#home"
+                  className="nav__overlay-link"
+                  onClick={(e) => handleNavClick(e, "#home")}
+                >
                   <span className="nav__overlay-number">
                     <img src="/images/1.png" alt="01" width="64" height="64" />
                   </span>
@@ -303,21 +393,44 @@ const Header = () => {
               </li>
               {/* Request a Mehndi Artist - link to booking page */}
               <li className="nav__overlay-item">
-                <Link to="/booking" className="nav__overlay-link" onClick={closeMenu}>
+                <Link
+                  to="/booking"
+                  className="nav__overlay-link"
+                  onClick={closeMenu}
+                >
                   <span className="nav__overlay-number">
                     <img src="/images/2.png" alt="02" width="64" height="64" />
                   </span>
-                  <span className="nav__overlay-text">Request a Mehndi Artist</span>
+                  <span className="nav__overlay-text">
+                    Request a Mehndi Artist
+                  </span>
                 </Link>
               </li>
 
               {/* Section heading: Artists */}
-              <li className="nav__overlay-item" style={{opacity: 1, letterSpacing: '.08em', textTransform: 'uppercase', marginTop: '1.25rem', fontWeight: 800, color: '#2b2118', width: '100%'}}>
-                <span className="nav__overlay-number"><strong>Artists</strong></span>
+              <li
+                className="nav__overlay-item"
+                style={{
+                  opacity: 1,
+                  letterSpacing: ".08em",
+                  textTransform: "uppercase",
+                  marginTop: "1.25rem",
+                  fontWeight: 800,
+                  color: "#2b2118",
+                  width: "100%",
+                }}
+              >
+                <span className="nav__overlay-number">
+                  <strong>Artists</strong>
+                </span>
               </li>
               {/* Browse Requests - link to artist dashboard applications */}
               <li className="nav__overlay-item">
-                <Link to="/browse-requests" className="nav__overlay-link" onClick={closeMenu}>
+                <Link
+                  to="/browse-requests"
+                  className="nav__overlay-link"
+                  onClick={closeMenu}
+                >
                   <span className="nav__overlay-number">
                     <img src="/images/3.png" alt="03" width="64" height="64" />
                   </span>
@@ -326,7 +439,11 @@ const Header = () => {
               </li>
               {/* Earn as an Artist - link to earn-as-artist page */}
               <li className="nav__overlay-item">
-                <Link to="/earn-as-artist" className="nav__overlay-link" onClick={closeMenu}>
+                <Link
+                  to="/earn-as-artist"
+                  className="nav__overlay-link"
+                  onClick={closeMenu}
+                >
                   <span className="nav__overlay-number">
                     <img src="/images/4.png" alt="04" width="64" height="64" />
                   </span>
@@ -335,12 +452,29 @@ const Header = () => {
               </li>
 
               {/* Section heading: Discover */}
-              <li className="nav__overlay-item" style={{opacity: 1, letterSpacing: '.08em', textTransform: 'uppercase', marginTop: '1.25rem', fontWeight: 800, color: '#2b2118', width: '100%'}}>
-                <span className="nav__overlay-number"><strong>Discover</strong></span>
+              <li
+                className="nav__overlay-item"
+                style={{
+                  opacity: 1,
+                  letterSpacing: ".08em",
+                  textTransform: "uppercase",
+                  marginTop: "1.25rem",
+                  fontWeight: 800,
+                  color: "#2b2118",
+                  width: "100%",
+                }}
+              >
+                <span className="nav__overlay-number">
+                  <strong>Discover</strong>
+                </span>
               </li>
               {/* Blog - real link */}
               <li className="nav__overlay-item">
-                <Link to="/blogs" className="nav__overlay-link" onClick={closeMenu}>
+                <Link
+                  to="/blogs"
+                  className="nav__overlay-link"
+                  onClick={closeMenu}
+                >
                   <span className="nav__overlay-number">
                     <img src="/images/5.png" alt="05" width="64" height="64" />
                   </span>
@@ -349,7 +483,11 @@ const Header = () => {
               </li>
               {/* FAQ - link to FullFAQ page */}
               <li className="nav__overlay-item">
-                <Link to="/faq" className="nav__overlay-link" onClick={closeMenu}>
+                <Link
+                  to="/faq"
+                  className="nav__overlay-link"
+                  onClick={closeMenu}
+                >
                   <span className="nav__overlay-number">
                     <img src="/images/6.png" alt="06" width="64" height="64" />
                   </span>
@@ -358,7 +496,11 @@ const Header = () => {
               </li>
               {/* About Us - navigate to page */}
               <li className="nav__overlay-item">
-                <Link to="/about-us" className="nav__overlay-link" onClick={closeMenu}>
+                <Link
+                  to="/about-us"
+                  className="nav__overlay-link"
+                  onClick={closeMenu}
+                >
                   <span className="nav__overlay-number">
                     <img src="/images/7.png" alt="07" width="64" height="64" />
                   </span>
@@ -368,22 +510,29 @@ const Header = () => {
             </ul>
           </nav>
 
-          <div className="nav__overlay-footer">            
+          <div className="nav__overlay-footer">
             <div className="nav__overlay-cta">
               {isAuthenticated && user ? (
-                <button 
-                  className="nav__overlay-button" 
-                  onClick={() => { 
-                    closeMenu(); 
-                    navigate(user.userType === 'artist' ? '/artist-dashboard' : '/dashboard'); 
+                <button
+                  className="nav__overlay-button"
+                  onClick={() => {
+                    closeMenu();
+                    navigate(
+                      user.userType === "artist"
+                        ? "/artist-dashboard"
+                        : "/dashboard"
+                    );
                   }}
                 >
                   Go To Dashboard
                 </button>
               ) : (
-                <button 
-                  className="nav__overlay-button" 
-                  onClick={() => { closeMenu(); navigate('/choose-path'); }}
+                <button
+                  className="nav__overlay-button"
+                  onClick={() => {
+                    closeMenu();
+                    navigate("/choose-path");
+                  }}
                 >
                   Get Started
                 </button>
@@ -396,4 +545,4 @@ const Header = () => {
   );
 };
 
-export default Header; 
+export default Header;
