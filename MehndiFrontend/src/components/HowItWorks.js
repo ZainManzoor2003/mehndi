@@ -54,12 +54,14 @@ const HowItWorks = () => {
   const [activeTab, setActiveTab] = useState("clients");
   const [leafDecorations, setLeafDecorations] = useState([]);
   const [standaloneFlower, setStandaloneFlower] = useState(null);
+  const [mobileLeafDecorations, setMobileLeafDecorations] = useState([]);
   const navigate = useNavigate();
   const mainRef = useRef(null);
   const sectionRef = useRef(null);
   const headerRef = useRef(null);
   const tabsRef = useRef(null);
   const pathRef = useRef(null);
+  const mobilePathRef = useRef(null);
   const stepsRef = useRef([]);
   const storyRef = useRef(null);
 
@@ -167,6 +169,66 @@ const HowItWorks = () => {
 
       setLeafDecorations(decorations);
     }
+  }, []);
+
+  // Effect for calculating mobile leaf positions
+  useEffect(() => {
+    // Create a temporary SVG path element to calculate positions
+    const tempSvg = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "svg"
+    );
+    const tempPath = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "path"
+    );
+    tempPath.setAttribute("d", "M 12,-50 L 88,20 L 12,80 L 82,140");
+    tempSvg.appendChild(tempPath);
+    document.body.appendChild(tempSvg);
+
+    const pathLength = tempPath.getTotalLength();
+    const decorations = [];
+
+    // Same leaf positions as desktop but adjusted for mobile path
+    const leafPositions = [
+      0.08, 0.18, 0.28, 0.38, 0.48, 0.58, 0.68, 0.78, 0.88, 0.95,
+    ];
+
+    leafPositions.forEach((pos, index) => {
+      const pointLength = pathLength * pos;
+      const point = tempPath.getPointAtLength(pointLength);
+      const nextPoint = tempPath.getPointAtLength(
+        Math.min(pointLength + 1, pathLength)
+      );
+
+      const angle =
+        Math.atan2(nextPoint.y - point.y, nextPoint.x - point.x) *
+        (180 / Math.PI);
+
+      // Same rotation logic as desktop - alternate direction
+      const rotation = angle + (index % 2 === 0 ? 55 : -55);
+
+      // Calculate flower position 25px along the vine from leaf
+      const flowerOffset = -3; // 25px distance from leaf
+      const flowerPointLength = Math.min(
+        pathLength,
+        Math.max(0, pointLength + flowerOffset)
+      );
+      const flowerPoint = tempPath.getPointAtLength(flowerPointLength);
+
+      decorations.push({
+        x: point.x,
+        y: point.y,
+        rotation: rotation,
+        flowerX: flowerPoint.x,
+        flowerY: flowerPoint.y,
+        progress: pos,
+        flowerProgress: flowerPointLength / pathLength,
+      });
+    });
+
+    document.body.removeChild(tempSvg);
+    setMobileLeafDecorations(decorations);
   }, []);
 
   useEffect(() => {
@@ -284,6 +346,33 @@ const HowItWorks = () => {
                 }
               }
             }
+
+            // Animate mobile vine flowers only
+            if (window.innerWidth <= 480 && mobilePathRef.current) {
+              const mobileVineTimeline = gsap.timeline({ delay: 0.8 });
+
+              // Animate mobile flowers progressively as vine draws
+              mobileLeafDecorations.forEach((deco, index) => {
+                // Animate flower when vine reaches its position
+                const mobileFlowerGroup = document.querySelector(
+                  `.mobile-flower-group-${index}`
+                );
+                if (mobileFlowerGroup) {
+                  gsap.set(mobileFlowerGroup, { opacity: 0, scale: 0 });
+                  mobileVineTimeline.to(
+                    mobileFlowerGroup,
+                    {
+                      opacity: 1,
+                      scale: 1,
+                      duration: 0.3,
+                      ease: "back.out(1.7)",
+                    },
+                    deco.flowerProgress * 2.5
+                  );
+                }
+              });
+            }
+
             setTimeout(() => {
               stepsRef.current.forEach((step, index) => {
                 if (step) {
@@ -392,7 +481,7 @@ const HowItWorks = () => {
         ScrollTrigger.getAll().forEach((t) => t.kill());
       } catch {}
     };
-  }, [activeTab, leafDecorations, standaloneFlower]);
+  }, [activeTab, leafDecorations, standaloneFlower, mobileLeafDecorations]);
 
   const addToStepsRef = (el) => {
     if (el && !stepsRef.current.includes(el)) {
@@ -500,8 +589,9 @@ const HowItWorks = () => {
           </div>
 
           <div className="how-it-works__flow">
+            {/* Desktop Vine Path */}
             <svg
-              className="how-it-works__path"
+              className="how-it-works__path how-it-works__path-desktop"
               viewBox="0 0 1000 700"
               preserveAspectRatio="xMidYMid meet"
             >
@@ -624,6 +714,76 @@ const HowItWorks = () => {
                     preserveAspectRatio="xMidYMid meet"
                   />
                 </g>
+              )}
+            </svg>
+
+            {/* Mobile Vine Path - Single line connecting steps 1-2-3-4 */}
+            <svg
+              className="how-it-works__path how-it-works__path-mobile"
+              viewBox="0 0 100 100"
+              preserveAspectRatio="xMidYMid meet"
+            >
+              <defs>
+                <linearGradient
+                  id="vineGradientMobile"
+                  x1="0%"
+                  y1="0%"
+                  x2="0%"
+                  y2="100%"
+                >
+                  <stop offset="0%" stopColor="#916D2C" />
+                  <stop offset="50%" stopColor="#916D2C" />
+                  <stop offset="100%" stopColor="#916D2C" />
+                </linearGradient>
+                <filter
+                  id="leafShadowMobile"
+                  x="-20%"
+                  y="-20%"
+                  width="140%"
+                  height="140%"
+                >
+                  <feDropShadow
+                    dx="0"
+                    dy="1"
+                    stdDeviation="1"
+                    floodColor="#916D2C"
+                    floodOpacity="0.25"
+                  />
+                </filter>
+              </defs>
+              {/* Single continuous line: Step 1 (left) -> Step 2 (right) -> Step 3 (left) -> Step 4 (right) */}
+              <path
+                ref={mobilePathRef}
+                className="vine-path-mobile"
+                d="M 12,-50 
+                   L 88,20
+                   L 12,80
+                   L 82,140"
+                fill="none"
+                stroke="#916D2C"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                vectorEffect="non-scaling-stroke"
+              />
+              {/* Mobile Vine Decorations - Flowers only (25px spacing) */}
+              {mobileLeafDecorations.map((deco, index) =>
+                deco.flowerX && deco.flowerY ? (
+                  <g
+                    key={`mobile-flower-${index}`}
+                    className={`mobile-flower-group-${index}`}
+                    style={{ opacity: 0 }}
+                  >
+                    <image
+                      href="/images/4.png"
+                      x={deco.flowerX - 6}
+                      y={deco.flowerY - 6}
+                      width="14"
+                      height="14"
+                      preserveAspectRatio="xMidYMid meet"
+                    />
+                  </g>
+                ) : null
               )}
             </svg>
 

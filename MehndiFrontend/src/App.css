@@ -7576,6 +7576,23 @@ body.dark-theme .scroll-header .henna-line {
   z-index: 1;
 }
 
+/* Desktop path - visible on desktop, hidden on mobile */
+.how-it-works__path-desktop {
+  display: block;
+}
+
+/* Mobile path - hidden on desktop, visible on mobile */
+.how-it-works__path-mobile {
+  display: none;
+}
+
+.vine-path-mobile {
+  stroke: #916D2C;
+  stroke-width: 2.5;
+  fill: none;
+  opacity: 0.7;
+}
+
 .vine-path {
   stroke: #8B7355;
   stroke-width: 2;
@@ -7747,6 +7764,12 @@ body.dark-theme .scroll-header .henna-line {
   }
 }
 
+@keyframes drawMobileVine {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
 /* Responsive Design */
 @media screen and (max-width: 1024px) {
   .how-it-works {
@@ -7816,8 +7839,12 @@ body.dark-theme .scroll-header .henna-line {
     font-size: 1rem;
   }
 
-  /* Hide rope on small devices */
-  .how-it-works__path {
+  /* Hide desktop vine on mobile, but don't show mobile vine yet (only below 480px) */
+  .how-it-works__path-desktop {
+    display: none;
+  }
+
+  .how-it-works__path-mobile {
     display: none;
   }
 
@@ -7833,7 +7860,7 @@ body.dark-theme .scroll-header .henna-line {
     position: static;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
     gap: 2rem;
     width: 100%;
   }
@@ -7843,6 +7870,19 @@ body.dark-theme .scroll-header .henna-line {
     transform: none !important;
     opacity: 1;
     animation: none;
+  }
+
+  /* Step positioning for mobile - 1st and 3rd left, 2nd and 4th right */
+  .step-1,
+  .step-3 {
+    align-self: flex-start;
+    width: auto;
+  }
+
+  .step-2,
+  .step-4 {
+    align-self: flex-end;
+    width: auto;
   }
 
   .step__circle {
@@ -7915,14 +7955,101 @@ body.dark-theme .scroll-header .henna-line {
     gap: 1.5rem;
   }
 
+  /* Show mobile vine only below 480px */
+  .how-it-works__path-mobile {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+    padding: 0 1rem;
+  }
+
+  /* Prevent image blur and stretching - use auto for better quality */
+  .how-it-works__path-mobile image {
+    image-rendering: auto;
+    -ms-interpolation-mode: bicubic;
+  }
+
+  .vine-path-mobile {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    animation: drawMobileVine 2.5s ease-in-out forwards;
+    animation-delay: 0.8s;
+    opacity: 0.7;
+  }
+
+  /* Mobile decorations animation */
+  .vine-decorations-mobile g[class*="mobile-leaf-group"] {
+    animation: fadeInScaleMobile 0.4s ease-out forwards;
+  }
+
+  .vine-decorations-mobile g[class*="mobile-leaf-group-0"] {
+    animation-delay: 1.2s;
+  }
+
+  .vine-decorations-mobile g[class*="mobile-leaf-group-1"] {
+    animation-delay: 1.5s;
+  }
+
+  .vine-decorations-mobile g[class*="mobile-leaf-group-2"] {
+    animation-delay: 1.8s;
+  }
+
+  .vine-decorations-mobile g[class*="mobile-leaf-group-3"] {
+    animation-delay: 2.1s;
+  }
+
+  .vine-decorations-mobile g[class*="mobile-leaf-group-4"] {
+    animation-delay: 2.4s;
+  }
+
+  g[class*="mobile-flower-group"] {
+    animation: fadeInScaleMobile 0.4s ease-out forwards;
+  }
+
+  g[class*="mobile-flower-group-0"] {
+    animation-delay: 1.4s;
+  }
+
+  g[class*="mobile-flower-group-1"] {
+    animation-delay: 1.7s;
+  }
+
+  g[class*="mobile-flower-group-2"] {
+    animation-delay: 2.0s;
+  }
+
+  g[class*="mobile-flower-group-3"] {
+    animation-delay: 2.3s;
+  }
+
+  g[class*="mobile-flower-group-4"] {
+    animation-delay: 2.6s;
+  }
+
+  @keyframes fadeInScaleMobile {
+    from {
+      opacity: 0;
+      transform: scale(0);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
   .step__circle {
-    width: 160px;
-    height: 160px;
+    width: 180px;
+    height: 180px;
     padding: 1rem;
   }
 
   .step__number {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     top: 8px;
   }
 
@@ -7933,7 +8060,7 @@ body.dark-theme .scroll-header .henna-line {
   }
 
   .step__title-inside {
-    font-size: 1rem;
+    font-size: 1.05rem;
     margin-bottom: 0.5rem;
   }
 
