@@ -54,7 +54,7 @@ const Footer = () => {
             style={{ flex: "1 1 320px", minWidth: "280px" }}
           >
             <a href="/" className="footer__logo">
-              Mehndi Me
+              MehndiMe
             </a>
             <p className="footer__description">
               Connect with talented mehndi artists and discover beautiful
@@ -169,7 +169,7 @@ const Footer = () => {
                   className="footer__link"
                   onClick={(e) => {
                     e.preventDefault();
-                    handleLinkClick("/artist-dashboard", true);
+                    handleLinkClick("/browse-requests", true);
                   }}
                 >
                   Browse Bookings
@@ -214,7 +214,7 @@ const Footer = () => {
                   className="footer__link"
                   onClick={(e) => {
                     e.preventDefault();
-                    navigate("/choose-path");
+                    navigate("/login");
                   }}
                 >
                   Log In / Sign Up
@@ -247,24 +247,26 @@ const Footer = () => {
                   className="footer__link"
                   onClick={(e) => {
                     e.preventDefault();
-                    navigate("/privacy-policy");
-                  }}
-                >
-                  Privacy Policy
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="footer__link"
-                  onClick={(e) => {
-                    e.preventDefault();
                     navigate("/blogs");
                   }}
                 >
                   Blog
                 </a>
               </li>
+
+              <li>
+                <a
+                  href="#"
+                  className="footer__link"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate("/privacy-policy");
+                  }}
+                >
+                  Privacy Policy
+                </a>
+              </li>
+
               <li>
                 <a
                   href="#"
@@ -289,7 +291,7 @@ const Footer = () => {
         style={{ textAlign: "center", paddingTop: "2rem" }}
       >
         <div className="footer__copy">
-          <p>&copy; 2024 Mehndi Me. All rights reserved</p>
+          <p>&copy; 2025 MehndiMe. All rights reserved</p>
         </div>
       </div>
     </footer>

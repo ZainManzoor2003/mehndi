@@ -199,12 +199,12 @@ const ArtistSidebar = ({
             onClick={() => navigate("/")}
           >
             {/* <div className="logo-icon" style={{ background: 'transparent', border: 'none', boxShadow: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <img src="/assets/logo icon.png" alt="Mehndi Me" style={{ width: 'auto', height: 'auto', display: 'block', borderRadius: '50%' }} />
+              <img src="/assets/logo icon.png" alt="MehndiMe" style={{ width: 'auto', height: 'auto', display: 'block', borderRadius: '50%' }} />
             </div> */}
             <span className="logo-text" style={{ display: "inline-block" }}>
               <img
                 src="/assets/logo text.png"
-                alt="Mehndi Me"
+                alt="MehndiMe"
                 style={{ height: 28, display: "block" }}
               />
             </span>

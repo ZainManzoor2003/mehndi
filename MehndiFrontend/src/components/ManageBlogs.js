@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { adminAPI } from "../services/api";
 import "./admin-styles.css";
 import AdminSidebar from "./AdminSidebar";
+import ConfirmActionModal from "./modals/ConfirmActionModal";
 
 const ManageBlogs = () => {
   const [blogs, setBlogs] = useState([]);
@@ -21,6 +22,8 @@ const ManageBlogs = () => {
   const [imagePreview, setImagePreview] = useState("");
   const [uploading, setUploading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -174,14 +177,35 @@ const ManageBlogs = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleDelete = async (blogId) => {
-    if (!window.confirm("Delete this blog?")) return;
-    await adminAPI.deleteBlog(blogId);
+  const handleDelete = async () => {
+    if (!deleteTargetId) return;
+    await adminAPI.deleteBlog(deleteTargetId);
+    setDeleteTargetId(null);
+    setDeleteModalOpen(false);
     await load();
+  };
+
+  const openDeleteModal = (blogId) => {
+    setDeleteTargetId(blogId);
+    setDeleteModalOpen(true);
+  };
+
+  const closeDeleteModal = () => {
+    setDeleteModalOpen(false);
+    setDeleteTargetId(null);
   };
 
   return (
     <div className="admin_dashboard-layout">
+      <ConfirmActionModal
+        isOpen={deleteModalOpen}
+        title="Delete this blog?"
+        message="This will permanently remove this blog post from your site. This action cannot be undone."
+        confirmLabel="Delete blog"
+        cancelLabel="Keep blog"
+        onConfirm={handleDelete}
+        onCancel={closeDeleteModal}
+      />
       <AdminSidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -668,7 +692,7 @@ const ManageBlogs = () => {
                       </button>
                       <button
                         className="admin_btn danger"
-                        onClick={() => handleDelete(b._id)}
+                        onClick={() => openDeleteModal(b._id)}
                       >
                         Delete
                       </button>

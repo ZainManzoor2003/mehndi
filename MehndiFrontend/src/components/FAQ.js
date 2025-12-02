@@ -4,20 +4,58 @@ import { useNavigate } from "react-router-dom";
 
 const faqs = [
   {
-    q: "How do I book a Mehndi artist?",
-    a: "Simply submit a request with your details. Verified artists will apply, and you can review their portfolios before choosing your favorite.",
+    q: "What is MehndiMe?",
+    a: (
+      <>
+        MehndiMe is the UK’s first dedicated platform to{" "}
+        <strong>book verified mehndi and henna artists online.</strong>
+        <br />
+        Whether you’re planning your bridal mehndi, a party, or a festival
+        celebration, MehndiMe connects you with trusted artists near you —
+        safely and stress-free.
+      </>
+    ),
   },
   {
-    q: "When do I pay for my booking?",
-    a: "You'll pay a small deposit once you select your artist. The remaining amount is due 14 days before your event, ensuring a secure, hassle-free process.",
+    q: "How does MehndiMe work?",
+    a: (
+      <>
+        It’s simple!
+        <br />
+        <strong>Clients</strong> post a request with their event details,
+        budget, and location. Verified mehndi artists send personalized offers
+        you can compare, chat about, and book instantly.
+        <br />
+        <strong>Artists</strong> can create a free profile, upload their
+        portfolio, and start getting bookings from real clients across London,
+        Birmingham, Manchester, and Bradford.
+      </>
+    ),
   },
   {
-    q: "What if I need to cancel or reschedule?",
-    a: "No worries -- just update or cancel your booking from your dashboard. Your deposit is protected under our cancellation policy.",
+    q: "Is it safe and verified?",
+    a: (
+      <>
+        Yes. Every artist on MehndiMe goes through a{" "}
+        <strong>verification process</strong> to ensure authenticity,
+        professionalism, and quality. Payments are handled securely through the
+        platform for both artists and clients — no DMs, no scams, no stress.
+      </>
+    ),
   },
   {
-    q: "Are artists verified on Mehndi Me?",
-    a: "Yes. Every artist's ID and portfolio are carefully reviewed before they're approved to join our platform.",
+    q: "Why should I use MehndiMe?",
+    a: (
+      <>
+        MehndiMe makes finding or working as a mehndi artist{" "}
+        <strong>easy, safe, and transparent.</strong>
+        <br />
+        • For clients: browse verified artists, view portfolios, and make secure
+        payments — no DMs, no ghosting.
+        <br />• For artists: reach genuine clients, get bookings faster, and
+        grow your brand with verified status.
+      </>
+    ),
   },
 ];
 
@@ -75,7 +113,7 @@ const FAQ = () => {
             marginBottom: "1rem",
           }}
         >
-          Questions about Mehndi Me
+          Questions about MehndiMe
         </h2>
         <p
           style={{

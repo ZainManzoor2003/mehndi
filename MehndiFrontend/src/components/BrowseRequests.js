@@ -1,26 +1,35 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FaHeart, FaRegHeart, FaMapMarkerAlt, FaClock, FaCalendarAlt, FaUsers, FaPoundSign, FaSearch } from 'react-icons/fa';
-import { FiFilter } from 'react-icons/fi';
-import { bookingsAPI, applicationsAPI, chatAPI } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
-import BrowseViewBookingModal from './modals/BrowseViewBookingModal';
-import BrowseApplyModal from './modals/BrowseApplyModal';
-import { ToastContainer, useToast } from './Toast';
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  FaCalendarAlt,
+  FaClock,
+  FaHeart,
+  FaMapMarkerAlt,
+  FaPoundSign,
+  FaRegHeart,
+  FaSearch,
+  FaUsers,
+} from "react-icons/fa";
+import { FiFilter } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { applicationsAPI, bookingsAPI, chatAPI } from "../services/api";
+import BrowseApplyModal from "./modals/BrowseApplyModal";
+import BrowseViewBookingModal from "./modals/BrowseViewBookingModal";
+import { ToastContainer, useToast } from "./Toast";
 
-const CITY_OPTIONS = ['London', 'Birmingham', 'Manchester', 'Bradford'];
+const CITY_OPTIONS = ["London", "Birmingham", "Manchester", "Bradford"];
 
 function timeAgo(iso) {
   try {
     const diffMs = Date.now() - new Date(iso).getTime();
     const mins = Math.floor(diffMs / 60000);
-    if (mins < 60) return `${mins} min${mins === 1 ? '' : 's'} ago`;
+    if (mins < 60) return `${mins} min${mins === 1 ? "" : "s"} ago`;
     const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs} hour${hrs === 1 ? '' : 's'} ago`;
+    if (hrs < 24) return `${hrs} hour${hrs === 1 ? "" : "s"} ago`;
     const days = Math.floor(hrs / 24);
-    return `${days} day${days === 1 ? '' : 's'} ago`;
+    return `${days} day${days === 1 ? "" : "s"} ago`;
   } catch {
-    return '';
+    return "";
   }
 }
 
@@ -29,10 +38,10 @@ const BrowseRequests = () => {
   const { user } = useAuth();
   const [all, setAll] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [search, setSearch] = useState('');
-  const [city, setCity] = useState('');
-  const [category, setCategory] = useState('');
+  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [city, setCity] = useState("");
+  const [category, setCategory] = useState("");
   const [saving, setSaving] = useState({}); // bookingId -> boolean
   const [viewOpen, setViewOpen] = useState(false);
   const [applyOpen, setApplyOpen] = useState(false);
@@ -40,102 +49,177 @@ const BrowseRequests = () => {
   const [viewForm, setViewForm] = useState(null);
   const [applyBusy, setApplyBusy] = useState(false);
   const [viewClientId, setViewClientId] = useState(null);
-  const { toasts, showError, removeToast } = useToast();
+  // Destructure showError from useToast
+  const { toasts, showError, removeToast, showSuccess } = useToast();
 
   useEffect(() => {
     // scroll to top quickly on mount
-    try { window.scrollTo(0, 0); } catch { }
+    try {
+      window.scrollTo(0, 0);
+    } catch {}
   }, []);
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true); setError('');
-      try {
-        const [allRes, savedRes, myAppliedRes] = await Promise.all([
-          bookingsAPI.getAllBookings(),
-          bookingsAPI.getSavedBookings(),
-          applicationsAPI.getMyAppliedBookings()
-        ]);
-        const savedSet = new Set((savedRes?.data || []).map(b => b._id));
-        const appliedIds = new Set(((myAppliedRes?.data) || []).map(a => a.bookingId || a.id || a.booking_id));
-        const artistId = user?._id;
-        console.log('all results', allRes)
-        const combined = (allRes?.data || [])
-          .filter(b => {
-            if(b.status==='pending' || b.status==='in_progress'){
+  const fetchRequests = React.useCallback(async () => {
+    if (!user?._id || user?.userType !== "artist") return;
+
+    setLoading(true);
+    setError("");
+    try {
+      const [allRes, savedRes, myAppliedRes] = await Promise.all([
+        bookingsAPI.getAllBookings(),
+        bookingsAPI.getSavedBookings(),
+        applicationsAPI.getMyAppliedBookings(),
+      ]);
+      const savedSet = new Set((savedRes?.data || []).map((b) => b._id));
+      const appliedIds = new Set(
+        (myAppliedRes?.data || []).map(
+          (a) => a.bookingId || a.id || a.booking_id
+        )
+      );
+      const artistId = user?._id;
+      const combined = (allRes?.data || [])
+        .filter((b) => {
+          if (b.status === "pending" || b.status === "in_progress") {
             if (appliedIds.has(String(b._id))) return false;
-            const applied = Array.isArray(b.appliedArtists) && artistId ? b.appliedArtists.some(id => String(id) === String(artistId)) : false;
-            const assigned = Array.isArray(b.assignedArtist) && artistId ? b.assignedArtist.some(id => String(id) === String(artistId)) : false;
+            const applied =
+              Array.isArray(b.appliedArtists) && artistId
+                ? b.appliedArtists.some((id) => String(id) === String(artistId))
+                : false;
+            const assigned =
+              Array.isArray(b.assignedArtist) && artistId
+                ? b.assignedArtist.some((id) => String(id) === String(artistId))
+                : false;
             return !applied && !assigned;
-            }
-            return false;
-          })
-          .map(b => ({ ...b, __saved: savedSet.has(b._id) }));
-        setAll(combined);
-        console.log('combined', combined)
-      } catch (e) {
-        setError(e.message || 'Failed to load requests');
-      } finally { setLoading(false); }
-    };
-    load();
-  }, [user?._id]);
+          }
+          return false;
+        })
+        .map((b) => ({ ...b, __saved: savedSet.has(b._id) }));
+      setAll(combined);
+    } catch (e) {
+      setError(e.message || "Failed to load requests");
+    } finally {
+      setLoading(false);
+    }
+  }, [user?._id, user?.userType]);
+
+  useEffect(() => {
+    fetchRequests();
+  }, [fetchRequests]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return all.filter(b => {
-      const matchesQ = !q || [b.firstName, b.lastName, b.location, ...(b.eventType || [])].join(' ').toLowerCase().includes(q);
-      const matchesCity = !city || (b.city || b.location || '').toLowerCase().includes(city.toLowerCase());
-      const matchesCat = !category || (Array.isArray(b.eventType) && b.eventType.includes(category));
+    return all.filter((b) => {
+      const matchesQ =
+        !q ||
+        [b.firstName, b.lastName, b.location, ...(b.eventType || [])]
+          .join(" ")
+          .toLowerCase()
+          .includes(q);
+      const matchesCity =
+        !city ||
+        (b.city || b.location || "").toLowerCase().includes(city.toLowerCase());
+      const matchesCat =
+        !category ||
+        (Array.isArray(b.eventType) && b.eventType.includes(category));
       return matchesQ && matchesCity && matchesCat;
     });
   }, [all, search, city, category]);
 
+  // *** UPDATED toggleSave FUNCTION ***
   const toggleSave = async (bookingId, saved) => {
+    if (saving[bookingId]) return; // Prevent multiple clicks/requests on the same booking
+
+    setSaving((s) => ({ ...s, [bookingId]: true }));
     try {
-      setSaving(s => ({ ...s, [bookingId]: true }));
-      if (saved) await bookingsAPI.unsaveBooking(bookingId); else await bookingsAPI.saveBooking(bookingId);
-      setAll(list => list.map(b => b._id === bookingId ? { ...b, __saved: !saved } : b));
+      if (saved) {
+        await bookingsAPI.unsaveBooking(bookingId);
+        showSuccess("Request Unsaved!");
+      } else {
+        await bookingsAPI.saveBooking(bookingId);
+        showSuccess("Request Saved!");
+      }
+
+      // **Critical Change:** Manually update the local 'all' state.
+      // We use a functional update to ensure we are working with the latest state.
+      setAll((prevAll) =>
+        prevAll.map((b) =>
+          b._id === bookingId ? { ...b, __saved: !saved } : b
+        )
+      );
+
+      // We do NOT call fetchRequests() here anymore.
     } catch (e) {
-      alert(e.message || 'Failed to update');
+      // Revert the UI state on failure, but do this BEFORE showError so the user
+      // sees the UI change back to the correct state quickly.
+      setAll((prevAll) =>
+        prevAll.map((b) => (b._id === bookingId ? { ...b, __saved: saved } : b))
+      );
+      showError(
+        e.message ||
+          `Failed to ${
+            saved ? "unsave" : "save"
+          } this request. Please try again.`
+      );
     } finally {
-      setSaving(s => ({ ...s, [bookingId]: false }));
+      setSaving((s) => ({ ...s, [bookingId]: false }));
     }
   };
+  // *** END OF UPDATED toggleSave FUNCTION ***
 
   const openView = async (bookingId) => {
     try {
       const res = await bookingsAPI.getBooking(bookingId);
       const b = res.data || {};
       setActiveBooking(b);
-      const eventTypeValue = Array.isArray(b.eventType) ? b.eventType[0] : b.eventType || '';
-      const timeSlotValue = Array.isArray(b.preferredTimeSlot) ? b.preferredTimeSlot[0] : b.preferredTimeSlot || '';
+      const eventTypeValue = Array.isArray(b.eventType)
+        ? b.eventType[0]
+        : b.eventType || "";
+      const timeSlotValue = Array.isArray(b.preferredTimeSlot)
+        ? b.preferredTimeSlot[0]
+        : b.preferredTimeSlot || "";
       let travelPreference;
-      if (b.artistTravelsToClient === 'both' || b.artistTravelsToClient === 'Both') travelPreference = 'both';
-      else if (b.artistTravelsToClient === true || b.artistTravelsToClient === 'yes') travelPreference = 'yes';
-      else travelPreference = 'no';
+      if (
+        b.artistTravelsToClient === "both" ||
+        b.artistTravelsToClient === "Both"
+      )
+        travelPreference = "both";
+      else if (
+        b.artistTravelsToClient === true ||
+        b.artistTravelsToClient === "yes"
+      )
+        travelPreference = "yes";
+      else travelPreference = "no";
       setViewForm({
-        firstName: b.firstName || '',
-        lastName: b.lastName || '',
-        email: b.email || '',
+        firstName: b.firstName || "",
+        lastName: b.lastName || "",
+        email: b.email || "",
         eventType: eventTypeValue,
-        otherEventType: b.otherEventType || '',
-        eventDate: b.eventDate ? new Date(b.eventDate).toISOString().substring(0, 10) : '',
+        otherEventType: b.otherEventType || "",
+        eventDate: b.eventDate
+          ? new Date(b.eventDate).toISOString().substring(0, 10)
+          : "",
         preferredTimeSlot: timeSlotValue,
-        location: b.location || '',
+        location: b.location || "",
         artistTravelsToClient: travelPreference,
-        venueName: b.venueName || '',
-        minimumBudget: b.minimumBudget ?? '',
-        maximumBudget: b.maximumBudget ?? '',
+        venueName: b.venueName || "",
+        minimumBudget: b.minimumBudget ?? "",
+        maximumBudget: b.maximumBudget ?? "",
         duration: b.duration ?? 3,
-        numberOfPeople: b.numberOfPeople ?? '',
-        designInspiration: Array.isArray(b.designInspiration) ? b.designInspiration : (b.designInspiration ? [b.designInspiration] : []),
-        coveragePreference: b.coveragePreference || '',
-        additionalRequests: b.additionalRequests || ''
+        numberOfPeople: b.numberOfPeople ?? "",
+        designInspiration: Array.isArray(b.designInspiration)
+          ? b.designInspiration
+          : b.designInspiration
+          ? [b.designInspiration]
+          : [],
+        coveragePreference: b.coveragePreference || "",
+        additionalRequests: b.additionalRequests || "",
       });
-      try { setViewClientId(b.clientId?._id || b.clientId || null); } catch { }
+      try {
+        setViewClientId(b.clientId?._id || b.clientId || null);
+      } catch {}
       setViewOpen(true);
     } catch (e) {
-      alert(e.message || 'Failed to load booking');
+      showError(e.message || "Failed to load booking"); // Changed alert to showError
     }
   };
 
@@ -145,7 +229,7 @@ const BrowseRequests = () => {
       setActiveBooking(res.data);
       setApplyOpen(true);
     } catch (e) {
-      alert(e.message || 'Failed to load booking');
+      showError(e.message || "Failed to load booking"); // Changed alert to showError
     }
   };
 
@@ -155,19 +239,36 @@ const BrowseRequests = () => {
       setApplyBusy(true);
       const artistDetails = {
         proposedBudget: parseFloat(extras.proposedBudget),
-        estimatedDuration: { value: parseFloat(extras.duration), unit: 'hours' },
-        availability: { isAvailableOnDate: true, canTravelToLocation: true, travelDistance: '' },
-        experience: { relevantExperience: '', yearsOfExperience: '', portfolioHighlights: '' },
-        proposal: { message: extras.message || '', whyInterested: '', additionalNotes: '' },
-        terms: { agreedToTerms: !!extras.agreed }
+        estimatedDuration: {
+          value: parseFloat(extras.duration),
+          unit: "hours",
+        },
+        availability: {
+          isAvailableOnDate: true,
+          canTravelToLocation: true,
+          travelDistance: "",
+        },
+        experience: {
+          relevantExperience: "",
+          yearsOfExperience: "",
+          portfolioHighlights: "",
+        },
+        proposal: {
+          message: extras.message || "",
+          whyInterested: "",
+          additionalNotes: "",
+        },
+        terms: { agreedToTerms: !!extras.agreed },
       };
       await applicationsAPI.applyToBooking(activeBooking._id, artistDetails);
-      extras.setSuccess(true)
-      // Do not navigate away; modal will show success state
+      extras.setSuccess(true);
+      // After successful application, refetch requests to remove it from the list
+      await fetchRequests();
+      showSuccess("Application submitted!");
     } catch (e) {
-      extras.setSuccess(false)
-      setApplyOpen(false)
-      showError(e.message || 'Failed to apply');
+      extras.setSuccess(false);
+      setApplyOpen(false);
+      showError(e.message || "Failed to apply");
     } finally {
       setApplyBusy(false);
     }
@@ -175,7 +276,8 @@ const BrowseRequests = () => {
 
   const handleMessageClient = async () => {
     try {
-      const clientId = viewClientId || activeBooking?.clientId?._id || activeBooking?.clientId;
+      const clientId =
+        viewClientId || activeBooking?.clientId?._id || activeBooking?.clientId;
       const artistId = user?._id;
       if (!clientId || !artistId) return;
       const res = await chatAPI.ensureChat(clientId, artistId);
@@ -183,52 +285,240 @@ const BrowseRequests = () => {
         // Send a hidden booking-context attachment (filtered from UI)
         try {
           if (activeBooking) {
-            await chatAPI.sendMessage(res.data._id, '', [{ type: 'booking', url: '', filename: String(activeBooking._id) }]);
+            await chatAPI.sendMessage(res.data._id, "", [
+              { type: "booking", url: "", filename: String(activeBooking._id) },
+            ]);
           }
-        } catch (_) { }
-        const qs = new URLSearchParams({ chatId: res.data._id, bookingId: activeBooking?._id || '' }).toString();
+        } catch (_) {}
+        const qs = new URLSearchParams({
+          chatId: res.data._id,
+          bookingId: activeBooking?._id || "",
+        }).toString();
         navigate(`/artist-dashboard/messages?${qs}`);
       }
     } catch (e) {
-      alert(e.message || 'Failed to start chat');
+      showError(e.message || "Failed to start chat"); // Changed alert to showError
     }
   };
 
+  // If a logged-in user is NOT an artist, show an explanatory screen instead
+  if (user && user.userType !== "artist") {
+    return (
+      <section
+        style={{
+          minHeight: "80vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "3rem 1rem",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 380,
+            width: "100%",
+            backgroundColor: "rgba(255, 255, 255, 0.96)",
+            borderRadius: 24,
+            padding: "2.4rem 2rem 2.1rem",
+            boxShadow: "0 18px 40px rgba(87, 45, 16, 0.18)",
+            textAlign: "center",
+            border: "1px solid rgba(214, 146, 83, 0.25)",
+          }}
+        >
+          <h1
+            style={{
+              fontSize: "1.9rem",
+              fontWeight: 700,
+              color: "#5A3313",
+              marginBottom: "0.6rem",
+            }}
+          >
+            This page is for artists only ✨
+          </h1>
+          <p
+            style={{
+              fontSize: "0.98rem",
+              color: "#7A5434",
+              margin: "0 0 0.9rem",
+            }}
+          >
+            You&apos;re logged in as a client, so this section isn&apos;t
+            available.
+          </p>
+          <p
+            style={{
+              fontSize: "0.98rem",
+              color: "#7A5434",
+              margin: "0 0 1.6rem",
+              lineHeight: 1.6,
+            }}
+          >
+            But you can still explore amazing mehndi artists, post a new
+            request, or check your existing bookings below!
+          </p>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <button
+              type="button"
+              className="home__cta-button"
+              style={{
+                width: "100%",
+                borderRadius: 999,
+                padding: "0.75rem 1.8rem",
+                fontSize: "0.98rem",
+              }}
+              onClick={() => navigate("/booking")}
+            >
+              Post a New Request
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/dashboard")}
+              style={{
+                width: "100%",
+                borderRadius: 999,
+                padding: "0.72rem 1.8rem",
+                fontSize: "0.96rem",
+                fontWeight: 600,
+                border: "1px solid rgba(90, 51, 19, 0.25)",
+                backgroundColor: "rgba(255, 255, 255, 0.95)",
+                color: "#5A3313",
+                cursor: "pointer",
+              }}
+            >
+              Go to My Dashboard
+            </button>
+          </div>
+
+          <p
+            style={{
+              marginTop: "1.6rem",
+              fontSize: "0.9rem",
+              color: "#856246",
+              lineHeight: 1.5,
+            }}
+          >
+            Need an artist? Simply post your event details—we&apos;ll match you
+            with verified MehndiMe artists.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <section style={{ padding: '26px 0 60px' }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 16px' }}>
-        <button onClick={() => navigate('/artist-dashboard')}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 8, border: 'none', background: 'transparent', color: '#5C3D2E', cursor: 'pointer', fontWeight: 700, marginBottom: 8 }}>
+    <section style={{ padding: "26px 0 60px" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 16px" }}>
+        <button
+          onClick={() => navigate("/artist-dashboard")}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            border: "none",
+            background: "transparent",
+            color: "#5C3D2E",
+            cursor: "pointer",
+            fontWeight: 700,
+            marginBottom: 8,
+          }}
+        >
           ← Go Back to Dashboard
         </button>
-        <h1 style={{ fontSize: 36, margin: 0, color: '#1f2937' }}>Browse Client Requests <span role="img" aria-label="leaf">🌿</span></h1>
-        <p style={{ marginTop: 6, color: '#4b5563' }}>Discover mehndi opportunities near you and apply to the ones that inspire you.</p>
+        <h1 style={{ fontSize: 36, margin: 0, color: "#1f2937" }}>
+          Browse Client Requests{" "}
+          <span role="img" aria-label="leaf">
+            🌿
+          </span>
+        </h1>
+        <p style={{ marginTop: 6, color: "#4b5563" }}>
+          Discover mehndi opportunities near you and apply to the ones that
+          inspire you.
+        </p>
 
         {/* Filters */}
         {/* Row 1: Search only */}
         <div style={{ marginTop: 14 }}>
-          <div style={{ position: 'relative' }}>
-            <FaSearch style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#6b7280' }} />
+          <div style={{ position: "relative" }}>
+            <FaSearch
+              style={{
+                position: "absolute",
+                left: 12,
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "#6b7280",
+              }}
+            />
             <input
               placeholder="Search by event or keyword..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              style={{ width: '100%', padding: '12px 14px 12px 40px', borderRadius: 12, border: '1px solid #d1d5db' }}
+              style={{
+                width: "100%",
+                padding: "12px 14px 12px 40px",
+                borderRadius: 12,
+                border: "1px solid #d1d5db",
+              }}
             />
           </div>
         </div>
         {/* Row 2: City and Category */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
-          <div style={{ position: 'relative' }}>
-            <FiFilter style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#374151' }} />
-            <select value={city} onChange={(e) => setCity(e.target.value)} style={{ width: '100%', padding: '12px 14px 12px 40px', borderRadius: 12, border: '1px solid #d1d5db' }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 12,
+            marginTop: 12,
+          }}
+        >
+          <div style={{ position: "relative" }}>
+            <FiFilter
+              style={{
+                position: "absolute",
+                left: 12,
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "#374151",
+              }}
+            />
+            <select
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "12px 14px 12px 40px",
+                borderRadius: 12,
+                border: "1px solid #d1d5db",
+              }}
+            >
               <option value="">Filter by City</option>
-              {CITY_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
+              {CITY_OPTIONS.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
             </select>
           </div>
-          <div style={{ position: 'relative' }}>
-            <FiFilter style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#374151' }} />
-            <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ width: '100%', padding: '12px 14px 12px 40px', borderRadius: 12, border: '1px solid #d1d5db' }}>
+          <div style={{ position: "relative" }}>
+            <FiFilter
+              style={{
+                position: "absolute",
+                left: 12,
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "#374151",
+              }}
+            />
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "12px 14px 12px 40px",
+                borderRadius: 12,
+                border: "1px solid #d1d5db",
+              }}
+            >
               <option value="">Filter by Category</option>
               <option>Wedding</option>
               <option>Festival</option>
@@ -243,55 +533,173 @@ const BrowseRequests = () => {
         {loading ? (
           <div style={{ marginTop: 24 }}>Loading...</div>
         ) : error ? (
-          <div style={{ marginTop: 24, color: 'crimson' }}>{error}</div>
-        ) : (
-          filtered.length === 0 ? (
-            <div style={{
+          <div style={{ marginTop: 24, color: "crimson" }}>{error}</div>
+        ) : filtered.length === 0 ? (
+          <div
+            style={{
               marginTop: 24,
-              background: '#F3E2BF',
-              border: '1px solid #edd6b3',
+              background: "#F3E2BF",
+              border: "1px solid #edd6b3",
               borderRadius: 14,
-              padding: '28px 20px',
-              textAlign: 'center',
-              color: '#4A2C1D'
-            }}>
-              <div style={{ fontWeight: 800, fontSize: 18 }}>No bookings found</div>
-              <p style={{ marginTop: 6, color: '#6b5544' }}>Try adjusting your search, city, or category filters to discover more client requests.</p>
+              padding: "28px 20px",
+              textAlign: "center",
+              color: "#4A2C1D",
+            }}
+          >
+            <div style={{ fontWeight: 800, fontSize: 18 }}>
+              No bookings found
             </div>
-          ) : (
-            <div style={{ marginTop: 18, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
-              {filtered.map(b => (
-                <div key={b._id} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, boxShadow: '0 2px 8px rgba(0,0,0,.06)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontWeight: 700 }}>{`${Array.isArray(b.eventType) ? b.eventType[0] : b.eventType || 'Mehndi'} in ${b.city || b.location || ''}`}</div>
-                    <button onClick={() => toggleSave(b._id, b.__saved)} disabled={!!saving[b._id]} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
-                      {b.__saved ? <FaHeart color="#b45309" /> : <FaRegHeart color="#b45309" />}
-                    </button>
+            <p style={{ marginTop: 6, color: "#6b5544" }}>
+              Try adjusting your search, city, or category filters to discover
+              more client requests.
+            </p>
+          </div>
+        ) : (
+          <div
+            style={{
+              marginTop: 18,
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+              gap: 16,
+            }}
+          >
+            {filtered.map((b) => (
+              <div
+                key={b._id}
+                style={{
+                  background: "#fff",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 12,
+                  padding: 16,
+                  boxShadow: "0 2px 8px rgba(0,0,0,.06)",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <div style={{ fontWeight: 700 }}>{`${
+                    Array.isArray(b.eventType)
+                      ? b.eventType[0]
+                      : b.eventType || "Mehndi"
+                  } in ${b.city || b.location || ""}`}</div>
+                  <button
+                    onClick={() => toggleSave(b._id, b.__saved)}
+                    // Disable button while saving/unsaving
+                    disabled={!!saving[b._id]}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                      opacity: saving[b._id] ? 0.6 : 1, // Visual cue for disabled
+                      transition: "opacity 0.2s",
+                    }}
+                  >
+                    {b.__saved ? (
+                      <FaHeart color="#b45309" />
+                    ) : (
+                      <FaRegHeart color="#b45309" />
+                    )}
+                  </button>
+                </div>
+                <div
+                  style={{
+                    marginTop: 10,
+                    display: "grid",
+                    gap: 6,
+                    color: "#374151",
+                    fontSize: 14,
+                  }}
+                >
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 8 }}
+                  >
+                    <FaCalendarAlt color="#c2410c" />{" "}
+                    {new Date(b.eventDate).toLocaleDateString()}{" "}
+                    <FaClock style={{ marginLeft: 10 }} color="#c2410c" />{" "}
+                    {Array.isArray(b.preferredTimeSlot)
+                      ? b.preferredTimeSlot.join(", ")
+                      : b.preferredTimeSlot}
                   </div>
-                  <div style={{ marginTop: 10, display: 'grid', gap: 6, color: '#374151', fontSize: 14 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><FaCalendarAlt color="#c2410c" /> {new Date(b.eventDate).toLocaleDateString()} <FaClock style={{ marginLeft: 10 }} color="#c2410c" /> {Array.isArray(b.preferredTimeSlot) ? b.preferredTimeSlot.join(', ') : b.preferredTimeSlot}</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><FaMapMarkerAlt color="#c2410c" /> {(b.city ? `${b.city}, ` : '') + (b.location || '')}</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><FaUsers color="#c2410c" /> Group Size: {b.numberOfPeople}</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><FaPoundSign color="#c2410c" /> Budget: £{b.minimumBudget}–£{b.maximumBudget}</div>
-                    <div style={{ color: '#6b7280', fontSize: 12 }}>Posted {timeAgo(b.createdAt)}</div>
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 8 }}
+                  >
+                    <FaMapMarkerAlt color="#c2410c" />{" "}
+                    {(b.city ? `${b.city}, ` : "") + (b.location || "")}
                   </div>
-                  <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-                    <button onClick={() => openView(b._id)} style={{ background: '#5C3D2E', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: 10, fontWeight: 700, cursor: 'pointer' }}>View Full Request Form</button>
-                    <button onClick={() => openApply(b._id)} style={{ background: '#b45309', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: 10, fontWeight: 700, cursor: 'pointer' }}>Apply to Booking</button>
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 8 }}
+                  >
+                    <FaUsers color="#c2410c" /> Group Size: {b.numberOfPeople}
+                  </div>
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 8 }}
+                  >
+                    <FaPoundSign color="#c2410c" /> Budget: £{b.minimumBudget}–£
+                    {b.maximumBudget}
+                  </div>
+                  <div style={{ color: "#6b7280", fontSize: 12 }}>
+                    Posted {timeAgo(b.createdAt)}
                   </div>
                 </div>
-              ))}
-            </div>
-          )
+                <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+                  <button
+                    onClick={() => openView(b._id)}
+                    style={{
+                      background: "#5C3D2E",
+                      color: "#fff",
+                      border: "none",
+                      padding: "10px 16px",
+                      borderRadius: 10,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    View Full Request Form
+                  </button>
+                  <button
+                    onClick={() => openApply(b._id)}
+                    style={{
+                      background: "#b45309",
+                      color: "#fff",
+                      border: "none",
+                      padding: "10px 16px",
+                      borderRadius: 10,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Apply to Booking
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
-      <BrowseViewBookingModal open={viewOpen} viewForm={viewForm} onClose={() => setViewOpen(false)} onApply={() => { setViewOpen(false); setApplyOpen(true); }} onMessage={handleMessageClient} />
-      <BrowseApplyModal open={applyOpen} busy={applyBusy} booking={activeBooking} onClose={() => setApplyOpen(false)} onConfirm={confirmApply} />
-     <ToastContainer toasts={toasts} removeToast={removeToast} />
+      <BrowseViewBookingModal
+        open={viewOpen}
+        viewForm={viewForm}
+        onClose={() => setViewOpen(false)}
+        onApply={() => {
+          setViewOpen(false);
+          setApplyOpen(true);
+        }}
+        onMessage={handleMessageClient}
+      />
+      <BrowseApplyModal
+        open={applyOpen}
+        busy={applyBusy}
+        booking={activeBooking}
+        onClose={() => setApplyOpen(false)}
+        onConfirm={confirmApply}
+      />
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
     </section>
   );
 };
 
 export default BrowseRequests;
-
-

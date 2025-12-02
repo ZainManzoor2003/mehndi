@@ -153,7 +153,7 @@ const PaymentSuccess = () => {
 
         <div className="payment-success-footer">
           <p className="payment-success-footer-text">
-            Thank you for booking with Mehndi Me
+            Thank you for booking with MehndiMe
             <svg
               className="payment-success-leaf-icon"
               viewBox="0 0 24 24"

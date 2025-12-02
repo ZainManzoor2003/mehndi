@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import Header from './Header';
-import DashboardSidebar from './DashboardSidebar';
-import apiService from '../services/api';
-import { FaCalendarAlt, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
-import CancelAcceptedModal from './modals/CancelAcceptedModal';
-import GetLocationModal from './modals/GetLocationModal';
-import ProposalsPage from './ProposalsPage';
+import React, { useEffect, useState } from "react";
+import { FaCalendarAlt, FaCheckCircle, FaTimesCircle } from "react-icons/fa";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import apiService from "../services/api";
+import DashboardSidebar from "./DashboardSidebar";
+import CancelAcceptedModal from "./modals/CancelAcceptedModal";
+import ConfirmActionModal from "./modals/ConfirmActionModal";
+import GetLocationModal from "./modals/GetLocationModal";
+import ProposalsPage from "./ProposalsPage";
 
 const { bookingsAPI } = apiService;
 
@@ -16,7 +16,7 @@ const AllBookings = () => {
   const navigate = useNavigate();
   const [allBookings, setAllBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -24,7 +24,7 @@ const AllBookings = () => {
   const [deleting, setDeleting] = useState(false);
 
   const [form, setForm] = useState({});
-  const [linkInput, setLinkInput] = useState('');
+  const [linkInput, setLinkInput] = useState("");
   const [uploadingInspiration, setUploadingInspiration] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
   // Edit modal calendar state
@@ -36,8 +36,8 @@ const AllBookings = () => {
 
   const formatISO = (d) => {
     const y = d.getFullYear();
-    const m = `${d.getMonth() + 1}`.padStart(2, '0');
-    const day = `${d.getDate()}`.padStart(2, '0');
+    const m = `${d.getMonth() + 1}`.padStart(2, "0");
+    const day = `${d.getDate()}`.padStart(2, "0");
     return `${y}-${m}-${day}`;
   };
 
@@ -49,17 +49,30 @@ const AllBookings = () => {
     const cells = [];
     for (let i = 0; i < 42; i++) {
       const dayNum = i - startDay + 1;
-      let date, inMonth = true;
-      if (dayNum < 1) { inMonth = false; date = new Date(editCalYear, editCalMonth - 1, prevDays + dayNum); }
-      else if (dayNum > daysInMonth) { inMonth = false; date = new Date(editCalYear, editCalMonth + 1, dayNum - daysInMonth); }
-      else { date = new Date(editCalYear, editCalMonth, dayNum); }
+      let date,
+        inMonth = true;
+      if (dayNum < 1) {
+        inMonth = false;
+        date = new Date(editCalYear, editCalMonth - 1, prevDays + dayNum);
+      } else if (dayNum > daysInMonth) {
+        inMonth = false;
+        date = new Date(editCalYear, editCalMonth + 1, dayNum - daysInMonth);
+      } else {
+        date = new Date(editCalYear, editCalMonth, dayNum);
+      }
       cells.push({ date, inMonth });
     }
     return cells;
   })();
 
-  const openEditCalendar = () => { setEditCalOpen(true); setTimeout(() => setEditCalEntering(true), 0); };
-  const closeEditCalendar = () => { setEditCalEntering(false); setTimeout(() => setEditCalOpen(false), 180); };
+  const openEditCalendar = () => {
+    setEditCalOpen(true);
+    setTimeout(() => setEditCalEntering(true), 0);
+  };
+  const closeEditCalendar = () => {
+    setEditCalEntering(false);
+    setTimeout(() => setEditCalOpen(false), 180);
+  };
 
   // Handler for uploading design inspiration images
   const handleInspirationImageUpload = async (e) => {
@@ -68,16 +81,18 @@ const AllBookings = () => {
 
     setUploadingInspiration(true);
     try {
-      const uploadPromises = files.map(file => uploadToCloudinary(file));
+      const uploadPromises = files.map((file) => uploadToCloudinary(file));
       const urls = await Promise.all(uploadPromises);
-      const currentImages = Array.isArray(form.designInspiration) ? form.designInspiration : [];
-      setForm(prev => ({
+      const currentImages = Array.isArray(form.designInspiration)
+        ? form.designInspiration
+        : [];
+      setForm((prev) => ({
         ...prev,
-        designInspiration: [...currentImages, ...urls]
+        designInspiration: [...currentImages, ...urls],
       }));
     } catch (error) {
-      console.error('Upload error:', error);
-      alert('Failed to upload images. Please try again.');
+      console.error("Upload error:", error);
+      alert("Failed to upload images. Please try again.");
     } finally {
       setUploadingInspiration(false);
     }
@@ -85,67 +100,76 @@ const AllBookings = () => {
 
   const handleAddInspirationLink = () => {
     if (!linkInput.trim()) return;
-    const currentImages = Array.isArray(form.designInspiration) ? form.designInspiration : [];
-    setForm(prev => ({
+    const currentImages = Array.isArray(form.designInspiration)
+      ? form.designInspiration
+      : [];
+    setForm((prev) => ({
       ...prev,
-      designInspiration: [...currentImages, linkInput.trim()]
+      designInspiration: [...currentImages, linkInput.trim()],
     }));
-    setLinkInput('');
+    setLinkInput("");
   };
 
   const handleRemoveInspirationImage = (index) => {
-    const currentImages = Array.isArray(form.designInspiration) ? form.designInspiration : [];
+    const currentImages = Array.isArray(form.designInspiration)
+      ? form.designInspiration
+      : [];
     const newImages = currentImages.filter((_, i) => i !== index);
-    setForm(prev => ({
+    setForm((prev) => ({
       ...prev,
-      designInspiration: newImages
+      designInspiration: newImages,
     }));
   };
 
   // Handler for location selection from modal
   const handleLocationSelect = (lat, lng) => {
     // Reverse geocode to get address from coordinates
-    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
-      .then(res => res.json())
-      .then(data => {
+    fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`
+    )
+      .then((res) => res.json())
+      .then((data) => {
         // Extract shorter location name (city, town, or suburb)
-        let locationName = '';
+        let locationName = "";
         const address = data.address || {};
 
         // Prioritize: city > town > village > suburb > county
-        locationName = address.city ||
+        locationName =
+          address.city ||
           address.town ||
           address.village ||
           address.suburb ||
           address.county ||
-          '';
+          "";
 
         // If we still don't have a location name, try to get postcode
         if (!locationName) {
-          locationName = address.postcode ? `Postcode ${address.postcode}` : '';
+          locationName = address.postcode ? `Postcode ${address.postcode}` : "";
         }
 
         // Final fallback
         if (!locationName) {
-          locationName = data.display_name ? data.display_name.split(',').slice(0, 2).join(',') : `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+          locationName = data.display_name
+            ? data.display_name.split(",").slice(0, 2).join(",")
+            : `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
         }
 
-        setForm(prev => ({
+        setForm((prev) => ({
           ...prev,
           location: locationName,
           latitude: lat.toString(),
-          longitude: lng.toString()
+          longitude: lng.toString(),
         }));
         setShowLocationModal(false);
       })
-      .catch(error => {
-        console.error('Geocoding error:', error);
+      .catch((error) => {
+        console.error("Geocoding error:", error);
         // Fallback to just coordinates
-        setForm(prev => ({
+        setForm((prev) => ({
           ...prev,
           location: `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
           latitude: lat.toString(),
-          longitude: lng.toString()
+          longitude: lng.toString(),
         }));
         setShowLocationModal(false);
       });
@@ -160,22 +184,30 @@ const AllBookings = () => {
     setEditing(booking);
     // Handle eventType - convert array to single value or take first value
     const eventTypeValue = Array.isArray(booking.eventType)
-      ? (booking.eventType.length === 1 ? booking.eventType[0] : booking.eventType[0])
-      : booking.eventType || '';
+      ? booking.eventType.length === 1
+        ? booking.eventType[0]
+        : booking.eventType[0]
+      : booking.eventType || "";
 
     // Handle preferredTimeSlot - convert array to single value
     const timeSlotValue = Array.isArray(booking.preferredTimeSlot)
       ? booking.preferredTimeSlot[0]
-      : booking.preferredTimeSlot || '';
+      : booking.preferredTimeSlot || "";
 
     // Handle travel preference
     let travelPreference;
-    if (booking.artistTravelsToClient === 'both' || booking.artistTravelsToClient === 'Both') {
-      travelPreference = 'both';
-    } else if (booking.artistTravelsToClient === true || booking.artistTravelsToClient === 'yes') {
-      travelPreference = 'yes';
+    if (
+      booking.artistTravelsToClient === "both" ||
+      booking.artistTravelsToClient === "Both"
+    ) {
+      travelPreference = "both";
+    } else if (
+      booking.artistTravelsToClient === true ||
+      booking.artistTravelsToClient === "yes"
+    ) {
+      travelPreference = "yes";
     } else {
-      travelPreference = 'no';
+      travelPreference = "no";
     }
 
     setForm({
@@ -183,49 +215,55 @@ const AllBookings = () => {
       lastName: booking.lastName,
       email: booking.email,
       eventType: eventTypeValue,
-      otherEventType: booking.otherEventType || '',
-      eventDate: booking.eventDate ? booking.eventDate.substring(0, 10) : '',
+      otherEventType: booking.otherEventType || "",
+      eventDate: booking.eventDate ? booking.eventDate.substring(0, 10) : "",
       preferredTimeSlot: timeSlotValue,
-      location: booking.location || '',
-      latitude: booking.latitude || '',
-      longitude: booking.longitude || '',
+      location: booking.location || "",
+      latitude: booking.latitude || "",
+      longitude: booking.longitude || "",
       artistTravelsToClient: travelPreference,
-      venueName: booking.venueName || '',
+      venueName: booking.venueName || "",
       minimumBudget: booking.minimumBudget,
       maximumBudget: booking.maximumBudget,
       duration: booking.duration || 3,
       numberOfPeople: booking.numberOfPeople,
-      designStyle: booking.designStyle || '',
-      designInspiration: Array.isArray(booking.designInspiration) ? booking.designInspiration : (booking.designInspiration ? [booking.designInspiration] : []),
-      coveragePreference: booking.coveragePreference || '',
-      additionalRequests: booking.additionalRequests || ''
+      designStyle: booking.designStyle || "",
+      designInspiration: Array.isArray(booking.designInspiration)
+        ? booking.designInspiration
+        : booking.designInspiration
+        ? [booking.designInspiration]
+        : [],
+      coveragePreference: booking.coveragePreference || "",
+      additionalRequests: booking.additionalRequests || "",
     });
     // Prevent body scroll when modal opens
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
     setEditOpen(true);
   };
 
   const closeEditModal = () => {
     setEditOpen(false);
     setEditing(null);
-    setLinkInput('');
+    setLinkInput("");
     // Restore body scroll when modal closes
-    document.body.style.overflow = 'auto';
+    document.body.style.overflow = "auto";
   };
 
   const handleFormChange = (e) => {
     const { name, value, type, checked } = e.target;
-    if (type === 'checkbox') {
+    if (type === "checkbox") {
       if (Array.isArray(form[name])) {
-        setForm(prev => ({
+        setForm((prev) => ({
           ...prev,
-          [name]: checked ? [...prev[name], value] : prev[name].filter(v => v !== value)
+          [name]: checked
+            ? [...prev[name], value]
+            : prev[name].filter((v) => v !== value),
         }));
       } else {
-        setForm(prev => ({ ...prev, [name]: checked }));
+        setForm((prev) => ({ ...prev, [name]: checked }));
       }
     } else {
-      setForm(prev => ({ ...prev, [name]: value }));
+      setForm((prev) => ({ ...prev, [name]: value }));
     }
   };
 
@@ -246,33 +284,44 @@ const AllBookings = () => {
       }
 
       // Convert artistTravelsToClient to boolean or 'both'
-      if (payload.artistTravelsToClient === 'both') {
-        payload.artistTravelsToClient = 'both';
-      } else if (payload.artistTravelsToClient === 'yes') {
+      if (payload.artistTravelsToClient === "both") {
+        payload.artistTravelsToClient = "both";
+      } else if (payload.artistTravelsToClient === "yes") {
         payload.artistTravelsToClient = true;
-      } else if (payload.artistTravelsToClient === 'no') {
+      } else if (payload.artistTravelsToClient === "no") {
         payload.artistTravelsToClient = false;
       }
-      if (payload.designStyle === 'Bridal Mehndi' && !payload.venueName) {
-        alert('Venue name is required for bridal mehndi');
+      if (payload.designStyle === "Bridal Mehndi" && !payload.venueName) {
+        alert("Venue name is required for bridal mehndi");
         return;
       }
-      if (payload.designStyle === 'Bridal Mehndi' && !payload.coveragePreference) {
-        alert('Coverage preference is required for bridal mehndi');
+      if (
+        payload.designStyle === "Bridal Mehndi" &&
+        !payload.coveragePreference
+      ) {
+        alert("Coverage preference is required for bridal mehndi");
         return;
       }
 
       // Convert designInspiration to array if it's a string
-      if (typeof payload.designInspiration === 'string') {
-        payload.designInspiration = payload.designInspiration.split('\n').filter(url => url.trim() !== '');
+      if (typeof payload.designInspiration === "string") {
+        payload.designInspiration = payload.designInspiration
+          .split("\n")
+          .filter((url) => url.trim() !== "");
       }
 
       // convert numbers
-      ['minimumBudget', 'maximumBudget', 'duration', 'numberOfPeople'].forEach(k => {
-        if (payload[k] !== undefined && payload[k] !== null && payload[k] !== '') {
-          payload[k] = Number(payload[k]);
+      ["minimumBudget", "maximumBudget", "duration", "numberOfPeople"].forEach(
+        (k) => {
+          if (
+            payload[k] !== undefined &&
+            payload[k] !== null &&
+            payload[k] !== ""
+          ) {
+            payload[k] = Number(payload[k]);
+          }
         }
-      });
+      );
 
       await bookingsAPI.updateBooking(editing._id, payload);
       // refresh list
@@ -280,21 +329,35 @@ const AllBookings = () => {
       setAllBookings(refreshed.data || []);
       closeEditModal();
     } catch (err) {
-      alert(err.message || 'Failed to update booking');
+      alert(err.message || "Failed to update booking");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = async (booking) => {
-    if (!window.confirm('Delete this booking?')) return;
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
+  const openDeleteModal = (booking) => {
+    setDeleteTarget(booking);
+    setDeleteModalOpen(true);
+  };
+
+  const closeDeleteModal = () => {
+    setDeleteModalOpen(false);
+    setDeleteTarget(null);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     try {
       setDeleting(true);
-      await bookingsAPI.deleteBooking(booking._id);
+      await bookingsAPI.deleteBooking(deleteTarget._id);
       const refreshed = await bookingsAPI.getMyBookings();
       setAllBookings(refreshed.data || []);
+      closeDeleteModal();
     } catch (err) {
-      alert(err.message || 'Failed to delete booking');
+      alert(err.message || "Failed to delete booking");
     } finally {
       setDeleting(false);
     }
@@ -305,7 +368,7 @@ const AllBookings = () => {
   const [completeImages, setCompleteImages] = useState([]);
   const [completeVideo, setCompleteVideo] = useState(null);
   const [imagePreviews, setImagePreviews] = useState([]);
-  const [videoPreview, setVideoPreview] = useState('');
+  const [videoPreview, setVideoPreview] = useState("");
   const [uploading, setUploading] = useState(false);
 
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -313,14 +376,14 @@ const AllBookings = () => {
 
   // Message modal state
   const [messageModalOpen, setMessageModalOpen] = useState(false);
-  const [messageModalContent, setMessageModalContent] = useState('');
+  const [messageModalContent, setMessageModalContent] = useState("");
 
   const openCompleteModal = (booking) => {
     setCompleteTarget(booking);
     setCompleteImages([]);
     setCompleteVideo(null);
     setImagePreviews([]);
-    setVideoPreview('');
+    setVideoPreview("");
     setCompleteOpen(true);
   };
 
@@ -330,7 +393,7 @@ const AllBookings = () => {
     setCompleteImages([]);
     setCompleteVideo(null);
     setImagePreviews([]);
-    setVideoPreview('');
+    setVideoPreview("");
   };
 
   const handleImageSelect = (e) => {
@@ -339,7 +402,7 @@ const AllBookings = () => {
 
     // Create previews
     const previews = [];
-    files.forEach(file => {
+    files.forEach((file) => {
       const reader = new FileReader();
       reader.onloadend = () => {
         previews.push(reader.result);
@@ -372,7 +435,7 @@ const AllBookings = () => {
 
   const removeVideo = () => {
     setCompleteVideo(null);
-    setVideoPreview('');
+    setVideoPreview("");
   };
 
   const openCancelModal = (booking) => {
@@ -392,7 +455,7 @@ const AllBookings = () => {
 
   const closeMessageModal = () => {
     setMessageModalOpen(false);
-    setMessageModalContent('');
+    setMessageModalContent("");
   };
 
   const handleConfirmCancel = async ({ description }) => {
@@ -401,7 +464,7 @@ const AllBookings = () => {
       await bookingsAPI.cancelBooking({
         bookingId: cancelTarget._id,
         artistId: cancelTarget.assignedArtist[0]._id,
-        cancellationDescription: description
+        cancellationDescription: description,
       });
 
       // Refresh bookings
@@ -409,19 +472,19 @@ const AllBookings = () => {
       setAllBookings(refreshed.data || []);
       closeCancelModal();
     } catch (err) {
-      alert(err.message || 'Failed to cancel booking');
+      alert(err.message || "Failed to cancel booking");
     }
   };
 
-  const uploadToCloudinary = async (file, resourceType = 'image') => {
+  const uploadToCloudinary = async (file, resourceType = "image") => {
     const url = `https://api.cloudinary.com/v1_1/dfoetpdk9/${resourceType}/upload`;
     const fd = new FormData();
-    fd.append('file', file);
+    fd.append("file", file);
     // IMPORTANT: replace with your actual unsigned preset name created in Cloudinary settings
-    fd.append('upload_preset', 'mehndi');
-    const res = await fetch(url, { method: 'POST', body: fd });
+    fd.append("upload_preset", "mehndi");
+    const res = await fetch(url, { method: "POST", body: fd });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || 'Upload failed');
+    if (!res.ok) throw new Error(data.error?.message || "Upload failed");
     return data.secure_url || data.url;
   };
 
@@ -432,25 +495,29 @@ const AllBookings = () => {
       const imgs = completeImages.slice(0, 3);
       const uploaded = [];
       for (const f of imgs) {
-        uploaded.push(await uploadToCloudinary(f, 'image'));
+        uploaded.push(await uploadToCloudinary(f, "image"));
       }
-      let videoUrl = '';
-      if (completeVideo) videoUrl = await uploadToCloudinary(completeVideo, 'video');
-      await bookingsAPI.completeBooking(completeTarget._id, { images: uploaded, video: videoUrl });
+      let videoUrl = "";
+      if (completeVideo)
+        videoUrl = await uploadToCloudinary(completeVideo, "video");
+      await bookingsAPI.completeBooking(completeTarget._id, {
+        images: uploaded,
+        video: videoUrl,
+      });
       const refreshed = await bookingsAPI.getMyBookings();
       setAllBookings(refreshed.data || []);
       closeCompleteModal();
     } catch (err) {
-      alert(err.message || 'Failed to complete booking');
+      alert(err.message || "Failed to complete booking");
     } finally {
       setUploading(false);
     }
   };
 
   const handleTabChange = (tabId) => {
-    if (tabId === 'dashboard') {
-      navigate('/dashboard');
-    } else if (tabId === 'bookings') {
+    if (tabId === "dashboard") {
+      navigate("/dashboard");
+    } else if (tabId === "bookings") {
       // Already on bookings page
       setSidebarOpen(false);
     } else {
@@ -470,11 +537,11 @@ const AllBookings = () => {
       try {
         setLoading(true);
         const response = await bookingsAPI.getMyBookings();
-        console.log('Bookings fetched:', response);
+        console.log("Bookings fetched:", response);
         setAllBookings(response.data || []);
       } catch (error) {
-        console.error('Error fetching bookings:', error);
-        setError('Failed to load bookings. Please try again.');
+        console.error("Error fetching bookings:", error);
+        setError("Failed to load bookings. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -483,18 +550,17 @@ const AllBookings = () => {
     fetchBookings();
   }, [isAuthenticated]);
 
-
   const getStatusBadge = (status) => {
     switch (status) {
-      case 'confirmed':
+      case "confirmed":
         return <span className="status-badge confirmed">Confirmed</span>;
-      case 'completed':
+      case "completed":
         return <span className="status-badge completed">Completed</span>;
-      case 'pending':
+      case "pending":
         return <span className="status-badge pending">Pending</span>;
-      case 'cancelled':
+      case "cancelled":
         return <span className="status-badge cancelled">Cancelled</span>;
-      case 'in_progress':
+      case "in_progress":
         return <span className="status-badge in-progress">In Progress</span>;
       default:
         return <span className="status-badge pending">Pending</span>;
@@ -504,17 +570,41 @@ const AllBookings = () => {
   // Format date for display
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-GB', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
+    return date.toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
     });
   };
 
-  // Format time for display
+  // Format preferred time for display (supports old labels + new HH:mm times)
   const formatTime = (timeSlots) => {
-    if (!timeSlots || timeSlots.length === 0) return 'TBD';
-    return timeSlots.join(', ');
+    if (!timeSlots || timeSlots.length === 0) return "TBD";
+    const raw = Array.isArray(timeSlots) ? timeSlots[0] : timeSlots;
+    if (!raw) return "TBD";
+
+    // Keep legacy label values as-is
+    if (
+      raw === "Morning" ||
+      raw === "Afternoon" ||
+      raw === "Evening" ||
+      raw === "Flexible"
+    ) {
+      return raw;
+    }
+
+    // If looks like HH:mm, format nicely
+    if (/^\d{1,2}:\d{2}$/.test(raw)) {
+      const [h, m] = raw.split(":").map(Number);
+      const d = new Date();
+      d.setHours(h, m, 0, 0);
+      return d.toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+
+    return raw;
   };
 
   // Calculate days until event
@@ -529,25 +619,43 @@ const AllBookings = () => {
   // Get event title from event type
   const getEventTitle = (eventType, otherEventType) => {
     if (eventType && eventType.length > 0) {
-      const types = eventType.join(', ');
+      const types = eventType.join(", ");
       return otherEventType ? `${types} - ${otherEventType}` : types;
     }
-    return otherEventType || 'Mehndi Booking';
+    return otherEventType || "Mehndi Booking";
   };
 
   // Get artist name
   const getArtistName = (assignedArtist) => {
     if (assignedArtist && assignedArtist.length) {
-      return assignedArtist.length > 0 ? 'Yes' : 'No';
+      return assignedArtist.length > 0 ? "Yes" : "No";
     }
-    return 'No';
+    return "No";
   };
 
-  const upcomingBookings = allBookings.filter(booking =>
-    booking.status === 'confirmed' || booking.status === 'pending' || booking.status === 'in_progress'
+  const upcomingBookings = allBookings.filter(
+    (booking) =>
+      booking.status === "confirmed" ||
+      booking.status === "pending" ||
+      booking.status === "in_progress"
   );
-  const completedBookings = allBookings.filter(booking => booking.status === 'completed');
-  const cancelledBookings = allBookings.filter(booking => booking.status === 'cancelled');
+  const completedBookings = allBookings.filter(
+    (booking) => booking.status === "completed"
+  );
+  const cancelledBookings = allBookings.filter(
+    (booking) => booking.status === "cancelled"
+  );
+
+  const scrollToSection = (sectionId) => {
+    try {
+      const el = document.getElementById(sectionId);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    } catch {
+      // ignore scroll errors
+    }
+  };
 
   // Show loading state
   if (loading) {
@@ -566,7 +674,14 @@ const AllBookings = () => {
               className="mobile-sidebar-toggle"
               onClick={() => setSidebarOpen(!sidebarOpen)}
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <line x1="3" y1="6" x2="21" y2="6" />
                 <line x1="3" y1="12" x2="21" y2="12" />
                 <line x1="3" y1="18" x2="21" y2="18" />
@@ -576,10 +691,35 @@ const AllBookings = () => {
               <div className="bookings-container">
                 <div className="loading-state">
                   <div className="loading-spinner">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeDasharray="31.416" strokeDashoffset="31.416">
-                        <animate attributeName="stroke-dasharray" dur="2s" values="0 31.416;15.708 15.708;0 31.416" repeatCount="indefinite" />
-                        <animate attributeName="stroke-dashoffset" dur="2s" values="0;-15.708;-31.416" repeatCount="indefinite" />
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeDasharray="31.416"
+                        strokeDashoffset="31.416"
+                      >
+                        <animate
+                          attributeName="stroke-dasharray"
+                          dur="2s"
+                          values="0 31.416;15.708 15.708;0 31.416"
+                          repeatCount="indefinite"
+                        />
+                        <animate
+                          attributeName="stroke-dashoffset"
+                          dur="2s"
+                          values="0;-15.708;-31.416"
+                          repeatCount="indefinite"
+                        />
                       </circle>
                     </svg>
                   </div>
@@ -590,7 +730,6 @@ const AllBookings = () => {
             </div>
           </div>
         </div>
-
       </>
     );
   }
@@ -612,7 +751,14 @@ const AllBookings = () => {
               className="mobile-sidebar-toggle"
               onClick={() => setSidebarOpen(!sidebarOpen)}
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <line x1="3" y1="6" x2="21" y2="6" />
                 <line x1="3" y1="12" x2="21" y2="12" />
                 <line x1="3" y1="18" x2="21" y2="18" />
@@ -622,7 +768,12 @@ const AllBookings = () => {
               <div className="bookings-container">
                 <div className="error-state">
                   <div className="error-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
                       <circle cx="12" cy="12" r="10" />
                       <line x1="15" y1="9" x2="9" y2="15" />
                       <line x1="9" y1="9" x2="15" y2="15" />
@@ -662,7 +813,14 @@ const AllBookings = () => {
               className="mobile-sidebar-toggle"
               onClick={() => setSidebarOpen(!sidebarOpen)}
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <line x1="3" y1="6" x2="21" y2="6" />
                 <line x1="3" y1="12" x2="21" y2="12" />
                 <line x1="3" y1="18" x2="21" y2="18" />
@@ -672,14 +830,22 @@ const AllBookings = () => {
               <div className="bookings-container">
                 <div className="empty-state">
                   <div className="empty-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
                       <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
                       <line x1="8" y1="21" x2="16" y2="21" />
                       <line x1="12" y1="17" x2="12" y2="21" />
                     </svg>
                   </div>
                   <h2>No Bookings Yet</h2>
-                  <p>You haven't made any bookings yet. Start by creating your first mehndi appointment!</p>
+                  <p>
+                    You haven't made any bookings yet. Start by creating your
+                    first mehndi appointment!
+                  </p>
                   <Link to="/booking" className="btn-primary">
                     Book Your First Appointment
                   </Link>
@@ -694,7 +860,16 @@ const AllBookings = () => {
 
   return (
     <>
-      <div className="dashboard-layout">
+      <ConfirmActionModal
+        isOpen={deleteModalOpen}
+        title="Delete this booking?"
+        message="This will permanently remove this booking from your list. This action cannot be undone."
+        confirmLabel={deleting ? "Deleting..." : "Delete booking"}
+        cancelLabel="Keep booking"
+        onConfirm={deleting ? undefined : handleDelete}
+        onCancel={deleting ? undefined : closeDeleteModal}
+      />
+      <div className="dashboard-layout" id="all-bookings-top">
         {/* Sidebar */}
         <DashboardSidebar
           activeTab="bookings"
@@ -710,7 +885,14 @@ const AllBookings = () => {
             className="mobile-sidebar-toggle"
             onClick={() => setSidebarOpen(!sidebarOpen)}
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <line x1="3" y1="6" x2="21" y2="6" />
               <line x1="3" y1="12" x2="21" y2="12" />
               <line x1="3" y1="18" x2="21" y2="18" />
@@ -720,20 +902,35 @@ const AllBookings = () => {
           <div className="bookings-page">
             <div className="bookings-header">
               <h1 className="bookings-title">Artist Offers</h1>
-              <p className="bookings-subtitle">Manage all your booking offers</p>
+              <p className="bookings-subtitle">
+                Manage all your booking offers
+              </p>
             </div>
             <ProposalsPage />
             <div className="bookings-container">
               <div className="bookings-header">
                 <h1 className="bookings-title">All Bookings</h1>
-                <p className="bookings-subtitle">Manage all your mehndi appointments</p>
+                <p className="bookings-subtitle">
+                  Manage all your mehndi appointments
+                </p>
               </div>
 
-              {/* Booking Stats */}
+              {/* Booking Stats (clickable tabs) */}
               <div className="booking-stats">
-                <div className="stat-card">
+                <div
+                  className="stat-card"
+                  style={{ cursor: "pointer" }}
+                  onClick={() => scrollToSection("all-bookings-top")}
+                >
                   <div className="stat-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
                       <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
                       <line x1="8" y1="21" x2="16" y2="21" />
                       <line x1="12" y1="17" x2="12" y2="21" />
@@ -745,128 +942,252 @@ const AllBookings = () => {
                   </div>
                 </div>
 
-                <div className="stat-card">
+                <div
+                  className="stat-card"
+                  style={{
+                    cursor: upcomingBookings.length ? "pointer" : "default",
+                    opacity: upcomingBookings.length ? 1 : 0.6,
+                  }}
+                  onClick={() =>
+                    upcomingBookings.length &&
+                    scrollToSection("upcoming-bookings")
+                  }
+                >
                   <div className="stat-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
                       <circle cx="12" cy="12" r="10" />
                       <polyline points="12,6 12,12 16,14" />
                     </svg>
                   </div>
                   <div className="stat-info">
                     <h3>Upcoming</h3>
-                    <span className="stat-number">{upcomingBookings.length}</span>
+                    <span className="stat-number">
+                      {upcomingBookings.length}
+                    </span>
                   </div>
                 </div>
 
-                <div className="stat-card">
+                <div
+                  className="stat-card"
+                  style={{
+                    cursor: completedBookings.length ? "pointer" : "default",
+                    opacity: completedBookings.length ? 1 : 0.6,
+                  }}
+                  onClick={() =>
+                    completedBookings.length &&
+                    scrollToSection("completed-bookings")
+                  }
+                >
                   <div className="stat-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
                       <polyline points="20,6 9,17 4,12" />
                     </svg>
                   </div>
                   <div className="stat-info">
                     <h3>Completed</h3>
-                    <span className="stat-number">{completedBookings.length}</span>
+                    <span className="stat-number">
+                      {completedBookings.length}
+                    </span>
+                  </div>
+                </div>
+
+                <div
+                  className="stat-card"
+                  style={{
+                    cursor: cancelledBookings.length ? "pointer" : "default",
+                    opacity: cancelledBookings.length ? 1 : 0.6,
+                  }}
+                  onClick={() =>
+                    cancelledBookings.length &&
+                    scrollToSection("cancelled-bookings")
+                  }
+                >
+                  <div className="stat-icon">
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="9" y1="9" x2="15" y2="15" />
+                      <line x1="15" y1="9" x2="9" y2="15" />
+                    </svg>
+                  </div>
+                  <div className="stat-info">
+                    <h3>Cancelled</h3>
+                    <span className="stat-number">
+                      {cancelledBookings.length}
+                    </span>
                   </div>
                 </div>
               </div>
 
               {/* Upcoming Bookings */}
               {upcomingBookings.length > 0 && (
-                <div className="bookings-section">
-                  <h2 className="section-title"><FaCalendarAlt /> Upcoming Bookings</h2>
+                <div className="bookings-section" id="upcoming-bookings">
+                  <h2 className="section-title">
+                    <FaCalendarAlt /> Upcoming Bookings
+                  </h2>
                   <div className="bookings-grid">
-                    {upcomingBookings.map(booking => {
+                    {upcomingBookings.map((booking) => {
                       const daysLeft = getDaysUntilEvent(booking.eventDate);
                       return (
                         <div key={booking._id} className="booking-card compact">
                           <div className="card-header">
                             <div className="card-title-section">
-                              <h3 className="booking-title">{getEventTitle(booking.eventType, booking.otherEventType)}</h3>
+                              <h3 className="booking-title">
+                                {getEventTitle(
+                                  booking.eventType,
+                                  booking.otherEventType
+                                )}
+                              </h3>
                               <div className="booking-meta">
-                                <span className="meta-badge">🎨 {booking.designStyle}</span>
-                                <span className="meta-badge">👥 {booking.numberOfPeople} people</span>
+                                <span className="meta-badge">
+                                  🎨 {booking.designStyle}
+                                </span>
+                                <span className="meta-badge">
+                                  👥 {booking.numberOfPeople} people
+                                </span>
                               </div>
                             </div>
                             <div className="card-actions">
                               {getStatusBadge(booking.status)}
-                              {booking.status === 'confirmed' && (
-                                <button className="btn-secondary" onClick={() => openCancelModal(booking)} style={{ marginLeft: '8px', background: '#e74c3c', color: 'white', border: 'none', padding: '14px 20px', fontSize: '0.95rem' }}>Cancel</button>
-                              )}
-                              {booking.status === 'confirmed' && booking.isPaid === 'full' && (
+                              {booking.status === "confirmed" && (
                                 <button
-                                  className="btn-primary"
-                                  onClick={() => {
-                                    const today = new Date();
-                                    const eventDate = new Date(booking.eventDate);
-                                    if (eventDate <= today) {
-                                      openCompleteModal(booking);
-                                    } else {
-                                      openMessageModal('You can only mark as complete once the event date has passed.');
-                                    }
+                                  className="btn-secondary"
+                                  onClick={() => openCancelModal(booking)}
+                                  style={{
+                                    marginLeft: "8px",
+                                    background: "#e74c3c",
+                                    color: "white",
+                                    border: "none",
+                                    padding: "14px 20px",
+                                    fontSize: "0.95rem",
                                   }}
-                                  style={{ marginLeft: '8px' }}
                                 >
-                                  Mark as complete
+                                  Cancel
                                 </button>
                               )}
-                              {booking.status == 'pending' &&
-                                <button className="icon-btn edit" onClick={() => openEditModal(booking)} title="Edit booking">✏️
+                              {booking.status === "confirmed" &&
+                                booking.isPaid === "full" && (
+                                  <button
+                                    className="btn-primary"
+                                    onClick={() => {
+                                      const today = new Date();
+                                      const eventDate = new Date(
+                                        booking.eventDate
+                                      );
+                                      if (eventDate <= today) {
+                                        openCompleteModal(booking);
+                                      } else {
+                                        openMessageModal(
+                                          "You can only mark as complete once the event date has passed."
+                                        );
+                                      }
+                                    }}
+                                    style={{ marginLeft: "8px" }}
+                                  >
+                                    Mark as complete
+                                  </button>
+                                )}
+                              {booking.status == "pending" && (
+                                <button
+                                  className="icon-btn edit"
+                                  onClick={() => openEditModal(booking)}
+                                  title="Edit booking"
+                                >
+                                  ✏️
                                 </button>
-                              }
-                              {
-                                booking.status === 'in_progress' || booking.status === 'pending' ?
-                                  <button className="icon-btn delete" onClick={() => handleDelete(booking)} title="Delete booking">🗑️</button>
-                                  : <></>
-                              }
-
-
+                              )}
+                              {booking.status === "pending" ? (
+                                <button
+                                  className="icon-btn delete"
+                                  onClick={() => openDeleteModal(booking)}
+                                  title="Delete booking"
+                                >
+                                  🗑️
+                                </button>
+                              ) : null}
                             </div>
                           </div>
 
                           <div className="card-content">
                             <div className="info-row">
                               <div className="info-item">
-                                <span className="info-label">Artist Assigned</span>
-                                <span className="info-value">{getArtistName(booking.assignedArtist)}</span>
+                                <span className="info-label">
+                                  Artist Assigned
+                                </span>
+                                <span className="info-value">
+                                  {getArtistName(booking.assignedArtist)}
+                                </span>
                               </div>
                               <div className="info-item">
                                 <span className="info-label">Date & Time</span>
-                                <span className="info-value">{formatDate(booking.eventDate)} • {formatTime(booking.preferredTimeSlot)}</span>
+                                <span className="info-value">
+                                  {formatDate(booking.eventDate)} •{" "}
+                                  {formatTime(booking.preferredTimeSlot)}
+                                </span>
                               </div>
                             </div>
 
                             <div className="info-row">
                               <div className="info-item">
                                 <span className="info-label">Location</span>
-                                <span className="info-value">{booking.location}</span>
+                                <span className="info-value">
+                                  {booking.location}
+                                </span>
                               </div>
                               <div className="info-item">
                                 <span className="info-label">Budget</span>
-                                <span className="info-value">£{booking.minimumBudget} - £{booking.maximumBudget}</span>
+                                <span className="info-value">
+                                  £{booking.minimumBudget} - £
+                                  {booking.maximumBudget}
+                                </span>
                               </div>
                             </div>
 
                             <div className="info-row">
                               <div className="info-item">
                                 <span className="info-label">Duration</span>
-                                <span className="info-value">{booking.duration || 3} hours</span>
+                                <span className="info-value">
+                                  {booking.duration || 3} hours
+                                </span>
                               </div>
 
                               {daysLeft > 0 && (
                                 <div className="info-item">
                                   <span className="info-label">Days Left</span>
-                                  <span className="info-value highlight">{daysLeft} days</span>
+                                  <span className="info-value highlight">
+                                    {daysLeft} days
+                                  </span>
                                 </div>
                               )}
                               {daysLeft <= 0 && (
                                 <div className="info-item">
                                   <span className="info-label">Status</span>
-                                  <span className="info-value highlight">{daysLeft === 0 ? 'Today!' : 'Overdue'}</span>
+                                  <span className="info-value highlight">
+                                    {daysLeft === 0 ? "Today!" : "Overdue"}
+                                  </span>
                                 </div>
                               )}
                             </div>
-
                           </div>
                         </div>
                       );
@@ -877,17 +1198,32 @@ const AllBookings = () => {
 
               {/* Completed Bookings */}
               {completedBookings.length > 0 && (
-                <div className="bookings-section">
-                  <h2 className="section-title">  <FaCheckCircle /> Completed Bookings</h2>
+                <div className="bookings-section" id="completed-bookings">
+                  <h2 className="section-title">
+                    {" "}
+                    <FaCheckCircle /> Completed Bookings
+                  </h2>
                   <div className="bookings-grid">
-                    {completedBookings.map(booking => (
-                      <div key={booking._id} className="booking-card compact completed">
+                    {completedBookings.map((booking) => (
+                      <div
+                        key={booking._id}
+                        className="booking-card compact completed"
+                      >
                         <div className="card-header">
                           <div className="card-title-section">
-                            <h3 className="booking-title">{getEventTitle(booking.eventType, booking.otherEventType)}</h3>
+                            <h3 className="booking-title">
+                              {getEventTitle(
+                                booking.eventType,
+                                booking.otherEventType
+                              )}
+                            </h3>
                             <div className="booking-meta">
-                              <span className="meta-badge">🎨 {booking.designStyle}</span>
-                              <span className="meta-badge">👥 {booking.numberOfPeople} people</span>
+                              <span className="meta-badge">
+                                🎨 {booking.designStyle}
+                              </span>
+                              <span className="meta-badge">
+                                👥 {booking.numberOfPeople} people
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -896,29 +1232,41 @@ const AllBookings = () => {
                           <div className="info-row">
                             <div className="info-item">
                               <span className="info-label">Artist</span>
-                              <span className="info-value">{getArtistName(booking.assignedArtist)}</span>
+                              <span className="info-value">
+                                {getArtistName(booking.assignedArtist)}
+                              </span>
                             </div>
                             <div className="info-item">
                               <span className="info-label">Date & Time</span>
-                              <span className="info-value">{formatDate(booking.eventDate)} • {formatTime(booking.preferredTimeSlot)}</span>
+                              <span className="info-value">
+                                {formatDate(booking.eventDate)} •{" "}
+                                {formatTime(booking.preferredTimeSlot)}
+                              </span>
                             </div>
                           </div>
 
                           <div className="info-row">
                             <div className="info-item">
                               <span className="info-label">Location</span>
-                              <span className="info-value">{booking.location}</span>
+                              <span className="info-value">
+                                {booking.location}
+                              </span>
                             </div>
                             <div className="info-item">
                               <span className="info-label">Budget</span>
-                              <span className="info-value">£{booking.minimumBudget} - £{booking.maximumBudget}</span>
+                              <span className="info-value">
+                                £{booking.minimumBudget} - £
+                                {booking.maximumBudget}
+                              </span>
                             </div>
                           </div>
 
                           <div className="info-row">
                             <div className="info-item">
                               <span className="info-label">Duration</span>
-                              <span className="info-value">{booking.duration || 3} hours</span>
+                              <span className="info-value">
+                                {booking.duration || 3} hours
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -930,17 +1278,31 @@ const AllBookings = () => {
 
               {/* Cancelled Bookings */}
               {cancelledBookings.length > 0 && (
-                <div className="bookings-section">
-                  <h2 className="section-title"><FaTimesCircle /> Cancelled Bookings</h2>
+                <div className="bookings-section" id="cancelled-bookings">
+                  <h2 className="section-title">
+                    <FaTimesCircle /> Cancelled Bookings
+                  </h2>
                   <div className="bookings-grid">
-                    {cancelledBookings.map(booking => (
-                      <div key={booking._id} className="booking-card compact cancelled">
+                    {cancelledBookings.map((booking) => (
+                      <div
+                        key={booking._id}
+                        className="booking-card compact cancelled"
+                      >
                         <div className="card-header">
                           <div className="card-title-section">
-                            <h3 className="booking-title">{getEventTitle(booking.eventType, booking.otherEventType)}</h3>
+                            <h3 className="booking-title">
+                              {getEventTitle(
+                                booking.eventType,
+                                booking.otherEventType
+                              )}
+                            </h3>
                             <div className="booking-meta">
-                              <span className="meta-badge">🎨 {booking.designStyle}</span>
-                              <span className="meta-badge">👥 {booking.numberOfPeople} people</span>
+                              <span className="meta-badge">
+                                🎨 {booking.designStyle}
+                              </span>
+                              <span className="meta-badge">
+                                👥 {booking.numberOfPeople} people
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -949,29 +1311,41 @@ const AllBookings = () => {
                           <div className="info-row">
                             <div className="info-item">
                               <span className="info-label">Artist</span>
-                              <span className="info-value">{getArtistName(booking.assignedArtist)}</span>
+                              <span className="info-value">
+                                {getArtistName(booking.assignedArtist)}
+                              </span>
                             </div>
                             <div className="info-item">
                               <span className="info-label">Date & Time</span>
-                              <span className="info-value">{formatDate(booking.eventDate)} • {formatTime(booking.preferredTimeSlot)}</span>
+                              <span className="info-value">
+                                {formatDate(booking.eventDate)} •{" "}
+                                {formatTime(booking.preferredTimeSlot)}
+                              </span>
                             </div>
                           </div>
 
                           <div className="info-row">
                             <div className="info-item">
                               <span className="info-label">Location</span>
-                              <span className="info-value">{booking.location}</span>
+                              <span className="info-value">
+                                {booking.location}
+                              </span>
                             </div>
                             <div className="info-item">
                               <span className="info-label">Budget</span>
-                              <span className="info-value">£{booking.minimumBudget} - £{booking.maximumBudget}</span>
+                              <span className="info-value">
+                                £{booking.minimumBudget} - £
+                                {booking.maximumBudget}
+                              </span>
                             </div>
                           </div>
 
                           <div className="info-row">
                             <div className="info-item">
                               <span className="info-label">Duration</span>
-                              <span className="info-value">{booking.duration || 3} hours</span>
+                              <span className="info-value">
+                                {booking.duration || 3} hours
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -984,99 +1358,184 @@ const AllBookings = () => {
           </div>
 
           {editOpen && (
-            <div className="modal-overlay" onClick={closeEditModal} style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(0, 0, 0, 0.5)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 1000
-            }}>
-              <div className="modal" onClick={(e) => e.stopPropagation()} style={{
-                maxWidth: '800px',
-                maxHeight: '90vh',
-                width: '95%',
-                backgroundColor: 'white',
-                borderRadius: '16px',
-                boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
-                display: 'flex',
-                flexDirection: 'column'
-              }}>
-                <div style={{
-                  padding: '2rem 2.5rem 1.5rem',
-                  borderBottom: '1px solid #e8ddd4',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}>
-                  <h2 style={{
-                    margin: 0,
-                    fontSize: '1.75rem',
-                    fontWeight: '600',
-                    color: '#8B4513'
-                  }}>Edit Booking</h2>
-                  <button onClick={closeEditModal} style={{
-                    background: 'none',
-                    border: 'none',
-                    fontSize: '28px',
-                    color: '#8B4513',
-                    cursor: 'pointer',
-                    width: '32px',
-                    height: '32px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>×</button>
+            <div
+              className="modal-overlay"
+              onClick={closeEditModal}
+              style={{
+                position: "fixed",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: "rgba(0, 0, 0, 0.5)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 1000,
+              }}
+            >
+              <div
+                className="modal"
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  maxWidth: "800px",
+                  maxHeight: "90vh",
+                  width: "95%",
+                  backgroundColor: "white",
+                  borderRadius: "16px",
+                  boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                <div
+                  style={{
+                    padding: "2rem 2.5rem 1.5rem",
+                    borderBottom: "1px solid #e8ddd4",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <h2
+                    style={{
+                      margin: 0,
+                      fontSize: "1.75rem",
+                      fontWeight: "600",
+                      color: "#8B4513",
+                    }}
+                  >
+                    Edit Booking
+                  </h2>
+                  <button
+                    onClick={closeEditModal}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      fontSize: "28px",
+                      color: "#8B4513",
+                      cursor: "pointer",
+                      width: "32px",
+                      height: "32px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    ×
+                  </button>
                 </div>
-                <div style={{
-                  flex: 1,
-                  overflowY: 'auto',
-                  padding: '2rem 2.5rem'
-                }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                <div
+                  style={{
+                    flex: 1,
+                    overflowY: "auto",
+                    padding: "2rem 2.5rem",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "2rem",
+                    }}
+                  >
                     {/* Event Type */}
                     <div>
-                      <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Event Type *</label>
-                      <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '1rem' }}>Choose the event you are booking for</p>
-                      <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-                        gap: '1rem'
-                      }}>
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: "1.05rem",
+                          fontWeight: "600",
+                          marginBottom: "0.5rem",
+                          color: "#8B4513",
+                        }}
+                      >
+                        Event Type *
+                      </label>
+                      <p
+                        style={{
+                          fontSize: "0.9rem",
+                          color: "#888",
+                          marginBottom: "1rem",
+                        }}
+                      >
+                        Choose the event you are booking for
+                      </p>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns:
+                            "repeat(auto-fit, minmax(150px, 1fr))",
+                          gap: "1rem",
+                        }}
+                      >
                         {[
-                          { value: 'Wedding', emoji: '💍' },
-                          { value: 'Eid', emoji: '🌙' },
-                          { value: 'Party', emoji: '🎉' },
-                          { value: 'Festival', emoji: '🎊' }
-                        ].map(opt => (
-                          <label key={opt.value} style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '12px',
-                            padding: '16px',
-                            border: `2px solid ${form.eventType === opt.value ? '#CD853F' : '#e0d5c9'}`,
-                            borderRadius: '12px',
-                            background: form.eventType === opt.value ? '#fff8f0' : '#faf8f5',
-                            cursor: 'pointer',
-                            transition: 'all 0.3s',
-                            position: 'relative'
-                          }} onClick={() => setForm(prev => ({ ...prev, eventType: opt.value }))}>
+                          { value: "Wedding", emoji: "💍" },
+                          { value: "Eid", emoji: "🌙" },
+                          { value: "Party", emoji: "🎉" },
+                          { value: "Festival", emoji: "🎊" },
+                        ].map((opt) => (
+                          <label
+                            key={opt.value}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "12px",
+                              padding: "16px",
+                              border: `2px solid ${
+                                form.eventType === opt.value
+                                  ? "#CD853F"
+                                  : "#e0d5c9"
+                              }`,
+                              borderRadius: "12px",
+                              background:
+                                form.eventType === opt.value
+                                  ? "#fff8f0"
+                                  : "#faf8f5",
+                              cursor: "pointer",
+                              transition: "all 0.3s",
+                              position: "relative",
+                            }}
+                            onClick={() =>
+                              setForm((prev) => ({
+                                ...prev,
+                                eventType: opt.value,
+                              }))
+                            }
+                          >
                             <input
                               type="radio"
                               name="eventType"
                               value={opt.value}
                               checked={form.eventType === opt.value}
-                              onChange={() => setForm(prev => ({ ...prev, eventType: opt.value }))}
-                              style={{ display: 'none' }}
+                              onChange={() =>
+                                setForm((prev) => ({
+                                  ...prev,
+                                  eventType: opt.value,
+                                }))
+                              }
+                              style={{ display: "none" }}
                             />
-                            <span style={{ fontSize: '1.5rem' }}>{opt.emoji}</span>
-                            <span style={{ fontSize: '0.95rem', fontWeight: '500' }}>{opt.value}</span>
+                            <span style={{ fontSize: "1.5rem" }}>
+                              {opt.emoji}
+                            </span>
+                            <span
+                              style={{ fontSize: "0.95rem", fontWeight: "500" }}
+                            >
+                              {opt.value}
+                            </span>
                             {form.eventType === opt.value && (
-                              <span style={{ position: 'absolute', right: '16px', color: '#CD853F', fontWeight: 'bold', fontSize: '1.2rem' }}>✓</span>
+                              <span
+                                style={{
+                                  position: "absolute",
+                                  right: "16px",
+                                  color: "#CD853F",
+                                  fontWeight: "bold",
+                                  fontSize: "1.2rem",
+                                }}
+                              >
+                                ✓
+                              </span>
                             )}
                           </label>
                         ))}
@@ -1084,86 +1543,286 @@ const AllBookings = () => {
                       <input
                         name="otherEventType"
                         placeholder="Other:"
-                        value={form.otherEventType || ''}
+                        value={form.otherEventType || ""}
                         onChange={handleFormChange}
                         style={{
-                          padding: '12px 16px',
-                          border: '1px solid #e0d5c9',
-                          borderRadius: '10px',
-                          fontSize: '1rem',
-                          background: '#faf8f5',
-                          width: '100%',
-                          marginTop: '1rem',
-                          outline: 'none',
-                          transition: 'all 0.3s'
+                          padding: "12px 16px",
+                          border: "1px solid #e0d5c9",
+                          borderRadius: "10px",
+                          fontSize: "1rem",
+                          background: "#faf8f5",
+                          width: "100%",
+                          marginTop: "1rem",
+                          outline: "none",
+                          transition: "all 0.3s",
                         }}
                       />
                     </div>
 
                     {/* Event Date */}
                     <div>
-                      <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Event Date *</label>
-                      <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '0.5rem' }}>Select the date of your occasion</p>
-                      <div style={{ position: 'relative' }}>
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: "1.05rem",
+                          fontWeight: "600",
+                          marginBottom: "0.5rem",
+                          color: "#8B4513",
+                        }}
+                      >
+                        Event Date *
+                      </label>
+                      <p
+                        style={{
+                          fontSize: "0.9rem",
+                          color: "#888",
+                          marginBottom: "0.5rem",
+                        }}
+                      >
+                        Select the date of your occasion
+                      </p>
+                      <div style={{ position: "relative" }}>
                         <button
                           type="button"
-                          onClick={() => (editCalOpen ? closeEditCalendar() : openEditCalendar())}
+                          onClick={() =>
+                            editCalOpen
+                              ? closeEditCalendar()
+                              : openEditCalendar()
+                          }
                           style={{
-                            width: '100%',
-                            height: '48px',
-                            border: '1px solid #e0d5c9',
-                            borderRadius: '10px',
-                            background: '#ffffff',
-                            fontSize: '1rem',
-                            textAlign: 'left',
-                            padding: '0 12px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            color: '#0f172a'
+                            width: "100%",
+                            height: "48px",
+                            border: "1px solid #e0d5c9",
+                            borderRadius: "10px",
+                            background: "#ffffff",
+                            fontSize: "1rem",
+                            textAlign: "left",
+                            padding: "0 12px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            color: "#0f172a",
                           }}
                         >
-                          <span>{form.eventDate ? new Date(form.eventDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) : 'Choose a date'}</span>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
+                          <span>
+                            {form.eventDate
+                              ? new Date(form.eventDate).toLocaleDateString(
+                                  "en-GB",
+                                  {
+                                    day: "2-digit",
+                                    month: "long",
+                                    year: "numeric",
+                                  }
+                                )
+                              : "Choose a date"}
+                          </span>
+                          <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          >
+                            <polyline points="6 9 12 15 18 9" />
+                          </svg>
                         </button>
                         {editCalOpen && (
-                          <div style={{ position: 'absolute', zIndex: 50, top: 56, left: 0, width: 320, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, boxShadow: '0 12px 30px rgba(15,23,42,0.15)', padding: 12, transition: 'opacity 180ms ease, transform 180ms ease', opacity: editCalEntering ? 1 : 0, transform: editCalEntering ? 'translateY(0) scale(1)' : 'translateY(-6px) scale(0.98)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                              <button type="button" onClick={() => setEditCalYear(editCalYear - 1)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18 }}>◀</button>
-                              <div style={{ fontWeight: 700 }}>{new Date(editCalYear, editCalMonth).toLocaleString('en-GB', { month: 'long', year: 'numeric' })}</div>
-                              <div style={{ display: 'flex', gap: 6 }}>
-                                <button type="button" onClick={() => setEditCalMonth((m) => (m + 11) % 12)} style={{ background: 'none', border: '1px solid #e5e7eb', borderRadius: 6, width: 28, height: 28, cursor: 'pointer' }}>▲</button>
-                                <button type="button" onClick={() => setEditCalMonth((m) => (m + 1) % 12)} style={{ background: 'none', border: '1px solid #e5e7eb', borderRadius: 6, width: 28, height: 28, cursor: 'pointer' }}>▼</button>
+                          <div
+                            style={{
+                              position: "absolute",
+                              zIndex: 50,
+                              top: 56,
+                              left: 0,
+                              width: 320,
+                              background: "#fff",
+                              border: "1px solid #e5e7eb",
+                              borderRadius: 12,
+                              boxShadow: "0 12px 30px rgba(15,23,42,0.15)",
+                              padding: 12,
+                              transition:
+                                "opacity 180ms ease, transform 180ms ease",
+                              opacity: editCalEntering ? 1 : 0,
+                              transform: editCalEntering
+                                ? "translateY(0) scale(1)"
+                                : "translateY(-6px) scale(0.98)",
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                marginBottom: 8,
+                              }}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => setEditCalYear(editCalYear - 1)}
+                                style={{
+                                  background: "none",
+                                  border: "none",
+                                  cursor: "pointer",
+                                  fontSize: 18,
+                                }}
+                              >
+                                ◀
+                              </button>
+                              <div style={{ fontWeight: 700 }}>
+                                {new Date(
+                                  editCalYear,
+                                  editCalMonth
+                                ).toLocaleString("en-GB", {
+                                  month: "long",
+                                  year: "numeric",
+                                })}
+                              </div>
+                              <div style={{ display: "flex", gap: 6 }}>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setEditCalMonth((m) => (m + 11) % 12)
+                                  }
+                                  style={{
+                                    background: "none",
+                                    border: "1px solid #e5e7eb",
+                                    borderRadius: 6,
+                                    width: 28,
+                                    height: 28,
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  ▲
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setEditCalMonth((m) => (m + 1) % 12)
+                                  }
+                                  style={{
+                                    background: "none",
+                                    border: "1px solid #e5e7eb",
+                                    borderRadius: 6,
+                                    width: 28,
+                                    height: 28,
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  ▼
+                                </button>
                               </div>
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center', fontWeight: 600, color: '#64748b', marginBottom: 6 }}>
-                              {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map(d => <div key={d} style={{ padding: '6px 0' }}>{d}</div>)}
+                            <div
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns: "repeat(7, 1fr)",
+                                textAlign: "center",
+                                fontWeight: 600,
+                                color: "#64748b",
+                                marginBottom: 6,
+                              }}
+                            >
+                              {["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map(
+                                (d) => (
+                                  <div key={d} style={{ padding: "6px 0" }}>
+                                    {d}
+                                  </div>
+                                )
+                              )}
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+                            <div
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns: "repeat(7, 1fr)",
+                                gap: 4,
+                              }}
+                            >
                               {editCalMatrix.map(({ date, inMonth }, idx) => {
-                                const isSelected = form.eventDate && formatISO(new Date(form.eventDate)) === formatISO(date);
-                                const isToday = formatISO(date) === formatISO(today);
+                                const isSelected =
+                                  form.eventDate &&
+                                  formatISO(new Date(form.eventDate)) ===
+                                    formatISO(date);
+                                const isToday =
+                                  formatISO(date) === formatISO(today);
                                 return (
                                   <button
                                     key={idx}
                                     type="button"
-                                    onClick={() => { setForm(prev => ({ ...prev, eventDate: formatISO(date) })); closeEditCalendar(); }}
-                                    style={{
-                                      padding: '10px 0',
-                                      borderRadius: 8,
-                                      border: '1px solid ' + (isSelected ? '#2563eb' : '#e5e7eb'),
-                                      background: isSelected ? '#2563eb' : '#ffffff',
-                                      color: isSelected ? '#ffffff' : (inMonth ? '#0f172a' : '#94a3b8'),
-                                      fontWeight: isToday ? 700 : 500,
-                                      cursor: 'pointer'
+                                    onClick={() => {
+                                      setForm((prev) => ({
+                                        ...prev,
+                                        eventDate: formatISO(date),
+                                      }));
+                                      closeEditCalendar();
                                     }}
-                                  >{date.getDate()}</button>
+                                    style={{
+                                      padding: "10px 0",
+                                      borderRadius: 8,
+                                      border:
+                                        "1px solid " +
+                                        (isSelected ? "#2563eb" : "#e5e7eb"),
+                                      background: isSelected
+                                        ? "#2563eb"
+                                        : "#ffffff",
+                                      color: isSelected
+                                        ? "#ffffff"
+                                        : inMonth
+                                        ? "#0f172a"
+                                        : "#94a3b8",
+                                      fontWeight: isToday ? 700 : 500,
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    {date.getDate()}
+                                  </button>
                                 );
                               })}
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
-                              <button type="button" onClick={() => { setForm(prev => ({ ...prev, eventDate: '' })); }} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer' }}>Clear</button>
-                              <button type="button" onClick={() => { const d = new Date(); setEditCalYear(d.getFullYear()); setEditCalMonth(d.getMonth()); setForm(prev => ({ ...prev, eventDate: formatISO(d) })); closeEditCalendar(); }} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer' }}>Today</button>
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                marginTop: 10,
+                              }}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setForm((prev) => ({
+                                    ...prev,
+                                    eventDate: "",
+                                  }));
+                                }}
+                                style={{
+                                  background: "none",
+                                  border: "none",
+                                  color: "#3b82f6",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                Clear
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const d = new Date();
+                                  setEditCalYear(d.getFullYear());
+                                  setEditCalMonth(d.getMonth());
+                                  setForm((prev) => ({
+                                    ...prev,
+                                    eventDate: formatISO(d),
+                                  }));
+                                  closeEditCalendar();
+                                }}
+                                style={{
+                                  background: "none",
+                                  border: "none",
+                                  color: "#3b82f6",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                Today
+                              </button>
                             </div>
                           </div>
                         )}
@@ -1171,41 +1830,89 @@ const AllBookings = () => {
                     </div>
                     {/* Preferred Time Slot */}
                     <div>
-                      <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Preferred Time Slot *</label>
-                      <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '1rem' }}>Pick one option</p>
-                      <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-                        gap: '1rem'
-                      }}>
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: "1.05rem",
+                          fontWeight: "600",
+                          marginBottom: "0.5rem",
+                          color: "#8B4513",
+                        }}
+                      >
+                        Preferred Time Slot *
+                      </label>
+                      <p
+                        style={{
+                          fontSize: "0.9rem",
+                          color: "#888",
+                          marginBottom: "1rem",
+                        }}
+                      >
+                        Pick one option
+                      </p>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns:
+                            "repeat(auto-fit, minmax(150px, 1fr))",
+                          gap: "1rem",
+                        }}
+                      >
                         {[
-                          { value: 'Morning', icon: '☀️' },
-                          { value: 'Afternoon', icon: '🌤️' },
-                          { value: 'Evening', icon: '🌙' },
-                          { value: 'Flexible', icon: '🔄' }
-                        ].map(opt => (
-                          <label key={opt.value} style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '12px',
-                            padding: '16px',
-                            border: `2px solid ${form.preferredTimeSlot === opt.value ? '#CD853F' : '#e0d5c9'}`,
-                            borderRadius: '12px',
-                            background: form.preferredTimeSlot === opt.value ? '#fff8f0' : '#faf8f5',
-                            cursor: 'pointer',
-                            transition: 'all 0.3s',
-                            position: 'relative'
-                          }} onClick={() => setForm(prev => ({ ...prev, preferredTimeSlot: opt.value }))}>
+                          { value: "Morning", icon: "☀️" },
+                          { value: "Afternoon", icon: "🌤️" },
+                          { value: "Evening", icon: "🌙" },
+                          { value: "Flexible", icon: "🔄" },
+                        ].map((opt) => (
+                          <label
+                            key={opt.value}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "12px",
+                              padding: "16px",
+                              border: `2px solid ${
+                                form.preferredTimeSlot === opt.value
+                                  ? "#CD853F"
+                                  : "#e0d5c9"
+                              }`,
+                              borderRadius: "12px",
+                              background:
+                                form.preferredTimeSlot === opt.value
+                                  ? "#fff8f0"
+                                  : "#faf8f5",
+                              cursor: "pointer",
+                              transition: "all 0.3s",
+                              position: "relative",
+                            }}
+                            onClick={() =>
+                              setForm((prev) => ({
+                                ...prev,
+                                preferredTimeSlot: opt.value,
+                              }))
+                            }
+                          >
                             <input
                               type="radio"
                               name="preferredTimeSlot"
                               value={opt.value}
                               checked={form.preferredTimeSlot === opt.value}
-                              onChange={() => setForm(prev => ({ ...prev, preferredTimeSlot: opt.value }))}
-                              style={{ display: 'none' }}
+                              onChange={() =>
+                                setForm((prev) => ({
+                                  ...prev,
+                                  preferredTimeSlot: opt.value,
+                                }))
+                              }
+                              style={{ display: "none" }}
                             />
-                            <span style={{ fontSize: '1.5rem' }}>{opt.icon}</span>
-                            <span style={{ fontSize: '0.95rem', fontWeight: '500' }}>{opt.value}</span>
+                            <span style={{ fontSize: "1.5rem" }}>
+                              {opt.icon}
+                            </span>
+                            <span
+                              style={{ fontSize: "0.95rem", fontWeight: "500" }}
+                            >
+                              {opt.value}
+                            </span>
                           </label>
                         ))}
                       </div>
@@ -1213,52 +1920,78 @@ const AllBookings = () => {
 
                     {/* Location */}
                     <div>
-                      <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Location / Postcode *</label>
-                      <p style={{ fontSize: '0.85rem', color: '#888', marginBottom: '1rem' }}>Click "Get Location" to select your location on the map</p>
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: "1.05rem",
+                          fontWeight: "600",
+                          marginBottom: "0.5rem",
+                          color: "#8B4513",
+                        }}
+                      >
+                        Location / Postcode *
+                      </label>
+                      <p
+                        style={{
+                          fontSize: "0.85rem",
+                          color: "#888",
+                          marginBottom: "1rem",
+                        }}
+                      >
+                        Click "Get Location" to select your location on the map
+                      </p>
                       <button
                         type="button"
                         onClick={() => setShowLocationModal(true)}
                         style={{
-                          padding: '14px 32px',
-                          background: '#faf8f5',
-                          border: '2px solid #CD853F',
-                          borderRadius: '10px',
-                          color: '#8B4513',
-                          fontWeight: '600',
-                          cursor: 'pointer',
-                          transition: 'all 0.3s',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '10px',
-                          fontSize: '1rem',
-                          boxShadow: '0 2px 8px rgba(205, 133, 63, 0.15)'
+                          padding: "14px 32px",
+                          background: "#faf8f5",
+                          border: "2px solid #CD853F",
+                          borderRadius: "10px",
+                          color: "#8B4513",
+                          fontWeight: "600",
+                          cursor: "pointer",
+                          transition: "all 0.3s",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          fontSize: "1rem",
+                          boxShadow: "0 2px 8px rgba(205, 133, 63, 0.15)",
                         }}
                         onMouseEnter={(e) => {
-                          e.target.style.background = '#fff8f0';
-                          e.target.style.transform = 'translateY(-2px)';
-                          e.target.style.boxShadow = '0 4px 12px rgba(205, 133, 63, 0.25)';
+                          e.target.style.background = "#fff8f0";
+                          e.target.style.transform = "translateY(-2px)";
+                          e.target.style.boxShadow =
+                            "0 4px 12px rgba(205, 133, 63, 0.25)";
                         }}
                         onMouseLeave={(e) => {
-                          e.target.style.background = '#faf8f5';
-                          e.target.style.transform = 'translateY(0)';
-                          e.target.style.boxShadow = '0 2px 8px rgba(205, 133, 63, 0.15)';
+                          e.target.style.background = "#faf8f5";
+                          e.target.style.transform = "translateY(0)";
+                          e.target.style.boxShadow =
+                            "0 2px 8px rgba(205, 133, 63, 0.15)";
                         }}
                       >
-                        <span style={{ fontSize: '1.2rem' }}>📍</span> Get Location
+                        <span style={{ fontSize: "1.2rem" }}>📍</span> Get
+                        Location
                       </button>
                       {/* City Dropdown */}
-                      <div style={{ marginTop: '12px' }}>
+                      <div style={{ marginTop: "12px" }}>
                         <select
-                          value={form.location || ''}
-                          onChange={(e) => setForm(prev => ({ ...prev, location: e.target.value }))}
+                          value={form.location || ""}
+                          onChange={(e) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              location: e.target.value,
+                            }))
+                          }
                           style={{
-                            width: '100%',
-                            height: '44px',
-                            border: '1px solid #ced4da',
-                            borderRadius: '8px',
-                            padding: '0 12px',
-                            background: '#ffffff',
-                            color: '#0f172a'
+                            width: "100%",
+                            height: "44px",
+                            border: "1px solid #ced4da",
+                            borderRadius: "8px",
+                            padding: "0 12px",
+                            background: "#ffffff",
+                            color: "#0f172a",
                           }}
                         >
                           <option value="">Select city</option>
@@ -1269,19 +2002,26 @@ const AllBookings = () => {
                         </select>
                       </div>
                       {form.location && (
-                        <div style={{
-                          marginTop: '1rem',
-                          padding: '12px 16px',
-                          background: '#f0f8f0',
-                          border: '1px solid #c8e6c9',
-                          borderRadius: '8px',
-                          color: '#2e7d32',
-                          fontSize: '0.95rem',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '10px'
-                        }}>
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <div
+                          style={{
+                            marginTop: "1rem",
+                            padding: "12px 16px",
+                            background: "#f0f8f0",
+                            border: "1px solid #c8e6c9",
+                            borderRadius: "8px",
+                            color: "#2e7d32",
+                            fontSize: "0.95rem",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "10px",
+                          }}
+                        >
+                          <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                          >
                             <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
                           </svg>
                           <span>{form.location}</span>
@@ -1290,32 +2030,90 @@ const AllBookings = () => {
                     </div>
                     {/* Travel Preference */}
                     <div>
-                      <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Do you want the artist to come to you? *</label>
-                      <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                        gap: '1rem'
-                      }}>
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: "1.05rem",
+                          fontWeight: "600",
+                          marginBottom: "0.5rem",
+                          color: "#8B4513",
+                        }}
+                      >
+                        Do you want the artist to come to you? *
+                      </label>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns:
+                            "repeat(auto-fit, minmax(200px, 1fr))",
+                          gap: "1rem",
+                        }}
+                      >
                         {[
-                          { value: 'yes', text: 'Yes, come to my home', icon: '🚗' },
-                          { value: 'no', text: 'No, I\'ll travel to the artist', icon: '🏡' },
-                          { value: 'both', text: 'I\'m open to both', icon: '🤝' }
-                        ].map(opt => (
-                          <label key={opt.value} style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '12px',
-                            padding: '16px',
-                            border: `2px solid ${form.artistTravelsToClient === opt.value ? '#CD853F' : '#e0d5c9'}`,
-                            borderRadius: '12px',
-                            background: form.artistTravelsToClient === opt.value ? '#fff8f0' : '#faf8f5',
-                            cursor: 'pointer',
-                            transition: 'all 0.3s',
-                            position: 'relative'
-                          }} onClick={() => setForm(prev => ({ ...prev, artistTravelsToClient: opt.value }))}>
-                            <input type="radio" name="artistTravelsToClientRadio" checked={form.artistTravelsToClient === opt.value} onChange={() => setForm(prev => ({ ...prev, artistTravelsToClient: opt.value }))} style={{ display: 'none' }} />
-                            <span style={{ fontSize: '1.5rem' }}>{opt.icon}</span>
-                            <span style={{ fontSize: '0.95rem', fontWeight: '500' }}>{opt.text}</span>
+                          {
+                            value: "yes",
+                            text: "Yes, come to my home",
+                            icon: "🚗",
+                          },
+                          {
+                            value: "no",
+                            text: "No, I'll travel to the artist",
+                            icon: "🏡",
+                          },
+                          {
+                            value: "both",
+                            text: "I'm open to both",
+                            icon: "🤝",
+                          },
+                        ].map((opt) => (
+                          <label
+                            key={opt.value}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "12px",
+                              padding: "16px",
+                              border: `2px solid ${
+                                form.artistTravelsToClient === opt.value
+                                  ? "#CD853F"
+                                  : "#e0d5c9"
+                              }`,
+                              borderRadius: "12px",
+                              background:
+                                form.artistTravelsToClient === opt.value
+                                  ? "#fff8f0"
+                                  : "#faf8f5",
+                              cursor: "pointer",
+                              transition: "all 0.3s",
+                              position: "relative",
+                            }}
+                            onClick={() =>
+                              setForm((prev) => ({
+                                ...prev,
+                                artistTravelsToClient: opt.value,
+                              }))
+                            }
+                          >
+                            <input
+                              type="radio"
+                              name="artistTravelsToClientRadio"
+                              checked={form.artistTravelsToClient === opt.value}
+                              onChange={() =>
+                                setForm((prev) => ({
+                                  ...prev,
+                                  artistTravelsToClient: opt.value,
+                                }))
+                              }
+                              style={{ display: "none" }}
+                            />
+                            <span style={{ fontSize: "1.5rem" }}>
+                              {opt.icon}
+                            </span>
+                            <span
+                              style={{ fontSize: "0.95rem", fontWeight: "500" }}
+                            >
+                              {opt.text}
+                            </span>
                           </label>
                         ))}
                       </div>
@@ -1323,50 +2121,114 @@ const AllBookings = () => {
 
                     {/* Venue Name */}
                     <div>
-                      <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Venue Name</label>
-                      <input name="venueName" value={form.venueName || ''} onChange={handleFormChange} placeholder="Enter venue name (optional)" style={{
-                        padding: '12px 16px',
-                        border: '1px solid #e0d5c9',
-                        borderRadius: '10px',
-                        fontSize: '1rem',
-                        background: '#faf8f5',
-                        width: '100%',
-                        outline: 'none',
-                        transition: 'all 0.3s'
-                      }} />
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: "1.05rem",
+                          fontWeight: "600",
+                          marginBottom: "0.5rem",
+                          color: "#8B4513",
+                        }}
+                      >
+                        Venue Name
+                      </label>
+                      <input
+                        name="venueName"
+                        value={form.venueName || ""}
+                        onChange={handleFormChange}
+                        placeholder="Enter venue name (optional)"
+                        style={{
+                          padding: "12px 16px",
+                          border: "1px solid #e0d5c9",
+                          borderRadius: "10px",
+                          fontSize: "1rem",
+                          background: "#faf8f5",
+                          width: "100%",
+                          outline: "none",
+                          transition: "all 0.3s",
+                        }}
+                      />
                     </div>
 
                     {/* Design Style */}
                     <div>
-                      <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Style You're Looking For *</label>
-                      <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                        gap: '1rem'
-                      }}>
-                        {['Bridal Mehndi', 'Party Mehndi', 'Festival Mehndi', 'Casual / Minimal Mehndi'].map(opt => (
-                          <label key={opt} style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            padding: '16px',
-                            border: `2px solid ${form.designStyle === opt ? '#CD853F' : '#e0d5c9'}`,
-                            borderRadius: '12px',
-                            background: form.designStyle === opt ? '#fff8f0' : '#faf8f5',
-                            cursor: 'pointer',
-                            transition: 'all 0.3s',
-                            position: 'relative'
-                          }} onClick={() => setForm(prev => ({ ...prev, designStyle: opt }))}>
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: "1.05rem",
+                          fontWeight: "600",
+                          marginBottom: "0.5rem",
+                          color: "#8B4513",
+                        }}
+                      >
+                        Style You're Looking For *
+                      </label>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns:
+                            "repeat(auto-fit, minmax(180px, 1fr))",
+                          gap: "1rem",
+                        }}
+                      >
+                        {[
+                          "Bridal Mehndi",
+                          "Party Mehndi",
+                          "Festival Mehndi",
+                          "Casual / Minimal Mehndi",
+                        ].map((opt) => (
+                          <label
+                            key={opt}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              padding: "16px",
+                              border: `2px solid ${
+                                form.designStyle === opt ? "#CD853F" : "#e0d5c9"
+                              }`,
+                              borderRadius: "12px",
+                              background:
+                                form.designStyle === opt
+                                  ? "#fff8f0"
+                                  : "#faf8f5",
+                              cursor: "pointer",
+                              transition: "all 0.3s",
+                              position: "relative",
+                            }}
+                            onClick={() =>
+                              setForm((prev) => ({ ...prev, designStyle: opt }))
+                            }
+                          >
                             <input
                               type="radio"
                               name="designStyle"
                               value={opt}
                               checked={form.designStyle === opt}
-                              onChange={() => setForm(prev => ({ ...prev, designStyle: opt }))}
-                              style={{ display: 'none' }}
+                              onChange={() =>
+                                setForm((prev) => ({
+                                  ...prev,
+                                  designStyle: opt,
+                                }))
+                              }
+                              style={{ display: "none" }}
                             />
-                            <span style={{ fontSize: '0.95rem', fontWeight: '500' }}>{opt}</span>
+                            <span
+                              style={{ fontSize: "0.95rem", fontWeight: "500" }}
+                            >
+                              {opt}
+                            </span>
                             {form.designStyle === opt && (
-                              <span style={{ position: 'absolute', right: '16px', color: '#CD853F', fontWeight: 'bold', fontSize: '1.2rem' }}>✓</span>
+                              <span
+                                style={{
+                                  position: "absolute",
+                                  right: "16px",
+                                  color: "#CD853F",
+                                  fontWeight: "bold",
+                                  fontSize: "1.2rem",
+                                }}
+                              >
+                                ✓
+                              </span>
                             )}
                           </label>
                         ))}
@@ -1375,28 +2237,53 @@ const AllBookings = () => {
 
                     {/* Design Inspiration */}
                     <div>
-                      <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Design Inspiration</label>
-                      <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '1rem' }}>Upload images or paste links to share your preferred designs</p>
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: "1.05rem",
+                          fontWeight: "600",
+                          marginBottom: "0.5rem",
+                          color: "#8B4513",
+                        }}
+                      >
+                        Design Inspiration
+                      </label>
+                      <p
+                        style={{
+                          fontSize: "0.9rem",
+                          color: "#888",
+                          marginBottom: "1rem",
+                        }}
+                      >
+                        Upload images or paste links to share your preferred
+                        designs
+                      </p>
 
                       {/* Upload Images */}
-                      <div style={{ marginBottom: '1rem' }}>
+                      <div style={{ marginBottom: "1rem" }}>
                         <label
                           htmlFor="design-inspiration-upload"
                           style={{
-                            display: 'inline-block',
-                            padding: '12px 24px',
-                            background: '#faf8f5',
-                            border: '2px dashed #CD853F',
-                            borderRadius: '10px',
-                            cursor: 'pointer',
-                            color: '#8B4513',
-                            fontWeight: '500',
-                            transition: 'all 0.3s'
+                            display: "inline-block",
+                            padding: "12px 24px",
+                            background: "#faf8f5",
+                            border: "2px dashed #CD853F",
+                            borderRadius: "10px",
+                            cursor: "pointer",
+                            color: "#8B4513",
+                            fontWeight: "500",
+                            transition: "all 0.3s",
                           }}
-                          onMouseEnter={(e) => e.target.style.background = '#fff8f0'}
-                          onMouseLeave={(e) => e.target.style.background = '#faf8f5'}
+                          onMouseEnter={(e) =>
+                            (e.target.style.background = "#fff8f0")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.target.style.background = "#faf8f5")
+                          }
                         >
-                          {uploadingInspiration ? 'Uploading...' : '📸 Upload Images'}
+                          {uploadingInspiration
+                            ? "Uploading..."
+                            : "📸 Upload Images"}
                           <input
                             type="file"
                             id="design-inspiration-upload"
@@ -1404,33 +2291,39 @@ const AllBookings = () => {
                             accept="image/*"
                             onChange={handleInspirationImageUpload}
                             disabled={uploadingInspiration}
-                            style={{ display: 'none' }}
+                            style={{ display: "none" }}
                           />
                         </label>
                       </div>
 
                       {/* Paste Link */}
-                      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "0.5rem",
+                          marginBottom: "1rem",
+                        }}
+                      >
                         <input
                           type="url"
                           placeholder="Paste image link here..."
                           value={linkInput}
                           onChange={(e) => setLinkInput(e.target.value)}
                           onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
+                            if (e.key === "Enter") {
                               e.preventDefault();
                               handleAddInspirationLink();
                             }
                           }}
                           style={{
                             flex: 1,
-                            padding: '12px 16px',
-                            border: '1px solid #e0d5c9',
-                            borderRadius: '10px',
-                            fontSize: '1rem',
-                            background: '#faf8f5',
-                            outline: 'none',
-                            transition: 'all 0.3s'
+                            padding: "12px 16px",
+                            border: "1px solid #e0d5c9",
+                            borderRadius: "10px",
+                            fontSize: "1rem",
+                            background: "#faf8f5",
+                            outline: "none",
+                            transition: "all 0.3s",
                           }}
                         />
                         <button
@@ -1438,15 +2331,15 @@ const AllBookings = () => {
                           onClick={handleAddInspirationLink}
                           disabled={!linkInput.trim()}
                           style={{
-                            padding: '12px 24px',
-                            background: '#CD853F',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '10px',
-                            cursor: 'pointer',
-                            fontWeight: '600',
+                            padding: "12px 24px",
+                            background: "#CD853F",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "10px",
+                            cursor: "pointer",
+                            fontWeight: "600",
                             opacity: linkInput.trim() ? 1 : 0.6,
-                            transition: 'all 0.3s'
+                            transition: "all 0.3s",
                           }}
                         >
                           Add
@@ -1454,208 +2347,544 @@ const AllBookings = () => {
                       </div>
 
                       {/* Uploaded Images Preview */}
-                      {Array.isArray(form.designInspiration) && form.designInspiration.length > 0 && (
-                        <div style={{ marginTop: '1rem', padding: '1rem', background: '#f9f9f9', borderRadius: '10px' }}>
-                          <p style={{ fontSize: '0.85rem', color: '#8B4513', marginBottom: '0.5rem', fontWeight: '600' }}>
-                            Your Inspiration Images ({form.designInspiration.length}):
-                          </p>
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '0.75rem' }}>
-                            {form.designInspiration.map((url, idx) => (
-                              <div key={idx} style={{ position: 'relative', aspectRatio: '1', borderRadius: '8px', overflow: 'hidden', border: '2px solid #e0d5c9' }}>
-                                <img src={url} alt={`Inspiration ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => e.target.style.display = 'none'} />
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveInspirationImage(idx)}
+                      {Array.isArray(form.designInspiration) &&
+                        form.designInspiration.length > 0 && (
+                          <div
+                            style={{
+                              marginTop: "1rem",
+                              padding: "1rem",
+                              background: "#f9f9f9",
+                              borderRadius: "10px",
+                            }}
+                          >
+                            <p
+                              style={{
+                                fontSize: "0.85rem",
+                                color: "#8B4513",
+                                marginBottom: "0.5rem",
+                                fontWeight: "600",
+                              }}
+                            >
+                              Your Inspiration Images (
+                              {form.designInspiration.length}):
+                            </p>
+                            <div
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns:
+                                  "repeat(auto-fill, minmax(100px, 1fr))",
+                                gap: "0.75rem",
+                              }}
+                            >
+                              {form.designInspiration.map((url, idx) => (
+                                <div
+                                  key={idx}
                                   style={{
-                                    position: 'absolute', top: '4px', right: '4px', width: '24px', height: '24px', borderRadius: '50%', background: 'rgba(255, 0, 0, 0.8)', color: 'white', border: 'none', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: '1'
-                                  }} title="Remove image">×</button>
-                              </div>
-                            ))}
+                                    position: "relative",
+                                    aspectRatio: "1",
+                                    borderRadius: "8px",
+                                    overflow: "hidden",
+                                    border: "2px solid #e0d5c9",
+                                  }}
+                                >
+                                  <img
+                                    src={url}
+                                    alt={`Inspiration ${idx + 1}`}
+                                    style={{
+                                      width: "100%",
+                                      height: "100%",
+                                      objectFit: "cover",
+                                    }}
+                                    onError={(e) =>
+                                      (e.target.style.display = "none")
+                                    }
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleRemoveInspirationImage(idx)
+                                    }
+                                    style={{
+                                      position: "absolute",
+                                      top: "4px",
+                                      right: "4px",
+                                      width: "24px",
+                                      height: "24px",
+                                      borderRadius: "50%",
+                                      background: "rgba(255, 0, 0, 0.8)",
+                                      color: "white",
+                                      border: "none",
+                                      cursor: "pointer",
+                                      fontSize: "16px",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      lineHeight: "1",
+                                    }}
+                                    title="Remove image"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
                     </div>
 
                     {/* Coverage Preference */}
                     <div>
-                      <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Coverage Preference (for bridal)</label>
-                      <select name="coveragePreference" value={form.coveragePreference || ''} onChange={handleFormChange} style={{
-                        padding: '12px 16px',
-                        border: '1px solid #e0d5c9',
-                        borderRadius: '10px',
-                        fontSize: '1rem',
-                        background: '#faf8f5',
-                        width: '100%',
-                        outline: 'none',
-                        transition: 'all 0.3s'
-                      }}>
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: "1.05rem",
+                          fontWeight: "600",
+                          marginBottom: "0.5rem",
+                          color: "#8B4513",
+                        }}
+                      >
+                        Coverage Preference (for bridal)
+                      </label>
+                      <select
+                        name="coveragePreference"
+                        value={form.coveragePreference || ""}
+                        onChange={handleFormChange}
+                        style={{
+                          padding: "12px 16px",
+                          border: "1px solid #e0d5c9",
+                          borderRadius: "10px",
+                          fontSize: "1rem",
+                          background: "#faf8f5",
+                          width: "100%",
+                          outline: "none",
+                          transition: "all 0.3s",
+                        }}
+                      >
                         <option value="">Select coverage</option>
-                        <option value="Full arms & feet">Full arms & feet</option>
+                        <option value="Full arms & feet">
+                          Full arms & feet
+                        </option>
                         <option value="Hands only">Hands only</option>
-                        <option value="Simple, elegant design">Simple, elegant design</option>
+                        <option value="Simple, elegant design">
+                          Simple, elegant design
+                        </option>
                         <option value="Not sure yet">Not sure yet</option>
                       </select>
                     </div>
 
                     {/* Budget Range */}
                     <div>
-                      <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>What's your budget range? *</label>
-                      <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '1rem' }}>Helps artists tailor their offers to you.</p>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e0d5c9', borderRadius: '10px', padding: '8px 16px', background: '#faf8f5' }}>
-                          <span style={{ fontWeight: '600', color: '#8B4513', marginRight: '8px' }}>£</span>
-                          <input name="minimumBudget" type="number" value={form.minimumBudget || ''} onChange={handleFormChange} placeholder="From" style={{
-                            border: 'none',
-                            background: 'transparent',
-                            fontSize: '1rem',
-                            flex: 1,
-                            outline: 'none'
-                          }} />
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: "1.05rem",
+                          fontWeight: "600",
+                          marginBottom: "0.5rem",
+                          color: "#8B4513",
+                        }}
+                      >
+                        What's your budget range? *
+                      </label>
+                      <p
+                        style={{
+                          fontSize: "0.9rem",
+                          color: "#888",
+                          marginBottom: "1rem",
+                        }}
+                      >
+                        Helps artists tailor their offers to you.
+                      </p>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: "1rem",
+                          marginBottom: "1rem",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            border: "1px solid #e0d5c9",
+                            borderRadius: "10px",
+                            padding: "8px 16px",
+                            background: "#faf8f5",
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontWeight: "600",
+                              color: "#8B4513",
+                              marginRight: "8px",
+                            }}
+                          >
+                            £
+                          </span>
+                          <input
+                            name="minimumBudget"
+                            type="number"
+                            value={form.minimumBudget || ""}
+                            onChange={handleFormChange}
+                            placeholder="From"
+                            style={{
+                              border: "none",
+                              background: "transparent",
+                              fontSize: "1rem",
+                              flex: 1,
+                              outline: "none",
+                            }}
+                          />
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e0d5c9', borderRadius: '10px', padding: '8px 16px', background: '#faf8f5' }}>
-                          <span style={{ fontWeight: '600', color: '#8B4513', marginRight: '8px' }}>£</span>
-                          <input name="maximumBudget" type="number" value={form.maximumBudget || ''} onChange={handleFormChange} placeholder="To" style={{
-                            border: 'none',
-                            background: 'transparent',
-                            fontSize: '1rem',
-                            flex: 1,
-                            outline: 'none'
-                          }} />
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            border: "1px solid #e0d5c9",
+                            borderRadius: "10px",
+                            padding: "8px 16px",
+                            background: "#faf8f5",
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontWeight: "600",
+                              color: "#8B4513",
+                              marginRight: "8px",
+                            }}
+                          >
+                            £
+                          </span>
+                          <input
+                            name="maximumBudget"
+                            type="number"
+                            value={form.maximumBudget || ""}
+                            onChange={handleFormChange}
+                            placeholder="To"
+                            style={{
+                              border: "none",
+                              background: "transparent",
+                              fontSize: "1rem",
+                              flex: 1,
+                              outline: "none",
+                            }}
+                          />
                         </div>
                       </div>
-                      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "0.75rem",
+                          flexWrap: "wrap",
+                          marginBottom: "1rem",
+                        }}
+                      >
                         {[
-                          { from: 50, to: 100, label: 'Under £100' },
-                          { from: 100, to: 250, label: '£100 - £250' },
-                          { from: 250, to: 500, label: '£250 - £500' },
-                          { from: 500, to: 1000, label: '£500+' }
-                        ].map(preset => (
-                          <button type="button" key={preset.label} onClick={() => setForm(prev => ({ ...prev, minimumBudget: preset.from, maximumBudget: preset.to }))} style={{
-                            padding: '10px 20px',
-                            border: `2px solid ${form.minimumBudget == preset.from && form.maximumBudget == preset.to ? '#CD853F' : '#e0d5c9'}`,
-                            borderRadius: '8px',
-                            background: form.minimumBudget == preset.from && form.maximumBudget == preset.to ? '#CD853F' : '#faf8f5',
-                            color: form.minimumBudget == preset.from && form.maximumBudget == preset.to ? 'white' : '#8B4513',
-                            fontWeight: '500',
-                            fontSize: '0.95rem',
-                            cursor: 'pointer',
-                            transition: 'all 0.3s'
-                          }}>{preset.label}</button>
+                          { from: 50, to: 100, label: "Under £100" },
+                          { from: 100, to: 250, label: "£100 - £250" },
+                          { from: 250, to: 500, label: "£250 - £500" },
+                          { from: 500, to: 1000, label: "£500+" },
+                        ].map((preset) => (
+                          <button
+                            type="button"
+                            key={preset.label}
+                            onClick={() =>
+                              setForm((prev) => ({
+                                ...prev,
+                                minimumBudget: preset.from,
+                                maximumBudget: preset.to,
+                              }))
+                            }
+                            style={{
+                              padding: "10px 20px",
+                              border: `2px solid ${
+                                form.minimumBudget == preset.from &&
+                                form.maximumBudget == preset.to
+                                  ? "#CD853F"
+                                  : "#e0d5c9"
+                              }`,
+                              borderRadius: "8px",
+                              background:
+                                form.minimumBudget == preset.from &&
+                                form.maximumBudget == preset.to
+                                  ? "#CD853F"
+                                  : "#faf8f5",
+                              color:
+                                form.minimumBudget == preset.from &&
+                                form.maximumBudget == preset.to
+                                  ? "white"
+                                  : "#8B4513",
+                              fontWeight: "500",
+                              fontSize: "0.95rem",
+                              cursor: "pointer",
+                              transition: "all 0.3s",
+                            }}
+                          >
+                            {preset.label}
+                          </button>
                         ))}
                       </div>
-                      <p style={{ fontSize: '0.85rem', color: '#888' }}>
-                        Final price may vary depending on design, travel, and number of people. You'll receive a full quote before confirming your booking.
+                      <p style={{ fontSize: "0.85rem", color: "#888" }}>
+                        Final price may vary depending on design, travel, and
+                        number of people. You'll receive a full quote before
+                        confirming your booking.
                       </p>
                     </div>
 
                     {/* Number of People */}
                     <div>
-                      <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>How many people need Mehndi? (for group bookings) *</label>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid #e0d5c9', borderRadius: '10px', background: '#faf8f5', padding: '8px', width: 'fit-content' }}>
-                        <button type="button" onClick={() => setForm(prev => ({ ...prev, numberOfPeople: Math.max(1, (prev.numberOfPeople || 1) - 1) }))} style={{
-                          width: '40px', height: '40px', border: 'none', borderRadius: '8px', background: 'white', fontSize: '1.3rem', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.3s', color: '#8B4513'
-                        }}>-</button>
-                        <span style={{ fontSize: '1.2rem', fontWeight: '600', minWidth: '40px', textAlign: 'center' }}>{form.numberOfPeople || 1}</span>
-                        <button type="button" onClick={() => setForm(prev => ({ ...prev, numberOfPeople: (prev.numberOfPeople || 1) + 1 }))} style={{
-                          width: '40px', height: '40px', border: 'none', borderRadius: '8px', background: 'white', fontSize: '1.3rem', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.3s', color: '#8B4513'
-                        }}>+</button>
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: "1.05rem",
+                          fontWeight: "600",
+                          marginBottom: "0.5rem",
+                          color: "#8B4513",
+                        }}
+                      >
+                        How many people need Mehndi? (for group bookings) *
+                      </label>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "1rem",
+                          border: "1px solid #e0d5c9",
+                          borderRadius: "10px",
+                          background: "#faf8f5",
+                          padding: "8px",
+                          width: "fit-content",
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setForm((prev) => ({
+                              ...prev,
+                              numberOfPeople: Math.max(
+                                1,
+                                (prev.numberOfPeople || 1) - 1
+                              ),
+                            }))
+                          }
+                          style={{
+                            width: "40px",
+                            height: "40px",
+                            border: "none",
+                            borderRadius: "8px",
+                            background: "white",
+                            fontSize: "1.3rem",
+                            fontWeight: "bold",
+                            cursor: "pointer",
+                            transition: "all 0.3s",
+                            color: "#8B4513",
+                          }}
+                        >
+                          -
+                        </button>
+                        <span
+                          style={{
+                            fontSize: "1.2rem",
+                            fontWeight: "600",
+                            minWidth: "40px",
+                            textAlign: "center",
+                          }}
+                        >
+                          {form.numberOfPeople || 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setForm((prev) => ({
+                              ...prev,
+                              numberOfPeople: (prev.numberOfPeople || 1) + 1,
+                            }))
+                          }
+                          style={{
+                            width: "40px",
+                            height: "40px",
+                            border: "none",
+                            borderRadius: "8px",
+                            background: "white",
+                            fontSize: "1.3rem",
+                            fontWeight: "bold",
+                            cursor: "pointer",
+                            transition: "all 0.3s",
+                            color: "#8B4513",
+                          }}
+                        >
+                          +
+                        </button>
                       </div>
                     </div>
 
                     {/* Additional Requests */}
                     <div>
-                      <label style={{ display: 'block', fontSize: '1.05rem', fontWeight: '600', marginBottom: '0.5rem', color: '#8B4513' }}>Anything else artists should know?</label>
-                      <p style={{ fontSize: '0.85rem', color: '#888', marginBottom: '0.5rem' }}>
-                        E.g. "Please bring your own cones," "We'll be outdoors," "Prefer traditional Indian patterns," or "I'm flexible with timing"
+                      <label
+                        style={{
+                          display: "block",
+                          fontSize: "1.05rem",
+                          fontWeight: "600",
+                          marginBottom: "0.5rem",
+                          color: "#8B4513",
+                        }}
+                      >
+                        Anything else artists should know?
+                      </label>
+                      <p
+                        style={{
+                          fontSize: "0.85rem",
+                          color: "#888",
+                          marginBottom: "0.5rem",
+                        }}
+                      >
+                        E.g. "Please bring your own cones," "We'll be outdoors,"
+                        "Prefer traditional Indian patterns," or "I'm flexible
+                        with timing"
                       </p>
-                      <textarea name="additionalRequests" rows="4" value={form.additionalRequests || ''} onChange={handleFormChange} placeholder="Write your notes here..." style={{
-                        padding: '12px 16px',
-                        border: '1px solid #e0d5c9',
-                        borderRadius: '10px',
-                        fontSize: '1rem',
-                        background: '#faf8f5',
-                        width: '100%',
-                        outline: 'none',
-                        resize: 'vertical',
-                        fontFamily: 'inherit',
-                        transition: 'all 0.3s'
-                      }} />
+                      <textarea
+                        name="additionalRequests"
+                        rows="4"
+                        value={form.additionalRequests || ""}
+                        onChange={handleFormChange}
+                        placeholder="Write your notes here..."
+                        style={{
+                          padding: "12px 16px",
+                          border: "1px solid #e0d5c9",
+                          borderRadius: "10px",
+                          fontSize: "1rem",
+                          background: "#faf8f5",
+                          width: "100%",
+                          outline: "none",
+                          resize: "vertical",
+                          fontFamily: "inherit",
+                          transition: "all 0.3s",
+                        }}
+                      />
                     </div>
                   </div>
                 </div>
-                <div style={{
-                  flexShrink: 0,
-                  borderTop: '1px solid #e8ddd4',
-                  padding: '1.5rem 2.5rem',
-                  display: 'flex',
-                  gap: '1rem',
-                  justifyContent: 'flex-end',
-                  background: '#faf8f5'
-                }}>
-                  <button onClick={closeEditModal} disabled={saving} style={{
-                    padding: '14px 32px',
-                    fontSize: '1rem',
-                    fontWeight: '600',
-                    color: '#8B4513',
-                    backgroundColor: 'white',
-                    border: '2px solid #CD853F',
-                    borderRadius: '12px',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s'
-                  }}>Cancel</button>
-                  <button onClick={handleSave} disabled={saving} style={{
-                    padding: '14px 32px',
-                    fontSize: '1rem',
-                    fontWeight: '600',
-                    color: 'white',
-                    backgroundColor: '#CD853F',
-                    border: 'none',
-                    borderRadius: '12px',
-                    cursor: saving ? 'not-allowed' : 'pointer',
-                    opacity: saving ? 0.7 : 1,
-                    transition: 'all 0.3s',
-                    boxShadow: saving ? 'none' : '0 4px 12px rgba(205, 133, 63, 0.3)'
-                  }}>{saving ? 'Saving...' : 'Save Changes'}</button>
+                <div
+                  style={{
+                    flexShrink: 0,
+                    borderTop: "1px solid #e8ddd4",
+                    padding: "1.5rem 2.5rem",
+                    display: "flex",
+                    gap: "1rem",
+                    justifyContent: "flex-end",
+                    background: "#faf8f5",
+                  }}
+                >
+                  <button
+                    onClick={closeEditModal}
+                    disabled={saving}
+                    style={{
+                      padding: "14px 32px",
+                      fontSize: "1rem",
+                      fontWeight: "600",
+                      color: "#8B4513",
+                      backgroundColor: "white",
+                      border: "2px solid #CD853F",
+                      borderRadius: "12px",
+                      cursor: "pointer",
+                      transition: "all 0.3s",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    style={{
+                      padding: "14px 32px",
+                      fontSize: "1rem",
+                      fontWeight: "600",
+                      color: "white",
+                      backgroundColor: "#CD853F",
+                      border: "none",
+                      borderRadius: "12px",
+                      cursor: saving ? "not-allowed" : "pointer",
+                      opacity: saving ? 0.7 : 1,
+                      transition: "all 0.3s",
+                      boxShadow: saving
+                        ? "none"
+                        : "0 4px 12px rgba(205, 133, 63, 0.3)",
+                    }}
+                  >
+                    {saving ? "Saving..." : "Save Changes"}
+                  </button>
                 </div>
               </div>
             </div>
           )}
         </div>
-      </div >
+      </div>
       {completeOpen && (
         <div className="modal-overlay" onClick={closeCompleteModal}>
-          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div
+            className="modal"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: "600px", maxHeight: "90vh", overflowY: "auto" }}
+          >
             <div className="modal-header">
               <h3 className="modal-title">Complete Booking</h3>
-              <button className="modal-close" onClick={closeCompleteModal}>×</button>
+              <button className="modal-close" onClick={closeCompleteModal}>
+                ×
+              </button>
             </div>
             <div className="modal-body">
-              <p style={{ marginBottom: '20px', color: '#666' }}>Upload up to 3 images and one video (optional). Files will be uploaded to Cloudinary.</p>
+              <p style={{ marginBottom: "20px", color: "#666" }}>
+                Upload up to 3 images and one video (optional). Files will be
+                uploaded to Cloudinary.
+              </p>
 
               {/* Images Upload Section */}
-              <div className="form-group" style={{ marginBottom: '25px' }}>
-                <label style={{ display: 'block', fontWeight: '600', marginBottom: '10px', color: '#333' }}>
+              <div className="form-group" style={{ marginBottom: "25px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontWeight: "600",
+                    marginBottom: "10px",
+                    color: "#333",
+                  }}
+                >
                   Images (max 3)
                 </label>
-                <label htmlFor="complete-images-upload" className="upload-label" style={{
-                  display: 'block',
-                  padding: '20px',
-                  border: '2px dashed #d4a574',
-                  borderRadius: '8px',
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  backgroundColor: '#faf8f5',
-                  transition: 'all 0.3s ease'
-                }}>
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d4a574" strokeWidth="2" style={{ margin: '0 auto 10px' }}>
+                <label
+                  htmlFor="complete-images-upload"
+                  className="upload-label"
+                  style={{
+                    display: "block",
+                    padding: "20px",
+                    border: "2px dashed #d4a574",
+                    borderRadius: "8px",
+                    textAlign: "center",
+                    cursor: "pointer",
+                    backgroundColor: "#faf8f5",
+                    transition: "all 0.3s ease",
+                  }}
+                >
+                  <svg
+                    width="48"
+                    height="48"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#d4a574"
+                    strokeWidth="2"
+                    style={{ margin: "0 auto 10px" }}
+                  >
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                     <circle cx="8.5" cy="8.5" r="1.5" />
                     <polyline points="21 15 16 10 5 21" />
                   </svg>
-                  <p style={{ margin: '0', color: '#d4a574', fontWeight: '600' }}>
+                  <p
+                    style={{ margin: "0", color: "#d4a574", fontWeight: "600" }}
+                  >
                     Click to upload images
                   </p>
-                  <small style={{ color: '#888' }}>PNG, JPG, WEBP • Max 3 images</small>
+                  <small style={{ color: "#888" }}>
+                    PNG, JPG, WEBP • Max 3 images
+                  </small>
                 </label>
                 <input
                   type="file"
@@ -1663,44 +2892,51 @@ const AllBookings = () => {
                   accept="image/*"
                   multiple
                   onChange={handleImageSelect}
-                  style={{ display: 'none' }}
+                  style={{ display: "none" }}
                 />
 
                 {/* Image Previews */}
                 {imagePreviews.length > 0 && (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginTop: '15px' }}>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(3, 1fr)",
+                      gap: "10px",
+                      marginTop: "15px",
+                    }}
+                  >
                     {imagePreviews.map((preview, index) => (
-                      <div key={index} style={{ position: 'relative' }}>
+                      <div key={index} style={{ position: "relative" }}>
                         <img
                           src={preview}
                           alt={`Preview ${index + 1}`}
                           style={{
-                            width: '100%',
-                            height: '120px',
-                            objectFit: 'cover',
-                            borderRadius: '8px',
-                            border: '2px solid #d4a574'
+                            width: "100%",
+                            height: "120px",
+                            objectFit: "cover",
+                            borderRadius: "8px",
+                            border: "2px solid #d4a574",
                           }}
                         />
                         <button
                           type="button"
                           onClick={() => removeImage(index)}
                           style={{
-                            position: 'absolute',
-                            top: '5px',
-                            right: '5px',
-                            background: '#e74c3c',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '50%',
-                            width: '25px',
-                            height: '25px',
-                            cursor: 'pointer',
-                            fontSize: '16px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontWeight: 'bold'
+                            position: "absolute",
+                            top: "5px",
+                            right: "5px",
+                            background: "#e74c3c",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "50%",
+                            width: "25px",
+                            height: "25px",
+                            cursor: "pointer",
+                            fontSize: "16px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontWeight: "bold",
                           }}
                         >
                           ×
@@ -1712,69 +2948,92 @@ const AllBookings = () => {
               </div>
 
               {/* Video Upload Section */}
-              <div className="form-group" style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', fontWeight: '600', marginBottom: '10px', color: '#333' }}>
+              <div className="form-group" style={{ marginBottom: "15px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontWeight: "600",
+                    marginBottom: "10px",
+                    color: "#333",
+                  }}
+                >
                   Video (optional)
                 </label>
-                <label htmlFor="complete-video-upload" className="upload-label" style={{
-                  display: 'block',
-                  padding: '20px',
-                  border: '2px dashed #d4a574',
-                  borderRadius: '8px',
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  backgroundColor: '#faf8f5',
-                  transition: 'all 0.3s ease'
-                }}>
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d4a574" strokeWidth="2" style={{ margin: '0 auto 10px' }}>
+                <label
+                  htmlFor="complete-video-upload"
+                  className="upload-label"
+                  style={{
+                    display: "block",
+                    padding: "20px",
+                    border: "2px dashed #d4a574",
+                    borderRadius: "8px",
+                    textAlign: "center",
+                    cursor: "pointer",
+                    backgroundColor: "#faf8f5",
+                    transition: "all 0.3s ease",
+                  }}
+                >
+                  <svg
+                    width="48"
+                    height="48"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#d4a574"
+                    strokeWidth="2"
+                    style={{ margin: "0 auto 10px" }}
+                  >
                     <polygon points="23 7 16 12 23 17 23 7" />
                     <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
                   </svg>
-                  <p style={{ margin: '0', color: '#d4a574', fontWeight: '600' }}>
+                  <p
+                    style={{ margin: "0", color: "#d4a574", fontWeight: "600" }}
+                  >
                     Click to upload video
                   </p>
-                  <small style={{ color: '#888' }}>MP4, MOV, AVI • Optional</small>
+                  <small style={{ color: "#888" }}>
+                    MP4, MOV, AVI • Optional
+                  </small>
                 </label>
                 <input
                   type="file"
                   id="complete-video-upload"
                   accept="video/*"
                   onChange={handleVideoSelect}
-                  style={{ display: 'none' }}
+                  style={{ display: "none" }}
                 />
 
                 {/* Video Preview */}
                 {videoPreview && (
-                  <div style={{ marginTop: '15px', position: 'relative' }}>
+                  <div style={{ marginTop: "15px", position: "relative" }}>
                     <video
                       src={videoPreview}
                       controls
                       style={{
-                        width: '100%',
-                        maxHeight: '200px',
-                        borderRadius: '8px',
-                        border: '2px solid #d4a574'
+                        width: "100%",
+                        maxHeight: "200px",
+                        borderRadius: "8px",
+                        border: "2px solid #d4a574",
                       }}
                     />
                     <button
                       type="button"
                       onClick={removeVideo}
                       style={{
-                        position: 'absolute',
-                        top: '10px',
-                        right: '10px',
-                        background: '#e74c3c',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '50%',
-                        width: '30px',
-                        height: '30px',
-                        cursor: 'pointer',
-                        fontSize: '18px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontWeight: 'bold'
+                        position: "absolute",
+                        top: "10px",
+                        right: "10px",
+                        background: "#e74c3c",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "50%",
+                        width: "30px",
+                        height: "30px",
+                        cursor: "pointer",
+                        fontSize: "18px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontWeight: "bold",
                       }}
                     >
                       ×
@@ -1784,15 +3043,20 @@ const AllBookings = () => {
               </div>
             </div>
             <div className="modal-footer">
-              <button className="btn-secondary" onClick={closeCompleteModal}>Cancel</button>
-              <button className="btn-primary" onClick={handleConfirmComplete} disabled={uploading}>
-                {uploading ? 'Uploading...' : 'Confirm & Complete'}
+              <button className="btn-secondary" onClick={closeCompleteModal}>
+                Cancel
+              </button>
+              <button
+                className="btn-primary"
+                onClick={handleConfirmComplete}
+                disabled={uploading}
+              >
+                {uploading ? "Uploading..." : "Confirm & Complete"}
               </button>
             </div>
           </div>
         </div>
-      )
-      }
+      )}
 
       {/* Cancel Booking Modal */}
       <CancelAcceptedModal
@@ -1803,96 +3067,102 @@ const AllBookings = () => {
       />
 
       {/* Message Modal */}
-      {
-        messageModalOpen && (
-          <div className="modal-overlay" onClick={closeMessageModal}>
+      {messageModalOpen && (
+        <div className="modal-overlay" onClick={closeMessageModal}>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: "white",
+              borderRadius: "12px",
+              maxWidth: "450px",
+              width: "90%",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.15)",
+              overflow: "hidden",
+            }}
+          >
+            {/* Modal Header */}
             <div
-              onClick={(e) => e.stopPropagation()}
               style={{
-                backgroundColor: 'white',
-                borderRadius: '12px',
-                maxWidth: '450px',
-                width: '90%',
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)',
-                overflow: 'hidden',
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "20px 24px",
+                borderBottom: "1px solid #e5e7eb",
               }}
             >
-              {/* Modal Header */}
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '20px 24px',
-                borderBottom: '1px solid #e5e7eb',
-              }}>
-                <h3 style={{
+              <h3
+                style={{
                   margin: 0,
-                  fontSize: '1.25rem',
-                  fontWeight: '600',
-                  color: '#111827',
-                }}>
-                  Notice
-                </h3>
+                  fontSize: "1.25rem",
+                  fontWeight: "600",
+                  color: "#111827",
+                }}
+              >
+                Notice
+              </h3>
+              <button
+                onClick={closeMessageModal}
+                style={{
+                  background: "none",
+                  border: "none",
+                  fontSize: "24px",
+                  color: "#6b7280",
+                  cursor: "pointer",
+                  padding: "0",
+                  lineHeight: "1",
+                  transition: "color 0.2s ease",
+                }}
+                onMouseOver={(e) => (e.target.style.color = "#111827")}
+                onMouseOut={(e) => (e.target.style.color = "#6b7280")}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: "24px" }}>
+              <p
+                style={{
+                  margin: "0 0 24px 0",
+                  fontSize: "1rem",
+                  color: "#4b5563",
+                  lineHeight: "1.5",
+                }}
+              >
+                {messageModalContent}
+              </p>
+
+              {/* Modal Actions */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: "12px",
+                  justifyContent: "flex-end",
+                }}
+              >
                 <button
                   onClick={closeMessageModal}
                   style={{
-                    background: 'none',
-                    border: 'none',
-                    fontSize: '24px',
-                    color: '#6b7280',
-                    cursor: 'pointer',
-                    padding: '0',
-                    lineHeight: '1',
-                    transition: 'color 0.2s ease'
+                    padding: "12px 24px",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    color: "white",
+                    backgroundColor: "var(--first-color)",
+                    border: "none",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
                   }}
-                  onMouseOver={(e) => e.target.style.color = '#111827'}
-                  onMouseOut={(e) => e.target.style.color = '#6b7280'}
+                  onMouseOver={(e) => (e.target.style.opacity = "0.9")}
+                  onMouseOut={(e) => (e.target.style.opacity = "1")}
                 >
-                  ×
+                  OK
                 </button>
-              </div>
-
-              {/* Modal Body */}
-              <div style={{ padding: '24px' }}>
-                <p style={{
-                  margin: '0 0 24px 0',
-                  fontSize: '1rem',
-                  color: '#4b5563',
-                  lineHeight: '1.5',
-                }}>
-                  {messageModalContent}
-                </p>
-
-                {/* Modal Actions */}
-                <div style={{
-                  display: 'flex',
-                  gap: '12px',
-                  justifyContent: 'flex-end',
-                }}>
-                  <button
-                    onClick={closeMessageModal}
-                    style={{
-                      padding: '12px 24px',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: 'white',
-                      backgroundColor: 'var(--first-color)',
-                      border: 'none',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease'
-                    }}
-                    onMouseOver={(e) => e.target.style.opacity = '0.9'}
-                    onMouseOut={(e) => e.target.style.opacity = '1'}
-                  >
-                    OK
-                  </button>
-                </div>
               </div>
             </div>
           </div>
-        )
-      }
+        </div>
+      )}
 
       {/* Get Location Modal */}
       <GetLocationModal

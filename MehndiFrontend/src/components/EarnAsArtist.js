@@ -239,7 +239,7 @@ const EarnAsArtist = () => {
                 lineHeight: "1.6",
               }}
             >
-              Join <strong>Mehndi Me</strong>, the platform built for mehndi
+              Join <strong>MehndiMe</strong>, the platform built for mehndi
               artists — where your creativity is celebrated, your time is
               respected, and your talent turns into steady bookings.
             </p>
@@ -841,7 +841,7 @@ const EarnAsArtist = () => {
               }}
             >
               Artists across the UK are growing their mehndi businesses with
-              Mehndi Me — getting more bookings, saving hours of admin time, and
+              MehndiMe — getting more bookings, saving hours of admin time, and
               earning more with ease.
             </p>
 
@@ -890,7 +890,7 @@ const EarnAsArtist = () => {
                 margin: "0 auto 24px auto",
               }}
             >
-              "Mehndi Me has completely changed how I work. I no longer waste
+              "MehndiMe has completely changed how I work. I no longer waste
               time managing messages or chasing payments — now I can just focus
               on my art."
             </blockquote>
@@ -907,7 +907,7 @@ const EarnAsArtist = () => {
             </p>
 
             {/* Rating */}
-            <div
+            {/* <div
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -925,7 +925,7 @@ const EarnAsArtist = () => {
               >
                 Rated 4.9/5 by artists across the UK
               </span>
-            </div>
+            </div> */}
           </div>
         </section>
 

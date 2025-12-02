@@ -226,7 +226,7 @@ const Login = () => {
               >
                 <img
                   src="/assets/logo icon.png"
-                  alt="Mehndi Me"
+                  alt="MehndiMe"
                   style={{ height: "auto", width: "auto" }}
                 />
               </div>
@@ -234,7 +234,7 @@ const Login = () => {
             <h1 className="auth-title">
               <img
                 src="/assets/logo text.png"
-                alt="Mehndi Me"
+                alt="MehndiMe"
                 style={{ height: 26 }}
               />
             </h1>

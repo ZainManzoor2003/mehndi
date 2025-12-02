@@ -1,3 +1,4 @@
+import { jsPDF } from "jspdf";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   FaCalendarAlt,
@@ -38,6 +39,144 @@ const ClientDashboard = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { tab } = useParams();
+
+  const generateReceiptPdf = (title, rows, filename) => {
+    const logoUrl = `${window.location.origin}/images/flwr.png`;
+
+    const render = (logoImg) => {
+      try {
+        const doc = new jsPDF();
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+
+        // Soft background
+        doc.setFillColor(255, 248, 240);
+        doc.rect(0, 0, pageWidth, pageHeight, "F");
+
+        let y = 24;
+
+        // Logo
+        if (logoImg) {
+          const imgWidth = 26;
+          const ratio = logoImg.height / logoImg.width || 1;
+          const imgHeight = imgWidth * ratio;
+          const x = (pageWidth - imgWidth) / 2;
+          doc.addImage(logoImg, "PNG", x, y, imgWidth, imgHeight);
+          y += imgHeight + 6;
+        }
+
+        // Title
+        doc.setTextColor(96, 59, 26);
+        doc.setFontSize(22);
+        doc.text("MehndiMe", pageWidth / 2, y, { align: "center" });
+        y += 8;
+
+        doc.setFontSize(11);
+        doc.setTextColor(128, 83, 36);
+        doc.text("INVOICE", pageWidth / 2, y, { align: "center" });
+        y += 10;
+
+        // Divider
+        doc.setDrawColor(214, 180, 135);
+        doc.line(26, y, pageWidth - 26, y);
+        y += 8;
+
+        const headerPairs = rows.slice(0, 2);
+        const bodyRows = rows.slice(2);
+
+        // Header two-column section
+        if (headerPairs.length) {
+          const [left] = headerPairs;
+          const right = headerPairs[1];
+
+          doc.setFontSize(9);
+          doc.setTextColor(140, 93, 45);
+
+          if (left) {
+            doc.text(String(left[0] || ""), 26, y);
+          }
+          if (right) {
+            doc.text(String(right[0] || ""), pageWidth - 26, y, {
+              align: "right",
+            });
+          }
+
+          y += 6;
+          doc.setFontSize(11);
+          doc.setTextColor(64, 40, 18);
+
+          if (left) {
+            doc.text(String(left[1] || ""), 26, y);
+          }
+          if (right) {
+            doc.text(String(right[1] || ""), pageWidth - 26, y, {
+              align: "right",
+            });
+          }
+
+          y += 12;
+          doc.setDrawColor(214, 180, 135);
+          doc.line(26, y, pageWidth - 26, y);
+          y += 10;
+        }
+
+        // Body rows (totals, notes)
+        doc.setFontSize(10);
+        bodyRows.forEach(([label, value], index) => {
+          if (value === undefined || value === null || value === "") return;
+
+          const isMoney =
+            typeof value === "string" && value.trim().startsWith("£");
+
+          doc.setTextColor(140, 93, 45);
+          doc.text(String(label), 26, y);
+
+          doc.setTextColor(
+            isMoney ? 96 : 64,
+            isMoney ? 59 : 40,
+            isMoney ? 26 : 18
+          );
+          doc.text(String(value), pageWidth - 26, y, { align: "right" });
+
+          y += 8;
+
+          // Draw subtle separators after key money rows
+          if (index <= 2) {
+            doc.setDrawColor(230, 210, 180);
+            doc.line(26, y, pageWidth - 26, y);
+            y += 4;
+          }
+        });
+
+        // Note
+        y += 6;
+        doc.setTextColor(140, 93, 45);
+        doc.setFontSize(9);
+        const note =
+          "Note that refunds and cancellations are subject to our policy.";
+        doc.text(note, pageWidth / 2, y, {
+          align: "center",
+          maxWidth: pageWidth - 52,
+        });
+
+        y += 12;
+        doc.setFontSize(10);
+        doc.setTextColor(96, 59, 26);
+        doc.text("Payment received via Stripe", pageWidth / 2, y, {
+          align: "center",
+        });
+
+        doc.save(filename || `receipt-${title || "payment"}.pdf`);
+      } catch (e) {
+        console.error("Failed to generate PDF receipt", e);
+      }
+    };
+
+    const img = new Image();
+    img.onload = () => render(img);
+    img.onerror = () => render(null);
+    img.src = logoUrl;
+  };
   const location = useLocation();
   const userName = user ? user.firstName : "Client";
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -405,6 +544,33 @@ const ClientDashboard = () => {
             });
           };
 
+          const formatPreferredTime = (slot) => {
+            if (!slot) return "-";
+            const raw = Array.isArray(slot) ? slot[0] : slot;
+            if (!raw) return "-";
+
+            if (
+              raw === "Morning" ||
+              raw === "Afternoon" ||
+              raw === "Evening" ||
+              raw === "Flexible"
+            ) {
+              return raw;
+            }
+
+            if (/^\d{1,2}:\d{2}$/.test(raw)) {
+              const [h, m] = raw.split(":").map(Number);
+              const d = new Date();
+              d.setHours(h, m, 0, 0);
+              return d.toLocaleTimeString("en-GB", {
+                hour: "2-digit",
+                minute: "2-digit",
+              });
+            }
+
+            return raw;
+          };
+
           const formatTime = (dateString) => {
             const date = new Date(dateString);
             return date.toLocaleTimeString("en-GB", {
@@ -422,7 +588,7 @@ const ClientDashboard = () => {
               latestBooking.otherEventType
             ),
             date: formatDate(latestBooking.eventDate),
-            time: latestBooking.preferredTimeSlot,
+            time: formatPreferredTime(latestBooking.preferredTimeSlot),
             daysLeft: daysLeft,
             location: latestBooking.location,
             artist: getArtistName(latestBooking.assignedArtist),
@@ -448,7 +614,7 @@ const ClientDashboard = () => {
                 secondBooking.otherEventType
               ),
               date: formatDate(secondBooking.eventDate),
-              time: secondBooking.preferredTimeSlot,
+              time: formatPreferredTime(secondBooking.preferredTimeSlot),
               daysLeft: secondDaysLeft,
               location: secondBooking.location,
               artist: getArtistName(secondBooking.assignedArtist),
@@ -2268,70 +2434,36 @@ const ClientDashboard = () => {
                                   };
 
                                   const handleDownloadReceipt = () => {
-                                    // Create receipt content
-                                    const receiptContent = `
-                                      <html>
-                                        <head>
-                                          <title>Receipt - ${eventType}</title>
-                                          <style>
-                                            body { font-family: Arial, sans-serif; padding: 20px; }
-                                            .header { text-align: center; margin-bottom: 30px; }
-                                            .receipt-details { margin: 20px 0; }
-                                            .detail-row { display: flex; justify-content: space-between; margin: 10px 0; }
-                                            .total { border-top: 2px solid #333; padding-top: 10px; font-weight: bold; }
-                                          </style>
-                                        </head>
-                                        <body>
-                                          <div class="header">
-                                            <h1>Payment Receipt</h1>
-                                            <p>Mehndi Booking Platform</p>
-                                          </div>
-                                          <div class="receipt-details">
-                                            <div class="detail-row">
-                                              <span>Event Type:</span>
-                                              <span>${eventType}</span>
-                                            </div>
-                                            <div class="detail-row">
-                                              <span>Artist:</span>
-                                              <span>${artistName}</span>
-                                            </div>
-                                            <div class="detail-row">
-                                              <span>Event Date:</span>
-                                              <span>${formatDate(booking.eventDate)}</span>
-                                            </div>
-                                            <div class="detail-row">
-                                              <span>Deposit Paid:</span>
-                                              <span>£${paymentPaid.toFixed(2)}</span>
-                                            </div>
-                                            ${remainingPayment > 0 ? `
-                                            <div class="detail-row">
-                                              <span>Remaining Payment:</span>
-                                              <span>£${remainingPayment.toFixed(2)}</span>
-                                            </div>
-                                            ` : ''}
-                                            <div class="detail-row total">
-                                              <span>Total Amount:</span>
-                                              <span>£${(paymentPaid + remainingPayment).toFixed(2)}</span>
-                                            </div>
-                                            <div class="detail-row">
-                                              <span>Status:</span>
-                                              <span>${statusInfo.text}</span>
-                                            </div>
-                                          </div>
-                                        </body>
-                                      </html>
-                                    `;
+                                  const rows = [
+                                      ["Artist:", artistName],
+                                      ["Event Date:", formatDate(booking.eventDate)],
+                                      ["Event Type:", eventType],
+                                      [
+                                        "Deposit Paid:",
+                                        `£${paymentPaid.toFixed(2)}`,
+                                      ],
+                                      remainingPayment > 0 && [
+                                        "Remaining Payment:",
+                                        `£${remainingPayment.toFixed(2)}`,
+                                      ],
+                                      [
+                                        "Total Amount:",
+                                        `£${(
+                                          paymentPaid + remainingPayment
+                                        ).toFixed(2)}`,
+                                      ],
+                                      ["Status:", statusInfo.text],
+                                    ].filter(Boolean);
 
-                                    // Create blob and download
-                                    const blob = new Blob([receiptContent], { type: 'text/html' });
-                                    const url = window.URL.createObjectURL(blob);
-                                    const link = document.createElement('a');
-                                    link.href = url;
-                                    link.download = `receipt-${eventType.replace(/\s+/g, '-')}-${formatDate(booking.eventDate).replace(/\s+/g, '-')}.html`;
-                                    document.body.appendChild(link);
-                                    link.click();
-                                    document.body.removeChild(link);
-                                    window.URL.revokeObjectURL(url);
+                                    const filename = `receipt-${eventType
+                                      .replace(/\s+/g, "-")
+                                      .toLowerCase()}-${formatDate(
+                                      booking.eventDate
+                                    )
+                                      .replace(/\s+/g, "-")
+                                      .toLowerCase()}.pdf`;
+
+                                    generateReceiptPdf(eventType, rows, filename);
                                   };
 
                                   return (
@@ -2630,94 +2762,41 @@ const ClientDashboard = () => {
                             const status = getStatus(transaction);
 
                             const handleDownloadReceipt = () => {
-                              // Create PDF content
-                              const pdfContent = `
-                              <html>
-                                <head>
-                                  <title>Receipt - ${
-                                    transaction.eventName === "Unknown Event"
-                                      ? "Event"
-                                      : transaction.eventName
-                                  }</title>
-                                  <style>
-                                    body { font-family: Arial, sans-serif; padding: 20px; }
-                                    .header { text-align: center; margin-bottom: 30px; }
-                                    .receipt-details { margin: 20px 0; }
-                                    .detail-row { display: flex; justify-content: space-between; margin: 10px 0; }
-                                    .total { border-top: 2px solid #333; padding-top: 10px; font-weight: bold; }
-                                  </style>
-                                </head>
-                                <body>
-                                  <div class="header">
-                                    <h1>Payment Receipt</h1>
-                                    <p>Mehndi Booking Platform</p>
-                                  </div>
-                                  <div class="receipt-details">
-                                    <div class="detail-row">
-                                      <span>Event:</span>
-                                      <span>${
-                                        transaction.eventName ===
-                                        "Unknown Event"
-                                          ? "Event"
-                                          : transaction.eventName
-                                      }</span>
-                                    </div>
-                                    <div class="detail-row">
-                                      <span>Transaction Type:</span>
-                                      <span>${getTransactionType(
-                                        transaction.transactionType
-                                      )}</span>
-                                    </div>
-                                    <div class="detail-row">
-                                      <span>Date:</span>
-                                      <span>${formatDate(
-                                        transaction.createdAt
-                                      )}</span>
-                                    </div>
-                                    <div class="detail-row">
-                                      <span>Amount:</span>
-                                      <span>£${transaction.amount.toFixed(
-                                        2
-                                      )}</span>
-                                    </div>
-                                    <div class="detail-row">
-                                      <span>Payment Method:</span>
-                                      <span>Stripe</span>
-                                    </div>
-                                    <div class="detail-row">
-                                      <span>Status:</span>
-                                      <span>${status.text}</span>
-                                    </div>
-                                    <div class="detail-row total">
-                                      <span>Total Paid:</span>
-                                      <span>£${transaction.amount.toFixed(
-                                        2
-                                      )}</span>
-                                    </div>
-                                  </div>
-                                </body>
-                              </html>
-                            `;
+                              const title =
+                                transaction.eventName === "Unknown Event"
+                                  ? "Event"
+                                  : transaction.eventName;
 
-                              // Create blob and download
-                              const blob = new Blob([pdfContent], {
-                                type: "text/html",
-                              });
-                              const url = window.URL.createObjectURL(blob);
-                              const link = document.createElement("a");
-                              link.href = url;
-                              link.download = `receipt-${
-                                transaction.eventName
-                                  ? transaction.eventName.replace(/\s+/g, "-")
-                                  : "Event".replace(/\s+/g, "-")
-                              }-${formatDate(transaction.createdAt).replace(
-                                /\s+/g,
-                                "-"
-                              )}.html`;
-                              document.body.appendChild(link);
-                              link.click();
-                              document.body.removeChild(link);
-                              window.URL.revokeObjectURL(url);
+                              const rows = [
+                                ["Event:", title],
+                                [
+                                  "Transaction Type:",
+                                  getTransactionType(
+                                    transaction.transactionType
+                                  ),
+                                ],
+                                ["Date:", formatDate(transaction.createdAt)],
+                                [
+                                  "Amount:",
+                                  `£${transaction.amount.toFixed(2)}`,
+                                ],
+                                ["Payment Method:", "Stripe"],
+                                ["Status:", status.text],
+                                [
+                                  "Total Paid:",
+                                  `£${transaction.amount.toFixed(2)}`,
+                                ],
+                              ];
+
+                              const filename = `receipt-${title
+                                .replace(/\s+/g, "-")
+                                .toLowerCase()}-${formatDate(
+                                transaction.createdAt
+                              )
+                                .replace(/\s+/g, "-")
+                                .toLowerCase()}.pdf`;
+
+                              generateReceiptPdf(title, rows, filename);
                             };
 
                             return (
@@ -4566,7 +4645,12 @@ const ClientDashboard = () => {
                           Withdrawal Amount
                         </label>
                         <div className="amount-input-container">
-                          <span className="currency-symbol">£</span>
+                          <span
+                            className="currency-symbol"
+                            // style={{ marginRight: "10px" }}
+                          >
+                            £
+                          </span>
                           <input
                             type="number"
                             id="withdrawAmount"
@@ -4577,6 +4661,7 @@ const ClientDashboard = () => {
                             onChange={(e) => setWithdrawAmount(e.target.value)}
                             placeholder="0.00"
                             className="modern-amount-input"
+                            style={{ paddingLeft: "2rem", fontSize: "18px" }}
                           />
                         </div>
                         <div className="quick-amounts">

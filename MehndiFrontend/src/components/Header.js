@@ -219,7 +219,7 @@ const Header = () => {
           >
             <img
               src="/assets/logo text.png"
-              alt="Mehndi Me"
+              alt="MehndiMe"
               style={{ height: 36, margin: "10px 0", display: "block" }}
             />
           </a>
@@ -281,7 +281,7 @@ const Header = () => {
             <div className="nav__overlay-logo">
               <img
                 src="/assets/logo text.png"
-                alt="Mehndi Me"
+                alt="MehndiMe"
                 style={{ height: 28, display: "block" }}
               />
             </div>
@@ -399,7 +399,13 @@ const Header = () => {
                   onClick={closeMenu}
                 >
                   <span className="nav__overlay-number">
-                    <img src="/images/2.png" alt="02" width="64" height="64" />
+                    <img
+                      src="/images/2.png"
+                      alt="02"
+                      width="50"
+                      height="64"
+                      style={{ margin: "0 8px 0 6px" }}
+                    />
                   </span>
                   <span className="nav__overlay-text">
                     Request a Mehndi Artist
@@ -445,7 +451,13 @@ const Header = () => {
                   onClick={closeMenu}
                 >
                   <span className="nav__overlay-number">
-                    <img src="/images/4.png" alt="04" width="64" height="64" />
+                    <img
+                      src="/images/4.png"
+                      alt="04"
+                      width="50"
+                      height="50"
+                      style={{ margin: "0 8px 0 6px" }}
+                    />
                   </span>
                   <span className="nav__overlay-text">Earn as an Artist</span>
                 </Link>

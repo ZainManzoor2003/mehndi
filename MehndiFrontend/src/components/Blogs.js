@@ -113,7 +113,7 @@ const Blogs = () => {
                 marginBottom: ".65rem",
               }}
             >
-              The Mehndi Me Journal
+              The MehndiMe Journal
             </h1>
             <p
               style={{
@@ -367,31 +367,11 @@ const Blogs = () => {
                     </span>
                     <Link
                       to={`/blogs/${b._id}`}
+                      className="home__cta-button"
                       style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        padding: "8px 16px",
-                        borderRadius: 20,
-                        border: "1px solid var(--first-color)",
-                        color: "#8B4513",
-                        textDecoration: "none",
+                        padding: "0.65rem 1.5rem",
                         fontSize: "0.9rem",
-                        fontWeight: 500,
-                        background: "transparent",
-                        transition: "all 0.2s ease",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = "#cf7f3a";
-                        e.currentTarget.style.color = "#cf7f3a";
-                        e.currentTarget.style.background =
-                          "rgba(207,127,58,0.05)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor =
-                          "var(--first-color)";
-                        e.currentTarget.style.color = "#8B4513";
-                        e.currentTarget.style.background = "transparent";
+                        borderRadius: "999px",
                       }}
                     >
                       Read article

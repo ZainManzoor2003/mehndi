@@ -18,7 +18,34 @@ const BrowseApplyModal = ({
   const [city, setCity] = useState("");
   const [category, setCategory] = useState("");
   const [success, setSuccess] = useState(false);
+  const [shakeTerms, setShakeTerms] = useState(false);
+
+  const resetForm = () => {
+    setProposedBudget("");
+    setDuration("");
+    setMessage("");
+    setAgreed(false);
+    setErrors({});
+    setShakeTerms(false);
+    setSuccess(false);
+  };
+
   if (!open) return null;
+
+  const handleBudgetChange = (e) => {
+    const value = e.target.value;
+    // Allow empty, or numeric with optional decimal point
+    if (value === "" || /^[0-9]*\.?[0-9]*$/.test(value)) {
+      setProposedBudget(value);
+    }
+  };
+
+  const handleDurationChange = (e) => {
+    const value = e.target.value;
+    if (value === "" || /^[0-9]*\.?[0-9]*$/.test(value)) {
+      setDuration(value);
+    }
+  };
 
   const validate = () => {
     const e = {};
@@ -28,9 +55,15 @@ const BrowseApplyModal = ({
       e.estimatedDuration = "Please enter a valid estimated duration";
     if (!message || message.trim().length < 50)
       e.proposalMessage = "Proposal message must be at least 50 characters";
-    if (!agreed) e.agreedToTerms = "You must agree to the terms and conditions";
+    if (!agreed) {
+      // Just shake the terms section, do NOT close the modal
+      setShakeTerms(true);
+      setTimeout(() => setShakeTerms(false), 400);
+    }
+
     setErrors(e);
-    return Object.keys(e).length === 0;
+    // Form is valid only if no field errors AND terms are agreed
+    return Object.keys(e).length === 0 && agreed;
   };
 
   const handleSubmit = async () => {
@@ -61,6 +94,16 @@ const BrowseApplyModal = ({
           overflow: "hidden",
         }}
       >
+        <style>
+          {`
+            @keyframes shake-horizontal {
+              0%, 100% { transform: translateX(0); }
+              20%, 60% { transform: translateX(-4px); }
+              40%, 80% { transform: translateX(4px); }
+            }
+          `}
+        </style>
+
         <div className="modal-header">
           <h3 className="modal-title">{title}</h3>
           <button className="modal-close" onClick={onClose}>
@@ -270,12 +313,13 @@ const BrowseApplyModal = ({
                         </label>
                         <input
                           type="number"
+                          inputMode="decimal"
                           className={`form-input ${
                             errors.proposedBudget ? "error" : ""
                           }`}
                           placeholder="450"
                           value={proposedBudget}
-                          onChange={(e) => setProposedBudget(e.target.value)}
+                          onChange={handleBudgetChange}
                           disabled={busy}
                           min="0"
                           step="0.01"
@@ -322,12 +366,13 @@ const BrowseApplyModal = ({
                         >
                           <input
                             type="number"
+                            inputMode="decimal"
                             className={`form-input ${
                               errors.estimatedDuration ? "error" : ""
                             }`}
                             placeholder="4"
                             value={duration}
-                            onChange={(e) => setDuration(e.target.value)}
+                            onChange={handleDurationChange}
                             disabled={busy}
                             min="0"
                             step="0.5"
@@ -342,23 +387,6 @@ const BrowseApplyModal = ({
                               minWidth: "120px",
                             }}
                           />
-                          <div
-                            className="form-input"
-                            value="hours"
-                            disabled
-                            style={{
-                              flex: "1",
-                              padding: "12px",
-                              border: "1px solid #ced4da",
-                              borderRadius: "8px",
-                              fontSize: "14px",
-                              outline: "none",
-                              backgroundColor: "white",
-                              minWidth: "80px",
-                            }}
-                          >
-                            <span value="hours">Hours</span>
-                          </div>
                         </div>
                         {errors.estimatedDuration && (
                           <span
@@ -434,27 +462,20 @@ const BrowseApplyModal = ({
                       />
                       <small
                         style={{
-                          color: message.length < 50 ? "#dc3545" : "#28a745",
+                          color: errors.proposalMessage
+                            ? "#dc3545"
+                            : message.length >= 50
+                            ? "#28a745"
+                            : "#6c757d",
                           fontSize: "12px",
                           marginTop: "4px",
                           display: "block",
                         }}
                       >
-                        {message.length}/50 characters minimum
+                        {errors.proposalMessage
+                          ? errors.proposalMessage
+                          : `${message.length}/50 characters minimum`}
                       </small>
-                      {errors.proposalMessage && (
-                        <span
-                          className="error-text"
-                          style={{
-                            color: "#dc3545",
-                            fontSize: "12px",
-                            marginTop: "4px",
-                            display: "block",
-                          }}
-                        >
-                          {errors.proposalMessage}
-                        </span>
-                      )}
                     </div>
                   </div>
 
@@ -478,7 +499,14 @@ const BrowseApplyModal = ({
                     >
                       Terms & Conditions
                     </h4>
-                    <div className="checkbox-group">
+                    <div
+                      className="checkbox-group"
+                      style={{
+                        animation: shakeTerms
+                          ? "shake-horizontal 0.35s ease-in-out"
+                          : "none",
+                      }}
+                    >
                       <label
                         className="checkbox-label"
                         style={{
@@ -498,25 +526,39 @@ const BrowseApplyModal = ({
                           style={{ marginTop: "2px" }}
                         />
                         <span style={{ color: "#495057" }}>
-                          I agree to MehndiMe’s Terms & Conditions and Privacy
-                          Policy, and understand that all payments and
-                          communication must remain on the MehndiMe platform to
-                          ensure protection for both artists and clients.
+                          I agree to MehndiMe&apos;s{" "}
+                          <Link
+                            to="/terms-conditions"
+                            // target="_blank"
+                            // rel="noopener noreferrer"
+                            style={{
+                              color: "#EA7C25",
+                              textDecoration: "underline",
+                              fontWeight: 500,
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Terms &amp; Conditions
+                          </Link>{" "}
+                          and{" "}
+                          <Link
+                            to="/privacy-policy"
+                            // target="_blank"
+                            // rel="noopener noreferrer"
+                            style={{
+                              color: "#EA7C25",
+                              textDecoration: "underline",
+                              fontWeight: 500,
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Privacy Policy
+                          </Link>
+                          , and understand that all payments and communication
+                          must remain on the MehndiMe platform to ensure
+                          protection for both artists and clients.
                         </span>
                       </label>
-                      {errors.agreedToTerms && (
-                        <span
-                          className="error-text"
-                          style={{
-                            color: "#dc3545",
-                            fontSize: "12px",
-                            marginTop: "8px",
-                            display: "block",
-                          }}
-                        >
-                          {errors.agreedToTerms}
-                        </span>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -540,7 +582,10 @@ const BrowseApplyModal = ({
             <>
               <button
                 className="cancel-btn"
-                onClick={onClose}
+                onClick={() => {
+                  resetForm();
+                  onClose();
+                }}
                 disabled={busy}
                 style={{
                   padding: "12px 24px",
@@ -559,7 +604,7 @@ const BrowseApplyModal = ({
               <button
                 className="submit-btn"
                 onClick={handleSubmit}
-                disabled={busy || !agreed}
+                disabled={busy}
                 style={{
                   padding: "12px 24px",
                   fontSize: "14px",
@@ -572,12 +617,12 @@ const BrowseApplyModal = ({
                   transition: "all 0.2s ease",
                 }}
                 onMouseEnter={(e) => {
-                  if (!busy && agreed) {
+                  if (!busy) {
                     e.target.style.backgroundColor = "#804018";
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (!busy && agreed) {
+                  if (!busy) {
                     e.target.style.backgroundColor = "#EA7C25";
                   }
                 }}
@@ -588,7 +633,10 @@ const BrowseApplyModal = ({
           ) : (
             <button
               className="cancel-btn"
-              onClick={onClose}
+              onClick={() => {
+                resetForm();
+                onClose();
+              }}
               style={{
                 padding: "12px 24px",
                 fontSize: "14px",

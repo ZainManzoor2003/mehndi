@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Booking = require("../schemas/Booking");
 const User = require("../schemas/User");
 const Transaction = require("../schemas/Transaction");
@@ -502,6 +503,14 @@ const getBookingLogs = async (req, res) => {
 
 const getBookingById = async (req, res) => {
   try {
+    // Validate that the ID is a valid MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid booking ID format",
+      });
+    }
+
     const booking = await Booking.findById(req.params.id)
       .populate("clientId", "firstName lastName email")
       .populate("assignedArtist", "firstName lastName email");
@@ -2022,25 +2031,61 @@ const calculateDistance = (lat1, lng1, lat2, lng2) => {
 // @desc    Save/like a booking for the current user
 // @route   POST /api/bookings/:id/save
 // @access  Private (Artist only)
+
+// const saveBooking = async (req, res) => {
+//   try {
+//     const booking = await Booking.findById(req.params.id);
+//     if (!booking)
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "Booking not found" });
+
+//     const userId = req.user.id;
+//     if (!booking.savedBy) booking.savedBy = [];
+//     if (!booking.savedBy.find((u) => u.toString() === userId)) {
+//       booking.savedBy.push(userId);
+//       await booking.save();
+//     }
+//     return res
+//       .status(200)
+//       .json({ success: true, message: "Saved", data: { saved: true } });
+//   } catch (error) {
+//     console.error("Save booking error:", error);
+//     return res
+//       .status(500)
+//       .json({ success: false, message: "Server error while saving booking" });
+//   }
+// };
+
+// @desc    Save/like a booking for the current user
+// @route   POST /api/bookings/:id/save
+// @access  Private (Artist only)
 const saveBooking = async (req, res) => {
   try {
-    const booking = await Booking.findById(req.params.id);
-    if (!booking)
+    const userId = req.user.id;
+    const bookingId = req.params.id;
+
+    // Use $addToSet to atomically add userId to savedBy array
+    // only if it doesn't already exist.
+    const booking = await Booking.findByIdAndUpdate(
+      bookingId,
+      { $addToSet: { savedBy: userId } },
+      { new: true } // Return the updated document
+    );
+
+    if (!booking) {
       return res
         .status(404)
         .json({ success: false, message: "Booking not found" });
-
-    const userId = req.user.id;
-    if (!booking.savedBy) booking.savedBy = [];
-    if (!booking.savedBy.find((u) => u.toString() === userId)) {
-      booking.savedBy.push(userId);
-      await booking.save();
     }
+
+    // Success response
     return res
       .status(200)
       .json({ success: true, message: "Saved", data: { saved: true } });
   } catch (error) {
     console.error("Save booking error:", error);
+    // Keep this 500 for unhandled errors
     return res
       .status(500)
       .json({ success: false, message: "Server error while saving booking" });
@@ -2050,23 +2095,58 @@ const saveBooking = async (req, res) => {
 // @desc    Unsave/unlike a booking for the current user
 // @route   DELETE /api/bookings/:id/save
 // @access  Private (Artist only)
+
+// const unsaveBooking = async (req, res) => {
+//   try {
+//     const booking = await Booking.findById(req.params.id);
+//     if (!booking)
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "Booking not found" });
+//     const userId = req.user.id;
+//     booking.savedBy = (booking.savedBy || []).filter(
+//       (u) => u.toString() !== userId
+//     );
+//     await booking.save();
+//     return res
+//       .status(200)
+//       .json({ success: true, message: "Unsaved", data: { saved: false } });
+//   } catch (error) {
+//     console.error("Unsave booking error:", error);
+//     return res
+//       .status(500)
+//       .json({ success: false, message: "Server error while unsaving booking" });
+//   }
+// };
+
+// @desc    Unsave/unlike a booking for the current user
+// @route   DELETE /api/bookings/:id/save
+// @access  Private (Artist only)
 const unsaveBooking = async (req, res) => {
   try {
-    const booking = await Booking.findById(req.params.id);
-    if (!booking)
+    const userId = req.user.id;
+    const bookingId = req.params.id;
+
+    // Use $pull to atomically remove userId from savedBy array
+    const booking = await Booking.findByIdAndUpdate(
+      bookingId,
+      { $pull: { savedBy: userId } },
+      { new: true } // Return the updated document
+    );
+
+    if (!booking) {
       return res
         .status(404)
         .json({ success: false, message: "Booking not found" });
-    const userId = req.user.id;
-    booking.savedBy = (booking.savedBy || []).filter(
-      (u) => u.toString() !== userId
-    );
-    await booking.save();
+    }
+
+    // Success response
     return res
       .status(200)
       .json({ success: true, message: "Unsaved", data: { saved: false } });
   } catch (error) {
     console.error("Unsave booking error:", error);
+    // Keep this 500 for unhandled errors
     return res
       .status(500)
       .json({ success: false, message: "Server error while unsaving booking" });

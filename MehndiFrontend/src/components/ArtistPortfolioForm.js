@@ -312,6 +312,48 @@ const ArtistPortfolioForm = ({
 
   const aboutMeCharCount = formData.aboutMe.length;
 
+  // Simple profile completion tracker based on key sections
+  const getProfileCompletion = () => {
+    let sections = 4;
+    let completed = 0;
+
+    // 1) About Me filled with reasonable length
+    if (formData.aboutMe && formData.aboutMe.trim().length >= 50) {
+      completed += 1;
+    }
+
+    // 2) Portfolio images 3–10
+    if (formData.portfolioImages && formData.portfolioImages.length >= 3) {
+      completed += 1;
+    }
+
+    // 3) At least one service enabled with full price range
+    const hasServiceWithPricing = Object.values(formData.services).some(
+      (service) =>
+        service.enabled &&
+        service.priceFrom &&
+        service.priceTo &&
+        Number(service.priceFrom) > 0 &&
+        Number(service.priceTo) >= Number(service.priceFrom)
+    );
+    if (hasServiceWithPricing) {
+      completed += 1;
+    }
+
+    // 4) Travel & languages set
+    if (
+      (formData.availableForTravel || formData.homeBased) &&
+      formData.languagesSpoken &&
+      formData.languagesSpoken.trim().length > 0
+    ) {
+      completed += 1;
+    }
+
+    return Math.round((completed / sections) * 100);
+  };
+
+  const profileCompletion = getProfileCompletion();
+
   // Show client preview if enabled
   if (showClientPreview) {
     return (
@@ -352,7 +394,7 @@ const ArtistPortfolioForm = ({
               color: "#333",
             }}
           >
-            Profile Completion: 0%
+            Profile Completion: {profileCompletion}%
           </h1>
           <div
             style={{
@@ -365,7 +407,7 @@ const ArtistPortfolioForm = ({
           >
             <div
               style={{
-                width: "0%",
+                width: `${profileCompletion}%`,
                 height: "100%",
                 backgroundColor: "#ff6b35",
                 borderRadius: "4px",
@@ -483,70 +525,95 @@ const ArtistPortfolioForm = ({
                   styles)
                 </p>
                 <div
-                  style={{ display: "flex", gap: "12px", alignItems: "center" }}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "6px",
+                  }}
                 >
-                  <span style={{ fontSize: "14px", color: "#333" }}>
-                    From £
-                  </span>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.services.bridalMehndi.priceFrom}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (
-                        value === "" ||
-                        (parseFloat(value) >= 0 && !isNaN(value))
-                      ) {
-                        handleInputChange("services", "bridalMehndi", {
-                          priceFrom: value,
-                        });
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "-" || e.key === "e" || e.key === "E") {
-                        e.preventDefault();
-                      }
-                    }}
+                  <div
                     style={{
-                      width: "80px",
-                      padding: "8px",
-                      border: "1px solid #e9ecef",
-                      borderRadius: "4px",
-                      fontSize: "14px",
-                      outline: "none",
+                      display: "flex",
+                      gap: "12px",
+                      alignItems: "center",
+                      flexWrap: "wrap",
                     }}
-                  />
-                  <span style={{ fontSize: "14px", color: "#333" }}>To £</span>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.services.bridalMehndi.priceTo}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (
-                        value === "" ||
-                        (parseFloat(value) >= 0 && !isNaN(value))
-                      ) {
-                        handleInputChange("services", "bridalMehndi", {
-                          priceTo: value,
-                        });
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "-" || e.key === "e" || e.key === "E") {
-                        e.preventDefault();
-                      }
-                    }}
-                    style={{
-                      width: "80px",
-                      padding: "8px",
-                      border: "1px solid #e9ecef",
-                      borderRadius: "4px",
-                      fontSize: "14px",
-                      outline: "none",
-                    }}
-                  />
+                  >
+                    <span style={{ fontSize: "14px", color: "#333" }}>
+                      From £
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formData.services.bridalMehndi.priceFrom}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (
+                          value === "" ||
+                          (parseFloat(value) >= 0 && !isNaN(value))
+                        ) {
+                          handleInputChange("services", "bridalMehndi", {
+                            priceFrom: value,
+                          });
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "-" || e.key === "e" || e.key === "E") {
+                          e.preventDefault();
+                        }
+                      }}
+                      style={{
+                        width: "80px",
+                        padding: "8px",
+                        border: "1px solid #e9ecef",
+                        borderRadius: "4px",
+                        fontSize: "14px",
+                        outline: "none",
+                      }}
+                    />
+                    <span style={{ fontSize: "14px", color: "#333" }}>
+                      To £
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formData.services.bridalMehndi.priceTo}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (
+                          value === "" ||
+                          (parseFloat(value) >= 0 && !isNaN(value))
+                        ) {
+                          handleInputChange("services", "bridalMehndi", {
+                            priceTo: value,
+                          });
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "-" || e.key === "e" || e.key === "E") {
+                          e.preventDefault();
+                        }
+                      }}
+                      style={{
+                        width: "80px",
+                        padding: "8px",
+                        border: "1px solid #e9ecef",
+                        borderRadius: "4px",
+                        fontSize: "14px",
+                        outline: "none",
+                      }}
+                    />
+                  </div>
+                  {errors.bridalMehndiPricing && (
+                    <div
+                      style={{
+                        color: "#dc3545",
+                        fontSize: "13px",
+                      }}
+                    >
+                      {errors.bridalMehndiPricing}
+                    </div>
+                  )}
                 </div>
               </>
             )}
@@ -589,68 +656,89 @@ const ArtistPortfolioForm = ({
             </div>
             {formData.services.partyMehndi.enabled && (
               <div
-                style={{ display: "flex", gap: "12px", alignItems: "center" }}
+                style={{ display: "flex", flexDirection: "column", gap: "6px" }}
               >
-                <span style={{ fontSize: "14px", color: "#333" }}>From £</span>
-                <input
-                  type="number"
-                  min="0"
-                  value={formData.services.partyMehndi.priceFrom}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (
-                      value === "" ||
-                      (parseFloat(value) >= 0 && !isNaN(value))
-                    ) {
-                      handleInputChange("services", "partyMehndi", {
-                        priceFrom: value,
-                      });
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "-" || e.key === "e" || e.key === "E") {
-                      e.preventDefault();
-                    }
-                  }}
+                <div
                   style={{
-                    width: "80px",
-                    padding: "8px",
-                    border: "1px solid #e9ecef",
-                    borderRadius: "4px",
-                    fontSize: "14px",
-                    outline: "none",
+                    display: "flex",
+                    gap: "12px",
+                    alignItems: "center",
+                    flexWrap: "wrap",
                   }}
-                />
-                <span style={{ fontSize: "14px", color: "#333" }}>To £</span>
-                <input
-                  type="number"
-                  min="0"
-                  value={formData.services.partyMehndi.priceTo}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (
-                      value === "" ||
-                      (parseFloat(value) >= 0 && !isNaN(value))
-                    ) {
-                      handleInputChange("services", "partyMehndi", {
-                        priceTo: value,
-                      });
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "-" || e.key === "e" || e.key === "E") {
-                      e.preventDefault();
-                    }
-                  }}
-                  style={{
-                    width: "80px",
-                    padding: "8px",
-                    border: "1px solid #e9ecef",
-                    borderRadius: "4px",
-                    fontSize: "14px",
-                    outline: "none",
-                  }}
-                />
+                >
+                  <span style={{ fontSize: "14px", color: "#333" }}>
+                    From £
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.services.partyMehndi.priceFrom}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (
+                        value === "" ||
+                        (parseFloat(value) >= 0 && !isNaN(value))
+                      ) {
+                        handleInputChange("services", "partyMehndi", {
+                          priceFrom: value,
+                        });
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "-" || e.key === "e" || e.key === "E") {
+                        e.preventDefault();
+                      }
+                    }}
+                    style={{
+                      width: "80px",
+                      padding: "8px",
+                      border: "1px solid #e9ecef",
+                      borderRadius: "4px",
+                      fontSize: "14px",
+                      outline: "none",
+                    }}
+                  />
+                  <span style={{ fontSize: "14px", color: "#333" }}>To £</span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.services.partyMehndi.priceTo}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (
+                        value === "" ||
+                        (parseFloat(value) >= 0 && !isNaN(value))
+                      ) {
+                        handleInputChange("services", "partyMehndi", {
+                          priceTo: value,
+                        });
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "-" || e.key === "e" || e.key === "E") {
+                        e.preventDefault();
+                      }
+                    }}
+                    style={{
+                      width: "80px",
+                      padding: "8px",
+                      border: "1px solid #e9ecef",
+                      borderRadius: "4px",
+                      fontSize: "14px",
+                      outline: "none",
+                    }}
+                  />
+                </div>
+                {errors.partyMehndiPricing && (
+                  <div
+                    style={{
+                      color: "#dc3545",
+                      fontSize: "13px",
+                    }}
+                  >
+                    {errors.partyMehndiPricing}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -692,68 +780,89 @@ const ArtistPortfolioForm = ({
             </div>
             {formData.services.festivalMehndi.enabled && (
               <div
-                style={{ display: "flex", gap: "12px", alignItems: "center" }}
+                style={{ display: "flex", flexDirection: "column", gap: "6px" }}
               >
-                <span style={{ fontSize: "14px", color: "#333" }}>From £</span>
-                <input
-                  type="number"
-                  min="0"
-                  value={formData.services.festivalMehndi.priceFrom}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (
-                      value === "" ||
-                      (parseFloat(value) >= 0 && !isNaN(value))
-                    ) {
-                      handleInputChange("services", "festivalMehndi", {
-                        priceFrom: value,
-                      });
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "-" || e.key === "e" || e.key === "E") {
-                      e.preventDefault();
-                    }
-                  }}
+                <div
                   style={{
-                    width: "80px",
-                    padding: "8px",
-                    border: "1px solid #e9ecef",
-                    borderRadius: "4px",
-                    fontSize: "14px",
-                    outline: "none",
+                    display: "flex",
+                    gap: "12px",
+                    alignItems: "center",
+                    flexWrap: "wrap",
                   }}
-                />
-                <span style={{ fontSize: "14px", color: "#333" }}>To £</span>
-                <input
-                  type="number"
-                  min="0"
-                  value={formData.services.festivalMehndi.priceTo}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (
-                      value === "" ||
-                      (parseFloat(value) >= 0 && !isNaN(value))
-                    ) {
-                      handleInputChange("services", "festivalMehndi", {
-                        priceTo: value,
-                      });
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "-" || e.key === "e" || e.key === "E") {
-                      e.preventDefault();
-                    }
-                  }}
-                  style={{
-                    width: "80px",
-                    padding: "8px",
-                    border: "1px solid #e9ecef",
-                    borderRadius: "4px",
-                    fontSize: "14px",
-                    outline: "none",
-                  }}
-                />
+                >
+                  <span style={{ fontSize: "14px", color: "#333" }}>
+                    From £
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.services.festivalMehndi.priceFrom}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (
+                        value === "" ||
+                        (parseFloat(value) >= 0 && !isNaN(value))
+                      ) {
+                        handleInputChange("services", "festivalMehndi", {
+                          priceFrom: value,
+                        });
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "-" || e.key === "e" || e.key === "E") {
+                        e.preventDefault();
+                      }
+                    }}
+                    style={{
+                      width: "80px",
+                      padding: "8px",
+                      border: "1px solid #e9ecef",
+                      borderRadius: "4px",
+                      fontSize: "14px",
+                      outline: "none",
+                    }}
+                  />
+                  <span style={{ fontSize: "14px", color: "#333" }}>To £</span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.services.festivalMehndi.priceTo}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (
+                        value === "" ||
+                        (parseFloat(value) >= 0 && !isNaN(value))
+                      ) {
+                        handleInputChange("services", "festivalMehndi", {
+                          priceTo: value,
+                        });
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "-" || e.key === "e" || e.key === "E") {
+                        e.preventDefault();
+                      }
+                    }}
+                    style={{
+                      width: "80px",
+                      padding: "8px",
+                      border: "1px solid #e9ecef",
+                      borderRadius: "4px",
+                      fontSize: "14px",
+                      outline: "none",
+                    }}
+                  />
+                </div>
+                {errors.festivalMehndiPricing && (
+                  <div
+                    style={{
+                      color: "#dc3545",
+                      fontSize: "13px",
+                    }}
+                  >
+                    {errors.festivalMehndiPricing}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -795,68 +904,89 @@ const ArtistPortfolioForm = ({
             </div>
             {formData.services.casualMehndi.enabled && (
               <div
-                style={{ display: "flex", gap: "12px", alignItems: "center" }}
+                style={{ display: "flex", flexDirection: "column", gap: "6px" }}
               >
-                <span style={{ fontSize: "14px", color: "#333" }}>From £</span>
-                <input
-                  type="number"
-                  min="0"
-                  value={formData.services.casualMehndi.priceFrom}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (
-                      value === "" ||
-                      (parseFloat(value) >= 0 && !isNaN(value))
-                    ) {
-                      handleInputChange("services", "casualMehndi", {
-                        priceFrom: value,
-                      });
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "-" || e.key === "e" || e.key === "E") {
-                      e.preventDefault();
-                    }
-                  }}
+                <div
                   style={{
-                    width: "80px",
-                    padding: "8px",
-                    border: "1px solid #e9ecef",
-                    borderRadius: "4px",
-                    fontSize: "14px",
-                    outline: "none",
+                    display: "flex",
+                    gap: "12px",
+                    alignItems: "center",
+                    flexWrap: "wrap",
                   }}
-                />
-                <span style={{ fontSize: "14px", color: "#333" }}>To £</span>
-                <input
-                  type="number"
-                  min="0"
-                  value={formData.services.casualMehndi.priceTo}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (
-                      value === "" ||
-                      (parseFloat(value) >= 0 && !isNaN(value))
-                    ) {
-                      handleInputChange("services", "casualMehndi", {
-                        priceTo: value,
-                      });
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "-" || e.key === "e" || e.key === "E") {
-                      e.preventDefault();
-                    }
-                  }}
-                  style={{
-                    width: "80px",
-                    padding: "8px",
-                    border: "1px solid #e9ecef",
-                    borderRadius: "4px",
-                    fontSize: "14px",
-                    outline: "none",
-                  }}
-                />
+                >
+                  <span style={{ fontSize: "14px", color: "#333" }}>
+                    From £
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.services.casualMehndi.priceFrom}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (
+                        value === "" ||
+                        (parseFloat(value) >= 0 && !isNaN(value))
+                      ) {
+                        handleInputChange("services", "casualMehndi", {
+                          priceFrom: value,
+                        });
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "-" || e.key === "e" || e.key === "E") {
+                        e.preventDefault();
+                      }
+                    }}
+                    style={{
+                      width: "80px",
+                      padding: "8px",
+                      border: "1px solid #e9ecef",
+                      borderRadius: "4px",
+                      fontSize: "14px",
+                      outline: "none",
+                    }}
+                  />
+                  <span style={{ fontSize: "14px", color: "#333" }}>To £</span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.services.casualMehndi.priceTo}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (
+                        value === "" ||
+                        (parseFloat(value) >= 0 && !isNaN(value))
+                      ) {
+                        handleInputChange("services", "casualMehndi", {
+                          priceTo: value,
+                        });
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "-" || e.key === "e" || e.key === "E") {
+                        e.preventDefault();
+                      }
+                    }}
+                    style={{
+                      width: "80px",
+                      padding: "8px",
+                      border: "1px solid #e9ecef",
+                      borderRadius: "4px",
+                      fontSize: "14px",
+                      outline: "none",
+                    }}
+                  />
+                </div>
+                {errors.casualMehndiPricing && (
+                  <div
+                    style={{
+                      color: "#dc3545",
+                      fontSize: "13px",
+                    }}
+                  >
+                    {errors.casualMehndiPricing}
+                  </div>
+                )}
               </div>
             )}
           </div>

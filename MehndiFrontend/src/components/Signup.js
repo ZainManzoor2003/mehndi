@@ -197,7 +197,7 @@ const Signup = () => {
               >
                 <img
                   src="/assets/logo icon.png"
-                  alt="Mehndi Me"
+                  alt="MehndiMe"
                   style={{ height: "auto", width: "auto" }}
                 />
               </div>
@@ -205,7 +205,7 @@ const Signup = () => {
             <h1 className="auth-title">
               <img
                 src="/assets/logo text.png"
-                alt="Mehndi Me"
+                alt="MehndiMe"
                 style={{ height: 26 }}
               />
             </h1>
@@ -288,7 +288,10 @@ const Signup = () => {
                 onChange={handleInputChange}
                 required={formData.userType === "client"}
               >
-                <option value="">Select your city</option>
+                {/* Placeholder text shown by default, hidden from the dropdown options */}
+                <option value="" disabled hidden>
+                  Select your city
+                </option>
                 <option value="London">London</option>
                 <option value="Birmingham">Birmingham</option>
                 <option value="Manchester">Manchester</option>

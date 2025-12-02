@@ -108,7 +108,7 @@ const BlogDetail = () => {
             {blog.title}
           </h1>
           <div style={{ color: "#8B4513", fontSize: 14, marginBottom: 10 }}>
-            By Mehndi Me Team • {formatDate(blog.createdAt)}
+            By MehndiMe Team • {formatDate(blog.createdAt)}
             {blog.minutesToRead ? ` • ${blog.minutesToRead} min read` : ""}
           </div>
         </div>
@@ -327,7 +327,7 @@ const BlogDetail = () => {
             About the Author
           </div>
           <div style={{ color: "#8B4513" }}>
-            The Mehndi Me Team celebrates the creativity and talent of mehndi
+            The MehndiMe Team celebrates the creativity and talent of mehndi
             artists across the UK, sharing tips, stories, and inspiration from
             both artists and clients within our growing community.
           </div>
@@ -466,30 +466,11 @@ const BlogDetail = () => {
                         window.scrollTo(0, 0);
                       }
                     }}
+                    className="home__cta-button"
                     style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      padding: "6px 12px",
-                      borderRadius: 20,
-                      border: "1px solid var(--first-color)",
-                      color: "#8B4513",
-                      textDecoration: "none",
+                      padding: "0.5rem 1.4rem",
                       fontSize: "0.85rem",
-                      fontWeight: 500,
-                      background: "transparent",
-                      transition: "all 0.2s ease",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = "#cf7f3a";
-                      e.currentTarget.style.color = "#cf7f3a";
-                      e.currentTarget.style.background =
-                        "rgba(207,127,58,0.05)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = "var(--first-color)";
-                      e.currentTarget.style.color = "#8B4513";
-                      e.currentTarget.style.background = "transparent";
+                      borderRadius: "999px",
                     }}
                   >
                     Read

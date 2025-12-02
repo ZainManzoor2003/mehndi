@@ -1,3 +1,4 @@
+import { jsPDF } from "jspdf";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   FaArrowLeft,
@@ -74,6 +75,143 @@ const ArtistDashboard = () => {
   const [headerSaved, setHeaderSaved] = useState(false);
   const [headerSaving, setHeaderSaving] = useState(false);
   const [headerApplied, setHeaderApplied] = useState(false);
+
+  const generateReceiptPdf = (title, rows, filename) => {
+    const logoUrl = `${window.location.origin}/images/flwr.png`;
+
+    const render = (logoImg) => {
+      try {
+        const doc = new jsPDF();
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+
+        // Soft background
+        doc.setFillColor(255, 248, 240);
+        doc.rect(0, 0, pageWidth, pageHeight, "F");
+
+        let y = 24;
+
+        // Logo
+        if (logoImg) {
+          const imgWidth = 26;
+          const ratio = logoImg.height / logoImg.width || 1;
+          const imgHeight = imgWidth * ratio;
+          const x = (pageWidth - imgWidth) / 2;
+          doc.addImage(logoImg, "PNG", x, y, imgWidth, imgHeight);
+          y += imgHeight + 6;
+        }
+
+        // Title
+        doc.setTextColor(96, 59, 26);
+        doc.setFontSize(22);
+        doc.text("MehndiMe", pageWidth / 2, y, { align: "center" });
+        y += 8;
+
+        doc.setFontSize(11);
+        doc.setTextColor(128, 83, 36);
+        doc.text("INVOICE", pageWidth / 2, y, { align: "center" });
+        y += 10;
+
+        // Divider
+        doc.setDrawColor(214, 180, 135);
+        doc.line(26, y, pageWidth - 26, y);
+        y += 8;
+
+        const headerPairs = rows.slice(0, 2);
+        const bodyRows = rows.slice(2);
+
+        // Header two-column section
+        if (headerPairs.length) {
+          const [left] = headerPairs;
+          const right = headerPairs[1];
+
+          doc.setFontSize(9);
+          doc.setTextColor(140, 93, 45);
+
+          if (left) {
+            doc.text(String(left[0] || ""), 26, y);
+          }
+          if (right) {
+            doc.text(String(right[0] || ""), pageWidth - 26, y, {
+              align: "right",
+            });
+          }
+
+          y += 6;
+          doc.setFontSize(11);
+          doc.setTextColor(64, 40, 18);
+
+          if (left) {
+            doc.text(String(left[1] || ""), 26, y);
+          }
+          if (right) {
+            doc.text(String(right[1] || ""), pageWidth - 26, y, {
+              align: "right",
+            });
+          }
+
+          y += 12;
+          doc.setDrawColor(214, 180, 135);
+          doc.line(26, y, pageWidth - 26, y);
+          y += 10;
+        }
+
+        // Body rows
+        doc.setFontSize(10);
+        bodyRows.forEach(([label, value], index) => {
+          if (value === undefined || value === null || value === "") return;
+
+          const isMoney =
+            typeof value === "string" && value.trim().startsWith("£");
+
+          doc.setTextColor(140, 93, 45);
+          doc.text(String(label), 26, y);
+
+          doc.setTextColor(
+            isMoney ? 96 : 64,
+            isMoney ? 59 : 40,
+            isMoney ? 26 : 18
+          );
+          doc.text(String(value), pageWidth - 26, y, { align: "right" });
+
+          y += 8;
+
+          if (index <= 2) {
+            doc.setDrawColor(230, 210, 180);
+            doc.line(26, y, pageWidth - 26, y);
+            y += 4;
+          }
+        });
+
+        // Note
+        y += 6;
+        doc.setTextColor(140, 93, 45);
+        doc.setFontSize(9);
+        const note =
+          "Note that refunds and cancellations are subject to our policy.";
+        doc.text(note, pageWidth / 2, y, {
+          align: "center",
+          maxWidth: pageWidth - 52,
+        });
+
+        y += 12;
+        doc.setFontSize(10);
+        doc.setTextColor(96, 59, 26);
+        doc.text("Payment received via Stripe", pageWidth / 2, y, {
+          align: "center",
+        });
+
+        doc.save(filename || `receipt-${title || "payment"}.pdf`);
+      } catch (e) {
+        console.error("Failed to generate PDF receipt", e);
+      }
+    };
+
+    const img = new Image();
+    img.onload = () => render(img);
+    img.onerror = () => render(null);
+    img.src = logoUrl;
+  };
 
   useEffect(() => {
     if (!user || !isAuthenticated) return;
@@ -301,12 +439,10 @@ const ArtistDashboard = () => {
     isPublished: false,
   });
   const [savingPortfolio, setSavingPortfolio] = useState(false);
-  const [portfolioErrors, setPortfolioErrors] = useState({});
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewPortfolio, setPreviewPortfolio] = useState(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
-  const [showNewPortfolioForm, setShowNewPortfolioForm] = useState(false);
   const [editingPortfolio, setEditingPortfolio] = useState(null);
   const [acceptedByDate, setAcceptedByDate] = useState({});
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -327,29 +463,6 @@ const ArtistDashboard = () => {
     }
   };
 
-  const validatePortfolio = (form) => {
-    const errs = {};
-    if (!form.displayName || !form.displayName.trim())
-      errs.displayName = "Display name is required";
-    if (!form.bio || !form.bio.trim()) errs.bio = "Bio is required";
-    const urls = Array.isArray(form.mediaUrls)
-      ? form.mediaUrls.filter(Boolean)
-      : [];
-    if (urls.length === 0)
-      errs.mediaUrls = "At least one media URL is required";
-    if (urls.length > 0 && urls.some((u) => !isValidUrl(u)))
-      errs.mediaUrls = "All media URLs must be valid http(s) links";
-    const styles = Array.isArray(form.styles)
-      ? form.styles.filter(Boolean)
-      : [];
-    const categories = Array.isArray(form.categories)
-      ? form.categories.filter(Boolean)
-      : [];
-    if (styles.length === 0 && categories.length === 0)
-      errs.styles = "Provide at least one style or category";
-    return errs;
-  };
-
   const fetchMyPortfolios = useCallback(async () => {
     if (!isAuthenticated || !user || user.userType !== "artist") return;
     try {
@@ -367,6 +480,7 @@ const ArtistDashboard = () => {
   const handleSaveNewPortfolio = async (portfolioData) => {
     try {
       setSavingPortfolio(true);
+      const existing = (portfolios && portfolios[0]) || editingPortfolio;
       const payload = {
         ...portfolioData,
         displayName: "My Portfolio", // Default name
@@ -375,15 +489,14 @@ const ArtistDashboard = () => {
         isPublished: true,
       };
 
-      if (editingPortfolio) {
-        await portfoliosAPI.update(editingPortfolio._id, payload);
+      if (existing && existing._id) {
+        await portfoliosAPI.update(existing._id, payload);
         showSuccess("Portfolio updated successfully");
       } else {
         await portfoliosAPI.create(payload);
         showSuccess("Portfolio created successfully");
       }
 
-      setShowNewPortfolioForm(false);
       setEditingPortfolio(null);
       fetchMyPortfolios();
     } catch (e) {
@@ -395,12 +508,11 @@ const ArtistDashboard = () => {
 
   const handleEditPortfolio = (portfolio) => {
     setEditingPortfolio(portfolio);
-    setShowNewPortfolioForm(true);
   };
 
   const handleCancelPortfolioForm = () => {
-    setShowNewPortfolioForm(false);
     setEditingPortfolio(null);
+    fetchMyPortfolios();
   };
 
   // Fetch notifications for the current user
@@ -631,17 +743,28 @@ const ArtistDashboard = () => {
     try {
       setNearbyLoading(true);
 
-      // Get user's current location
+      // Use the artist's city to determine which requests to show
+      const artistCity = (user.city || "").trim().toLowerCase();
+
+      // Still use current location + a generous radius to fetch enough data,
+      // then filter by city on the frontend.
       const location = await getCurrentLocation();
 
-      // Fetch nearby bookings
       const resp = await bookingsAPI.getNearbyBookings(
         location.latitude,
         location.longitude,
-        3
+        50 // 50km radius to cover the whole city region
       );
 
-      const nearbyItems = (resp.data || []).map((b) => ({
+      const normalizeCity = (value) => (value || "").trim().toLowerCase();
+
+      const filteredByCity = (resp.data || []).filter((b) => {
+        if (!artistCity) return true; // if artist has no city, show everything
+        const bookingCity = normalizeCity(b.city || b.location || "");
+        return bookingCity && bookingCity === artistCity;
+      });
+
+      const nearbyItems = filteredByCity.map((b) => ({
         id: b._id,
         title: `${(b.eventType || []).join(", ") || "Mehndi"} – ${new Date(
           b.eventDate
@@ -678,45 +801,70 @@ const ArtistDashboard = () => {
       const apps = Array.isArray(resp.data) ? resp.data : [];
 
       // Enrich each with booking details (date, client) if needed
+      // Note: getMyAppliedBookings returns Booking objects, so a._id is the booking ID
       const enriched = await Promise.all(
         apps.map(async (a) => {
           try {
             const bookingId =
-              a.bookingId || a.booking?.id || a.booking?._id || a._id; // best-effort
-            if (bookingId) {
-              const bResp = await bookingsAPI.getBooking(bookingId);
-              const b = bResp?.data || {};
+              a._id || a.bookingId || a.booking?.id || a.booking?._id;
+
+            // Validate that bookingId looks like a valid MongoDB ObjectId (24 hex chars)
+            // Skip if it looks like mock/test data (e.g., "prop-1")
+            if (
+              !bookingId ||
+              (typeof bookingId === "string" &&
+                !/^[0-9a-fA-F]{24}$/.test(bookingId))
+            ) {
+              console.warn("Invalid booking ID format:", bookingId);
+              // Fallback to application fields if available
               return {
                 applicationId: a._id,
-                bookingId,
+                bookingId: null,
                 client:
-                  b.firstName && b.lastName
-                    ? `${b.firstName} ${b.lastName}`
-                    : a.firstName && a.lastName
+                  a.firstName && a.lastName
                     ? `${a.firstName} ${a.lastName}`
                     : "Client",
-                eventDate: b.eventDate || a.eventDate,
-                eventType: b.eventType || a.eventType,
-                otherEventType: b.otherEventType || a.otherEventType,
-                preferredTimeSlot: b.preferredTimeSlot || a.preferredTimeSlot,
-                location: b.location || b.city || b.postalCode || "",
+                eventDate: a.eventDate,
+                eventType: a.eventType,
+                otherEventType: a.otherEventType,
+                preferredTimeSlot: a.preferredTimeSlot,
+                location: a.location || a.city || a.postalCode || "",
               };
             }
-          } catch (_) {}
-          // Fallback to application fields
-          return {
-            applicationId: a._id,
-            bookingId: a.bookingId || a._id,
-            client:
-              a.firstName && a.lastName
-                ? `${a.firstName} ${a.lastName}`
-                : "Client",
-            eventDate: a.eventDate,
-            eventType: a.eventType,
-            otherEventType: a.otherEventType,
-            preferredTimeSlot: a.preferredTimeSlot,
-            location: a.location || a.city || a.postalCode || "",
-          };
+
+            const bResp = await bookingsAPI.getBooking(bookingId);
+            const b = bResp?.data || {};
+            return {
+              applicationId: a._id,
+              bookingId,
+              client:
+                b.firstName && b.lastName
+                  ? `${b.firstName} ${b.lastName}`
+                  : a.firstName && a.lastName
+                  ? `${a.firstName} ${a.lastName}`
+                  : "Client",
+              eventDate: b.eventDate || a.eventDate,
+              eventType: b.eventType || a.eventType,
+              otherEventType: b.otherEventType || a.otherEventType,
+              preferredTimeSlot: b.preferredTimeSlot || a.preferredTimeSlot,
+              location: b.location || b.city || b.postalCode || "",
+            };
+          } catch (_) {
+            // Fallback to application fields on error
+            return {
+              applicationId: a._id,
+              bookingId: null,
+              client:
+                a.firstName && a.lastName
+                  ? `${a.firstName} ${a.lastName}`
+                  : "Client",
+              eventDate: a.eventDate,
+              eventType: a.eventType,
+              otherEventType: a.otherEventType,
+              preferredTimeSlot: a.preferredTimeSlot,
+              location: a.location || a.city || a.postalCode || "",
+            };
+          }
         })
       );
 
@@ -1249,11 +1397,51 @@ const ArtistDashboard = () => {
         return "casual";
       };
 
+      const formatPreferredTime = (slot) => {
+        if (!slot) return "";
+        const raw = Array.isArray(slot) ? slot[0] : slot;
+        if (!raw) return "";
+
+        if (
+          raw === "Morning" ||
+          raw === "Afternoon" ||
+          raw === "Evening" ||
+          raw === "Flexible"
+        ) {
+          return raw;
+        }
+
+        if (/^\d{1,2}:\d{2}$/.test(raw)) {
+          const [h, m] = raw.split(":").map(Number);
+          const d = new Date();
+          d.setHours(h, m, 0, 0);
+          return d.toLocaleTimeString("en-GB", {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+        }
+
+        return raw;
+      };
+
       const entries = await Promise.all(
         apps.map(async (a) => {
           try {
-            const bookingId = a.bookingId || a.booking_id || a._id;
+            // Extract bookingId - getMyAppliedBookings returns Booking objects, so a._id is the booking ID
+            // But also check for nested booking_id in case structure changes
+            const bookingId = a._id || a.bookingId || a.booking_id;
             if (!bookingId) return null;
+
+            // Validate that bookingId looks like a valid MongoDB ObjectId (24 hex chars)
+            // Skip if it looks like mock/test data (e.g., "prop-1")
+            if (
+              typeof bookingId === "string" &&
+              !/^[0-9a-fA-F]{24}$/.test(bookingId)
+            ) {
+              console.warn("Invalid booking ID format:", bookingId);
+              return null;
+            }
+
             const bResp = await bookingsAPI.getBooking(bookingId);
             const b = bResp?.data || {};
             return {
@@ -1267,9 +1455,7 @@ const ArtistDashboard = () => {
                   ? b.eventType.join(", ")
                   : b.otherEventType || "Mehndi Booking",
               date: b.eventDate ? new Date(b.eventDate) : null,
-              time: Array.isArray(b.preferredTimeSlot)
-                ? b.preferredTimeSlot.join(", ")
-                : b.preferredTimeSlot || "",
+              time: formatPreferredTime(b.preferredTimeSlot),
               location: b.location || b.city || b.postalCode || "",
               status: "Accepted",
               tag: toTag(b.eventType),
@@ -1771,6 +1957,17 @@ const ArtistDashboard = () => {
   // Filter transactions based on selected filters
   const getFilteredTransactions = () => {
     return walletTransactions.filter((transaction) => {
+      // Exclude "Deposit Paid" transactions (half payments)
+      // Filter out transactions where transactionType is "half" or statusText contains "Deposit"
+      const isDepositPaid =
+        transaction.transactionType === "half" ||
+        (transaction.statusText &&
+          transaction.statusText.toLowerCase().includes("deposit"));
+
+      if (isDepositPaid) {
+        return false; // Exclude deposit paid transactions
+      }
+
       // Category filter - use the category field from the controller
       const categoryMatch =
         transactionCategoryFilter === "all" ||
@@ -3276,7 +3473,7 @@ const ArtistDashboard = () => {
                           className="section-title"
                           style={{ margin: "0", marginLeft: "8px" }}
                         >
-                          Requests Near You
+                          Requests In Your City
                         </h3>
                       </div>
                       <button
@@ -3344,7 +3541,7 @@ const ArtistDashboard = () => {
                             color: "#666",
                           }}
                         >
-                          No requests found within 3km
+                          No requests found in your city yet
                         </div>
                       ) : (
                         nearbyRequests.map((r) => (
@@ -5912,7 +6109,7 @@ const ArtistDashboard = () => {
                           fontWeight: "500",
                         }}
                       >
-                        Remaining Balance
+                        Balance
                       </div>
                       <div
                         style={{
@@ -6185,94 +6382,39 @@ const ArtistDashboard = () => {
                             const status = getStatus(transaction);
 
                             const handleDownloadReceipt = () => {
-                              // Create PDF content
-                              const pdfContent = `
-                              <html>
-                                <head>
-                                  <title>Receipt - ${
-                                    transaction.eventName === "Unknown Event"
-                                      ? "Event"
-                                      : transaction.eventName
-                                  }</title>
-                                  <style>
-                                    body { font-family: Arial, sans-serif; padding: 20px; }
-                                    .header { text-align: center; margin-bottom: 30px; }
-                                    .receipt-details { margin: 20px 0; }
-                                    .detail-row { display: flex; justify-content: space-between; margin: 10px 0; }
-                                    .total { border-top: 2px solid #333; padding-top: 10px; font-weight: bold; }
-                                  </style>
-                                </head>
-                                <body>
-                                  <div class="header">
-                                    <h1>Payment Receipt</h1>
-                                    <p>Mehndi Booking Platform</p>
-                                  </div>
-                                  <div class="receipt-details">
-                                    <div class="detail-row">
-                                      <span>Event:</span>
-                                      <span>${
-                                        transaction.eventName ===
-                                        "Unknown Event"
-                                          ? "Event"
-                                          : transaction.eventName
-                                      }</span>
-                                    </div>
-                                    <div class="detail-row">
-                                      <span>Transaction Type:</span>
-                                      <span>${
-                                        transaction.transactionType
-                                      }</span>
-                                    </div>
-                                    <div class="detail-row">
-                                      <span>Date:</span>
-                                      <span>${formatDate(
-                                        transaction.createdAt
-                                      )}</span>
-                                    </div>
-                                    <div class="detail-row">
-                                      <span>Amount:</span>
-                                      <span>£${transaction.amount.toFixed(
-                                        2
-                                      )}</span>
-                                    </div>
-                                    <div class="detail-row">
-                                      <span>Payment Method:</span>
-                                      <span>Stripe</span>
-                                    </div>
-                                    <div class="detail-row">
-                                      <span>Status:</span>
-                                      <span>${status.text}</span>
-                                    </div>
-                                    <div class="detail-row total">
-                                      <span>Total Received:</span>
-                                      <span>£${transaction.amount.toFixed(
-                                        2
-                                      )}</span>
-                                    </div>
-                                  </div>
-                                </body>
-                              </html>
-                            `;
+                              const title =
+                                transaction.eventName === "Unknown Event"
+                                  ? "Event"
+                                  : transaction.eventName;
 
-                              // Create blob and download
-                              const blob = new Blob([pdfContent], {
-                                type: "text/html",
-                              });
-                              const url = window.URL.createObjectURL(blob);
-                              const link = document.createElement("a");
-                              link.href = url;
-                              link.download = `receipt-${
-                                transaction.eventName
-                                  ? transaction.eventName.replace(/\s+/g, "-")
-                                  : "Event".replace(/\s+/g, "-")
-                              }-${formatDate(transaction.createdAt).replace(
-                                /\s+/g,
-                                "-"
-                              )}.html`;
-                              document.body.appendChild(link);
-                              link.click();
-                              document.body.removeChild(link);
-                              window.URL.revokeObjectURL(url);
+                              const rows = [
+                                ["Event:", title],
+                                ["Date:", formatDate(transaction.createdAt)],
+                                [
+                                  "Transaction Type:",
+                                  transaction.transactionType,
+                                ],
+                                [
+                                  "Amount:",
+                                  `£${transaction.amount.toFixed(2)}`,
+                                ],
+                                ["Payment Method:", "Stripe"],
+                                ["Status:", status.text],
+                                [
+                                  "Total Received:",
+                                  `£${transaction.amount.toFixed(2)}`,
+                                ],
+                              ];
+
+                              const filename = `receipt-${title
+                                .replace(/\s+/g, "-")
+                                .toLowerCase()}-${formatDate(
+                                transaction.createdAt
+                              )
+                                .replace(/\s+/g, "-")
+                                .toLowerCase()}.pdf`;
+
+                              generateReceiptPdf(title, rows, filename);
                             };
 
                             return (
@@ -6471,98 +6613,19 @@ const ArtistDashboard = () => {
                 </div>
               )}
 
-              {/* Profile (Portfolios CRUD) */}
+              {/* Profile – single portfolio form */}
               {activeTab === "profile" && (
                 <div className="profile-section">
-                  {showNewPortfolioForm ? (
-                    <ArtistPortfolioForm
-                      portfolioData={editingPortfolio}
-                      onSave={handleSaveNewPortfolio}
-                      onCancel={handleCancelPortfolioForm}
-                      loading={savingPortfolio}
-                      artistId={user?._id}
-                    />
-                  ) : (
-                    <>
-                      <div className="section-header">
-                        <h2>Profile</h2>
-                        <button
-                          onClick={() => setShowNewPortfolioForm(true)}
-                          style={{
-                            backgroundColor: "#ff6b35",
-                            color: "white",
-                            border: "none",
-                            padding: "10px 20px",
-                            borderRadius: "6px",
-                            cursor: "pointer",
-                            fontSize: "14px",
-                            fontWeight: "500",
-                            transition: "background-color 0.2s ease",
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = "#e85a28";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = "#ff6b35";
-                          }}
-                        >
-                          Create New Portfolio
-                        </button>
-                      </div>
-
-                      {/* Portfolio List */}
-                      <div className="portfolio-grid">
-                        {portfoliosLoading && <div>Loading portfolios...</div>}
-                        {!portfoliosLoading && portfolios.length === 0 && (
-                          <div className="empty-state">
-                            No portfolios yet. Create your first above.
-                          </div>
-                        )}
-                        {portfolios.map((p) => (
-                          <div key={p._id} className="portfolio-item">
-                            <div className="badge">
-                              {(p.categories || [])[0] || "Mehndi"}
-                            </div>
-                            <div
-                              className="thumb"
-                              style={{
-                                backgroundImage:
-                                  p.mediaUrls && p.mediaUrls[0]
-                                    ? `url(${p.mediaUrls[0]})`
-                                    : undefined,
-                              }}
-                            ></div>
-                            <div className="item-actions">
-                              <button
-                                className="app-btn primary"
-                                onClick={() => {
-                                  handleEditPortfolio(p);
-                                }}
-                              >
-                                Edit
-                              </button>
-                              <button
-                                className="app-btn danger"
-                                onClick={() => {
-                                  setDeleteTargetId(p._id);
-                                  setDeleteConfirmOpen(true);
-                                }}
-                              >
-                                Delete
-                              </button>
-                            </div>
-                            <div className="item-info">
-                              <div className="item-title">
-                                {p.displayName || "Untitled"}
-                              </div>
-                              <div className="item-sub">{p.tagline || ""}</div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-
+                  <div className="section-header">
+                    <h2>Profile</h2>
+                  </div>
+                  <ArtistPortfolioForm
+                    portfolioData={(portfolios && portfolios[0]) || null}
+                    onSave={handleSaveNewPortfolio}
+                    onCancel={handleCancelPortfolioForm}
+                    loading={savingPortfolio}
+                    artistId={user?._id}
+                  />
                   {/* Logout Banner Section - Moved to bottom of profile section */}
                   <div
                     className="logout-banner-section"
@@ -6988,69 +7051,48 @@ const ArtistDashboard = () => {
                             color: "#8B4513",
                           }}
                         >
-                          Preferred Time Slot
+                          Preferred Time
                         </label>
                         <div
                           style={{
-                            display: "grid",
-                            gridTemplateColumns:
-                              "repeat(auto-fit, minmax(150px, 1fr))",
-                            gap: "1rem",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            padding: "10px 14px",
+                            borderRadius: "999px",
+                            backgroundColor: "#faf8f5",
+                            border: "1px solid #e0d5c9",
+                            fontSize: "0.95rem",
+                            fontWeight: 500,
+                            color: "#4b5563",
                           }}
                         >
-                          {[
-                            { value: "Morning", icon: "☀️" },
-                            { value: "Afternoon", icon: "🌤️" },
-                            { value: "Evening", icon: "🌙" },
-                            { value: "Flexible", icon: "🔄" },
-                          ].map((opt) => (
-                            <div
-                              key={opt.value}
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "12px",
-                                padding: "16px",
-                                border: `2px solid ${
-                                  viewForm.preferredTimeSlot === opt.value
-                                    ? "#CD853F"
-                                    : "#e0d5c9"
-                                }`,
-                                borderRadius: "12px",
-                                background:
-                                  viewForm.preferredTimeSlot === opt.value
-                                    ? "#fff8f0"
-                                    : "#faf8f5",
-                                transition: "all 0.3s",
-                                position: "relative",
-                              }}
-                            >
-                              <span style={{ fontSize: "1.5rem" }}>
-                                {opt.icon}
-                              </span>
-                              <span
-                                style={{
-                                  fontSize: "0.95rem",
-                                  fontWeight: "500",
-                                }}
-                              >
-                                {opt.value}
-                              </span>
-                              {viewForm.preferredTimeSlot === opt.value && (
-                                <span
-                                  style={{
-                                    position: "absolute",
-                                    right: "16px",
-                                    color: "#CD853F",
-                                    fontWeight: "bold",
-                                    fontSize: "1.3rem",
-                                  }}
-                                >
-                                  ✓
-                                </span>
-                              )}
-                            </div>
-                          ))}
+                          <span style={{ fontSize: "1.2rem" }}>🕒</span>
+                          <span>
+                            {(() => {
+                              const raw = viewForm.preferredTimeSlot;
+                              if (
+                                raw === "Morning" ||
+                                raw === "Afternoon" ||
+                                raw === "Evening" ||
+                                raw === "Flexible"
+                              ) {
+                                return raw;
+                              }
+                              if (/^\d{1,2}:\d{2}$/.test(raw || "")) {
+                                const [h, m] = (raw || "")
+                                  .split(":")
+                                  .map(Number);
+                                const d = new Date();
+                                d.setHours(h, m, 0, 0);
+                                return d.toLocaleTimeString("en-GB", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                });
+                              }
+                              return raw || "-";
+                            })()}
+                          </span>
                         </div>
                       </div>
 

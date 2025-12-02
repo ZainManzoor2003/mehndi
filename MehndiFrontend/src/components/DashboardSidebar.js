@@ -23,7 +23,11 @@ const DashboardSidebar = ({
           stroke="currentColor"
           strokeWidth="2"
         >
-          <path d="M12 2L2 7l10 5 10-5-10-5z" />
+          {/* Dashboard grid icon */}
+          <rect x="3" y="3" width="8" height="8" rx="2" />
+          <rect x="13" y="3" width="8" height="5" rx="2" />
+          <rect x="3" y="13" width="5" height="8" rx="2" />
+          <rect x="10" y="13" width="11" height="8" rx="2" />
         </svg>
       ),
     },
@@ -39,9 +43,13 @@ const DashboardSidebar = ({
           stroke="currentColor"
           strokeWidth="2"
         >
-          <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-          <line x1="8" y1="21" x2="16" y2="21" />
-          <line x1="12" y1="17" x2="12" y2="21" />
+          {/* Calendar / booking icon */}
+          <rect x="3" y="4" width="18" height="17" rx="2" ry="2" />
+          <line x1="3" y1="10" x2="21" y2="10" />
+          <line x1="9" y1="2" x2="9" y2="6" />
+          <line x1="15" y1="2" x2="15" y2="6" />
+          <path d="M9 14h2v2H9z" />
+          <path d="M13 14h2v2h-2z" />
         </svg>
       ),
     },
@@ -69,9 +77,11 @@ const DashboardSidebar = ({
           stroke="currentColor"
           strokeWidth="2"
         >
-          <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-          <line x1="8" y1="21" x2="16" y2="21" />
-          <line x1="12" y1="17" x2="12" y2="21" />
+          {/* Credit card / payments icon */}
+          <rect x="2" y="5" width="20" height="14" rx="3" ry="3" />
+          <line x1="2" y1="10" x2="22" y2="10" />
+          <line x1="7" y1="15" x2="11" y2="15" />
+          <line x1="14" y1="15" x2="18" y2="15" />
         </svg>
       ),
       path: "/wallet",
@@ -210,12 +220,12 @@ const DashboardSidebar = ({
             onClick={() => navigate("/")}
           >
             {/* <div className="logo-icon" style={{ background: 'transparent', border: 'none', boxShadow: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <img src="/assets/logo icon.png" alt="Mehndi Me" style={{ width: 'auto', height: 'auto', display: 'block', borderRadius: '50%' }} />
+              <img src="/assets/logo icon.png" alt="MehndiMe" style={{ width: 'auto', height: 'auto', display: 'block', borderRadius: '50%' }} />
             </div> */}
             <span className="logo-text" style={{ display: "inline-block" }}>
               <img
                 src="/assets/logo text.png"
-                alt="Mehndi Me"
+                alt="MehndiMe"
                 style={{ height: 28, display: "block" }}
               />
             </span>

@@ -60,12 +60,11 @@ const BookingSchema = new mongoose.Schema({
   preferredTimeSlot: {
     type: [String],
     required: [true, "Preferred time slot is required"],
-    enum: ["Morning", "Flexible", "Afternoon", "Evening"],
     validate: {
       validator: function (v) {
         return v && v.length > 0;
       },
-      message: "At least one time slot must be selected",
+      message: "At least one preferred time must be provided",
     },
   },
 

@@ -43,7 +43,7 @@ const ARTIST_FAQS = [
     a: "If a client cancels, your earnings will depend on how close the cancellation is to the event.\nYou'll always receive at least the non-refundable portion of the deposit based on our (Client Cancellation Policy). This ensures your time and commitment are respected.",
   },
   {
-    q: "Can I showcase my work on Mehndi Me?",
+    q: "Can I showcase my work on MehndiMe?",
     a: "Absolutely! You can upload photos and videos of your mehndi designs to your profile. A strong portfolio helps clients see your style and makes it easier for them to choose you for their event.",
   },
 ];
@@ -218,7 +218,7 @@ const FullFAQ = () => {
           Frequently Asked Questions
         </h1>
         <p style={{ textAlign: "center", color: "#8B4513", marginTop: 8 }}>
-          Find quick answers to common questions from our Mehndi Me community 🌿
+          Find quick answers to common questions from our MehndiMe community 🌿
         </p>
 
         <div className="how-it-works__tabs" style={{ marginTop: 18 }}>
@@ -411,7 +411,7 @@ const FullFAQ = () => {
             style={{
               background: '#5C3D2E', color: '#fff', border: 'none',
               padding: '12px 24px', borderRadius: 14, fontWeight: 700, cursor: 'pointer',marginTop: '30px'
-            }}>Contact Mehndi Me Team →</button> */}
+            }}>Contact MehndiMe Team →</button> */}
         </div>
       </div>
     </section>

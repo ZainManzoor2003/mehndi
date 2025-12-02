@@ -31,6 +31,33 @@ const BrowseViewBookingModal = ({
 }) => {
   const [selectedImage, setSelectedImage] = useState(null);
 
+  const formatPreferredTime = (slot) => {
+    if (!slot) return "-";
+    const raw = Array.isArray(slot) ? slot[0] : slot;
+    if (!raw) return "-";
+
+    if (
+      raw === "Morning" ||
+      raw === "Afternoon" ||
+      raw === "Evening" ||
+      raw === "Flexible"
+    ) {
+      return raw;
+    }
+
+    if (/^\d{1,2}:\d{2}$/.test(raw)) {
+      const [h, m] = raw.split(":").map(Number);
+      const d = new Date();
+      d.setHours(h, m, 0, 0);
+      return d.toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+
+    return raw;
+  };
+
   if (!open || !viewForm) return null;
   return (
     <>
@@ -292,61 +319,46 @@ const BrowseViewBookingModal = ({
                     color: "#8B4513",
                   }}
                 >
-                  Preferred Time Slot
+                  Preferred Time
                 </label>
                 <div
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-                    gap: "1rem",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "10px 14px",
+                    borderRadius: "999px",
+                    backgroundColor: "#faf8f5",
+                    border: "1px solid #e0d5c9",
+                    fontSize: "0.95rem",
+                    fontWeight: 500,
+                    color: "#4b5563",
                   }}
                 >
-                  {[
-                    { value: "Morning", icon: "☀️" },
-                    { value: "Afternoon", icon: "🌤️" },
-                    { value: "Evening", icon: "🌙" },
-                    { value: "Flexible", icon: "🔄" },
-                  ].map((opt) => (
-                    <div
-                      key={opt.value}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "12px",
-                        padding: "16px",
-                        border: `2px solid ${
-                          viewForm.preferredTimeSlot === opt.value
-                            ? "#CD853F"
-                            : "#e0d5c9"
-                        }`,
-                        borderRadius: "12px",
-                        background:
-                          viewForm.preferredTimeSlot === opt.value
-                            ? "#fff8f0"
-                            : "#faf8f5",
-                        transition: "all 0.3s",
-                        position: "relative",
-                      }}
-                    >
-                      <span style={{ fontSize: "1.5rem" }}>{opt.icon}</span>
-                      <span style={{ fontSize: "0.95rem", fontWeight: "500" }}>
-                        {opt.value}
-                      </span>
-                      {viewForm.preferredTimeSlot === opt.value && (
-                        <span
-                          style={{
-                            position: "absolute",
-                            right: "16px",
-                            color: "#CD853F",
-                            fontWeight: "bold",
-                            fontSize: "1.3rem",
-                          }}
-                        >
-                          ✓
-                        </span>
-                      )}
-                    </div>
-                  ))}
+                  <span style={{ fontSize: "1.2rem" }}>🕒</span>
+                  <span>
+                    {(() => {
+                      const raw = viewForm.preferredTimeSlot;
+                      if (
+                        raw === "Morning" ||
+                        raw === "Afternoon" ||
+                        raw === "Evening" ||
+                        raw === "Flexible"
+                      ) {
+                        return raw;
+                      }
+                      if (/^\d{1,2}:\d{2}$/.test(raw || "")) {
+                        const [h, m] = (raw || "").split(":").map(Number);
+                        const d = new Date();
+                        d.setHours(h, m, 0, 0);
+                        return d.toLocaleTimeString("en-GB", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        });
+                      }
+                      return raw || "-";
+                    })()}
+                  </span>
                 </div>
               </div>
 

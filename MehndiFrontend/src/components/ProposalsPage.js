@@ -430,7 +430,8 @@ const ProposalsPage = () => {
             </svg>
           </button>
           <button
-            className="view-details-btn"
+            className="nav__cta-button"
+            style={{ borderRadius: "8px" }}
             onClick={() => handleViewDetails(row)}
           >
             View Details
@@ -458,7 +459,8 @@ const ProposalsPage = () => {
             </svg>
           </button>
           <button
-            className="view-details-btn"
+            className="view-cta-btn"
+            style={{ borderRadius: "8px" }}
             onClick={() => handleViewDetails(row)}
           >
             View Details
@@ -620,6 +622,9 @@ const ProposalsPage = () => {
             const proposals = applicationsByBooking[request._id] || [];
             const appliedOnly = proposals.filter((p) => p.status === "applied");
             const proposalCount = appliedOnly.length;
+
+            // If there are no proposals for this request, skip rendering this section
+            if (proposalCount === 0) return null;
             const title = `${request.eventType?.join(", ") || "Mehndi"} — ${
               request.city || request.location
             }`;
@@ -849,31 +854,50 @@ const ProposalsPage = () => {
                     {selectedArtistDetails.artist?.firstName?.[0] || "A"}
                     {selectedArtistDetails.artist?.lastName?.[0] || ""}
                   </div>
-                  <div className="artist-basic-info">
-                    <h4
-                      className="artist-name"
-                      style={{ cursor: "pointer", color: "#D2691E" }}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      width: "100%",
+                      gap: "12px",
+                    }}
+                  >
+                    <div className="artist-basic-info">
+                      <h4
+                        className="artist-name"
+                        style={{ cursor: "pointer", color: "#D2691E" }}
+                        onClick={() =>
+                          handleArtistProfileClick(selectedArtistDetails.artist)
+                        }
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.textDecoration = "underline";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.textDecoration = "none";
+                        }}
+                      >
+                        {selectedArtistDetails.artist
+                          ? `${selectedArtistDetails.artist.firstName} ${selectedArtistDetails.artist.lastName}`
+                          : "Artist"}
+                      </h4>
+                      <div className="artist-rating">
+                        <span className="rating">
+                          ⭐{" "}
+                          {getArtistRating(selectedArtistDetails.artist?._id) ||
+                            "—"}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="view-profile-link"
                       onClick={() =>
                         handleArtistProfileClick(selectedArtistDetails.artist)
                       }
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.textDecoration = "underline";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.textDecoration = "none";
-                      }}
                     >
-                      {selectedArtistDetails.artist
-                        ? `${selectedArtistDetails.artist.firstName} ${selectedArtistDetails.artist.lastName}`
-                        : "Artist"}
-                    </h4>
-                    <div className="artist-rating">
-                      <span className="rating">
-                        ⭐{" "}
-                        {getArtistRating(selectedArtistDetails.artist?._id) ||
-                          "—"}
-                      </span>
-                    </div>
+                      View Profile →
+                    </button>
                   </div>
                 </div>
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import apiService from "../services/api";
@@ -9,6 +9,7 @@ const { bookingsAPI } = apiService;
 const BookingForm = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
+  const isNonClientUser = isAuthenticated && user && user.userType !== "client";
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -47,6 +48,7 @@ const BookingForm = () => {
   const [fetchingZipCode, setFetchingZipCode] = useState(false);
 
   const [showLocationModal, setShowLocationModal] = useState(false);
+  const timeInputRef = useRef(null);
   // Calendar popover state
   const today = new Date();
   const [showCalendar, setShowCalendar] = useState(false);
@@ -348,7 +350,7 @@ const BookingForm = () => {
       return false;
     }
     if (!formData.preferredTimeSlot) {
-      setError("Please select a preferred time slot");
+      setError("Please select a preferred time");
       return false;
     }
     if (!formData.location) {
@@ -577,6 +579,109 @@ const BookingForm = () => {
     }
   }, [currentStep]);
 
+  // If an authenticated user is not a client (e.g. artist), show a friendly message
+  if (isNonClientUser) {
+    return (
+      <section
+        style={{
+          // minHeight: "80vh",
+          height: "100vh",
+          margin: "auto 0",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "3rem 1rem",
+          // background:
+          //   "linear-gradient(180deg, #FDF3E6 0%, #F7E0BC 45%, #F4D4A1 100%)",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 420,
+            width: "100%",
+            backgroundColor: "rgba(255, 255, 255, 0.96)",
+            borderRadius: 24,
+            padding: "2.4rem 2.1rem 2.1rem",
+            boxShadow: "0 18px 40px rgba(87, 45, 16, 0.18)",
+            textAlign: "center",
+            border: "1px solid rgba(214, 146, 83, 0.25)",
+          }}
+        >
+          <h1
+            style={{
+              fontSize: "1.9rem",
+              fontWeight: 700,
+              color: "#5A3313",
+              marginBottom: "0.6rem",
+            }}
+          >
+            This page is for clients only ✨
+          </h1>
+          <p
+            style={{
+              fontSize: "0.98rem",
+              color: "#7A5434",
+              margin: "0 0 0.9rem",
+            }}
+          >
+            You&apos;re logged in as an artist, so this section isn&apos;t
+            available.
+          </p>
+          <p
+            style={{
+              fontSize: "0.98rem",
+              color: "#7A5434",
+              margin: "0 0 1.6rem",
+              lineHeight: 1.6,
+            }}
+          >
+            Don&apos;t worry — you can still browse client requests or manage
+            your upcoming bookings below.
+          </p>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <button
+              type="button"
+              className="home__cta-button"
+              style={{
+                width: "100%",
+                borderRadius: 999,
+                padding: "0.75rem 1.8rem",
+                fontSize: "0.98rem",
+              }}
+              onClick={() => navigate("/browse-requests")}
+            >
+              Browse Client Requests
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                navigate(
+                  user.userType === "artist"
+                    ? "/artist-dashboard"
+                    : "/dashboard"
+                )
+              }
+              style={{
+                width: "100%",
+                borderRadius: 999,
+                padding: "0.72rem 1.8rem",
+                fontSize: "0.96rem",
+                fontWeight: 600,
+                border: "1px solid rgba(90, 51, 19, 0.25)",
+                backgroundColor: "rgba(255, 255, 255, 0.95)",
+                color: "#5A3313",
+                cursor: "pointer",
+              }}
+            >
+              Go to My Dashboard
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <>
       <div className="booking-container">
@@ -695,7 +800,7 @@ const BookingForm = () => {
               <div className="form-step">
                 <div className="step-header">
                   <h2 className="step-title">🎉 Event Details</h2>
-                  <p className="step-subtitle">
+                  <p className="step-subtitle" style={{ marginTop: "-10px" }}>
                     Tell us about your special occasion
                   </p>
                 </div>
@@ -708,6 +813,7 @@ const BookingForm = () => {
                       fontSize: "0.9rem",
                       color: "#888",
                       marginBottom: "1rem",
+                      marginTop: "-12px",
                     }}
                   >
                     Choose the event you are booking for
@@ -1170,103 +1276,66 @@ const BookingForm = () => {
                   </div>
                 </div>
 
-                {/* Preferred Time Slot */}
+                {/* Preferred Time */}
                 <div className="form-group">
-                  <label className="form-label">Preferred Time Slot *</label>
+                  <label className="form-label">Preferred Time *</label>
                   <p
                     style={{
                       fontSize: "0.9rem",
                       color: "#888",
-                      marginBottom: "1rem",
+                      marginBottom: "0.6rem",
                     }}
                   >
-                    Pick one option
+                    Choose the approximate start time for your mehndi.
                   </p>
-                  <div className="time-slot-grid">
-                    <label
-                      className={`time-slot-option ${
-                        formData.preferredTimeSlot === "Morning"
-                          ? "selected"
-                          : ""
-                      }`}
+                  <div
+                    onClick={() => {
+                      if (timeInputRef.current) {
+                        timeInputRef.current.showPicker?.() ||
+                          timeInputRef.current.focus();
+                      }
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.75rem",
+                      maxWidth: "260px",
+                      cursor: "pointer",
+                      padding: "0.4rem",
+                      borderRadius: "10px",
+                      transition: "background-color 0.2s",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "#FDF3E6";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "1.2rem",
+                        backgroundColor: "#FDF3E6",
+                        padding: "0.4rem 0.6rem",
+                        borderRadius: "10px",
+                        pointerEvents: "none",
+                      }}
                     >
-                      <input
-                        type="radio"
-                        name="preferredTimeSlot"
-                        value="Morning"
-                        checked={formData.preferredTimeSlot === "Morning"}
-                        onChange={handleInputChange}
-                        style={{ display: "none" }}
-                      />
-                      <span className="time-icon">☀️</span>
-                      <span className="time-text">Morning</span>
-                      {formData.preferredTimeSlot === "Morning" && (
-                        <span className="checkmark">✓</span>
-                      )}
-                    </label>
-                    <label
-                      className={`time-slot-option ${
-                        formData.preferredTimeSlot === "Afternoon"
-                          ? "selected"
-                          : ""
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="preferredTimeSlot"
-                        value="Afternoon"
-                        checked={formData.preferredTimeSlot === "Afternoon"}
-                        onChange={handleInputChange}
-                        style={{ display: "none" }}
-                      />
-                      <span className="time-icon">🌤️</span>
-                      <span className="time-text">Afternoon</span>
-                      {formData.preferredTimeSlot === "Afternoon" && (
-                        <span className="checkmark">✓</span>
-                      )}
-                    </label>
-                    <label
-                      className={`time-slot-option ${
-                        formData.preferredTimeSlot === "Evening"
-                          ? "selected"
-                          : ""
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="preferredTimeSlot"
-                        value="Evening"
-                        checked={formData.preferredTimeSlot === "Evening"}
-                        onChange={handleInputChange}
-                        style={{ display: "none" }}
-                      />
-                      <span className="time-icon">🌙</span>
-                      <span className="time-text">Evening</span>
-                      {formData.preferredTimeSlot === "Evening" && (
-                        <span className="checkmark">✓</span>
-                      )}
-                    </label>
-                    <label
-                      className={`time-slot-option ${
-                        formData.preferredTimeSlot === "Flexible"
-                          ? "selected"
-                          : ""
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="preferredTimeSlot"
-                        value="Flexible"
-                        checked={formData.preferredTimeSlot === "Flexible"}
-                        onChange={handleInputChange}
-                        style={{ display: "none" }}
-                      />
-                      <span className="time-icon">🔄</span>
-                      <span className="time-text">Flexible</span>
-                      {formData.preferredTimeSlot === "Flexible" && (
-                        <span className="checkmark">✓</span>
-                      )}
-                    </label>
+                      🕒
+                    </span>
+                    <input
+                      ref={timeInputRef}
+                      type="time"
+                      name="preferredTimeSlot"
+                      value={formData.preferredTimeSlot}
+                      onChange={handleInputChange}
+                      className="form-input"
+                      style={{
+                        padding: "0.6rem 0.8rem",
+                        cursor: "pointer",
+                        flex: 1,
+                      }}
+                    />
                   </div>
                 </div>
 

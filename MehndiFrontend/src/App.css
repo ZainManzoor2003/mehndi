@@ -207,11 +207,11 @@
   margin-bottom: 4px;
 }
 
-.info-item {
+/* .info-item {
   display: flex;
   flex-direction: column;
   gap: 2px;
-}
+} */
 
 .info-label {
   font-size: 0.75rem;
@@ -1416,7 +1416,7 @@
 :root {
   --header-height: 5rem;
 
-  /*========== Mehndi Me Color Palette ==========*/
+  /*========== MehndiMe Color Palette ==========*/
   /* Warm browns and beiges inspired by henna and traditional designs */
   --primary-brown: #8B7355;
   --secondary-brown: #A0522D;
@@ -2518,7 +2518,7 @@
   font-weight: var(--font-semi-bold);
   color: var(--title-color);
   margin-bottom: 1.5rem;
-  text-align: center;
+  text-align: left;
 }
 
 .next-event-card {
@@ -10501,6 +10501,27 @@ body.dark-theme .scroll-header .henna-line {
   text-align: left;
   max-width: none;
   margin-top: 0.25rem;
+}
+
+.view-profile-link {
+  background: transparent;
+  border: none;
+  color: #d2691e;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.1s ease;
+}
+
+.view-profile-link:hover {
+  background: rgba(210, 105, 30, 0.08);
+  color: #b25919;
+  transform: translateY(-1px);
 }
 
 .modal-title {

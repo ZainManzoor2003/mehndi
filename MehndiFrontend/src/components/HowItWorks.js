@@ -692,11 +692,11 @@ const HowItWorks = () => {
                     style={{ opacity: 0 }}
                   >
                     <image
-                      href="/images/4.png"
+                      href="/images/flwr.png"
                       x={deco.flowerX - 35}
                       y={deco.flowerY - 35}
-                      width="75"
-                      height="75"
+                      width="70"
+                      height="70"
                       preserveAspectRatio="xMidYMid meet"
                     />
                   </g>
@@ -706,11 +706,11 @@ const HowItWorks = () => {
               {standaloneFlower && (
                 <g className="standalone-flower" style={{ opacity: 0 }}>
                   <image
-                    href="/images/4.png"
+                    href="/images/flwr.png"
                     x={standaloneFlower.x - 35}
                     y={standaloneFlower.y - 35}
-                    width="75"
-                    height="75"
+                    width="70"
+                    height="70"
                     preserveAspectRatio="xMidYMid meet"
                   />
                 </g>
@@ -775,7 +775,7 @@ const HowItWorks = () => {
                     style={{ opacity: 0 }}
                   >
                     <image
-                      href="/images/4.png"
+                      href="/images/flwr.png"
                       x={deco.flowerX - 6}
                       y={deco.flowerY - 6}
                       width="14"
