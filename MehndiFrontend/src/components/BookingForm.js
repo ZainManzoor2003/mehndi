@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import apiService from "../services/api";
-import GetLocationModal from "./modals/GetLocationModal";
 
 const { bookingsAPI } = apiService;
 
@@ -28,8 +27,6 @@ const BookingForm = () => {
     eventDate: "",
     preferredTimeSlot: "",
     location: "",
-    latitude: "",
-    longitude: "",
     zipCode: "",
     artistTravelsToClient: "",
     venueName: "",
@@ -44,10 +41,6 @@ const BookingForm = () => {
     numberOfPeople: 1,
     additionalRequests: "",
   });
-
-  const [fetchingZipCode, setFetchingZipCode] = useState(false);
-
-  const [showLocationModal, setShowLocationModal] = useState(false);
   const timeInputRef = useRef(null);
   // Calendar popover state
   const today = new Date();
@@ -104,52 +97,6 @@ const BookingForm = () => {
     const m = `${d.getMonth() + 1}`.padStart(2, "0");
     const day = `${d.getDate()}`.padStart(2, "0");
     return `${y}-${m}-${day}`;
-  };
-
-  // Function to fetch zip code from coordinates using reverse geocoding
-  const fetchZipCodeFromCoordinates = async (lat, lng) => {
-    setFetchingZipCode(true);
-    try {
-      // Using Nominatim (OpenStreetMap) reverse geocoding API
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
-        {
-          headers: {
-            "User-Agent": "MehndiMe-BookingForm/1.0", // Required by Nominatim
-          },
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to fetch zip code");
-
-      const data = await response.json();
-      const postcode = data.address?.postcode || "";
-
-      if (postcode) {
-        setFormData((prev) => ({
-          ...prev,
-          zipCode: postcode,
-        }));
-      }
-    } catch (error) {
-      console.error("Error fetching zip code:", error);
-      // If zip code fetch fails, we'll just leave it empty
-    } finally {
-      setFetchingZipCode(false);
-    }
-  };
-
-  // Handler for location selection from modal (store coordinates only; city is chosen via dropdown)
-  const handleLocationSelect = async (lat, lng) => {
-    setFormData((prev) => ({
-      ...prev,
-      latitude: lat.toString(),
-      longitude: lng.toString(),
-    }));
-    setShowLocationModal(false);
-
-    // Fetch zip code from coordinates
-    await fetchZipCodeFromCoordinates(lat, lng);
   };
 
   // Cloudinary upload function
@@ -357,10 +304,6 @@ const BookingForm = () => {
       setError("Please select a city");
       return false;
     }
-    if (!formData.latitude || !formData.longitude) {
-      setError("Please select your location on the map");
-      return false;
-    }
     if (!formData.artistTravelsToClient) {
       setError("Please select travel preference");
       return false;
@@ -538,8 +481,6 @@ const BookingForm = () => {
         eventDate: formData.eventDate,
         preferredTimeSlot: [formData.preferredTimeSlot],
         location: formData.location,
-        latitude: formData.latitude || undefined,
-        longitude: formData.longitude || undefined,
         zipCode: formData.zipCode || undefined,
         artistTravelsToClient:
           formData.artistTravelsToClient === "both"
@@ -1341,86 +1282,25 @@ const BookingForm = () => {
 
                 {/* Location */}
                 <div className="form-group">
-                  <label className="form-label">Location / Postcode *</label>
+                  <label className="form-label">Location *</label>
                   <p
                     style={{
-                      fontSize: "0.85rem",
+                      fontSize: "0.9rem",
                       color: "#888",
                       marginBottom: "1rem",
+                      marginTop: "-12px",
                     }}
                   >
-                    Click "Get Location" to select your location on the map
+                    Select your city and enter your postcode
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => setShowLocationModal(true)}
-                    style={{
-                      padding: "14px 32px",
-                      background: "#faf8f5",
-                      border: "2px solid #CD853F",
-                      borderRadius: "10px",
-                      color: "#8B4513",
-                      fontWeight: "600",
-                      cursor: "pointer",
-                      transition: "all 0.3s",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      fontSize: "1rem",
-                      boxShadow: "0 2px 8px rgba(205, 133, 63, 0.15)",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.background = "#fff8f0";
-                      e.target.style.transform = "translateY(-2px)";
-                      e.target.style.boxShadow =
-                        "0 4px 12px rgba(205, 133, 63, 0.25)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.background = "#faf8f5";
-                      e.target.style.transform = "translateY(0)";
-                      e.target.style.boxShadow =
-                        "0 2px 8px rgba(205, 133, 63, 0.15)";
-                    }}
-                  >
-                    <span style={{ fontSize: "1.2rem" }}>📍</span> Get Location
-                  </button>
-
-                  {/* Location Selected Message */}
-                  {formData.latitude && formData.longitude && (
-                    <div
-                      style={{
-                        marginTop: "1rem",
-                        padding: "12px 16px",
-                        background: "#e3f2fd",
-                        border: "2px solid #2196f3",
-                        borderRadius: "8px",
-                        color: "#1565c0",
-                        fontSize: "0.95rem",
-                        fontWeight: "600",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "10px",
-                      }}
-                    >
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                      >
-                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm-1.5 8.5l3.5 3.5 5.5-5.5-1.5-1.5-4 4-2-2-1.5 1.5z" />
-                      </svg>
-                      <span>Location Selected</span>
-                    </div>
-                  )}
 
                   {/* City Dropdown */}
-                  <div style={{ marginTop: "12px" }}>
+                  <div style={{ marginBottom: "1rem" }}>
                     <label
                       className="form-label"
                       style={{ marginBottom: "0.5rem", fontSize: "0.95rem" }}
                     >
-                      Select City *
+                      City *
                     </label>
                     <select
                       value={formData.location}
@@ -1430,15 +1310,12 @@ const BookingForm = () => {
                           location: e.target.value,
                         }))
                       }
+                      className="form-input"
                       style={{
-                        width: "100%",
                         height: "44px",
-                        border: "1px solid #ced4da",
-                        borderRadius: "8px",
-                        padding: "0 12px",
-                        background: "#ffffff",
-                        color: "#0f172a",
+                        cursor: "pointer",
                       }}
+                      required
                     >
                       <option value="">Select city</option>
                       <option value="London">London</option>
@@ -1448,54 +1325,32 @@ const BookingForm = () => {
                     </select>
                   </div>
 
-                  {/* Zip Code Field */}
-                  <div style={{ marginTop: "12px" }}>
+                  {/* Postcode Field */}
+                  <div>
                     <label
                       className="form-label"
                       style={{ marginBottom: "0.5rem", fontSize: "0.95rem" }}
                     >
-                      Postcode / Zip Code
+                      Postcode
+                      <span
+                        style={{
+                          fontSize: "0.85rem",
+                          color: "#888",
+                          fontWeight: "normal",
+                        }}
+                      >
+                        {" "}
+                        (optional)
+                      </span>
                     </label>
                     <input
                       type="text"
                       name="zipCode"
                       className="form-input"
-                      placeholder={
-                        fetchingZipCode
-                          ? "Fetching postcode..."
-                          : "Will be auto-filled from location (editable)"
-                      }
+                      placeholder="Enter your postcode (e.g., SW1A 1AA)"
                       value={formData.zipCode}
                       onChange={handleInputChange}
-                      style={{
-                        background: formData.zipCode ? "#f0f8f0" : "#faf8f5",
-                        cursor: "text",
-                        color: formData.zipCode ? "#2e7d32" : "#888",
-                      }}
                     />
-                    {fetchingZipCode && (
-                      <p
-                        style={{
-                          fontSize: "0.85rem",
-                          color: "#888",
-                          marginTop: "0.5rem",
-                        }}
-                      >
-                        Fetching postcode from coordinates...
-                      </p>
-                    )}
-                    {formData.zipCode && !fetchingZipCode && (
-                      <p
-                        style={{
-                          fontSize: "0.85rem",
-                          color: "#2e7d32",
-                          marginTop: "0.5rem",
-                          fontWeight: "500",
-                        }}
-                      >
-                        ✓ Postcode automatically fetched from your location
-                      </p>
-                    )}
                   </div>
                 </div>
 
@@ -2543,13 +2398,6 @@ const BookingForm = () => {
           }
         }
       `}</style>
-
-      {/* Get Location Modal */}
-      <GetLocationModal
-        isOpen={showLocationModal}
-        onClose={() => setShowLocationModal(false)}
-        onLocationSelect={handleLocationSelect}
-      />
     </>
   );
 };
