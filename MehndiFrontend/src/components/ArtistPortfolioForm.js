@@ -20,15 +20,9 @@ const ArtistPortfolioForm = ({
 }) => {
   const [formData, setFormData] = useState({
     aboutMe: "",
-    socials: {
-      instagram: "",
-      tiktok: "",
-      facebook: "",
-    },
     availableForTravel: false,
     homeBased: false,
     travelDistanceKm: "",
-    languagesSpoken: "",
     services: {
       bridalMehndi: {
         enabled: false,
@@ -81,14 +75,8 @@ const ArtistPortfolioForm = ({
     if (portfolioData) {
       setFormData({
         aboutMe: portfolioData.aboutMe || "",
-        socials: {
-          instagram: portfolioData.socials?.instagram || "",
-          tiktok: portfolioData.socials?.tiktok || "",
-          facebook: portfolioData.socials?.facebook || "",
-        },
         availableForTravel: portfolioData.availableForTravel || false,
         homeBased: portfolioData.homeBased || false,
-        languagesSpoken: (portfolioData.languagesSpoken || []).join(", "),
         services: {
           bridalMehndi: {
             enabled: portfolioData.services?.bridalMehndi?.enabled || false,
@@ -124,15 +112,7 @@ const ArtistPortfolioForm = ({
   }, [portfolioData]);
 
   const handleInputChange = (section, field, value) => {
-    if (section === "socials") {
-      setFormData((prev) => ({
-        ...prev,
-        socials: {
-          ...prev.socials,
-          [field]: value,
-        },
-      }));
-    } else if (section === "services") {
+    if (section === "services") {
       setFormData((prev) => ({
         ...prev,
         services: {
@@ -278,13 +258,9 @@ const ArtistPortfolioForm = ({
       }
     }
 
-    // Travel & Languages validation
+    // Travel validation
     if (!formData.availableForTravel && !formData.homeBased) {
       newErrors.travel = "Please select at least one travel option";
-    }
-
-    if (!formData.languagesSpoken.trim()) {
-      newErrors.languagesSpoken = "Languages spoken is required";
     }
 
     setErrors(newErrors);
@@ -298,10 +274,6 @@ const ArtistPortfolioForm = ({
 
     const processedData = {
       ...formData,
-      languagesSpoken: formData.languagesSpoken
-        .split(",")
-        .map((lang) => lang.trim())
-        .filter(Boolean),
       mediaUrls: formData.portfolioImages,
       travelDistanceKm: formData.travelDistanceKm
         ? Number(formData.travelDistanceKm)
@@ -314,7 +286,7 @@ const ArtistPortfolioForm = ({
 
   // Simple profile completion tracker based on key sections
   const getProfileCompletion = () => {
-    let sections = 4;
+    let sections = 3;
     let completed = 0;
 
     // 1) About Me filled with reasonable length
@@ -340,12 +312,8 @@ const ArtistPortfolioForm = ({
       completed += 1;
     }
 
-    // 4) Travel & languages set
-    if (
-      (formData.availableForTravel || formData.homeBased) &&
-      formData.languagesSpoken &&
-      formData.languagesSpoken.trim().length > 0
-    ) {
+    // 4) Travel set
+    if (formData.availableForTravel || formData.homeBased) {
       completed += 1;
     }
 
@@ -1269,7 +1237,7 @@ const ArtistPortfolioForm = ({
               color: "#333",
             }}
           >
-            Travel & Languages
+            Travel
           </h2>
         </div>
 
@@ -1341,32 +1309,10 @@ const ArtistPortfolioForm = ({
               Home-Based (Clients come to me)
             </label>
           </div>
-
-          <input
-            type="text"
-            value={formData.languagesSpoken}
-            onChange={(e) =>
-              handleInputChange("", "languagesSpoken", e.target.value)
-            }
-            placeholder="Languages Spoken (comma separated)"
-            style={{
-              width: "100%",
-              padding: "12px",
-              border: "1px solid #e9ecef",
-              borderRadius: "8px",
-              fontSize: "14px",
-              outline: "none",
-              transition: "border-color 0.2s ease",
-            }}
-            onFocus={(e) => (e.target.style.borderColor = "#ff6b35")}
-            onBlur={(e) => (e.target.style.borderColor = "#e9ecef")}
-          />
         </div>
 
         {/* Error Messages */}
-        {(errors.travel ||
-          errors.languagesSpoken ||
-          errors.travelDistanceKm) && (
+        {(errors.travel || errors.travelDistanceKm) && (
           <div
             style={{
               color: "#dc3545",
@@ -1379,7 +1325,6 @@ const ArtistPortfolioForm = ({
             }}
           >
             {errors.travel && <div>{errors.travel}</div>}
-            {errors.languagesSpoken && <div>{errors.languagesSpoken}</div>}
             {errors.travelDistanceKm && <div>{errors.travelDistanceKm}</div>}
           </div>
         )}

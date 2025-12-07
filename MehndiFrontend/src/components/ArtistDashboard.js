@@ -101,10 +101,10 @@ const ArtistDashboard = () => {
           y += imgHeight + 6;
         }
 
-        // Title
+        // Brand title
         doc.setTextColor(96, 59, 26);
         doc.setFontSize(22);
-        doc.text("MehndiMe", pageWidth / 2, y, { align: "center" });
+        doc.text("Mehndi Me", pageWidth / 2, y, { align: "center" });
         y += 8;
 
         doc.setFontSize(11);
@@ -112,7 +112,7 @@ const ArtistDashboard = () => {
         doc.text("INVOICE", pageWidth / 2, y, { align: "center" });
         y += 10;
 
-        // Divider
+        // Top divider
         doc.setDrawColor(214, 180, 135);
         doc.line(26, y, pageWidth - 26, y);
         y += 8;
@@ -164,9 +164,11 @@ const ArtistDashboard = () => {
           const isMoney =
             typeof value === "string" && value.trim().startsWith("£");
 
+          // Label
           doc.setTextColor(140, 93, 45);
           doc.text(String(label), 26, y);
 
+          // Value
           doc.setTextColor(
             isMoney ? 96 : 64,
             isMoney ? 59 : 40,
@@ -174,12 +176,12 @@ const ArtistDashboard = () => {
           );
           doc.text(String(value), pageWidth - 26, y, { align: "right" });
 
+          // Spacing and divider
           y += 8;
-
-          if (index <= 2) {
+          if (index < bodyRows.length - 1) {
             doc.setDrawColor(230, 210, 180);
             doc.line(26, y, pageWidth - 26, y);
-            y += 4;
+            y += 8;
           }
         });
 

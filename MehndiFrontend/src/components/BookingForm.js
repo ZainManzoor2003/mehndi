@@ -878,6 +878,7 @@ const BookingForm = () => {
                       fontSize: "0.9rem",
                       color: "#888",
                       marginBottom: "0.5rem",
+                      marginTop: "-12px",
                     }}
                   >
                     Select the date of your occasion
@@ -1225,6 +1226,7 @@ const BookingForm = () => {
                       fontSize: "0.9rem",
                       color: "#888",
                       marginBottom: "0.6rem",
+                      marginTop: "-12px",
                     }}
                   >
                     Choose the approximate start time for your mehndi.

@@ -65,10 +65,10 @@ const ClientDashboard = () => {
           y += imgHeight + 6;
         }
 
-        // Title
+        // Brand title
         doc.setTextColor(96, 59, 26);
         doc.setFontSize(22);
-        doc.text("MehndiMe", pageWidth / 2, y, { align: "center" });
+        doc.text("Mehndi Me", pageWidth / 2, y, { align: "center" });
         y += 8;
 
         doc.setFontSize(11);
@@ -76,7 +76,7 @@ const ClientDashboard = () => {
         doc.text("INVOICE", pageWidth / 2, y, { align: "center" });
         y += 10;
 
-        // Divider
+        // Top divider
         doc.setDrawColor(214, 180, 135);
         doc.line(26, y, pageWidth - 26, y);
         y += 8;
@@ -120,7 +120,7 @@ const ClientDashboard = () => {
           y += 10;
         }
 
-        // Body rows (totals, notes)
+        // Body rows
         doc.setFontSize(10);
         bodyRows.forEach(([label, value], index) => {
           if (value === undefined || value === null || value === "") return;
@@ -128,9 +128,11 @@ const ClientDashboard = () => {
           const isMoney =
             typeof value === "string" && value.trim().startsWith("£");
 
+          // Label
           doc.setTextColor(140, 93, 45);
           doc.text(String(label), 26, y);
 
+          // Value
           doc.setTextColor(
             isMoney ? 96 : 64,
             isMoney ? 59 : 40,
@@ -138,13 +140,12 @@ const ClientDashboard = () => {
           );
           doc.text(String(value), pageWidth - 26, y, { align: "right" });
 
+          // Spacing and divider
           y += 8;
-
-          // Draw subtle separators after key money rows
-          if (index <= 2) {
+          if (index < bodyRows.length - 1) {
             doc.setDrawColor(230, 210, 180);
             doc.line(26, y, pageWidth - 26, y);
-            y += 4;
+            y += 8;
           }
         });
 
@@ -256,9 +257,8 @@ const ClientDashboard = () => {
   const [reviewTarget, setReviewTarget] = useState(null);
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
-  const [viewReviewModal, setViewReviewModal] = useState(false);
-  const [viewReviewData, setViewReviewData] = useState(null);
   const [reviewRatingMap, setReviewRatingMap] = useState({}); // bookingId -> rating
+  const [reviewDetailsMap, setReviewDetailsMap] = useState({}); // bookingId -> { rating, comment, createdAt }
   const [walletData, setWalletData] = useState({
     totalPaid: 0,
     remainingBalance: 0,
@@ -273,8 +273,46 @@ const ClientDashboard = () => {
       try {
         const all = await reviewsAPI.getCompletedBookingsToReview(false);
         const pending = await reviewsAPI.getCompletedBookingsToReview(true);
-        setCompletedBookings(all.data || []);
+        const allCompleted = all.data || [];
+        setCompletedBookings(allCompleted);
         setNotRatedBookings(pending.data || []);
+
+        // Preload detailed review data (rating + comment) for rated bookings
+        const ratedBookings = allCompleted.filter((b) => b.rated && b._id);
+        if (ratedBookings.length) {
+          const results = await Promise.all(
+            ratedBookings.map((b) =>
+              reviewsAPI
+                .getMyReviewForBooking(b._id)
+                .then((res) => ({ bookingId: b._id, data: res }))
+                .catch(() => null)
+            )
+          );
+
+          const ratingMapUpdate = {};
+          const detailsMapUpdate = {};
+
+          results.forEach((entry) => {
+            if (!entry) return;
+            const { bookingId, data } = entry;
+            const review = data?.data || data?.review || data;
+            if (!review) return;
+            const rating = Number(review.rating) || 0;
+            ratingMapUpdate[bookingId] = rating;
+            detailsMapUpdate[bookingId] = {
+              rating,
+              comment: review.comment || "",
+              createdAt: review.createdAt || review.reviewedAt || null,
+            };
+          });
+
+          if (Object.keys(ratingMapUpdate).length) {
+            setReviewRatingMap((prev) => ({ ...prev, ...ratingMapUpdate }));
+          }
+          if (Object.keys(detailsMapUpdate).length) {
+            setReviewDetailsMap((prev) => ({ ...prev, ...detailsMapUpdate }));
+          }
+        }
       } catch (e) {
         console.error("Load review data error", e);
       }
@@ -311,23 +349,6 @@ const ClientDashboard = () => {
     setReviewModalOpen(true);
   };
 
-  const openViewReviewModal = async (booking) => {
-    try {
-      const res = await reviewsAPI.getMyReviewForBooking(booking._id);
-      const data = res.data || res.review || res;
-      if (data) {
-        setViewReviewData({
-          booking,
-          rating: Number(data.rating) || 0,
-          comment: data.comment || "",
-          createdAt: data.createdAt || data.reviewedAt || null,
-        });
-        setViewReviewModal(true);
-      }
-    } catch (e) {
-      console.error("Failed to load review details", e);
-    }
-  };
   const closeReviewModal = () => {
     setReviewModalOpen(false);
     setReviewTarget(null);
@@ -3075,29 +3096,30 @@ const ClientDashboard = () => {
                                   className="review-stars"
                                   style={{ margin: "6px 0" }}
                                 >
-                                  {[1, 2, 3, 4, 5].map((n) => (
-                                    <span
-                                      key={n}
-                                      style={{
-                                        color: (
-                                          reviewRatingMap[booking._id]
-                                            ? n <= reviewRatingMap[booking._id]
-                                            : false
-                                        )
-                                          ? "#ffc107"
-                                          : "rgb(255, 193, 7)",
-                                        marginRight: "4px",
-                                      }}
-                                    >
-                                      ★
-                                    </span>
-                                  ))}
+                                  {[1, 2, 3, 4, 5].map((n) => {
+                                    const rating =
+                                      reviewDetailsMap[booking._id]?.rating ??
+                                      reviewRatingMap[booking._id] ??
+                                      0;
+                                    return (
+                                      <span
+                                        key={n}
+                                        style={{
+                                          color:
+                                            n <= rating
+                                              ? "#ffc107"
+                                              : "rgb(255, 193, 7)",
+                                          marginRight: "4px",
+                                        }}
+                                      >
+                                        ★
+                                      </span>
+                                    );
+                                  })}
                                 </div>
                                 <p className="review-card__text">
-                                  {new Date(
-                                    booking.updatedAt || booking.eventDate
-                                  ).toLocaleDateString("en-GB")}
-                                  .
+                                  {reviewDetailsMap[booking._id]?.comment ||
+                                    "You left a review for this booking."}
                                 </p>
                               </>
                             ) : (
@@ -3110,14 +3132,7 @@ const ClientDashboard = () => {
                               </p>
                             )}
 
-                            {booking.rated ? (
-                              <button
-                                className="leave-review-btn"
-                                onClick={() => openViewReviewModal(booking)}
-                              >
-                                View Review
-                              </button>
-                            ) : (
+                            {!booking.rated && (
                               <button
                                 className="leave-review-btn"
                                 onClick={() => openReviewModal(booking)}
@@ -3180,7 +3195,8 @@ const ClientDashboard = () => {
                             Cancel
                           </button>
                           <button
-                            className="btn-primary"
+                            className="nav__cta-button"
+                            style={{ borderRadius: "8px" }}
                             onClick={submitReview}
                             disabled={
                               reviewRating < 1 ||
@@ -3188,147 +3204,6 @@ const ClientDashboard = () => {
                             }
                           >
                             Submit Review
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* View Review Details Modal */}
-                  {viewReviewModal && viewReviewData && (
-                    <div
-                      className="modal-overlay"
-                      onClick={() => setViewReviewModal(false)}
-                      style={{
-                        position: "fixed",
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        backgroundColor: "rgba(0, 0, 0, 0.5)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        zIndex: 1000,
-                      }}
-                    >
-                      <div
-                        onClick={(e) => e.stopPropagation()}
-                        style={{
-                          backgroundColor: "#F8F5ED",
-                          borderRadius: "16px",
-                          padding: "32px",
-                          width: "90%",
-                          maxWidth: "600px",
-                          boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
-                        }}
-                      >
-                        <h3
-                          style={{
-                            fontSize: "24px",
-                            fontWeight: "700",
-                            color: "#4A2C1D",
-                            margin: "0 0 20px 0",
-                          }}
-                        >
-                          Henna by{" "}
-                          {viewReviewData.booking?.assignedArtist
-                            ? `${
-                                viewReviewData.booking.assignedArtist[0]
-                                  .firstName || ""
-                              } ${
-                                viewReviewData.booking.assignedArtist[0]
-                                  .lastName || ""
-                              }`
-                            : "Artist"}
-                        </h3>
-
-                        {/* Rating */}
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "12px",
-                            marginBottom: "16px",
-                          }}
-                        >
-                          <div style={{ display: "flex", gap: "4px" }}>
-                            {[1, 2, 3, 4, 5].map((n) => (
-                              <span
-                                key={n}
-                                style={{
-                                  fontSize: "28px",
-                                  color:
-                                    n <= viewReviewData.rating
-                                      ? "#FFC107"
-                                      : "#ddd",
-                                }}
-                              >
-                                ★
-                              </span>
-                            ))}
-                          </div>
-                          <span style={{ fontSize: "16px", color: "#888" }}>
-                            {viewReviewData.rating.toFixed(1)}
-                          </span>
-                        </div>
-
-                        {/* Review Comment */}
-                        <p
-                          style={{
-                            fontSize: "15px",
-                            color: "#4A2C1D",
-                            lineHeight: "1.6",
-                            margin: "0 0 20px 0",
-                          }}
-                        >
-                          {viewReviewData.comment}
-                        </p>
-
-                        {/* Booking Details */}
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            marginTop: "24px",
-                            paddingTop: "20px",
-                            borderTop: "1px solid #e0e0e0",
-                          }}
-                        >
-                          <p
-                            style={{
-                              fontSize: "13px",
-                              color: "#888",
-                              margin: 0,
-                            }}
-                          >
-                            Booking type:{" "}
-                            {getEventTitleGlobal(
-                              viewReviewData.booking?.eventType,
-                              viewReviewData.booking?.otherEventType
-                            )}{" "}
-                            • Reviewed on{" "}
-                            {viewReviewData.createdAt
-                              ? new Date(
-                                  viewReviewData.createdAt
-                                ).toLocaleDateString("en-GB")
-                              : new Date().toLocaleDateString("en-GB")}
-                          </p>
-                          <button
-                            onClick={() => setViewReviewModal(false)}
-                            style={{
-                              backgroundColor: "#4A2C1D",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "8px",
-                              padding: "10px 20px",
-                              fontSize: "14px",
-                              fontWeight: "600",
-                              cursor: "pointer",
-                            }}
-                          >
-                            Close
                           </button>
                         </div>
                       </div>
@@ -4547,7 +4422,8 @@ const ClientDashboard = () => {
                           Cancel
                         </button>
                         <button
-                          className="submit-review-btn"
+                          className="nav__cta-button"
+                          style={{ borderRadius: "8px" }}
                           onClick={handleSubmitReview}
                           disabled={
                             reviewData.rating === 0 ||

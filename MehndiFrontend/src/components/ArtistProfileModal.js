@@ -508,7 +508,7 @@ const ArtistProfileModal = ({ artist, isOpen, onClose }) => {
                   }}
                 >
                   <FaCar style={{ color: "#ff6b35", fontSize: "16px" }} />
-                  Travel & Languages
+                  Travel
                 </h3>
 
                 <div
@@ -560,29 +560,7 @@ const ArtistProfileModal = ({ artist, isOpen, onClose }) => {
                     </div>
                   </div>
 
-                  <div>
-                    <h4
-                      style={{
-                        margin: "0 0 8px 0",
-                        fontSize: "16px",
-                        fontWeight: "500",
-                        color: "#374151",
-                      }}
-                    >
-                      Languages Spoken
-                    </h4>
-                    <p style={{ color: "#6b7280", margin: 0 }}>
-                      {portfolioData.languagesSpoken &&
-                      Array.isArray(portfolioData.languagesSpoken) &&
-                      portfolioData.languagesSpoken.length > 0
-                        ? portfolioData.languagesSpoken.join(", ")
-                        : portfolioData.languagesSpoken &&
-                          typeof portfolioData.languagesSpoken === "string" &&
-                          portfolioData.languagesSpoken.trim()
-                        ? portfolioData.languagesSpoken
-                        : "No languages specified"}
-                    </p>
-                  </div>
+                  {/* Languages removed */}
                 </div>
               </div>
             </>

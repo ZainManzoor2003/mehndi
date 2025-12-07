@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { FaCalendarAlt, FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -27,6 +27,7 @@ const AllBookings = () => {
   const [linkInput, setLinkInput] = useState("");
   const [uploadingInspiration, setUploadingInspiration] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
+  const editTimeInputRef = useRef(null);
   // Edit modal calendar state
   const today = new Date();
   const [editCalOpen, setEditCalOpen] = useState(false);
@@ -625,6 +626,25 @@ const AllBookings = () => {
     return otherEventType || "Mehndi Booking";
   };
 
+  // Get emoji for event type
+  const getEventEmoji = (eventType) => {
+    if (!eventType || eventType.length === 0) return "📝";
+    const mainType = eventType[0];
+    switch (mainType) {
+      case "Wedding":
+        return "💍";
+      case "Eid":
+        return "🌙";
+      case "Party":
+        return "🎉";
+      case "Festival":
+        return "🎊";
+      case "Other":
+      default:
+        return "📝";
+    }
+  };
+
   // Get artist name
   const getArtistName = (assignedArtist) => {
     if (assignedArtist && assignedArtist.length) {
@@ -1060,10 +1080,14 @@ const AllBookings = () => {
                               </h3>
                               <div className="booking-meta">
                                 <span className="meta-badge">
-                                  🎨 {booking.designStyle}
+                                  {booking.eventType &&
+                                  booking.eventType.length > 0
+                                    ? `${getEventEmoji(booking.eventType)} `
+                                    : ""}
+                                  {booking.designStyle}
                                 </span>
                                 <span className="meta-badge">
-                                  👥 {booking.numberOfPeople} people
+                                  👥 {booking.numberOfPeople}
                                 </span>
                               </div>
                             </div>
@@ -1088,7 +1112,7 @@ const AllBookings = () => {
                               {booking.status === "confirmed" &&
                                 booking.isPaid === "full" && (
                                   <button
-                                    className="btn-primary"
+                                    className="nav__cta-button"
                                     onClick={() => {
                                       const today = new Date();
                                       const eventDate = new Date(
@@ -1102,7 +1126,11 @@ const AllBookings = () => {
                                         );
                                       }
                                     }}
-                                    style={{ marginLeft: "8px" }}
+                                    style={{
+                                      marginLeft: "8px",
+                                      borderRadius: "12px",
+                                      padding: "14px 20px",
+                                    }}
                                   >
                                     Mark as complete
                                   </button>
@@ -1164,12 +1192,12 @@ const AllBookings = () => {
                             </div>
 
                             <div className="info-row">
-                              <div className="info-item">
+                              {/* <div className="info-item">
                                 <span className="info-label">Duration</span>
                                 <span className="info-value">
                                   {booking.duration || 3} hours
                                 </span>
-                              </div>
+                              </div> */}
 
                               {daysLeft > 0 && (
                                 <div className="info-item">
@@ -1219,10 +1247,14 @@ const AllBookings = () => {
                             </h3>
                             <div className="booking-meta">
                               <span className="meta-badge">
-                                🎨 {booking.designStyle}
+                                {booking.eventType &&
+                                booking.eventType.length > 0
+                                  ? `${getEventEmoji(booking.eventType)} `
+                                  : ""}
+                                {booking.designStyle}
                               </span>
                               <span className="meta-badge">
-                                👥 {booking.numberOfPeople} people
+                                👥 {booking.numberOfPeople}
                               </span>
                             </div>
                           </div>
@@ -1261,14 +1293,14 @@ const AllBookings = () => {
                             </div>
                           </div>
 
-                          <div className="info-row">
+                          {/* <div className="info-row">
                             <div className="info-item">
                               <span className="info-label">Duration</span>
                               <span className="info-value">
                                 {booking.duration || 3} hours
                               </span>
                             </div>
-                          </div>
+                          </div> */}
                         </div>
                       </div>
                     ))}
@@ -1298,10 +1330,14 @@ const AllBookings = () => {
                             </h3>
                             <div className="booking-meta">
                               <span className="meta-badge">
-                                🎨 {booking.designStyle}
+                                {booking.eventType &&
+                                booking.eventType.length > 0
+                                  ? `${getEventEmoji(booking.eventType)} `
+                                  : ""}
+                                {booking.designStyle}
                               </span>
                               <span className="meta-badge">
-                                👥 {booking.numberOfPeople} people
+                                👥 {booking.numberOfPeople}
                               </span>
                             </div>
                           </div>
@@ -1340,14 +1376,14 @@ const AllBookings = () => {
                             </div>
                           </div>
 
-                          <div className="info-row">
+                          {/* <div className="info-row">
                             <div className="info-item">
                               <span className="info-label">Duration</span>
                               <span className="info-value">
                                 {booking.duration || 3} hours
                               </span>
                             </div>
-                          </div>
+                          </div> */}
                         </div>
                       </div>
                     ))}
@@ -1828,7 +1864,7 @@ const AllBookings = () => {
                         )}
                       </div>
                     </div>
-                    {/* Preferred Time Slot */}
+                    {/* Preferred Time */}
                     <div>
                       <label
                         style={{
@@ -1839,82 +1875,67 @@ const AllBookings = () => {
                           color: "#8B4513",
                         }}
                       >
-                        Preferred Time Slot *
+                        Preferred Time *
                       </label>
                       <p
                         style={{
                           fontSize: "0.9rem",
                           color: "#888",
-                          marginBottom: "1rem",
+                          marginBottom: "0.6rem",
                         }}
                       >
-                        Pick one option
+                        Choose the approximate start time for the mehndi.
                       </p>
                       <div
+                        onClick={() => {
+                          if (editTimeInputRef.current) {
+                            editTimeInputRef.current.showPicker?.() ||
+                              editTimeInputRef.current.focus();
+                          }
+                        }}
                         style={{
-                          display: "grid",
-                          gridTemplateColumns:
-                            "repeat(auto-fit, minmax(150px, 1fr))",
-                          gap: "1rem",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "0.75rem",
+                          maxWidth: "260px",
+                          cursor: "pointer",
+                          padding: "0.4rem",
+                          borderRadius: "10px",
+                          transition: "background-color 0.2s",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = "#FDF3E6";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = "transparent";
                         }}
                       >
-                        {[
-                          { value: "Morning", icon: "☀️" },
-                          { value: "Afternoon", icon: "🌤️" },
-                          { value: "Evening", icon: "🌙" },
-                          { value: "Flexible", icon: "🔄" },
-                        ].map((opt) => (
-                          <label
-                            key={opt.value}
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "12px",
-                              padding: "16px",
-                              border: `2px solid ${
-                                form.preferredTimeSlot === opt.value
-                                  ? "#CD853F"
-                                  : "#e0d5c9"
-                              }`,
-                              borderRadius: "12px",
-                              background:
-                                form.preferredTimeSlot === opt.value
-                                  ? "#fff8f0"
-                                  : "#faf8f5",
-                              cursor: "pointer",
-                              transition: "all 0.3s",
-                              position: "relative",
-                            }}
-                            onClick={() =>
-                              setForm((prev) => ({
-                                ...prev,
-                                preferredTimeSlot: opt.value,
-                              }))
-                            }
-                          >
-                            <input
-                              type="radio"
-                              name="preferredTimeSlot"
-                              value={opt.value}
-                              checked={form.preferredTimeSlot === opt.value}
-                              onChange={() =>
-                                setForm((prev) => ({
-                                  ...prev,
-                                  preferredTimeSlot: opt.value,
-                                }))
-                              }
-                              style={{ display: "none" }}
-                            />
-                            <span style={{ fontSize: "1.5rem" }}>
-                              {opt.icon}
-                            </span>
-                            <span
-                              style={{ fontSize: "0.95rem", fontWeight: "500" }}
-                            >
-                              {opt.value}
-                            </span>
-                          </label>
-                        ))}
+                        <span
+                          style={{
+                            fontSize: "1.2rem",
+                            backgroundColor: "#FDF3E6",
+                            padding: "0.4rem 0.6rem",
+                            borderRadius: "10px",
+                            pointerEvents: "none",
+                          }}
+                        >
+                          🕒
+                        </span>
+                        <input
+                          ref={editTimeInputRef}
+                          type="time"
+                          name="preferredTimeSlot"
+                          value={form.preferredTimeSlot || ""}
+                          onChange={handleFormChange}
+                          style={{
+                            padding: "0.6rem 0.8rem",
+                            cursor: "pointer",
+                            flex: 1,
+                            borderRadius: "10px",
+                            border: "1px solid #e0d5c9",
+                            background: "#ffffff",
+                          }}
+                        />
                       </div>
                     </div>
 
@@ -2795,20 +2816,9 @@ const AllBookings = () => {
                   <button
                     onClick={handleSave}
                     disabled={saving}
+                    className="nav__cta-button"
                     style={{
-                      padding: "14px 32px",
-                      fontSize: "1rem",
-                      fontWeight: "600",
-                      color: "white",
-                      backgroundColor: "#CD853F",
-                      border: "none",
                       borderRadius: "12px",
-                      cursor: saving ? "not-allowed" : "pointer",
-                      opacity: saving ? 0.7 : 1,
-                      transition: "all 0.3s",
-                      boxShadow: saving
-                        ? "none"
-                        : "0 4px 12px rgba(205, 133, 63, 0.3)",
                     }}
                   >
                     {saving ? "Saving..." : "Save Changes"}

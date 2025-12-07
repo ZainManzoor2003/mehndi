@@ -218,9 +218,9 @@ const Header = () => {
             onClick={(e) => handleNavClick(e, "#home")}
           >
             <img
-              src="/assets/logo text.png"
+              src="/images/logo.png"
               alt="MehndiMe"
-              style={{ height: 36, margin: "10px 0", display: "block" }}
+              style={{ height: 42, margin: "10px 0", display: "block" }}
             />
           </a>
 
@@ -280,9 +280,9 @@ const Header = () => {
           <div className="nav__overlay-header">
             <div className="nav__overlay-logo">
               <img
-                src="/assets/logo text.png"
+                src="/images/logo.png"
                 alt="MehndiMe"
-                style={{ height: 28, display: "block" }}
+                style={{ height: 32, display: "block" }}
               />
             </div>
             <div className="nav__overlay-close" onClick={closeMenu}>

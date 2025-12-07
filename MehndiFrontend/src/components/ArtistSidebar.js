@@ -1,4 +1,5 @@
 import React from "react";
+import { FaPoundSign } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -89,17 +90,19 @@ const ArtistSidebar = ({
       id: "earnings",
       title: "Earnings",
       icon: (
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
+        <div
+          style={{
+            width: 22,
+            height: 22,
+            borderRadius: "999px",
+            border: "2px solid currentColor",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
         >
-          <circle cx="12" cy="12" r="10" />
-          <path d="M8 12h6a2 2 0 1 0 0-4H10a2 2 0 1 1 0-4h6" />
-        </svg>
+          <FaPoundSign size={12} style={{ display: "block" }} />
+        </div>
       ),
     },
     // Profile
@@ -187,7 +190,7 @@ const ArtistSidebar = ({
       {/* Sidebar */}
       <div className={`dashboard-sidebar ${isOpen ? "sidebar-open" : ""}`}>
         {/* Sidebar Header */}
-        <div className="sidebar-header">
+        <div className="sidebar-header" style={{ padding: "1rem 1.25rem" }}>
           <div
             className="sidebar-logo"
             style={{
@@ -203,9 +206,9 @@ const ArtistSidebar = ({
             </div> */}
             <span className="logo-text" style={{ display: "inline-block" }}>
               <img
-                src="/assets/logo text.png"
+                src="/images/logo.png"
                 alt="MehndiMe"
-                style={{ height: 28, display: "block" }}
+                style={{ height: 36, display: "block" }}
               />
             </span>
           </div>

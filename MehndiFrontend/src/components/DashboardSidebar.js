@@ -208,7 +208,7 @@ const DashboardSidebar = ({
       {/* Sidebar */}
       <div className={`dashboard-sidebar ${isOpen ? "sidebar-open" : ""}`}>
         {/* Sidebar Header */}
-        <div className="sidebar-header">
+        <div className="sidebar-header" style={{ padding: "1rem 1.25rem" }}>
           <div
             className="sidebar-logo"
             style={{
@@ -224,9 +224,9 @@ const DashboardSidebar = ({
             </div> */}
             <span className="logo-text" style={{ display: "inline-block" }}>
               <img
-                src="/assets/logo text.png"
+                src="/images/logo.png"
                 alt="MehndiMe"
-                style={{ height: 28, display: "block" }}
+                style={{ height: 36, display: "block" }}
               />
             </span>
           </div>

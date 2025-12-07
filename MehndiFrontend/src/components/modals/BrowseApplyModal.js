@@ -529,7 +529,7 @@ const BrowseApplyModal = ({
                           I agree to MehndiMe&apos;s{" "}
                           <Link
                             to="/terms-conditions"
-                            // target="_blank"
+                            target="_blank"
                             // rel="noopener noreferrer"
                             style={{
                               color: "#EA7C25",
@@ -543,7 +543,7 @@ const BrowseApplyModal = ({
                           and{" "}
                           <Link
                             to="/privacy-policy"
-                            // target="_blank"
+                            target="_blank"
                             // rel="noopener noreferrer"
                             style={{
                               color: "#EA7C25",
