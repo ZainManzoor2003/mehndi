@@ -451,80 +451,213 @@ const sendPhoneCode = async (req, res) => {
         .json({ success: false, message: "No phone number on account" });
     }
 
-    // Generate 6-digit code
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    console.log("🔐 [sendPhoneCode] Generated verification code:", code);
+    // Get Twilio credentials
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    const verifyServiceSid = process.env.TWILIO_VERIFY_SERVICE_SID;
 
-    user.phoneVerificationCode = code;
-    user.phoneVerificationExpires = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
-    await user.save({ validateBeforeSave: false });
-    console.log(
-      "💾 [sendPhoneCode] Code saved to database, expires at:",
-      user.phoneVerificationExpires
-    );
+    console.log("📡 [sendPhoneCode] Twilio configuration check:", {
+      hasAccountSid: !!accountSid,
+      hasAuthToken: !!authToken,
+      hasVerifyServiceSid: !!verifyServiceSid,
+      verifyServiceSid: verifyServiceSid || "NOT SET",
+    });
 
-    // Send via Twilio
-    try {
-      const accountSid = process.env.TWILIO_ACCOUNT_SID;
-      const authToken = process.env.TWILIO_AUTH_TOKEN;
-      const fromNumber = process.env.TWILIO_PHONE_NUMBER;
-
-      console.log("📡 [sendPhoneCode] Twilio configuration check:", {
-        hasAccountSid: !!accountSid,
-        hasAuthToken: !!authToken,
-        hasFromNumber: !!fromNumber,
-        fromNumber: fromNumber || "NOT SET",
+    if (!accountSid || !authToken || !verifyServiceSid) {
+      console.warn(
+        "⚠️ [sendPhoneCode] Twilio env variables not set; cannot send verification"
+      );
+      console.warn("   Missing:", {
+        accountSid: !accountSid,
+        authToken: !authToken,
+        verifyServiceSid: !verifyServiceSid,
       });
-      console.log("accountSid", accountSid);
-      console.log("authToken", authToken);
-      console.log("fromNumber", fromNumber);
+      return res.status(500).json({
+        success: false,
+        message: "Twilio configuration error. Please contact support.",
+      });
+    }
 
-      if (!accountSid || !authToken || !fromNumber) {
-        console.warn(
-          "⚠️ [sendPhoneCode] Twilio env variables not set; skipping SMS send"
-        );
-        console.warn("   Missing:", {
-          accountSid: !accountSid,
-          authToken: !authToken,
-          fromNumber: !fromNumber,
-        });
-      } else {
-        console.log("📤 [sendPhoneCode] Attempting to send SMS via Twilio...");
-        console.log("   To:", phone);
-        console.log("   From:", fromNumber);
-        console.log("   Code:", code);
+    // Send verification via Twilio Verify Service
+    try {
+      console.log(
+        "📤 [sendPhoneCode] Attempting to send verification via Twilio Verify..."
+      );
+      console.log("   To:", phone);
+      console.log("   Service SID:", verifyServiceSid);
 
-        const twilio = require("twilio")(accountSid, authToken);
-        const message = await twilio.messages.create({
+      const twilio = require("twilio")(accountSid, authToken);
+      const verification = await twilio.verify.v2
+        .services(verifyServiceSid)
+        .verifications.create({
           to: phone,
-          from: fromNumber,
-          body: `Your MehndiMe verification code is: ${code}`,
+          channel: "sms",
         });
 
-        console.log("✅ [sendPhoneCode] SMS sent successfully via Twilio!");
-        console.log("   Message SID:", message.sid);
-        console.log("   Status:", message.status);
-      }
+      console.log(
+        "✅ [sendPhoneCode] Verification sent successfully via Twilio Verify!"
+      );
+      console.log("   Verification SID:", verification.sid);
+      console.log("   Status:", verification.status);
+
+      return res
+        .status(200)
+        .json({ success: true, message: "Verification code sent" });
     } catch (e) {
-      console.error("❌ [sendPhoneCode] Twilio send error:", e.message);
+      console.error("❌ [sendPhoneCode] Twilio Verify error:", e.message);
       console.error("   Error details:", {
         code: e.code,
         status: e.status,
         message: e.message,
         stack: e.stack,
       });
+      return res.status(500).json({
+        success: false,
+        message: "Failed to send verification code. Please try again.",
+      });
     }
-
-    console.log("✅ [sendPhoneCode] Request completed successfully");
-    return res
-      .status(200)
-      .json({ success: true, message: "Verification code sent" });
   } catch (err) {
     console.error("❌ [sendPhoneCode] Server error:", err);
     console.error("   Error stack:", err.stack);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+// const sendPhoneCode = async (req, res) => {
+//   try {
+//     console.log("📱 [sendPhoneCode] Request received:", {
+//       email: req.body.email,
+//       timestamp: new Date().toISOString(),
+//     });
+
+//     const { email } = req.body;
+//     if (!email) {
+//       console.log("❌ [sendPhoneCode] Email missing in request");
+//       return res
+//         .status(400)
+//         .json({ success: false, message: "Email is required" });
+//     }
+
+//     console.log("🔍 [sendPhoneCode] Looking for user with email:", email);
+//     const user = await User.findOne({ email });
+//     if (!user) {
+//       console.log("❌ [sendPhoneCode] User not found for email:", email);
+//       return res
+//         .status(404)
+//         .json({ success: false, message: "User not found" });
+//     }
+
+//     console.log("✅ [sendPhoneCode] User found:", {
+//       userId: user._id,
+//       email: user.email,
+//       isEmailVerified: user.isEmailVerified,
+//       phoneNumber: user.phoneNumber
+//         ? "***" + user.phoneNumber.slice(-4)
+//         : "NOT SET",
+//     });
+
+//     if (!user.isEmailVerified) {
+//       console.log("❌ [sendPhoneCode] Email not verified for user:", email);
+//       return res
+//         .status(400)
+//         .json({ success: false, message: "Verify email first" });
+//     }
+
+//     // Resolve phone number from discriminators
+//     let phone = user.phoneNumber;
+//     if (!phone) {
+//       console.log(
+//         "⚠️ [sendPhoneCode] Phone not found in user object, checking full user..."
+//       );
+//       const fullUser = await User.findById(user._id).lean();
+//       phone = fullUser.phoneNumber; // artist stores at root via discriminator; client too
+//       console.log(
+//         "📞 [sendPhoneCode] Phone from fullUser:",
+//         phone ? "***" + phone.slice(-4) : "NOT FOUND"
+//       );
+//     }
+
+//     if (!phone) {
+//       console.log("❌ [sendPhoneCode] No phone number found on account");
+//       return res
+//         .status(400)
+//         .json({ success: false, message: "No phone number on account" });
+//     }
+
+//     // Generate 6-digit code
+//     const code = Math.floor(100000 + Math.random() * 900000).toString();
+//     console.log("🔐 [sendPhoneCode] Generated verification code:", code);
+
+//     user.phoneVerificationCode = code;
+//     user.phoneVerificationExpires = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+//     await user.save({ validateBeforeSave: false });
+//     console.log(
+//       "💾 [sendPhoneCode] Code saved to database, expires at:",
+//       user.phoneVerificationExpires
+//     );
+
+//     // Send via Twilio
+//     try {
+//       const accountSid = process.env.TWILIO_ACCOUNT_SID;
+//       const authToken = process.env.TWILIO_AUTH_TOKEN;
+//       const fromNumber = process.env.TWILIO_PHONE_NUMBER;
+
+//       console.log("📡 [sendPhoneCode] Twilio configuration check:", {
+//         hasAccountSid: !!accountSid,
+//         hasAuthToken: !!authToken,
+//         hasFromNumber: !!fromNumber,
+//         fromNumber: fromNumber || "NOT SET",
+//       });
+//       console.log("accountSid", accountSid);
+//       console.log("authToken", authToken);
+//       console.log("fromNumber", fromNumber);
+
+//       if (!accountSid || !authToken || !fromNumber) {
+//         console.warn(
+//           "⚠️ [sendPhoneCode] Twilio env variables not set; skipping SMS send"
+//         );
+//         console.warn("   Missing:", {
+//           accountSid: !accountSid,
+//           authToken: !authToken,
+//           fromNumber: !fromNumber,
+//         });
+//       } else {
+//         console.log("📤 [sendPhoneCode] Attempting to send SMS via Twilio...");
+//         console.log("   To:", phone);
+//         console.log("   From:", fromNumber);
+//         console.log("   Code:", code);
+
+//         const twilio = require("twilio")(accountSid, authToken);
+//         const message = await twilio.messages.create({
+//           to: phone,
+//           from: fromNumber,
+//           body: `Your MehndiMe verification code is: ${code}`,
+//         });
+
+//         console.log("✅ [sendPhoneCode] SMS sent successfully via Twilio!");
+//         console.log("   Message SID:", message.sid);
+//         console.log("   Status:", message.status);
+//       }
+//     } catch (e) {
+//       console.error("❌ [sendPhoneCode] Twilio send error:", e.message);
+//       console.error("   Error details:", {
+//         code: e.code,
+//         status: e.status,
+//         message: e.message,
+//         stack: e.stack,
+//       });
+//     }
+
+//     console.log("✅ [sendPhoneCode] Request completed successfully");
+//     return res
+//       .status(200)
+//       .json({ success: true, message: "Verification code sent" });
+//   } catch (err) {
+//     console.error("❌ [sendPhoneCode] Server error:", err);
+//     console.error("   Error stack:", err.stack);
+//     return res.status(500).json({ success: false, message: "Server error" });
+//   }
+// };
 
 // const sendPhoneCode = async (req, res) => {
 //   try {
@@ -669,48 +802,110 @@ const sendPhoneCode = async (req, res) => {
 // };
 
 // POST /api/auth/verify-phone-code
+
 const verifyPhoneCode = async (req, res) => {
   try {
     const { email, code } = req.body;
-    if (!email || !code)
+    if (!email || !code) {
       return res
         .status(400)
         .json({ success: false, message: "Email and code are required" });
+    }
 
     const user = await User.findOne({ email });
-    if (!user)
+    if (!user) {
       return res
         .status(404)
         .json({ success: false, message: "User not found" });
+    }
 
-    if (!user.phoneVerificationCode || !user.phoneVerificationExpires) {
-      return res.status(400).json({
-        success: false,
-        message: "No code to verify. Please request a new code.",
-      });
+    // Resolve phone number from discriminators
+    let phone = user.phoneNumber;
+    if (!phone) {
+      const fullUser = await User.findById(user._id).lean();
+      phone = fullUser.phoneNumber;
     }
-    if (user.phoneVerificationExpires.getTime() < Date.now()) {
-      return res.status(400).json({
-        success: false,
-        message: "Code expired. Please request a new code.",
-      });
-    }
-    if (String(user.phoneVerificationCode) !== String(code)) {
+
+    if (!phone) {
       return res
         .status(400)
-        .json({ success: false, message: "Invalid code. Please try again." });
+        .json({ success: false, message: "No phone number on account" });
     }
 
-    user.isPhoneVerified = true;
-    user.phoneVerificationCode = undefined;
-    user.phoneVerificationExpires = undefined;
-    await user.save({ validateBeforeSave: false });
+    // Get Twilio credentials
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    const verifyServiceSid = process.env.TWILIO_VERIFY_SERVICE_SID;
 
-    return res
-      .status(200)
-      .json({ success: true, message: "Phone verified successfully" });
+    if (!accountSid || !authToken || !verifyServiceSid) {
+      console.error("❌ [verifyPhoneCode] Twilio env variables not set");
+      return res.status(500).json({
+        success: false,
+        message: "Twilio configuration error. Please contact support.",
+      });
+    }
+
+    // Verify code with Twilio Verify Service
+    try {
+      console.log("🔍 [verifyPhoneCode] Verifying code with Twilio Verify...");
+      console.log("   Phone:", phone ? "***" + phone.slice(-4) : "NOT FOUND");
+      console.log("   Service SID:", verifyServiceSid);
+
+      const twilio = require("twilio")(accountSid, authToken);
+      const verificationCheck = await twilio.verify.v2
+        .services(verifyServiceSid)
+        .verificationChecks.create({
+          to: phone,
+          code: code,
+        });
+
+      console.log("📊 [verifyPhoneCode] Verification result:", {
+        status: verificationCheck.status,
+        sid: verificationCheck.sid,
+      });
+
+      if (verificationCheck.status === "approved") {
+        // Mark phone as verified
+        user.isPhoneVerified = true;
+        await user.save({ validateBeforeSave: false });
+
+        console.log("✅ [verifyPhoneCode] Phone verified successfully");
+        return res
+          .status(200)
+          .json({ success: true, message: "Phone verified successfully" });
+      } else {
+        console.log(
+          "❌ [verifyPhoneCode] Verification failed:",
+          verificationCheck.status
+        );
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid code. Please try again." });
+      }
+    } catch (e) {
+      console.error("❌ [verifyPhoneCode] Twilio Verify error:", e.message);
+      console.error("   Error details:", {
+        code: e.code,
+        status: e.status,
+        message: e.message,
+      });
+
+      // Handle specific Twilio errors
+      if (e.code === 20404 || e.message.includes("not found")) {
+        return res.status(400).json({
+          success: false,
+          message: "No verification found. Please request a new code.",
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        message: "Verification failed. Please try again.",
+      });
+    }
   } catch (err) {
-    console.error("verifyPhoneCode error:", err);
+    console.error("❌ [verifyPhoneCode] Server error:", err);
+    console.error("   Error stack:", err.stack);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
