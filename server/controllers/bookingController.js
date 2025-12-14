@@ -1018,7 +1018,7 @@ const completeBooking = async (req, res) => {
     if (typeof video === "string") booking.video = video;
     booking.status = "completed";
 
-    await booking.save();
+    await booking.save({ validateBeforeSave: false });
 
     // Create notification for the artist about booking completion
     try {
