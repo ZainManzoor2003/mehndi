@@ -385,10 +385,50 @@ const getClientBookings = async (req, res) => {
       .populate("assignedArtist", "firstName lastName userProfileImage email")
       .sort({ createdAt: -1 });
 
+    // Sync booking.rated with existing reviews (fix data inconsistency)
+    const Review = require("../schemas/Review");
+    for (const booking of bookings) {
+      if (booking.status === "completed" && !booking.rated) {
+        const existingReview = await Review.findOne({
+          userId: req.user.id,
+          bookingId: booking._id,
+        });
+        if (existingReview) {
+          console.log(
+            "🔧 [getClientBookings] Fixing booking.rated for booking:",
+            {
+              bookingId: booking._id.toString(),
+              reviewId: existingReview._id.toString(),
+            }
+          );
+          booking.rated = true;
+          await booking.save({ validateBeforeSave: false });
+        }
+      }
+    }
+
+    // Re-fetch to get updated data
+    const updatedBookings = await Booking.find({ clientId: req.user.id })
+      .populate("assignedArtist", "firstName lastName userProfileImage email")
+      .sort({ createdAt: -1 });
+
+    console.log("📋 [getClientBookings] Bookings fetched:", {
+      userId: req.user.id,
+      total: updatedBookings.length,
+      completed: updatedBookings.filter((b) => b.status === "completed").length,
+      completedWithRated: updatedBookings
+        .filter((b) => b.status === "completed")
+        .map((b) => ({
+          id: b._id.toString(),
+          rated: b.rated,
+          status: b.status,
+        })),
+    });
+
     res.status(200).json({
       success: true,
-      count: bookings.length,
-      data: bookings,
+      count: updatedBookings.length,
+      data: updatedBookings,
     });
   } catch (error) {
     console.error("Get bookings error:", error);

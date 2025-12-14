@@ -4,12 +4,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import apiService from "../services/api";
 import DashboardSidebar from "./DashboardSidebar";
+import "./messages.css";
 import CancelAcceptedModal from "./modals/CancelAcceptedModal";
 import ConfirmActionModal from "./modals/ConfirmActionModal";
 import GetLocationModal from "./modals/GetLocationModal";
 import ProposalsPage from "./ProposalsPage";
 
-const { bookingsAPI } = apiService;
+const { bookingsAPI, reviewsAPI } = apiService;
 
 const AllBookings = () => {
   const { user, isAuthenticated } = useAuth();
@@ -379,6 +380,12 @@ const AllBookings = () => {
   const [messageModalOpen, setMessageModalOpen] = useState(false);
   const [messageModalContent, setMessageModalContent] = useState("");
 
+  // Review modal state
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [reviewTarget, setReviewTarget] = useState(null);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
+
   const openCompleteModal = (booking) => {
     setCompleteTarget(booking);
     setCompleteImages([]);
@@ -457,6 +464,87 @@ const AllBookings = () => {
   const closeMessageModal = () => {
     setMessageModalOpen(false);
     setMessageModalContent("");
+  };
+
+  // Review functions
+  const openReviewModal = async (booking) => {
+    console.log("📖 [AllBookings] Opening review modal for booking:", {
+      bookingId: booking._id,
+      rated: booking.rated,
+      status: booking.status,
+    });
+
+    // Check if review already exists
+    try {
+      const existingReview = await reviewsAPI.getMyReviewForBooking(
+        booking._id
+      );
+      console.log("🔍 [AllBookings] Existing review found:", existingReview);
+      if (existingReview?.data || existingReview?.success) {
+        alert(
+          "You have already reviewed this booking. Please refresh the page to see updated status."
+        );
+        return;
+      }
+    } catch (err) {
+      // No review found, which is fine
+      console.log(
+        "ℹ️ [AllBookings] No existing review found (this is OK):",
+        err.message
+      );
+    }
+
+    setReviewTarget(booking);
+    setReviewRating(0);
+    setReviewComment("");
+    setReviewModalOpen(true);
+  };
+
+  const closeReviewModal = () => {
+    setReviewModalOpen(false);
+    setReviewTarget(null);
+    setReviewRating(0);
+    setReviewComment("");
+  };
+
+  const submitReview = async () => {
+    if (!reviewTarget) return;
+    console.log("📝 [AllBookings] Submitting review:", {
+      bookingId: reviewTarget._id,
+      rating: reviewRating,
+      comment: reviewComment,
+      artistId: reviewTarget.assignedArtist[0]?._id,
+      currentRated: reviewTarget.rated,
+    });
+    try {
+      const result = await reviewsAPI.createReview({
+        bookingId: reviewTarget._id,
+        rating: reviewRating,
+        comment: reviewComment,
+        artistId: reviewTarget.assignedArtist[0]?._id,
+      });
+      console.log("✅ [AllBookings] Review submitted successfully:", result);
+
+      // Refresh bookings to update rated status
+      const refreshed = await bookingsAPI.getMyBookings();
+      console.log("🔄 [AllBookings] Refreshed bookings after review:", {
+        total: refreshed.data?.length || 0,
+        completedBookings: refreshed.data
+          ?.filter((b) => b.status === "completed")
+          .map((b) => ({
+            id: b._id,
+            rated: b.rated,
+          })),
+      });
+      setAllBookings(refreshed.data || []);
+      closeReviewModal();
+    } catch (err) {
+      console.error("❌ [AllBookings] Review submission error:", {
+        message: err.message,
+        error: err,
+      });
+      alert(err.message || "Failed to submit review");
+    }
   };
 
   const handleConfirmCancel = async ({ description }) => {
@@ -538,7 +626,15 @@ const AllBookings = () => {
       try {
         setLoading(true);
         const response = await bookingsAPI.getMyBookings();
-        console.log("Bookings fetched:", response);
+        console.log("📋 [AllBookings] Bookings fetched:", {
+          total: response.data?.length || 0,
+          bookings: response.data?.map((b) => ({
+            id: b._id,
+            status: b.status,
+            rated: b.rated,
+            eventDate: b.eventDate,
+          })),
+        });
         setAllBookings(response.data || []);
       } catch (error) {
         console.error("Error fetching bookings:", error);
@@ -662,6 +758,18 @@ const AllBookings = () => {
   const completedBookings = allBookings.filter(
     (booking) => booking.status === "completed"
   );
+
+  // Debug: Log completed bookings with rated status
+  console.log("📊 [AllBookings] Completed bookings status:", {
+    total: completedBookings.length,
+    rated: completedBookings.filter((b) => b.rated).length,
+    notRated: completedBookings.filter((b) => !b.rated).length,
+    bookings: completedBookings.map((b) => ({
+      id: b._id,
+      rated: b.rated,
+      hasAssignedArtist: !!b.assignedArtist?.[0],
+    })),
+  });
   const cancelledBookings = allBookings.filter(
     (booking) => booking.status === "cancelled"
   );
@@ -1257,6 +1365,43 @@ const AllBookings = () => {
                                 👥 {booking.numberOfPeople}
                               </span>
                             </div>
+                          </div>
+                          <div className="card-actions">
+                            {getStatusBadge(booking.status)}
+                            {(() => {
+                              console.log(
+                                "🔍 [AllBookings] Checking review button for booking:",
+                                {
+                                  bookingId: booking._id,
+                                  rated: booking.rated,
+                                  status: booking.status,
+                                  shouldShowButton: !booking.rated,
+                                }
+                              );
+                              return !booking.rated ? (
+                                <button
+                                  className="nav__cta-button"
+                                  onClick={() => {
+                                    console.log(
+                                      "🖱️ [AllBookings] Leave Review button clicked:",
+                                      {
+                                        bookingId: booking._id,
+                                        rated: booking.rated,
+                                      }
+                                    );
+                                    openReviewModal(booking);
+                                  }}
+                                  style={{
+                                    marginLeft: "8px",
+                                    borderRadius: "12px",
+                                    padding: "14px 20px",
+                                    fontSize: "0.95rem",
+                                  }}
+                                >
+                                  Leave a Review
+                                </button>
+                              ) : null;
+                            })()}
                           </div>
                         </div>
 
@@ -3180,6 +3325,106 @@ const AllBookings = () => {
         onClose={() => setShowLocationModal(false)}
         onLocationSelect={handleLocationSelect}
       />
+
+      {/* Review Modal */}
+      {reviewModalOpen && (
+        <div className="modal-overlay" onClick={closeReviewModal}>
+          <div
+            className="modal"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: "600px", maxHeight: "90vh", overflowY: "auto" }}
+          >
+            <div className="modal-header">
+              <h3 className="modal-title">Write a Review</h3>
+              <button className="modal-close" onClick={closeReviewModal}>
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>Rating</label>
+                <div
+                  className="review-rating"
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "5px",
+                  }}
+                >
+                  {[1, 2, 3, 4, 5].map((n) => {
+                    const isFilled = n <= reviewRating;
+                    return (
+                      <span
+                        key={n}
+                        className={`star ${isFilled ? "filled" : ""}`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setReviewRating(n);
+                        }}
+                        style={{
+                          fontSize: "32px",
+                          cursor: "pointer",
+                          transition: "all 0.2s ease",
+                          filter: isFilled
+                            ? "grayscale(0%) brightness(1)"
+                            : "grayscale(100%) brightness(0.8)",
+                          userSelect: "none",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = "scale(1.15)";
+                          e.currentTarget.style.filter =
+                            "grayscale(0%) brightness(1.1)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = "scale(1)";
+                          e.currentTarget.style.filter = isFilled
+                            ? "grayscale(0%) brightness(1)"
+                            : "grayscale(100%) brightness(0.8)";
+                        }}
+                      >
+                        ⭐
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="form-group">
+                <label>Comment</label>
+                <textarea
+                  rows="4"
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  placeholder="Share your experience..."
+                  style={{
+                    width: "100%",
+                    padding: "12px",
+                    border: "1px solid #e0d5c9",
+                    borderRadius: "8px",
+                    fontSize: "1rem",
+                    fontFamily: "inherit",
+                    resize: "vertical",
+                  }}
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={closeReviewModal}>
+                Cancel
+              </button>
+              <button
+                className="nav__cta-button"
+                style={{ borderRadius: "8px" }}
+                onClick={submitReview}
+                disabled={reviewRating < 1 || reviewComment.trim().length === 0}
+              >
+                Submit Review
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
